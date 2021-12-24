@@ -1,0 +1,914 @@
+[
+    {
+        "id": "004718dd-c531-4c52-ac10-010563972493",
+        "name": "Egyptian Pound",
+        "code": "EGP",
+        "symbol": "EGP"
+    },
+    {
+        "id": "00a14ff9-3084-499b-8978-6353c262f5e5",
+        "name": "Namibian Dollar",
+        "code": "NAD",
+        "symbol": "N$"
+    },
+    {
+        "id": "0621806b-816f-47e6-8708-23c84a7f2980",
+        "name": "Nigerian Naira",
+        "code": "NGN",
+        "symbol": "₦"
+    },
+    {
+        "id": "0755c589-67ef-4db0-a97a-4d58298d3184",
+        "name": "Croatian Kuna",
+        "code": "HRK",
+        "symbol": "kn"
+    },
+    {
+        "id": "0885563a-f414-418b-add7-7761061d7a15",
+        "name": "Jordanian Dinar",
+        "code": "JOD",
+        "symbol": "JD"
+    },
+    {
+        "id": "08d6afd6-1725-4df9-bc0f-4ceb9768ae62",
+        "name": "South Korean Won",
+        "code": "KRW",
+        "symbol": "₩"
+    },
+    {
+        "id": "0a17dc8e-acca-4a1d-839b-f8cf88797311",
+        "name": "Bosnia-Herzegovina Convertible Mark",
+        "code": "BAM",
+        "symbol": "KM"
+    },
+    {
+        "id": "0bad86bd-21fa-4101-974e-ea7517af5f9f",
+        "name": "Philippine Peso",
+        "code": "PHP",
+        "symbol": "₱"
+    },
+    {
+        "id": "0bf12b12-bbb8-4201-9e58-6dfe4f0ad9a5",
+        "name": "Albanian Lek",
+        "code": "ALL",
+        "symbol": "ALL"
+    },
+    {
+        "id": "0dfadbd9-b432-4198-974f-8a477f9143af",
+        "name": "Belarusian Ruble",
+        "code": "BYN",
+        "symbol": "Br"
+    },
+    {
+        "id": "0e5aa6d9-933e-4660-bcd2-00915c9dc3cf",
+        "name": "Australian Dollar",
+        "code": "AUD",
+        "symbol": "AU$"
+    },
+    {
+        "id": "0f83d3b5-c6eb-432c-be2b-9dc3bcb6e020",
+        "name": "Vietnamese Dong",
+        "code": "VND",
+        "symbol": "₫"
+    },
+    {
+        "id": "0fc8f038-a362-41bd-93d5-9d364828a0a6",
+        "name": "Gambian Dalasi",
+        "code": "GMD",
+        "symbol": "D"
+    },
+    {
+        "id": "1252ea31-7913-4430-8305-d2fc3eb3466c",
+        "name": "Canadian Dollar",
+        "code": "CAD",
+        "symbol": "CA$"
+    },
+    {
+        "id": "137d3fea-9961-4bcb-bbaa-f032d1485418",
+        "name": "Ethiopian Birr",
+        "code": "ETB",
+        "symbol": "Br"
+    },
+    {
+        "id": "139e32e4-c236-4f45-8c89-cf768b5363a3",
+        "name": "Malagasy Ariary",
+        "code": "MGA",
+        "symbol": "MGA"
+    },
+    {
+        "id": "1cb6b1c7-81a3-43da-90a1-2509c477e551",
+        "name": "Sao Tomean Dobra",
+        "code": "STD",
+        "symbol": "Db"
+    },
+    {
+        "id": "1cceeb4f-1643-4ccc-bf3e-d1c4ef302139",
+        "name": "Myanma Kyat",
+        "code": "MMK",
+        "symbol": "MMK"
+    },
+    {
+        "id": "1e182734-f411-40f7-b783-64e21e88934c",
+        "name": "Surinamese Dollar",
+        "code": "SRD",
+        "symbol": "$"
+    },
+    {
+        "id": "1e8d36f7-82ca-40ad-8b35-6fdffb4d4e7d",
+        "name": "Singapore Dollar",
+        "code": "SGD",
+        "symbol": "S$"
+    },
+    {
+        "id": "1f830595-8047-44ce-aad8-1872455b34eb",
+        "name": "Mongolian Tughrik",
+        "code": "MNT",
+        "symbol": "₮"
+    },
+    {
+        "id": "201d975b-4e11-40bf-a0eb-7346f1cd3dbc",
+        "name": "Mauritanian ouguiya",
+        "code": "MRO",
+        "symbol": "UM"
+    },
+    {
+        "id": "20e497ea-19c9-49ba-b020-83662d59ece6",
+        "name": "Panamanian Balboa",
+        "code": "PAB",
+        "symbol": "B\/."
+    },
+    {
+        "id": "21eaf055-f560-45d8-be4b-919425023131",
+        "name": "Bhutanese Ngultrum",
+        "code": "BTN",
+        "symbol": "Nu."
+    },
+    {
+        "id": "22e39e6d-05fa-4c8b-9af8-85ab264e804c",
+        "name": "Nicaraguan Córdoba",
+        "code": "NIO",
+        "symbol": "C$"
+    },
+    {
+        "id": "27755341-7610-48bb-b73e-22e7493bbdee",
+        "name": "Solomon Islander Dollar",
+        "code": "SBD",
+        "symbol": "$"
+    },
+    {
+        "id": "27b2bcc2-e129-4045-a498-82fe96a54ef8",
+        "name": "Hong Kong Dollar",
+        "code": "HKD",
+        "symbol": "HK$"
+    },
+    {
+        "id": "2a15ca49-d3e8-4631-9f96-81018b4b74ff",
+        "name": "Libyan Dinar",
+        "code": "LYD",
+        "symbol": "LD"
+    },
+    {
+        "id": "2b1ab783-0502-485d-82fa-807e5d4e728a",
+        "name": "Swiss Franc",
+        "code": "CHF",
+        "symbol": "CHF"
+    },
+    {
+        "id": "2deffda4-6daf-4e7f-98ef-4c26cd309464",
+        "name": "Hungarian Forint",
+        "code": "HUF",
+        "symbol": "Ft"
+    },
+    {
+        "id": "2fff7327-39f8-4564-8afc-88c314192d88",
+        "name": "Pakistani Rupee",
+        "code": "PKR",
+        "symbol": "PKRs"
+    },
+    {
+        "id": "31b132dc-26a6-451b-80fa-f159c713c1ca",
+        "name": "Costa Rican Colón",
+        "code": "CRC",
+        "symbol": "₡"
+    },
+    {
+        "id": "31d3d8fd-7575-48dc-9344-d407c3d35553",
+        "name": "Maldivian rufiyaa",
+        "code": "MVR",
+        "symbol": "Rf"
+    },
+    {
+        "id": "32b4bc67-3a5b-463a-a6ff-d39b03c25b17",
+        "name": "Brazilian Real",
+        "code": "BRL",
+        "symbol": "R$"
+    },
+    {
+        "id": "34164d7b-9a69-49a6-a858-c7d605138d5f",
+        "name": "Icelandic Króna",
+        "code": "ISK",
+        "symbol": "Ikr"
+    },
+    {
+        "id": "359af2db-2bd3-4a59-959e-a2012fd07531",
+        "name": "Malaysian Ringgit",
+        "code": "MYR",
+        "symbol": "RM"
+    },
+    {
+        "id": "3865dff1-4eb5-4c87-b276-bb8892bc41d7",
+        "name": "Brunei Dollar",
+        "code": "BND",
+        "symbol": "BN$"
+    },
+    {
+        "id": "39ac7f0d-71b1-4c58-8200-9ce3397b946c",
+        "name": "Samoan Tala",
+        "code": "WST",
+        "symbol": "WS$"
+    },
+    {
+        "id": "3d3449b0-bdf4-4d1d-bcc3-8792436e609a",
+        "name": "Qatari Rial",
+        "code": "QAR",
+        "symbol": "QR"
+    },
+    {
+        "id": "3f0d75e3-0ae6-4395-a02b-8f129625efcc",
+        "name": "Papua New Guinean Kina",
+        "code": "PGK",
+        "symbol": "K"
+    },
+    {
+        "id": "406504ee-30cd-424f-b02a-18dfc8ee7c25",
+        "name": "Fijian dollar",
+        "code": "FJD",
+        "symbol": "$"
+    },
+    {
+        "id": "438ba3ca-e446-4888-9cf4-db8e1b9b94b4",
+        "name": "Israeli New Sheqel",
+        "code": "ILS",
+        "symbol": "₪"
+    },
+    {
+        "id": "4546e691-bdf8-4640-902c-3f727983e418",
+        "name": "Bahraini Dinar",
+        "code": "BHD",
+        "symbol": "BD"
+    },
+    {
+        "id": "4584cfeb-ca09-40bf-a895-958821160819",
+        "name": "Caymanian Dollar",
+        "code": "KYD",
+        "symbol": "$"
+    },
+    {
+        "id": "4665797c-f829-47b6-95af-dfa8ef0ae788",
+        "name": "Omani Rial",
+        "code": "OMR",
+        "symbol": "OMR"
+    },
+    {
+        "id": "480ea6bd-cd9b-4c6a-909e-8191f1143908",
+        "name": "Estonian Kroon",
+        "code": "EEK",
+        "symbol": "Ekr"
+    },
+    {
+        "id": "4961db22-8011-420d-9cd1-feb45ce63de3",
+        "name": "Somali Shilling",
+        "code": "SOS",
+        "symbol": "Ssh"
+    },
+    {
+        "id": "4c75656f-6bea-42d1-9dc3-577125732360",
+        "name": "Yemeni Rial",
+        "code": "YER",
+        "symbol": "YR"
+    },
+    {
+        "id": "4d410c94-bcdc-4033-a990-50aa38e76f9e",
+        "name": "Burundian Franc",
+        "code": "BIF",
+        "symbol": "FBu"
+    },
+    {
+        "id": "4dc1133e-71a0-446f-a21c-8027120512a9",
+        "name": "Russian Ruble",
+        "code": "RUB",
+        "symbol": "RUB"
+    },
+    {
+        "id": "4e5e0d4b-45a1-4a98-af51-4311a8ed73fa",
+        "name": "East Caribbean Dollar",
+        "code": "XCD",
+        "symbol": "$"
+    },
+    {
+        "id": "4ebe542b-1041-4c10-befb-6f150095fd4f",
+        "name": "Malawian kwacha",
+        "code": "MWK",
+        "symbol": "K"
+    },
+    {
+        "id": "4f431448-3028-40ca-84d1-cf588d873657",
+        "name": "United Arab Emirates Dirham",
+        "code": "AED",
+        "symbol": "AED"
+    },
+    {
+        "id": "4fa1ec30-f49b-4e96-bc2a-0b9946bc2460",
+        "name": "Guatemalan Quetzal",
+        "code": "GTQ",
+        "symbol": "GTQ"
+    },
+    {
+        "id": "51c4d559-6385-4027-95f3-66425a8645b2",
+        "name": "Liberian Dollar",
+        "code": "LRD",
+        "symbol": "$"
+    },
+    {
+        "id": "51cfcb55-de8f-4ee3-b3f6-411f461f61d5",
+        "name": "Ugandan Shilling",
+        "code": "UGX",
+        "symbol": "USh"
+    },
+    {
+        "id": "539f1381-0222-47e6-80a1-2d586022bff1",
+        "name": "Ukrainian Hryvnia",
+        "code": "UAH",
+        "symbol": "₴"
+    },
+    {
+        "id": "53e100b0-b890-4a06-b6dc-c5dde6565757",
+        "name": "Zambian Kwacha",
+        "code": "ZMK",
+        "symbol": "ZK"
+    },
+    {
+        "id": "5454a76e-385d-4fda-82e7-5a702cfcfa0b",
+        "name": "Belarusian Ruble",
+        "code": "BYR",
+        "symbol": "BYR"
+    },
+    {
+        "id": "582c8895-a4ee-4cc1-acc1-8d606e5c3b96",
+        "name": "Macedonian Denar",
+        "code": "MKD",
+        "symbol": "MKD"
+    },
+    {
+        "id": "58b58a1a-2681-4690-9cbb-238f7a88c844",
+        "name": "Ghanaian Cedi",
+        "code": "GHS",
+        "symbol": "GH₵"
+    },
+    {
+        "id": "5956654b-b555-40f7-bfe8-6d23428d8f5a",
+        "name": "Bangladeshi Taka",
+        "code": "BDT",
+        "symbol": "Tk"
+    },
+    {
+        "id": "5ab51ad9-1193-435b-8573-462775ef85b5",
+        "name": "Chilean Peso",
+        "code": "CLP",
+        "symbol": "CL$"
+    },
+    {
+        "id": "5d8b1cd3-4d79-4aad-8b47-bf981b026db7",
+        "name": "Indian Rupee",
+        "code": "INR",
+        "symbol": "Rs"
+    },
+    {
+        "id": "5d910ad2-3583-4ae2-b78c-1fac83980316",
+        "name": "Cambodian Riel",
+        "code": "KHR",
+        "symbol": "KHR"
+    },
+    {
+        "id": "5ef83787-ecdb-4607-83f6-036389283730",
+        "name": "Eritrean Nakfa",
+        "code": "ERN",
+        "symbol": "Nfk"
+    },
+    {
+        "id": "5f112a6e-0155-4bcb-a36b-ed6e1b5e9640",
+        "name": "Mauritian Rupee",
+        "code": "MUR",
+        "symbol": "MURs"
+    },
+    {
+        "id": "62dc8603-819b-4fbe-89f6-c4334391da48",
+        "name": "Moroccan Dirham",
+        "code": "MAD",
+        "symbol": "MAD"
+    },
+    {
+        "id": "65207783-54fc-41de-87c6-da1115920085",
+        "name": "Mozambican Metical",
+        "code": "MZN",
+        "symbol": "MTn"
+    },
+    {
+        "id": "65b7bf40-c0bb-4554-a726-63a3a102e198",
+        "name": "British Pound Sterling",
+        "code": "GBP",
+        "symbol": "£"
+    },
+    {
+        "id": "69cce4f1-4500-4060-a278-1c41f51ce0b2",
+        "name": "Jamaican Dollar",
+        "code": "JMD",
+        "symbol": "J$"
+    },
+    {
+        "id": "6d718e92-31db-4aed-a732-cd69ecc71faa",
+        "name": "Algerian Dinar",
+        "code": "DZD",
+        "symbol": "DA"
+    },
+    {
+        "id": "6e324b74-191a-4d6f-b69b-5bb8942585bc",
+        "name": "Afghan Afghani",
+        "code": "AFN",
+        "symbol": "Af"
+    },
+    {
+        "id": "6eae2c57-4fb3-4940-bac8-c64c96002949",
+        "name": "Ecuadorian sucre",
+        "code": "ECS",
+        "symbol": "S\/."
+    },
+    {
+        "id": "6fd65ce5-fdae-4ed7-9fd4-d4b48d3198f4",
+        "name": "Barbadian dollar",
+        "code": "BBD",
+        "symbol": "Bds$"
+    },
+    {
+        "id": "7299f92e-4ec3-4e10-8580-ac61f0ca0e99",
+        "name": "Comorian Franc",
+        "code": "KMF",
+        "symbol": "CF"
+    },
+    {
+        "id": "7650eb85-f615-4e9b-ac68-27f39da9d504",
+        "name": "Cape Verdean Escudo",
+        "code": "CVE",
+        "symbol": "CV$"
+    },
+    {
+        "id": "783272a7-2c67-49bf-876f-b4c86c4c396d",
+        "name": "Iranian Rial",
+        "code": "IRR",
+        "symbol": "IRR"
+    },
+    {
+        "id": "7841c486-e718-4492-81dd-892fe678ef2b",
+        "name": "Cuban peso",
+        "code": "CUP",
+        "symbol": "₱"
+    },
+    {
+        "id": "786a0e79-31a6-4adf-a7c6-79c5a3e7eb19",
+        "name": "US Dollar",
+        "code": "USD",
+        "symbol": "$"
+    },
+    {
+        "id": "7d945f98-cc3f-4690-bdd6-2e285ef05733",
+        "name": "Mauritanian ouguiya",
+        "code": "MRU",
+        "symbol": "UM"
+    },
+    {
+        "id": "7e39f55b-ec2a-4128-b103-dd130b724c01",
+        "name": "Azerbaijani Manat",
+        "code": "AZN",
+        "symbol": "man."
+    },
+    {
+        "id": "8057358a-0737-4de9-b65f-95af7a0c5d0e",
+        "name": "Thai Baht",
+        "code": "THB",
+        "symbol": "฿"
+    },
+    {
+        "id": "8099e7eb-e01b-48de-af55-1ca77487713c",
+        "name": "Bulgarian Lev",
+        "code": "BGN",
+        "symbol": "BGN"
+    },
+    {
+        "id": "84386fde-c62e-43f5-9918-a7c40675bf05",
+        "name": "Georgian Lari",
+        "code": "GEL",
+        "symbol": "GEL"
+    },
+    {
+        "id": "865ca456-d742-477a-9e02-da324bf06c01",
+        "name": "Mexican Peso",
+        "code": "MXN",
+        "symbol": "MX$"
+    },
+    {
+        "id": "86db668a-b374-46b8-bd0c-7cc2ea8afefe",
+        "name": "Kuwaiti Dinar",
+        "code": "KWD",
+        "symbol": "KD"
+    },
+    {
+        "id": "86fea2f4-b361-4f87-aa51-b8c6d667fc96",
+        "name": "New Zealand Dollar",
+        "code": "NZD",
+        "symbol": "NZ$"
+    },
+    {
+        "id": "88014ce9-89c3-4ffe-931d-8fc81ef35a9a",
+        "name": "Djiboutian Franc",
+        "code": "DJF",
+        "symbol": "Fdj"
+    },
+    {
+        "id": "887f020f-eb41-4c62-8f60-0f5f17a0a2e0",
+        "name": "Tanzanian Shilling",
+        "code": "TZS",
+        "symbol": "TSh"
+    },
+    {
+        "id": "8e1f2fdf-a5bf-43c8-9411-55c62592d8ba",
+        "name": "Bahamian Dollar",
+        "code": "BSD",
+        "symbol": "$"
+    },
+    {
+        "id": "91408c9e-c36a-4c45-b36a-219f50cf62bb",
+        "name": "CFA Franc BCEAO",
+        "code": "XOF",
+        "symbol": "CFA"
+    },
+    {
+        "id": "91a8c570-83d8-4eff-8f77-d6b5cdc538db",
+        "name": "Zimbabwean dollar",
+        "code": "ZWL",
+        "symbol": "$"
+    },
+    {
+        "id": "922e7108-6504-4fac-b1eb-30ade36048f6",
+        "name": "Saudi Riyal",
+        "code": "SAR",
+        "symbol": "SR"
+    },
+    {
+        "id": "924967b1-777b-4e62-8871-1b510f2f0fa6",
+        "name": "French Pacific Franc",
+        "code": "XPF",
+        "symbol": "F"
+    },
+    {
+        "id": "93f3ffb6-abcb-42bb-9c0e-7dafc222fd2f",
+        "name": "Bolivian Boliviano",
+        "code": "BOB",
+        "symbol": "Bs"
+    },
+    {
+        "id": "952ab432-2885-4f33-940f-746fa41927ec",
+        "name": "Bermudian Dollar",
+        "code": "BMD",
+        "symbol": "$"
+    },
+    {
+        "id": "95cec0ec-7907-4ecf-922a-c44864f28a1c",
+        "name": "Haitian Gourde",
+        "code": "HTG",
+        "symbol": "G"
+    },
+    {
+        "id": "96148e37-8cb6-45d5-9ca9-6a987a7a7e7d",
+        "name": "Moldovan Leu",
+        "code": "MDL",
+        "symbol": "MDL"
+    },
+    {
+        "id": "987b0468-62ab-408f-a1cd-6e7abd418731",
+        "name": "Lebanese Pound",
+        "code": "LBP",
+        "symbol": "LB£"
+    },
+    {
+        "id": "99b609e9-fc1d-4da2-b87a-fe7d309832e2",
+        "name": "Lao kip",
+        "code": "LAK",
+        "symbol": "₭"
+    },
+    {
+        "id": "9bb12c13-5cf0-4666-beaa-252ed4eba801",
+        "name": "Indonesian Rupiah",
+        "code": "IDR",
+        "symbol": "Rp"
+    },
+    {
+        "id": "9d850069-9a58-486d-8186-a9b1b0f0055e",
+        "name": "Macanese Pataca",
+        "code": "MOP",
+        "symbol": "MOP$"
+    },
+    {
+        "id": "a08e7aa2-e69f-4cfb-a47e-51664d34d9e1",
+        "name": "Lithuanian Litas",
+        "code": "LTL",
+        "symbol": "Lt"
+    },
+    {
+        "id": "a27b6ca0-30a0-4ec2-bcca-89113bc9ac1c",
+        "name": "Honduran Lempira",
+        "code": "HNL",
+        "symbol": "HNL"
+    },
+    {
+        "id": "a28a3ba5-baa5-4c8f-bc85-f7c92f545062",
+        "name": "Peruvian Nuevo Sol",
+        "code": "PEN",
+        "symbol": "S\/."
+    },
+    {
+        "id": "a61f5c2f-564a-47b3-8723-ee97b72aa45f",
+        "name": "Dominican Peso",
+        "code": "DOP",
+        "symbol": "RD$"
+    },
+    {
+        "id": "a90af67b-5f76-498c-8311-502623a04e89",
+        "name": "Syrian Pound",
+        "code": "SYP",
+        "symbol": "SY£"
+    },
+    {
+        "id": "a9a554aa-ba77-4697-950b-0046f4a2eb56",
+        "name": "Sudanese Pound",
+        "code": "SDG",
+        "symbol": "SDG"
+    },
+    {
+        "id": "aa90fa71-365f-4fe1-af28-f3cf170c730b",
+        "name": "Iraqi Dinar",
+        "code": "IQD",
+        "symbol": "IQD"
+    },
+    {
+        "id": "ab9bf670-7cda-4df5-9db0-7c583665d22f",
+        "name": "South African Rand",
+        "code": "ZAR",
+        "symbol": "R"
+    },
+    {
+        "id": "b54bb9fe-e5e1-4f68-9aff-c796ea108959",
+        "name": "Basotho Loti",
+        "code": "LSL",
+        "symbol": "L"
+    },
+    {
+        "id": "b661af48-7d56-4fd6-8e97-d9785c6bd455",
+        "name": "Rwandan Franc",
+        "code": "RWF",
+        "symbol": "RWF"
+    },
+    {
+        "id": "b6693286-d2f6-4a76-a1f1-1533422435b7",
+        "name": "Czech Republic Koruna",
+        "code": "CZK",
+        "symbol": "Kč"
+    },
+    {
+        "id": "ba14da59-e6ff-43c9-ae2f-6c5491dd7e49",
+        "name": "Euro",
+        "code": "EUR",
+        "symbol": "€"
+    },
+    {
+        "id": "bba748d7-01cf-48af-b657-cfde1b275998",
+        "name": "Swedish Krona",
+        "code": "SEK",
+        "symbol": "Skr"
+    },
+    {
+        "id": "c0b45bed-b33e-42c7-bdca-187b51bd8c87",
+        "name": "Venezuelan Bolívar",
+        "code": "VEF",
+        "symbol": "Bs.F."
+    },
+    {
+        "id": "c5788fd1-0ff2-4f6c-9a05-3472b3d6c335",
+        "name": "Turkish Lira",
+        "code": "TRY",
+        "symbol": "TL"
+    },
+    {
+        "id": "caf597e7-ecdd-4ada-8ca1-b056463a84df",
+        "name": "Turkmenistani Manat",
+        "code": "TMT",
+        "symbol": "T"
+    },
+    {
+        "id": "ccdfb113-986b-448f-b55a-019eb4a1df55",
+        "name": "Kazakhstani Tenge",
+        "code": "KZT",
+        "symbol": "KZT"
+    },
+    {
+        "id": "cd1871cf-be2f-4b71-b917-7f36f8585f4b",
+        "name": "Tunisian Dinar",
+        "code": "TND",
+        "symbol": "DT"
+    },
+    {
+        "id": "ce19b58d-6a6b-49ba-940e-021a8697cfd6",
+        "name": "Sri Lankan Rupee",
+        "code": "LKR",
+        "symbol": "SLRs"
+    },
+    {
+        "id": "cf086b38-a58c-49e0-9bfb-2223df516c29",
+        "name": "Zambian Kwacha",
+        "code": "ZMW",
+        "symbol": "ZK"
+    },
+    {
+        "id": "d01e84a4-4823-44ba-9a3f-4685a5523602",
+        "name": "Botswanan Pula",
+        "code": "BWP",
+        "symbol": "BWP"
+    },
+    {
+        "id": "d0c04acb-a667-4206-b873-7d92ea410759",
+        "name": "CFA Franc BEAC",
+        "code": "XAF",
+        "symbol": "FCFA"
+    },
+    {
+        "id": "d0e8ad56-2584-45fa-b5b5-90168236b599",
+        "name": "Danish Krone",
+        "code": "DKK",
+        "symbol": "Dkr"
+    },
+    {
+        "id": "d173a6f2-20cb-488f-8682-d859bbe6ef64",
+        "name": "Trinidad and Tobago Dollar",
+        "code": "TTD",
+        "symbol": "TT$"
+    },
+    {
+        "id": "d244399e-09a0-4e08-ba4b-a0da6115953e",
+        "name": "Kenyan Shilling",
+        "code": "KES",
+        "symbol": "Ksh"
+    },
+    {
+        "id": "d2dbee9d-92e5-4c92-bea1-d1ed15e742d2",
+        "name": "Chinese Yuan",
+        "code": "CNY",
+        "symbol": "CN¥"
+    },
+    {
+        "id": "d5b93fbf-160e-4980-93f3-49b78bf8baa0",
+        "name": "Polish Zloty",
+        "code": "PLN",
+        "symbol": "zł"
+    },
+    {
+        "id": "d5bedec5-1453-4b78-9d39-e4547b5d7429",
+        "name": "Aruban florin",
+        "code": "AWG",
+        "symbol": "Afl."
+    },
+    {
+        "id": "d68512f2-afc5-4f51-9da3-ddcceebb6881",
+        "name": "Kyrgyzstani Som",
+        "code": "KGS",
+        "symbol": "som"
+    },
+    {
+        "id": "d69b43d5-61e4-41d6-92fb-37fc7cd2276b",
+        "name": "New Taiwan Dollar",
+        "code": "TWD",
+        "symbol": "NT$"
+    },
+    {
+        "id": "d8054822-f990-49c4-8e89-57c832685343",
+        "name": "Armenian Dram",
+        "code": "AMD",
+        "symbol": "AMD"
+    },
+    {
+        "id": "da9a7e01-1852-44af-af93-f599e3061b83",
+        "name": "Tongan Paʻanga",
+        "code": "TOP",
+        "symbol": "T$"
+    },
+    {
+        "id": "daccbf9d-ddf9-4402-8627-79d00d33158b",
+        "name": "Argentine Peso",
+        "code": "ARS",
+        "symbol": "AR$"
+    },
+    {
+        "id": "db984ffc-9267-41d8-84ba-3e931b64a2a4",
+        "name": "Swazi Lilangeni",
+        "code": "SZL",
+        "symbol": "L"
+    },
+    {
+        "id": "dd5779fc-dc2e-406b-9218-6cf522138ea1",
+        "name": "Latvian Lats",
+        "code": "LVL",
+        "symbol": "Ls"
+    },
+    {
+        "id": "df0bb071-9a10-4547-b875-6250ce0fe242",
+        "name": "Uzbekistan Som",
+        "code": "UZS",
+        "symbol": "UZS"
+    },
+    {
+        "id": "e34a373a-9798-4681-89d1-f7e3d93118a6",
+        "name": "Japanese Yen",
+        "code": "JPY",
+        "symbol": "¥"
+    },
+    {
+        "id": "e3db2b62-d134-441c-867d-d73da17a0005",
+        "name": "Guinean Franc",
+        "code": "GNF",
+        "symbol": "FG"
+    },
+    {
+        "id": "e69e96ae-ec8b-4ae0-b983-5c30d48d1515",
+        "name": "Colombian Peso",
+        "code": "COP",
+        "symbol": "CO$"
+    },
+    {
+        "id": "e6bd5213-e8fb-44a3-be3b-9788ea97bb62",
+        "name": "Belize Dollar",
+        "code": "BZD",
+        "symbol": "BZ$"
+    },
+    {
+        "id": "e92c2f1c-eff3-4baa-b87e-f666a3c433aa",
+        "name": "Congolese Franc",
+        "code": "CDF",
+        "symbol": "CDF"
+    },
+    {
+        "id": "e9a1810b-15d7-44e9-bfbe-9ed02f723e5b",
+        "name": "Romanian Leu",
+        "code": "RON",
+        "symbol": "RON"
+    },
+    {
+        "id": "ee56e609-6f6b-4897-82fa-a47112a64cca",
+        "name": "Paraguayan Guarani",
+        "code": "PYG",
+        "symbol": "₲"
+    },
+    {
+        "id": "fa2e1658-50d7-4ce0-9825-5df72c02399c",
+        "name": "Sierra Leonean Leone",
+        "code": "SLL",
+        "symbol": "Le"
+    },
+    {
+        "id": "faadebc4-916a-4538-a083-c47ed2e78f71",
+        "name": "Seychellois Rupee",
+        "code": "SCR",
+        "symbol": "₨"
+    },
+    {
+        "id": "fb7b67e4-7600-4300-b8b5-089b7407fac3",
+        "name": "Uruguayan Peso",
+        "code": "UYU",
+        "symbol": "$U"
+    },
+    {
+        "id": "fdfca061-cf5e-43e8-95f6-6b3eb43bb7f0",
+        "name": "Nepalese Rupee",
+        "code": "NPR",
+        "symbol": "NPRs"
+    },
+    {
+        "id": "fe615547-74d2-43e5-a674-9595c95e4089",
+        "name": "Serbian Dinar",
+        "code": "RSD",
+        "symbol": "din."
+    },
+    {
+        "id": "fe7a3f49-b090-40cc-8de9-a7b5cc741048",
+        "name": "Norwegian Krone",
+        "code": "NOK",
+        "symbol": "Nkr"
+    }
+]

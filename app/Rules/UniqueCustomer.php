@@ -27,7 +27,6 @@ class UniqueCustomer implements Rule
                 )
                     ->whereNotNull('submitted_at')
                     ->whereNotNull('activated_at')
-                    ->where('is_version', false)
             )
             ->doesntExist();
     }

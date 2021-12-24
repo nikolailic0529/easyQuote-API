@@ -2,39 +2,31 @@
 
 namespace App\Http\Requests\Contact;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\DTO\Contact\UpdateContactData;
 use App\Traits\Request\PreparesNullValues;
+use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateContactRequest extends FormRequest
 {
     use PreparesNullValues;
 
     /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            'first_name'    => 'required|string|filled|alpha',
-            'last_name'     => 'required|string|filled|alpha',
-            'phone'         => 'nullable|string|phone',
-            'mobile'        => 'nullable|string',
-            'email'         => 'nullable|string|email',
-            'job_title'     => 'nullable|string',
-            'picture'       => 'nullable|file|image|max:2048',
-            'is_verified'   => 'nullable|boolean'
+            'contact_type' => 'required|string|in:Hardware,Software,Invoice',
+            'first_name' => 'required|string|filled',
+            'last_name' => 'required|string|filled',
+            'phone' => 'nullable|string|phone',
+            'mobile' => 'nullable|string',
+            'email' => 'nullable|string|email',
+            'job_title' => 'nullable|string',
+            'picture' => 'nullable|file|image|max:2048',
+            'is_verified' => 'nullable|boolean',
         ];
     }
 
@@ -42,13 +34,28 @@ class UpdateContactRequest extends FormRequest
     {
         $this->prepareNullValues();
 
-        $is_verified = (bool) $this->is_verified;
-
-        $this->merge(compact('is_verified'));
+        $this->merge([
+            'is_verified' => $this->boolean('is_verified'),
+        ]);
     }
 
     protected function nullValues(): array
     {
         return ['phone', 'mobile', 'job_title', 'email', 'picture'];
+    }
+
+    public function getUpdateContactData(): UpdateContactData
+    {
+        return new UpdateContactData([
+            'contact_type' => $this->input('contact_type'),
+            'first_name' => $this->input('first_name'),
+            'last_name' => $this->input('last_name'),
+            'phone' => $this->input('phone'),
+            'mobile' => $this->input('mobile'),
+            'email' => $this->input('email'),
+            'job_title' => $this->input('job_title'),
+            'picture' => $this->file('picture'),
+            'is_verified' => $this->boolean('is_verified'),
+        ]);
     }
 }

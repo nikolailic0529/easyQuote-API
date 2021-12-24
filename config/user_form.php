@@ -6,7 +6,7 @@ return [
             'quotes' => [
                 'roles' => [],
                 'users' => [],
-                'level' => PL_R,
+                'level' => ACL_R,
                 'module' => 'quotes'
             ],
         ]

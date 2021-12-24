@@ -7,7 +7,7 @@ use Illuminate\Contracts\Support\DeferrableProvider;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Services\PermissionBroker;
 use App\Repositories\RoleRepository;
-use App\Services\PermissionBroker as ServicesPermissionBroker;
+use App\Services\DefaultPermissionBroker as ServicesPermissionBroker;
 
 class PermissionServiceProvider extends ServiceProvider implements DeferrableProvider
 {

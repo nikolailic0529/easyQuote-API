@@ -1,0 +1,101 @@
+Detail for Support Account ID: ANZ-MN
+
+                                                                                        Service Agreement ID: 1086 5485 2415
+
+              Support Quotation                                                         System Handle: ANZ-GB10
+
+              Agreement No.                                                             United Kingdom
+
+              Your PO Reference:                                                        HPE Reference No.: 56972842
+
+              Equipment Address:                                                        Software Update Address:
+
+              Equinix Ibx Data Center                                                   Equinix Ibx Data Center
+
+              Slough Trading Estate, 8 Buckingham                                       Slough Trading Estate, 8 Buckingham
+
+              Slough, Berkshire,                                                        Slough, Berkshire,
+
+              SL1 4AX                                                                   SL1 4AX
+
+              Hardware Contact:                                                         Software Contact:
+
+              Graham Wood                                                               Graham Wood
+
+              Tel: 0203229 2222                                                         Tel: 0203229 2222
+
+              Fax:                                                                      Fax:
+
+              This quote is valid until 31.10.2020
+
+              Coverage from: 01.11.2020 to: 31.10.2023
+
+              To log a call please telephone our Customer Care           Reception    on: 0845 603 7571
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        H7J34AC               HPE Foundation Care 24x7 SVC
+
+        *** Hardware ***
+
+                              HPE Hardware Maintenance Onsite Support
+
+                                       Hardware Problem Diagnosis
+
+                                       Onsite Support
+
+                                       Parts and Material provided
+
+                                       4 Hr Onsite Response
+
+                                       24 Hrs Std Office Days
+
+                                       24 hrs, Day 6
+
+                                       24 hrs, Day 7
+
+                                       Holidays Covered
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ41500V7                                             1            83.00
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ41500V8                                             1            83.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XA                                             1            54.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XB                                             1            54.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XC                                             1            54.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XD                                             1            54.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XE                                             1            54.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XF                                             1            54.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XH                                             1            54.00
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZ341546XJ                                             1            54.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ2733036H                                             1            68.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ2733036J                                             1            68.00
+
+                                                                                         Hardware Subtotal                                           734.00
+
+                                                                                         Discounts                                                   -167.20
+
+                                                                                         Total                                                       566.80
+
+                              HPE Collaborative Remote Support
+
+                                       Basic Software Phone Support
+
+                                       Collaborative Call Managemnt
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 23 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

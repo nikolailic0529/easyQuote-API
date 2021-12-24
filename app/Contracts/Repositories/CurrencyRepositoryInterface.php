@@ -31,7 +31,7 @@ interface CurrencyRepositoryInterface
     /**
      * Retrieve all currencies which have exchange rate or are base currency.
      *
-     * @return void
+     * @return mixed
      */
     public function allHaveExrate();
 

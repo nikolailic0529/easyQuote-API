@@ -1,4 +1,6 @@
-<?php namespace App\Http\Requests\QuoteTemplate;
+<?php
+
+namespace App\Http\Requests\QuoteTemplate;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

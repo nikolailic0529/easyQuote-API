@@ -2,10 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\{
-    Contact,
-    User
-};
+use App\Models\{Contact, User};
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ContactPolicy
@@ -15,58 +12,113 @@ class ContactPolicy
     /**
      * Determine whether the user can view any contacts.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function viewAny(User $user)
     {
-        return $user->can('view_contacts');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->canAny(['view_contacts', 'view_companies', 'view_opportunities'])) {
+            return true;
+        }
+    }
+
+    /**
+     * Determine whether the user can view entities of any owner.
+     *
+     * @param User $user
+     * @return mixed
+     */
+    public function viewAnyOwnerEntities(User $user)
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
     }
 
     /**
      * Determine whether the user can view the contact.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Contact  $contact
+     * @param \App\Models\User $user
+     * @param \App\Models\Contact $contact
      * @return mixed
      */
     public function view(User $user, Contact $contact)
     {
-        return $user->can('view_contacts');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->canAny(['view_contacts', 'view_companies', 'view_opportunities'])) {
+            return true;
+        }
     }
 
     /**
      * Determine whether the user can create contacts.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function create(User $user)
     {
-        return $user->can('create_contacts');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->canAny(['create_contacts', 'update_companies', 'update_opportunities'])) {
+            return true;
+        }
     }
 
     /**
      * Determine whether the user can update the contact.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Contact  $contact
+     * @param \App\Models\User $user
+     * @param \App\Models\Contact $contact
      * @return mixed
      */
     public function update(User $user, Contact $contact)
     {
-        return $user->can('update_contacts');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (!$user->canAny(['update_contacts', 'update_companies', 'update_opportunities'])) {
+            return false;
+        }
+
+        if ($user->getKey() !== $contact->{$contact->user()->getForeignKeyName()}) {
+            return $this->deny("You can't update the contact owned by another user.");
+        }
+
+        return true;
     }
 
     /**
      * Determine whether the user can delete the contact.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Contact  $contact
+     * @param \App\Models\User $user
+     * @param \App\Models\Contact $contact
      * @return mixed
      */
     public function delete(User $user, Contact $contact)
     {
-        return $user->can('delete_contacts');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (!$user->canAny(['delete_contacts', 'update_companies', 'update_opportunities'])) {
+            return false;
+        }
+
+        if ($user->getKey() !== $contact->{$contact->user()->getForeignKeyName()}) {
+            return $this->deny("You can't delete the contact owned by another user.");
+        }
+
+        return true;
     }
 }

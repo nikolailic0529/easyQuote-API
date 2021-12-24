@@ -7,21 +7,22 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 
 class CreateActivity implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    protected Activity $activity;
+    protected ActivityContract $activity;
 
     /**
      * Create a new job instance.
      *
-     * @return void
+     * @param ActivityContract $activity
      */
-    public function __construct(Activity $activity)
+    public function __construct(ActivityContract $activity)
     {
-        $this->activity = $activity->withoutRelations();
+        $this->activity = $activity;
     }
 
     /**

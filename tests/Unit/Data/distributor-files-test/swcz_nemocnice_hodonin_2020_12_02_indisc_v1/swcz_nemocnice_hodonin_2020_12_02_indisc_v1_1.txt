@@ -1,0 +1,61 @@
+HPE Servisní smlouva -                               Pehled
+
+              Identifikacní císlo           smlouvy         SWCZ-NEMOC
+
+              Cenová nabídka
+
+               Adresa zákazníka                                                            Adresa HPE
+
+               Support Warehouse         Ltd                                               HEWLETT-PACKARD               s.r.o.
+
+               Aviatická 1092/8                                                            Za Brumlovkou 1559/5
+
+               16100 Praha 6                                                               140 00 Praha 4
+
+              Kontaktní osoba zákazníka                                                    Kontaktní osoba HPE
+
+              Daniel Hughes                                                                Jirina Vecerova
+
+              Tel. 01943 667010                                                            Tel. +420234638033
+
+              Fax:                                                                         Fax:
+
+              E-mail: Daniel.Hughes@supportwarehouse.com                                   E-mail: jirina.vecerova@hpe.com
+
+              Navrzené ceny maji platnost do 20.12.2020
+
+      Tato nabídka se ídí konkrétní, výse uvedenou, smlouvou.                     V pípad neexistence takové smlouvy                budou    aplikovány Vseobecné
+
+      obchodní podmínky HPE. Prodlouzení servisní smlouvy se                      soucasn ídí dokumentem Exhibit 24,                není-li  stanoveno jinak
+
+            Vseobecné obchodní podmínky:              www.hpe.com/docs/customerterms
+
+            Katalogové listy(Anglictina):         www.hpe.com/info/mktlibrary
+
+      Moznosti pístupu k podpoe pro zákazníky se smluvní podporou:
+
+            Správa smluvní podpory online na adrese - https://s360.hpe.com                         / https://esam.hpe.com
+
+            Centrum podpory HPE - www.hpe.com/support/hpesc
+
+      Pro urychlení vyízení Vaseho pozadavku mjte prosím pipravené Vase                             identifikacní   císlo  servisní   podpory    a  výrobní
+
+      (sériové) císlo. Dkujeme.
+
+              - V pípad HW ci SW závady volejte prosím: 00420-239018793
+
+       Identifikacní císlosystému     Identifikacní      Doba platnosti          Popis                                                      Cena  za období/Kc
+
+                                      císlo zaízení-SAID        od:  do:
+
+       CZ-SUPP-LL02                   108664891301       21.12.2020 20.12.2021   Support  Warehouse  Ltd                                              79.187,70
+
+       Celková cena:                                                                                                                                  79.187,70
+
+        Datum vystavení 02.12.2020                                      Toto není faktura.CástkyjsouuvedenybezDPH.                                   Strana 1/  4
+
+        Zapsáno u Obchodního rejtíku,vedenéhoMstskýmsoudemv Praze,oddílC., vlozka 1974
+
+        Datum zápisu: 30.4.1991
+
+        Identifikacní císlo: 17048851

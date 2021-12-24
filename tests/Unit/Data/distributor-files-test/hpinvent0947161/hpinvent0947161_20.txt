@@ -1,0 +1,103 @@
+Service Agreement ID: 1086 5485            2415
+
+      Support Quotation                                                                 System Handle: ANZ-GB10
+
+      Agreement No.                                                                     United Kingdom
+
+      Your PO Reference:                                                                HPE Reference No.: 56896734
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        P09524-B21            HPE BL460c Gen10 v6 CTO Blade                        CZ201711X0                                             1            77.00
+
+        P09524-B21            HPE BL460c Gen10 v6 CTO Blade                        CZ201711WZ                                             1            77.00
+
+        P09524-B21            HPE BL460c Gen10 v6 CTO Blade                        CZ201711X2                                             1            77.00
+
+                                                                                         Hardware Subtotal                                          1,036.00
+
+                                                                                         Discounts                                                   -356.00
+
+                                                                                         Total                                                       680.00
+
+                                                                                         Subtotal During Warranty                                    135.00
+
+                                                                                         Discounts                                                    -46.41
+
+                                                                                         Total During Warranty                                         88.59
+
+                              HPE Collaborative Remote Support
+
+                                       Basic Software Phone Support
+
+                                       Collaborative Call Managemnt
+
+                                       24 Hours, Day 1-7 Phone Supp
+
+                                       Standard Response Time
+
+        681844-B21            HP BLc7000 CTO 3 IN LCD Plat Enclosure               CZ341546X8                                             1             2.00
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092X                                             1             4.00
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092Y                                             1             4.00
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092T                                             1             4.00
+
+        727021-B21            HP BL460c Gen9 10Gb/20Gb FLB CTO Blade               CZ3548NYNS               27.12.2020                    1             4.00
+
+        727021-B21            HP BL460c Gen9 10Gb/20Gb FLB CTO Blade               CZ3548NYNY               27.12.2020                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ27340014                                             1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ27340013                                             1             4.00
+
+        P09524-B21            HPE BL460c Gen10 v6 CTO Blade                        CZ201711X1                                             1             4.00
+
+        P09524-B21            HPE BL460c Gen10 v6 CTO Blade                        CZ201711X0                                             1             4.00
+
+        P09524-B21            HPE BL460c Gen10 v6 CTO Blade                        CZ201711WZ                                             1             4.00
+
+        P09524-B21            HPE BL460c Gen10 v6 CTO Blade                        CZ201711X2                                             1             4.00
+
+                                                                                         Hardware Subtotal                                             46.00
+
+                                                                                         Discounts                                                    -15.86
+
+                                                                                         Total                                                         30.14
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                      48.68-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                    219.06-
+
+        Special Neg HdrDisc% -15%                                                                                                                    142.44-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       8.09-
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is notan invoice, charges shown are monthly & exclusive of VAT    Page: 20 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

@@ -2,45 +2,46 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\{
-    QuoteFile\ImportedRawData,
-    QuoteFile\ImportedRow,
-    QuoteFile\DataSelectSeparator
-};
-use App\Traits\{
-    Auth\Multitenantable,
+use App\Models\Quote\WorldwideDistribution;
+use App\Traits\{Auth\Multitenantable,
     BelongsToUser,
-    BelongsToQuote,
-    HasFileFormat,
-    Draftable,
     Handleable,
+    HasFileFormat,
     HasMetaAttributes,
-    HasScheduleData,
-    Import\Automappable,
     Misc\GeneratesException,
-    Uuid
-};
-use App\Contracts\HasOrderedScope;
-use Illuminate\Database\Eloquent\{
+    Uuid};
+use Illuminate\Database\Eloquent\{Builder,
+    Collection,
     Model,
-    Builder,
-    SoftDeletes,
     Relations\BelongsTo,
     Relations\HasMany,
-};
+    Relations\HasOne,
+    SoftDeletes};
 
-class QuoteFile extends Model implements HasOrderedScope
+/**
+ * @property string|null $quote_file_format_id
+ * @property string|null $file_type
+ * @property string|null $original_file_path
+ * @property string|null $original_file_name
+ * @property string|null $replicated_quote_file_id
+ * @property int|null $pages
+ * @property int|null $imported_page
+ * @property string|null $handled_at
+ *
+ * @property array|null $meta_attributes
+ * @property ScheduleData|null scheduleData
+ * @property Collection<MappedRow>|MappedRow[] $mappedRows
+ * @property Collection<ImportedRow>|ImportedRow[] $rowsData
+ * @property-read QuoteFileFormat|null $format
+ */
+class QuoteFile extends Model
 {
     use Uuid,
         Multitenantable,
-        Automappable,
-        HasScheduleData,
-        BelongsToQuote,
         BelongsToUser,
         HasFileFormat,
         HasMetaAttributes,
         Handleable,
-        Draftable,
         GeneratesException,
         SoftDeletes;
 
@@ -51,18 +52,22 @@ class QuoteFile extends Model implements HasOrderedScope
         'pages',
         'quote_file_format_id',
         'data_select_separator_id',
-        'quote_id',
-        'imported_page'
+        'imported_page',
     ];
 
-    public function scopeOrdered($query)
+    public function scheduleData(): HasOne
     {
-        return $query->orderByDesc('created_at');
+        return $this->hasOne(ScheduleData::class);
     }
 
     public function rowsData(): HasMany
     {
         return $this->hasMany(ImportedRow::class);
+    }
+
+    public function mappedRows(): HasMany
+    {
+        return $this->hasMany(MappedRow::class);
     }
 
     public function importedRawData(): HasMany
@@ -106,7 +111,7 @@ class QuoteFile extends Model implements HasOrderedScope
 
     public function scopeIsNotHandledSchedule($query): Builder
     {
-        return $query->where(fn ($query) => $query->where('file_type', QFT_PS)->handled())->orWhere('file_type', QFT_PL);
+        return $query->where(fn($query) => $query->where('file_type', QFT_PS)->handled())->orWhere('file_type', QFT_PL);
     }
 
     public function setImportedPage(?int $imported_page)
@@ -140,11 +145,21 @@ class QuoteFile extends Model implements HasOrderedScope
             return false;
         }
 
-        return $this->imported_page !== (int) $page;
+        return $this->imported_page !== (int)$page;
     }
 
     public function getItemNameAttribute()
     {
         return "Quote File ({$this->original_file_name})";
+    }
+
+    public function mappingWasGuessed(): bool
+    {
+        return !is_null($this->automapped_at);
+    }
+
+    public function worldwideDistributorQuotesWhereQuoteFileAsPriceList(): HasMany
+    {
+        return $this->hasMany(related: WorldwideDistribution::class, foreignKey: 'distributor_file_id');
     }
 }

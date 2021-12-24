@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Contracts\Services\LocationService;
+use App\Contracts\LoggerAware;
+use App\Contracts\Services\AddressGeocoder;
 use Illuminate\Console\Command;
-use Throwable;
+use Illuminate\Log\LogManager;
 
 class UpdateAddressLocations extends Command
 {
@@ -35,25 +36,20 @@ class UpdateAddressLocations extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return int
      */
-    public function handle(LocationService $service)
+    public function handle(AddressGeocoder $service, LogManager $logManager): int
     {
-        $this->warn(ADDR_LCU_S_01);
-        customlog(['message' => ADDR_LCU_S_01]);
+        $this->getOutput()->title("Geocoding the address locations...");
 
-        try {
-            $service->updateAddressLocations($this->output->createProgressBar());
-        } catch (Throwable $e) {
-            $this->error(ADDR_LCU_ERR_01);
-            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(ADDR_LCU_ERR_01, $e));
-
-            return false;
+        if ($service instanceof LoggerAware) {
+            $service->setLogger(
+                $logManager->stack(['geocoding', 'stdout'])
+            );
         }
 
-        $this->info("\n".ADDR_LCU_F_01);
-        customlog(['message' => ADDR_LCU_F_01]);
+        $service->geocodeAddressLocations();
 
-        return true;
+        return self::SUCCESS;
     }
 }

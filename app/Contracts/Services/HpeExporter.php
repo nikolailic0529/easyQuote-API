@@ -3,7 +3,7 @@
 namespace App\Contracts\Services;
 
 use App\DTO\PreviewHpeContractData;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 
 interface HpeExporter
 {

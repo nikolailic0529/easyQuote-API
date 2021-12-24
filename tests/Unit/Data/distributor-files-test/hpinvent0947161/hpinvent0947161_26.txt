@@ -1,0 +1,101 @@
+Detail for Support Account ID:                                  ANZ-MN
+
+                                                                                        Service Agreement ID: 1086 5485            6896
+
+              Support Quotation                                                         System Handle: ANZ-UK-02
+
+              Agreement No.                                                             UK
+
+              Your PO Reference:                                                        HPE Reference No.: 56896735
+
+              Equipment Address:                                                        Software Update Address:
+
+              Australia And New Zealand                                                 Australia And New Zealand
+
+              Banking Group Ltd                                                         Banking Group Ltd
+
+              40 Bank Street, Canary Wharf                                              40 Bank Street, Canary Wharf
+
+              London                                                                    London
+
+              E14 5EJ                                                                   E14 5EJ
+
+              Hardware Contact:                                                         Software Contact:
+
+              Graham Wood                                                               Graham Wood
+
+              Tel: 0203229 2222                                                         Tel: 0203229 2222
+
+              Fax:                                                                      Fax:
+
+              This quote is valid until 31.10.2020
+
+              Coverage from: 01.11.2020 to: 31.10.2023
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        H1K93AC               HPE Proactive Care 24x7 wDMR SVC
+
+        *** Hardware ***
+
+                              HPE Hardware Maintenance Onsite Support
+
+                                       Hardware Problem Diagnosis
+
+                                       Onsite Support
+
+                                       Parts and Material provided
+
+                                       4 Hr Onsite Response
+
+                                       24 Hrs Std Office Days
+
+                                       24 hrs, Day 6
+
+                                       24 hrs, Day 7
+
+                                       Holidays Covered
+
+                                       Defective Media Retention
+
+                                       No Usage Limitation
+
+                                       Remote Delivery SVC Advanced
+
+                                       Access to Adv Tech Specialists
+
+        681844-B21            HP BLc7000 CTO 3 IN LCD Plat Enclosure               CZJ45101MZ                                             1          121.00
+
+        AP762A                HP SB40c w/(4) 300GB SAS SFF Bundle                  SGI129000H                                             1            52.00
+
+        508664-B21            HP BLc3000 4 AC-6 Fan Full ICE                       CZ2204023Z                                             1          149.00
+
+                              HP ZMOD HP IC Environment BL 8 LIC
+
+        727021-B21            HP BL460c Gen9 10Gb/20Gb FLB CTO Blade               CZ26210354                                             1            94.00
+
+        AP880A                HP D2200sb Storage Blade                             TWT234005X                                             1          113.00
+
+                              Please note HP can no longer support this item from: 31.12.2023
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ43504CB                                             1          115.00
+
+        494329-B21            HP OEM DL380G6 CTO Server                            CZ2031B9S5                                             1          145.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ2638009H               01.10.2021                    1            94.00
+
+        719064-B21            HPE DL380 Gen9 8SFF CTO Server                       CZJ6370JRD               01.10.2021                    1          163.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ81303R8                             27.04.2021      1            73.00
+
+                              HW Support During Warranty
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ81303R8               28.04.2021                    1          119.00
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 26 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

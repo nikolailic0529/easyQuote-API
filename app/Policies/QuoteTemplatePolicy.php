@@ -4,7 +4,7 @@ namespace App\Policies;
 
 use App\Models\{
     User,
-    QuoteTemplate\QuoteTemplate
+    Template\QuoteTemplate
 };
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -33,7 +33,7 @@ class QuoteTemplatePolicy
      * Determine whether the user can view the quote template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\QuoteTemplate  $quoteTemplate
+     * @param  \App\Models\Template\QuoteTemplate  $quoteTemplate
      * @return mixed
      */
     public function view(User $user, QuoteTemplate $quoteTemplate)
@@ -68,7 +68,7 @@ class QuoteTemplatePolicy
      * Determine whether the user can update the quote template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\QuoteTemplate  $quoteTemplate
+     * @param  \App\Models\Template\QuoteTemplate  $quoteTemplate
      * @return mixed
      */
     public function update(User $user, QuoteTemplate $quoteTemplate)
@@ -93,7 +93,7 @@ class QuoteTemplatePolicy
      * Determine whether the user can delete the quote template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\QuoteTemplate  $quoteTemplate
+     * @param  \App\Models\Template\QuoteTemplate  $quoteTemplate
      * @return mixed
      */
     public function delete(User $user, QuoteTemplate $quoteTemplate)

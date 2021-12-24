@@ -11,6 +11,6 @@ class CompanyCollection extends ResourceCollection
 
     protected function resource(): string
     {
-        return Company::class;
+        return CompanyList::class;
     }
 }

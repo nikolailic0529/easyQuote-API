@@ -6,6 +6,7 @@ use App\Events\QuoteNoteCreated;
 use App\Listeners\QuoteNoteCreatedListener;
 use Tests\TestCase;
 use App\Models\Quote\QuoteNote;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Event;
 use Tests\Unit\Traits\{
     AssertsListing,
@@ -13,9 +14,12 @@ use Tests\Unit\Traits\{
     WithFakeUser,
 };
 
+/**
+ * @group build
+ */
 class QuoteNoteTest extends TestCase
 {
-    use AssertsListing, WithFakeUser, WithFakeQuote;
+    use AssertsListing, WithFakeUser, WithFakeQuote, DatabaseTransactions;
 
     /**
      * Test quote notes listing.
@@ -24,7 +28,9 @@ class QuoteNoteTest extends TestCase
      */
     public function testQuoteNoteListing()
     {
-        $response = $this->getJson(url('api/quotes/notes/'.$this->quote->id));
+        $quote = $this->createQuote($this->user);
+        
+        $response = $this->getJson(url('api/quotes/notes/'.$quote->id));
 
         $this->assertListing($response);
     }
@@ -36,6 +42,8 @@ class QuoteNoteTest extends TestCase
      */
     public function testQuoteNoteCreating()
     {
+        $quote = $this->createQuote($this->user);
+
         Event::fake([
             QuoteNoteCreated::class
         ]);
@@ -44,7 +52,7 @@ class QuoteNoteTest extends TestCase
 
         $attributes = factory(QuoteNote::class)->raw();
 
-        $response = $this->postJson(url('api/quotes/notes/'.$this->quote->id), $attributes)->assertCreated()
+        $response = $this->postJson(url('api/quotes/notes/'.$quote->id), $attributes)->assertCreated()
             ->assertJsonStructure(['id', 'text', 'quote_id', 'user_id']);
 
         $id = $response->json('id');
@@ -59,13 +67,15 @@ class QuoteNoteTest extends TestCase
      */
     public function testQuoteNoteUpdating()
     {
+        $quote = $this->createQuote($this->user);
+
         $quoteNote = factory(QuoteNote::class)->create([
-            'quote_id' => $this->quote->id
+            'quote_id' => $quote->id
         ]);
 
         $attributes = factory(QuoteNote::class)->raw();
 
-        $this->patchJson(url('api/quotes/notes/'.$this->quote->id.'/'.$quoteNote->id), $attributes)->assertOk()
+        $this->patchJson(url('api/quotes/notes/'.$quote->id.'/'.$quoteNote->id), $attributes)->assertOk()
             ->assertJsonStructure(['id', 'text', 'quote_id', 'user_id'])
             ->assertJsonFragment(['text' => $attributes['text']]);
     }
@@ -77,11 +87,13 @@ class QuoteNoteTest extends TestCase
      */
     public function testQuoteNoteDeleting()
     {
+        $quote = $this->createQuote($this->user);
+
         $quoteNote = factory(QuoteNote::class)->create([
-            'quote_id' => $this->quote->id
+            'quote_id' => $quote->id
         ]);
 
-        $this->deleteJson(url('api/quotes/notes/'.$this->quote->id.'/'.$quoteNote->id))->assertOk()
+        $this->deleteJson(url('api/quotes/notes/'.$quote->id.'/'.$quoteNote->id))->assertOk()
             ->assertExactJson([true]);
 
         $this->assertSoftDeleted($quoteNote);

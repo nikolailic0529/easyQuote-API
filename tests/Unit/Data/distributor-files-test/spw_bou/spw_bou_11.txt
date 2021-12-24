@@ -1,0 +1,113 @@
+Service Agreement ID: 1086 6360            0856
+
+      Support Quotation                                                                 System Handle: SPWBOU-FR04
+
+      Agreement No.                                                                     France
+
+      Your PO Reference:                                                                HPE Reference No.: 56943483
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   H020K-081VP-F8V42-A922H-2X935
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   H020K-081VP-F8V42-A922H-2X935
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   M0210-083Q4-F8V42-AT2UK-C1315
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   M0210-083Q4-F8V42-AT2UK-C1315
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   H0290-481L4-U8K42-A83UP-2ELL5
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   H0290-481L4-U8K42-A83UP-2ELL5
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   M0692-081LP-Y8K4A-ARCUP-CRTJ5
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   M0692-081LP-Y8K4A-ARCUP-CRTJ5
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   M4202-48JPP-Y8V4A-A83UK-3XTJ1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   M4202-48JPP-Y8V4A-A83UK-3XTJ1
+
+                                                                                         Software Subtotal                                           388.60
+
+                                                                                         Discounts                                                    -73.20
+
+                                                                                         Total                                                       315.40
+
+                              HPE Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   HJ20K-48LPP-Y8L4A-AJ3UH-2R3L1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   HJ20K-48LPP-Y8L4A-AJ3UH-2R3L1
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   MN69K-483PP-Y8L42-AHCRK-AXCL1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   MN69K-483PP-Y8L42-AHCRK-AXCL1
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   M0202-08LYP-A8K4A-A93KP-A81L5
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   M0202-08LYP-A8K4A-A93KP-A81L5
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   H4682-481U4-Y8V42-ACC2P-25915
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   H4682-481U4-Y8V42-ACC2P-25915
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   H4290-081UP-A8V4C-ACA0P-AT3L1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   H4290-081UP-A8V4C-ACA0P-AT3L1
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+      Single Payment for Duration
+
+          Printed on: 17.12.2020                                Please Note: Thisisnotan invoice, charges shown are monthly & exclusive of VAT      Page: 11 / 13
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

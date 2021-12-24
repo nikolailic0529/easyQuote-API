@@ -3,20 +3,15 @@
 namespace App\Services;
 
 use App\Contracts\Services\WordParserInterface;
-use App\Contracts\Repositories\QuoteFile\{
-    ImportableColumnRepositoryInterface as ImportableColumns,
-};
-use Devengine\PhpWord\{
-    IOFactory,
-    PhpWord,
-    Element\Table,
-    Element\TextRun,
-    Element\Text,
-    Element\Cell
-};
+use App\Models\QuoteFile\ImportableColumn;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\{Arr, Str, Collection as SupportCollection};
-use Storage;
+use Illuminate\Support\{Collection as SupportCollection};
+use PhpOffice\PhpWord\Element\Cell;
+use PhpOffice\PhpWord\Element\Table;
+use PhpOffice\PhpWord\Element\Text;
+use PhpOffice\PhpWord\Element\TextRun;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\PhpWord;
 use voku\helper\ASCII;
 
 class WordParser implements WordParserInterface
@@ -29,35 +24,34 @@ class WordParser implements WordParserInterface
 
     public const REGEXP_ONE_PAY = '/return to/i';
 
-    protected ImportableColumns $importableColumn;
-
     protected PhpWord $phpWord;
-
-    protected array $tables = [];
 
     protected static string $defaultSeparator = "\t";
 
-    public function __construct(ImportableColumns $importableColumns)
+    public function load(string $path): static
     {
-        $this->importableColumns = $importableColumns;
-    }
-
-    public function load(string $path, bool $storage = true)
-    {
-        $path = $storage ? Storage::path($path) : $path;
-
         $this->phpWord = IOFactory::load($path);
 
         return $this;
     }
 
-    public function getText(string $filePath, bool $storage = true)
+    public function parseAsDistributorFile(string $filePath): array
     {
-        $columns = $this->importableColumns->allSystem();
+        $columns = ImportableColumn::query()
+            ->orderBy('order')
+            ->where('is_system', true)
+            ->with('aliases')
+            ->get();
 
-        $rows = $this->load($filePath, $storage)->getTables()->getRows($columns);
+        $this->load($filePath);
 
-        error_abort_if(empty($rows), QFNC_01, 'QFNC_01', 422);
+        $tables = $this->getTables();
+
+        if (empty($tables)) {
+            return [];
+        }
+
+        $rows = $this->getRows($columns, $tables);
 
         $page = 1;
         $content = null;
@@ -76,20 +70,20 @@ class WordParser implements WordParserInterface
         return $rawPages;
     }
 
-    public function getTables(?PhpWord $phpWord = null)
+    public function getTables(?PhpWord $phpWord = null): array
     {
         $phpWord ??= $this->phpWord;
 
+        $tables = [];
+
         foreach ($phpWord->getSections() as $section) {
-            $this->extractTables($section);
+            $tables = array_merge($tables, $this->extractTablesFromElement($section));
         }
 
-        $this->tables = $this->fetchTables($this->tables);
-
-        return $this;
+        return $this->parseTableElements($tables);
     }
 
-    public function getRows(Collection $columns, WordParser $wordParser = null)
+    public function getRows(Collection $columns, array $tableElements, WordParser $wordParser = null): array
     {
         $wordParser ??= $this;
 
@@ -101,7 +95,7 @@ class WordParser implements WordParserInterface
             $foundRowsByColumn = [];
 
             foreach ($aliases as $alias) {
-                $foundRowsByAlias = $wordParser->findRows($alias->alias);
+                $foundRowsByAlias = $wordParser->findRows($alias->alias, $tableElements);
 
                 if (!empty($foundRowsByAlias)) {
                     $foundRowsByColumn = $foundRowsByAlias;
@@ -118,12 +112,8 @@ class WordParser implements WordParserInterface
         return $rows;
     }
 
-    public function findRows(string $needle, array $tables = [])
+    public function findRows(string $needle, array $tables = []): array
     {
-        if (empty($tables)) {
-            $tables = $this->tables;
-        }
-
         $cellPath = $this->findCell($tables, $needle);
 
         if (!$cellPath) {
@@ -294,28 +284,32 @@ class WordParser implements WordParserInterface
         return compact('rows');
     }
 
-    private function extractTables($element)
+    private function extractTablesFromElement($element): array
     {
+        $tables = [];
+
         if ($this->isTableInstance($element)) {
-            array_push($this->tables, $element);
+            array_push($tables, $element);
         }
 
         if (!method_exists($element, 'getElements')) {
-            return;
+            return $tables;
         }
 
         foreach ($element->getElements() as $element) {
             if ($this->isTableInstance($element)) {
-                array_push($this->tables, $element);
+                array_push($tables, $element);
 
                 continue;
             }
 
-            $this->extractTables($element);
+            $tables = array_merge($tables, $this->extractTablesFromElement($element));
         }
+
+        return $tables;
     }
 
-    private function fetchTables(array $array)
+    private function parseTableElements(array $array): array
     {
         $tables = [];
         foreach ($array as $tableElement) {
@@ -394,15 +388,15 @@ class WordParser implements WordParserInterface
 
                         return $value;
                     })
-                    ->filter(fn ($value) => filled($value));
+                    ->filter(fn($value) => filled($value));
 
                 $row['cells'] = $cells;
 
                 return Collection::wrap($row);
             })
-            ->reject(fn (SupportCollection $row) => $row->get('cells')->count() < $columnsCount - 1)
+            ->reject(fn(SupportCollection $row) => $row->get('cells')->count() < $columnsCount - 1)
             ->transform(function (SupportCollection $row) use ($keys) {
-                $cells = $keys->map(fn ($key) => data_get($row, 'cells.' . $key));
+                $cells = $keys->map(fn($key) => data_get($row, 'cells.'.$key));
 
                 /** One off pay header is last, so we are using last header key. */
                 $cells->put($keys->count() - 1, static::seekColumnsForOnePay($cells));
@@ -416,7 +410,7 @@ class WordParser implements WordParserInterface
 
     private static function seekColumnsForOnePay(iterable $cells)
     {
-        return SupportCollection::wrap($cells)->contains(fn ($cell) => preg_match(static::REGEXP_ONE_PAY, $cell));
+        return SupportCollection::wrap($cells)->contains(fn($cell) => preg_match(static::REGEXP_ONE_PAY, $cell));
     }
 
     private function isTableInstance($element)

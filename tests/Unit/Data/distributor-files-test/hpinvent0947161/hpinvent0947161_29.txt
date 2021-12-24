@@ -1,0 +1,35 @@
+Service Agreement ID: 1086 5485            6896
+
+      Support Quotation                                                                 System Handle: ANZ-UK-02
+
+      Agreement No.                                                                     UK
+
+      Your PO Reference:                                                                HPE Reference No.: 56896735
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                                                                        Hardware Total                                                              2,780.49
+
+                                                                        Software Total                                                                 56.00
+
+                                                                        Discount Total                                                               -905.33
+
+                                                                        Contract Total                                                              1,931.16
+
+                                                                        Contract During Warranty Subtotal                                              73.00
+
+                                                                        Total During Warranty Discounts                                              -25.08
+
+                                                                        Contract During Warranty Total                                                47.92
+
+        Hardware products under warranty
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ81303R8               28.04.2018    27.04.2021      1
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 29 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

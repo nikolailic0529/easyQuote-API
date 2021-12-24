@@ -2,18 +2,12 @@
 
 namespace App\Http\Controllers\API\Discounts;
 
-use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Discount\SNDrepositoryInterface as SNDrepository;
-use App\Http\Requests\Discount\{
-    StoreSNDrequest,
-    UpdateSNDrequest
-};
-use App\Http\Resources\Discount\DiscountList;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Discount\{DeleteSpecialNegotiationDiscount, StoreSNDrequest, UpdateSNDrequest};
 use App\Http\Resources\Discount\DiscountListCollection;
-use App\Models\Quote\Discount\{
-    Discount,
-    SND
-};
+use App\Models\Quote\Discount\{SND};
+use Illuminate\Http\JsonResponse;
 
 class SNDcontroller extends Controller
 {
@@ -42,7 +36,7 @@ class SNDcontroller extends Controller
     /**
      * Store a newly created SN discount in storage.
      *
-     * @param  StoreSNDrequest  $request
+     * @param StoreSNDrequest $request
      * @return \Illuminate\Http\Response
      */
     public function store(StoreSNDrequest $request)
@@ -55,7 +49,7 @@ class SNDcontroller extends Controller
     /**
      * Display the specified SN discount.
      *
-     * @param  \App\Models\Quote\Discount\SND $snd
+     * @param \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
     public function show(SND $snd)
@@ -68,8 +62,8 @@ class SNDcontroller extends Controller
     /**
      * Update the specified SN discount in storage.
      *
-     * @param  UpdateSNDrequest  $request
-     * @param  \App\Models\Quote\Discount\SND $snd
+     * @param UpdateSNDrequest $request
+     * @param \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
     public function update(UpdateSNDrequest $request, SND $snd)
@@ -82,10 +76,12 @@ class SNDcontroller extends Controller
     /**
      * Remove the specified SN discount from storage.
      *
-     * @param  \App\Models\Quote\Discount\SND $snd
-     * @return \Illuminate\Http\Response
+     * @param DeleteSpecialNegotiationDiscount $request
+     * @param \App\Models\Quote\Discount\SND $snd
+     * @return JsonResponse
      */
-    public function destroy(SND $snd)
+    public function destroy(DeleteSpecialNegotiationDiscount $request,
+                            SND                              $snd): JsonResponse
     {
         return response()->json(
             $this->snd->delete($snd->id)
@@ -95,7 +91,7 @@ class SNDcontroller extends Controller
     /**
      * Activate the specified SN discount from storage.
      *
-     * @param  \App\Models\Quote\Discount\SND $snd
+     * @param \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
     public function activate(SND $snd)
@@ -110,7 +106,7 @@ class SNDcontroller extends Controller
     /**
      * Deactivate the specified SN discount from storage.
      *
-     * @param  \App\Models\Quote\Discount\SND $snd
+     * @param \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
     public function deactivate(SND $snd)

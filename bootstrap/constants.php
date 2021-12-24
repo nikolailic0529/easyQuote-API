@@ -57,10 +57,6 @@ define('QG_FTNF_01', 'From or To Group Description is not found.');
 define('QG_NF_01', 'The Group Description is not found.');
 define('QV_SD_01', 'You could not delete the given Version as the Quote is already submitted.');
 
-define('Q_TYPE_QUOTE', 1);
-define('Q_TYPE_CONTRACT', 2);
-define('Q_TYPE_HPE_CONTRACT', 3);
-
 define('QCE_01', 'Contract for the given Quote already exists.');
 define('QCE_UN_01', 'A contract exists for this quote, please delete the contract first to undo this quote');
 define('QCE_D_01', 'A contract exists for this quote, please delete the contract first to delete this quote');
@@ -113,6 +109,7 @@ define('QFNR_01', 'The given file isn\'t readable. Please try to re-save it.');
 define('QFNC_01', 'The given file hasn\'t required columns');
 define('QFNE_01', 'Sorry, no files found.');
 define('QFT_PL', 'Distributor Price List');
+define('QFT_WWPL', 'Worldwide Distributor Price List');
 define('QFT_PS', 'Payment Schedule');
 define('QFNF_01', 'Quote File not found.');
 define('QFNF_02', 'Unable resolve filepath for given QuoteFile instance.');
@@ -171,9 +168,9 @@ define('RSU_01', 'You could not update the system defined Role.');
 define('RSD_01', 'You could not delete the system defined Role.');
 define('R_SUPER', 'Administrator');
 define('R_RUD', 'read,update,delete');
-define('PL_R', 'read');
-define('PL_RU', 'read,update');
-define('PL_RUD', 'read,update,delete');
+define('ACL_R', 'read');
+define('ACL_RU', 'read,update');
+define('ACL_RUD', 'read,update,delete');
 
 /**
  * S4.
@@ -287,10 +284,39 @@ define('MLFQ_01', 'Malformed request.');
 define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');
 define('TABLE_COUNT_POSTFIX', '_count');
 define('ND_01', 'N/A');
+define('ND_02', 'n/a');
 define('SUN_01', 'Unable to fetch data from external service');
 // MySQL unbuffered connection used for cursors.
 define('MYSQL_UNBUFFERED', 'mysql_unbuffered');
 define('DB_TA', 5);
+
+/**
+ * Business Divisions.
+ */
+define('BD_RESCUE', '45fc3384-27c1-4a44-a111-2e52b072791e');
+define('BD_WORLDWIDE', 'f911cb0b-a1b0-4943-91e7-0a1c796984a1');
+
+/**
+ * Contract Types.
+ */
+define('CT_PACK', 'c4da2cab-7fd0-4f60-87df-2cc9ea602fee');
+define('CT_CONTRACT', 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3');
+
+/**
+ * User Teams.
+ */
+define('UT_RESCUE', '6a66a452-c177-4c2f-b1ce-c9f9bbaf4af4');
+define('UT_EPD_WW', '297a5395-a579-4190-8ffc-6856af4f5324');
+
+/**
+ * Spaces.
+ */
+define('SP_EPD', '38e1d441-e57a-466f-b60d-7f314f16adc3');
+
+/**
+ * Pipelines.
+ */
+define('PL_WWDP', 'e6a3a7bd-e9cb-4d0f-add7-b7cfc88768ac');
 
 /**
  * Elasticsearch

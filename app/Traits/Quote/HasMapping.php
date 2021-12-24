@@ -2,15 +2,13 @@
 
 namespace App\Traits\Quote;
 
-use App\Contracts\{
-    Services\QuoteState,
-    Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as Fields,
-};
+use App\Collections\MappedRows;
 use App\Models\{
     Quote\FieldColumn,
     QuoteFile\ImportableColumn,
-    QuoteTemplate\TemplateField
+    Template\TemplateField
 };
+use App\Queries\QuoteQueries;
 use Illuminate\Database\Eloquent\{
     Builder,
     Collection as EloquentCollection,
@@ -24,9 +22,9 @@ use Illuminate\Support\Collection;
  */
 trait HasMapping
 {
-    protected ?Collection $computableRows = null;
+    protected ?MappedRows $computableRows = null;
 
-    protected ?Collection $renderableRows = null;
+    protected ?MappedRows $renderableRows = null;
 
     /**
      * Template Fields which will be displayed only for S4 Service.
@@ -108,20 +106,7 @@ trait HasMapping
 
     public function getFieldColumnAttribute(): EloquentCollection
     {
-        $templateFields = app(Fields::class)->allSystem()->loadMissing(['fieldColumn' => fn ($query) => $query->where('quote_id', $this->id)->withDefault()]);
-
-        $templateFields->transform(function ($templateField) {
-            $template_field_id = $templateField->id;
-            $template_field_name = $templateField->name;
-            return compact('template_field_id', 'template_field_name') + $templateField->fieldColumn->toArray();
-        });
-
-        return $templateFields;
-    }
-
-    public function getMappedRows($criteria = [])
-    {
-        return app(QuoteState::class)->retrieveRows($this, $criteria);
+        return (new QuoteQueries)->columnsMappingQuery($this)->get();
     }
 
     public function templateFieldsToArray(...$except): array
@@ -179,11 +164,6 @@ trait HasMapping
     public function getComputableRowsCacheKeyAttribute(): string
     {
         return "quote-computable-rows:{$this->id}";
-    }
-
-    public function forgetCachedComputableRows(): void
-    {
-        cache()->forget($this->computableRowsCacheKey);
     }
 
     public function getMappingReviewCacheKeyAttribute(): string

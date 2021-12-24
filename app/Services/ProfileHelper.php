@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use App\Models\Role;
 use App\Models\User;
 use Closure;
@@ -90,25 +90,25 @@ class ProfileHelper
      * Retrieve Companies Ids from the User Profile.
      *
      * @param  User|null $user
-     * @return void
+     * @return array
      */
-    public static function profileCompaniesIds(?User $user = null)
+    public static function profileCompaniesIds(?User $user = null): array
     {
-        /** @var User */
+        /** @var User $user */
         $user ??= auth()->user();
 
-        if ($user === null) {
+        if (is_null($user)) {
             return [];
         }
 
-        return $user->companies()->toBase()->select('companies.id')->pluck('id')->toArray();
+        return $user->companies()->toBase()->select('companies.id')->pluck('id')->all();
     }
 
     public static function defaultCompanyId(?User $user = null)
     {
-        /** @var User */
+        /** @var User $user */
         $user ??= auth()->user();
 
-        return optional($user)->company_id;
+        return $user?->company_id;
     }
 }

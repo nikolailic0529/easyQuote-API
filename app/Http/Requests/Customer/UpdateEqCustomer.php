@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Customer;
 
+use App\DTO\EQCustomer\EQCustomerData;
+use App\Enum\CompanyType;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -9,21 +11,15 @@ use App\Models\InternalCompany;
 use App\Models\Vendor;
 use App\Models\Customer\Customer;
 use App\Services\EqCustomerService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateEqCustomer extends FormRequest
 {
-    protected EqCustomerService $eqCustomerService;
-
     protected ?InternalCompany $internalCompany = null;
 
     protected ?Customer $eqCustomer = null;
-
-    public function __construct(EqCustomerService $eqCustomerService)
-    {
-        $this->eqCustomerService = $eqCustomerService;
-    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -33,7 +29,7 @@ class UpdateEqCustomer extends FormRequest
     public function rules()
     {
         return [
-            'int_company_id'                    => ['required', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')],
+            'int_company_id'                    => ['required', 'uuid', Rule::exists(Company::class, 'id')->where('type', CompanyType::INTERNAL)->whereNull('deleted_at')],
 
             'customer_name'                     => 'required|string|min:2',
 
@@ -62,39 +58,57 @@ class UpdateEqCustomer extends FormRequest
 
     public function getCompany(): InternalCompany
     {
-        if (isset($this->internalCompany)) {
-            return $this->internalCompany;
-        }
-
-        return $this->internalCompany = InternalCompany::findOrFail($this->int_company_id);
+        return $this->internalCompany ??= InternalCompany::findOrFail($this->int_company_id);
     }
-    
-    public function validated()
+
+    public function getEQCustomerData(): EQCustomerData
     {
-        if ($this->int_company_id === $this->getCustomer()->int_company_id) {
-            return parent::validated();
-        }
-        
-        $company = $this->getCompany();
+        return $this->eqCustomerData ??= with(true, function () {
+            $company = $this->getCompany();
+            $customer = $this->getCustomer();
+            
+            $rfqNumber = $customer->rfq;
+            $highestNumber = $customer->sequence_number;
 
-        $rfqNumber = $this->eqCustomerService->giveNumber($company, $this->getCustomer());
-        $highestNumber = $this->eqCustomerService->getHighestNumber($this->getCustomer());
+            /** @var EqCustomerService $customerService */
+            $customerService = $this->container[EqCustomerService::class];
 
-        $attributes = [
-            'rfq_number' => $rfqNumber,
-            'source' => Customer::EQ_SOURCE,
-            'sequence_number' => ++$highestNumber
-        ];
+            if ($company->getKey() !== $customer->int_company_id) {
+                $rfqNumber = $customerService->giveNumber($company, $customer);
+                $highestNumber = $customerService->getHighestNumber($customer);
+            }
 
-        return $attributes + parent::validated();
+            return new EQCustomerData([
+                'int_company_id' => $this->input('int_company_id'),
+                'customer_name' => $this->input('customer_name'),
+
+                'rfq_number' => $rfqNumber,
+                'sequence_number' => $highestNumber,
+
+                'service_levels' => $this->input('service_levels'),
+                'quotation_valid_until' => transform($this->input('quotation_valid_until'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'support_start_date' => transform($this->input('support_start_date'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'support_end_date' => transform($this->input('support_end_date'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'invoicing_terms' => $this->input('invoicing_terms'),
+                'address_keys' => $this->input('addresses'),
+                'contact_keys' => $this->input('contacts'),
+                'vendor_keys' => $this->input('vendors') ?? [],
+                'vat' => $this->input('vat'),
+                'email' => $this->input('email')
+            ]);
+        });
     }
 
     public function getCustomer(): Customer
     {
-        if (isset($this->eqCustomer)) {
-            return $this->eqCustomer;
-        }
-
-        return $this->eqCustomer = $this->route('eq_customer');
+        return $this->eqCustomer ??= Customer::whereKey($this->route('eq_customer'))
+            ->where('source', Customer::EQ_SOURCE)
+            ->firstOrFail();
     }
 }

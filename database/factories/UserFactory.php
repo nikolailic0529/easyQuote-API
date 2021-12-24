@@ -28,7 +28,7 @@ $factory->define(User::class, function (Faker $faker) {
         'timezone_id'         => DB::table('timezones')->value('id'),
         'remember_token'      => Str::random(10),
         'password_changed_at' => now(),
-        'last_activity_at'    => now(),
+        // 'last_activity_at'    => now(),
         'ip_address'          => $this->faker->ipv4,
         'already_logged_in'   => 1,
     ];

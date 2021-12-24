@@ -105,7 +105,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | This locale will be used by the Faker PHP library when generating fake
-    | data for your database seeds. For example, this will be used to get
+    | data for your database seeders. For example, this will be used to get
     | localized telephone numbers, street address information and more.
     |
     */
@@ -174,7 +174,9 @@ return [
          */
         App\Providers\AppServiceProvider::class,
         App\Providers\HelperServiceProvider::class,
-        
+
+        App\Providers\EntityServiceProvider::class,
+
         App\Providers\AccessServiceProvider::class,
         App\Providers\ActivityServiceProvider::class,
         App\Providers\AssetServiceProvider::class,
@@ -214,6 +216,7 @@ return [
         App\Providers\UIServiceProvider::class,
         App\Providers\UserServiceProvider::class,
         App\Providers\VendorServiceProvider::class,
+        App\Providers\DocumentEngineServiceProvider::class,
 
         App\Providers\QueryBuilderServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
@@ -222,12 +225,17 @@ return [
         App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\TelescopeServiceProvider::class,
         App\Providers\CacheServiceProvider::class,
         Webpatser\Countries\CountriesServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
         Barryvdh\Snappy\ServiceProvider::class,
+        App\Providers\SnappyServiceProvider::class,
         Spatie\Geocoder\GeocoderServiceProvider::class,
+        App\Providers\AttachmentServiceProvider::class,
+        App\Providers\FormatterServiceProvider::class,
+        App\Providers\SalesOrderServiceProvider::class,
 
         LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
     ],

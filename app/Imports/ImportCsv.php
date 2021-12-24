@@ -9,7 +9,7 @@ use App\Imports\Concerns\{
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\QuoteFile;
 use League\Csv\Reader;
-use DB, Storage, Str;
+use Illuminate\Support\Str;
 use Throwable;
 
 class ImportCsv
@@ -38,7 +38,7 @@ class ImportCsv
 
         $this->headerOffset = $headerOffset;
 
-        $this->setImportableFilePath($quoteFile, $filePath);
+        $this->importableFilePath = $filePath;
 
         $this->csv = Reader::createFromPath($this->importableFilePath)
             ->setDelimiter($this->delimiter)
@@ -59,23 +59,27 @@ class ImportCsv
 
         $importedRows = collect();
 
-        DB::transaction(function () use ($rows, &$importedRows) {
-            foreach ($rows as $offset => $row) {
-                if ($offset === 0) {
-                    continue;
-                }
-
-                $row = array_combine($this->header, $row);
-
-                $importedRows->push($this->makeRow($row));
-
-                if ($importedRows->count() > 100) {
-                    ImportedRow::insert($importedRows->splice(0, 100)->toArray());
-                }
+        foreach ($rows as $offset => $row) {
+            if ($offset === 0) {
+                continue;
             }
 
-            ImportedRow::insert($importedRows->toArray());
-        });
+            $row = array_slice($row, 0, count($this->header));
+
+            while (count($row) < count($this->header)) {
+                $row[] = null;
+            }
+
+            $row = array_combine($this->header, $row);
+
+            $importedRows->push($this->makeRow($row));
+
+            if ($importedRows->count() > 100) {
+                ImportedRow::insert($importedRows->splice(0, 100)->all());
+            }
+        }
+
+        ImportedRow::insert($importedRows->all());
 
         $this->afterImport();
     }
@@ -88,11 +92,7 @@ class ImportCsv
 
     protected function afterImport(): void
     {
-        if ($this->quoteFile->rowsCount === 0) {
-            $this->quoteFile->setException(QFNRF_01, 'QFNRF_01');
-            $this->quoteFile->throwExceptionIfExists();
-            return;
-        }
+        //
     }
 
     protected function checkHeader(): void
@@ -109,25 +109,11 @@ class ImportCsv
         return $header->toArray();
     }
 
-    protected function setImportableFilePath(QuoteFile $quoteFile, $filePath): void
-    {
-        $path = isset($filePath) ? $filePath : $quoteFile->original_file_path;
-
-        if (isset($quoteFile->fullPath) && $quoteFile->fullPath) {
-            unset($quoteFile->fullPath);
-        } else {
-            $path = Storage::path($path);
-        }
-
-        $this->importableFilePath = $path;
-    }
-
     protected function makeRow(array $row): array
     {
         $importedRow = [
             'id'            => (string) Str::uuid(),
-            'quote_file_id' => $this->quoteFile->id,
-            'user_id'       => $this->quoteFile->user_id,
+            'quote_file_id' => $this->quoteFile->getKey(),
             'columns_data'  => [],
             'page'          => 1,
             'is_one_pay'    => (bool) data_get($row, '_one_pay', false),

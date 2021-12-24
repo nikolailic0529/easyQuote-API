@@ -2,17 +2,22 @@
 
 namespace App\Models;
 
-use App\Traits\{
-    Uuid,
-    BelongsToCountry,
-};
+use App\Models\Data\Country;
+use App\Traits\{Uuid,};
 use Grimzy\LaravelMysqlSpatial\Eloquent\SpatialTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property string|null $formatted_address
+ * @property string|null $searchable_address
+ * @property mixed $coordinates
+ * @property Country $country
+ */
 class Location extends Model
 {
-    use Uuid, SoftDeletes, BelongsToCountry, SpatialTrait;
+    use Uuid, SoftDeletes, SpatialTrait;
 
     protected $fillable = [
         'place_id',
@@ -36,4 +41,14 @@ class Location extends Model
     protected $spatialFields = [
         'coordinates'
     ];
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class)->withDefault();
+    }
+
+    public function getCountryCodeAttribute(): ?string
+    {
+        return $this->country->iso_3166_2;
+    }
 }

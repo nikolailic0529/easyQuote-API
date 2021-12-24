@@ -29,12 +29,7 @@ trait WithFakeQuote
 
     protected function setUpFakeQuote()
     {
-        $uses = array_flip(class_uses_recursive(static::class));
         $this->quoteRepository = app('quote.state');
-
-        if (isset($uses[WithFakeUser::class])) {
-            $this->quote = $this->firstOrCreateQuote();
-        }
     }
 
     protected function firstOrCreateQuote()

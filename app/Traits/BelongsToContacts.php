@@ -11,7 +11,7 @@ trait BelongsToContacts
 {
     public function contacts(): MorphToMany
     {
-        return $this->morphToMany(Contact::class, 'contactable');
+        return $this->morphToMany(Contact::class, 'contactable')->withPivot('is_default');
     }
 
     public function syncContacts(?array $contacts, bool $detach = true): void

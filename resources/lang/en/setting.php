@@ -17,6 +17,7 @@ return [
         'maintenance_end_time'          => 'Maintenance End Time',
         'maintenance_message'           => 'Maintenance Message',
         'google_recaptcha_enabled'      => 'Google Recaptcha Enabled',
+        'use_legacy_doc_parsing_method' => 'Legacy Document Parsing',
     ],
     'supported_file_types' => [
         'pdf' => [
@@ -31,7 +32,6 @@ return [
         'csv' => [
             'text/csv',
             'text/plain',
-            'application/vnd.ms-excel',
         ]
     ]
 ];

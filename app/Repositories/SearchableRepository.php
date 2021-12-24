@@ -3,14 +3,11 @@
 namespace App\Repositories;
 
 use App\Contracts\ActivatableInterface;
+use App\Queries\Elasticsearch\ElasticsearchQuery;
 use App\Repositories\Concerns\FiltersQuery;
-use Illuminate\Database\Eloquent\{
-    Builder,
-    Model
-};
-use Elasticsearch\Client as Elasticsearch;
-use Illuminate\Support\Str;
 use Closure;
+use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Throwable;
 
 abstract class SearchableRepository
@@ -78,36 +75,40 @@ abstract class SearchableRepository
 
         $query = $this->searchableQuery();
 
-        $table = $model->getTable();
-
         if (is_callable($scope)) {
             call_user_func($scope, $query);
         }
 
-        return $query->whereIn("{$table}.id", $ids);
+        $query->whereIn($model->getQualifiedKeyName(), $ids);
+
+        if (is_array($unions = $query->getQuery()->unions)) {
+            foreach ($unions as $union) {
+                /** @var \Illuminate\Database\Eloquent\Builder */
+                $unionQuery = $union['query'];
+
+                $unionQuery->whereIn($unionQuery->getModel()->getQualifiedKeyName(), $ids);
+
+                $query->addBinding($ids);
+            }
+        }
+
+        return $query;
     }
 
     protected function searchOnElasticsearch(Model $model, array $fields = [], string $query = '')
     {
-        $body = [
-            'query' => [
-                'query_string' => [
-                    'fields' => $fields,
-                    'query' => Str::of($query)->start('*')->finish('*')->__toString()
-                ]
-            ]
-        ];
-
+        $esQuery = ElasticsearchQuery::new()
+            ->modelIndex($model)
+            ->queryString($query)
+            ->escapeQueryString();
+        
         try {
-            $items = $this->elasticsearch()->search([
-                'index' => $model->getSearchIndex(),
-                'body' => $body
-            ]);
+            return $this->elasticsearch()->search($esQuery->toArray());
         } catch (Throwable $e) {
-            $items = [];
-        }
+            report($e);
 
-        return $items;
+            return [];
+        }
     }
 
     /**

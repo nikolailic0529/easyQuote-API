@@ -7,15 +7,15 @@ use App\Models\{
     Vendor,
     Quote\Quote,
     Quote\Margin\CountryMargin,
-    QuoteTemplate\QuoteTemplate,
+    Template\QuoteTemplate,
     Collaboration\Invitation,
     System\SystemSetting,
     Customer\Customer,
-    QuoteTemplate\ContractTemplate,
+    Template\ContractTemplate,
     System\Notification,
 };
 use App\Models\Quote\Contract;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use App\Observers\{
     VendorObserver,
     QuoteObserver,

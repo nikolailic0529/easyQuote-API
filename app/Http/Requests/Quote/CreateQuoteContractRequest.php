@@ -39,7 +39,7 @@ class CreateQuoteContractRequest extends FormRequest
                 'required',
                 'string',
                 'uuid',
-                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_CONTRACT)
+                Rule::exists('contract_templates', 'id')->whereNull('deleted_at')
             ],
             'service_agreement_id' => 'string|max:300|min:2'
         ];

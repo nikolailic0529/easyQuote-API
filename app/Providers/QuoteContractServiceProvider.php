@@ -3,13 +3,16 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Services\ContractViewService;
+use App\Contracts\Services\ContractView;
+use App\Services\ContractStateProcessor;
+use App\Contracts\Services\ContractState;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface;
-use App\Contracts\Repositories\Contract\ContractSubmittedRepositoryInterface;
 use App\Repositories\Quote\ContractDraftedRepository;
 use App\Repositories\Quote\ContractSubmittedRepository;
-use App\Contracts\Services\ContractState;
-use App\Services\ContractStateProcessor;
+use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface;
+use App\Contracts\Repositories\Contract\ContractSubmittedRepositoryInterface;
+use App\Queries\ContractQueries;
 
 class QuoteContractServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -27,6 +30,10 @@ class QuoteContractServiceProvider extends ServiceProvider implements Deferrable
         $this->app->singleton(ContractState::class, ContractStateProcessor::class);
 
         $this->app->alias(ContractState::class, 'contract.state');
+
+        $this->app->singleton(ContractView::class, ContractViewService::class);
+
+        $this->app->singleton(ContractQueries::class);
     }
 
     public function provides()
@@ -37,6 +44,9 @@ class QuoteContractServiceProvider extends ServiceProvider implements Deferrable
 
             ContractState::class,
             'contract.state',
+
+            ContractView::class,
+            ContractQueries::class,
         ];
     }
 }

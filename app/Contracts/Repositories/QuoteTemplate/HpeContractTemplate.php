@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Repositories\QuoteTemplate;
 
-use App\Models\QuoteTemplate\HpeContractTemplate as Model;
+use App\Models\Template\HpeContractTemplate as Model;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 

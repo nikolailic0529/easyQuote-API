@@ -1,0 +1,71 @@
+Service Agreement ID: 1086 5485            6896
+
+      Support Quotation                                                                 System Handle: ANZ-UK-02
+
+      Agreement No.                                                                     UK
+
+      Your PO Reference:                                                                HPE Reference No.: 56972843
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                                                                                         Hardware Subtotal                                             14.00
+
+                                                                                         Discounts                                                     -3.18
+
+                                                                                         Total                                                         10.82
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                      10.44-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                     46.98-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       2.02-
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+                                                                                         Software Subtotal                                              0.00
+
+                              HPE Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+                                                                                         Software Subtotal                                              0.00
+
+                                                                        Hardware Total                                                               261.00
+
+                                                                        Discount Total                                                                -59.44
+
+                                                                        Contract Total                                                               201.56
+
+        Hardware products under warranty
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ81303R8               28.04.2018    27.04.2021      1
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 31 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

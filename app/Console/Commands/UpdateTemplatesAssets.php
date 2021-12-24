@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\QuoteTemplate\BaseQuoteTemplate;
-use App\Models\QuoteTemplate\ContractTemplate;
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Template\BaseQuoteTemplate;
+use App\Models\Template\ContractTemplate;
+use App\Models\Template\QuoteTemplate;
 use Illuminate\Console\Command;
 use Illuminate\Support\{Arr, Str};
 use RuntimeException;
@@ -74,7 +74,7 @@ class UpdateTemplatesAssets extends Command
 
         $model->on('mysql_unbuffered')->select(['id', 'company_id', 'vendor_id', 'form_data'])
             ->cursor()
-            ->each(function (BaseQuoteTemplate $template) {
+            ->each(function ($template) {
                 $this->updateTemplateAssets($template);
 
                 $this->output->progressAdvance();
@@ -85,7 +85,7 @@ class UpdateTemplatesAssets extends Command
         $this->info("\n{$pluralizedModel} assets were updated!");
     }
 
-    protected function updateTemplateAssets(BaseQuoteTemplate $template): void
+    protected function updateTemplateAssets($template): void
     {
         $templateClassname = class_basename($template);
         $errorMessage = "{$templateClassname} {$template->name} was not updated because the data was corrupted!";

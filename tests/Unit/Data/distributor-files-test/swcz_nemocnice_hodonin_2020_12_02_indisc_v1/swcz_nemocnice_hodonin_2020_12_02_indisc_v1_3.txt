@@ -1,0 +1,25 @@
+Identifikacní císlo           smlouvy       SWCZ-NEMOC                            Identifikacní císlo smlouvy: 1086 6489 1301
+
+      Cenová nabídka                                                                    Identifikacní císlo systému CZ-SUPP-LL02
+
+      Vase objednávka c.
+
+                                                                                        Objednávka HPE c. 56959691
+
+        Produkt c.            Popis                                                 Výrobní císlo           Doba   platnosti         Mnozství         Cena/Kc
+
+                                                                                                            od:            do:
+
+        AW594A                HP P2000 G3 SAS MSA Dual Cntrl SFF          Array    2S6232D065                                             1          212,50
+
+                              Konec servisní podpory od: 31.12.2021
+
+        *** Hardware    ***
+
+        UJ559AC               HPE Storage Return to HW Supp                                                               20.01.2021              16.743,30
+
+                              There is a Return to Support fee applicable   for this contract and the amount
+
+                              is included in your first month invoice
+
+          Datum vystavení 02.12.2020                            Toto není faktura. Cástky jsou uvedeny bez DPH.                                   Strana 3/ 4

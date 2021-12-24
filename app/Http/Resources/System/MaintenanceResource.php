@@ -25,7 +25,7 @@ class MaintenanceResource extends JsonResource
             'enabled'               => Maintenance::running(),
             'start_time'            => (string) optional($this->start_time)->toISOString(),
             'end_time'              => (string) optional($this->end_time)->toISOString(),
-            'created_at'            => (string) $this->created_at->toISOString()
+            'created_at'            => (string) optional($this->created_at)->toISOString()
         ];
     }
 }

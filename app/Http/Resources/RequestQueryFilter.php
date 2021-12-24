@@ -3,25 +3,48 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Str;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 class RequestQueryFilter
 {
-    public function attach($resource, Request $request = null)
-    {
-        $request ??= request();
-        $availableIncludes = optional($resource)->availableIncludes ?? [];
+    protected Request $request;
 
-        return tap(
-            $resource,
-            fn ($resource) => $this->getRequestIncludes($request, $availableIncludes)
-                ->each(fn ($include) => $resource->load($include))
-        );
-    }
-    protected function getRequestIncludes(Request $request, array $availableIncludes = [])
+    public function __construct(Request $request)
     {
-        return collect(data_get($request->input(), 'include', []))
-            ->transform(fn ($include) => Str::camel($include))
-            ->intersect($availableIncludes);
+        $this->request = $request;
+    }
+
+    public function attach($resource)
+    {
+        $availableIncludes = (array)($resource->availableIncludes ?? []);
+        $translatedIncludes = (array)($resource->translatedIncludes ?? []);
+
+        $requestIncludes = $this->resolveRequestIncludes($availableIncludes, $translatedIncludes);
+
+        $resource->load($requestIncludes);
+
+        return $resource;
+    }
+
+    protected function resolveRequestIncludes(array $availableIncludes = [], array $translatedIncludes = []): array
+    {
+        if (empty($availableIncludes)) {
+            return [];
+        }
+
+        $requestIncludes = array_filter(Arr::wrap($this->request->input('include')), 'is_string');
+
+        $requestIncludes = array_map([Str::class, 'camel'], $requestIncludes);
+
+        $filteredIncludes = array_values(array_intersect($requestIncludes, $availableIncludes));
+
+        if (empty($translatedIncludes)) {
+            return $filteredIncludes;
+        }
+
+        return array_map(function (string $include) use ($translatedIncludes) {
+            return $translatedIncludes[$include] ?? $include;
+        }, $filteredIncludes);
     }
 }

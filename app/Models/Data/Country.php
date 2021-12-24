@@ -2,42 +2,40 @@
 
 namespace App\Models\Data;
 
-use App\Contracts\{
-    ActivatableInterface,
-    HasOrderedScope
-};
-use App\Traits\{
-    Activatable,
-    Systemable,
-    Auth\Multitenantable,
-    Search\Searchable,
-    Activity\LogsActivity,
-    Uuid
-};
-use Illuminate\Database\Eloquent\{
-    Builder,
-    Model,
-    Relations\BelongsTo,
-    SoftDeletes
-};
+use App\Contracts\{ActivatableInterface, HasOrderedScope, SearchableEntity};
+use App\Traits\{Activatable, Activity\LogsActivity, Auth\Multitenantable, Search\Searchable, Systemable, Uuid};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDeletes};
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
-class Country extends Model implements HasOrderedScope, ActivatableInterface
+/**
+ * Class Country
+ *
+ * @property string|null $user_id
+ * @property string|null $iso_3166_2
+ * @property string|null $name
+ * @property string|null $default_currency_id
+ * @property string|null $currency_code
+ * @property string|null $currency_name
+ * @property string|null $currency_symbol
+ * @property-read string|null $flag
+ *
+ */
+class Country extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {
     use Uuid, Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes, HasRelationships;
 
     const FLAGS_DIRECTORY = 'img/countries';
 
     protected $fillable = [
-        'iso_3166_2', 'name', 'default_currency_id', 'currency_code', 'currency_name', 'currency_symbol', 'user_id'
+        'iso_3166_2', 'name', 'default_currency_id', 'currency_code', 'currency_name', 'currency_symbol', 'user_id',
     ];
 
     protected $hidden = [
-        'pivot', 'iso_3166_3', 'full_name', 'country_code', 'capital', 'citizenship', 'calling_code', 'laravel_through_key', 'default_country_id'
+        'pivot', 'iso_3166_3', 'full_name', 'country_code', 'capital', 'citizenship', 'calling_code', 'laravel_through_key', 'default_country_id',
     ];
 
     protected static $logAttributes = [
-        'name', 'iso_3166_2', 'currency_code', 'currency_name', 'currency_symbol', 'defaultCurrency.code'
+        'name', 'iso_3166_2', 'currency_code', 'currency_name', 'currency_symbol', 'defaultCurrency.code',
     ];
 
     protected static $logOnlyDirty = true;
@@ -67,7 +65,7 @@ class Country extends Model implements HasOrderedScope, ActivatableInterface
     public function getFlagAttribute($flag)
     {
         return !is_null($flag)
-            ? asset(static::FLAGS_DIRECTORY . '/' . $flag)
+            ? asset(static::FLAGS_DIRECTORY.'/'.$flag)
             : null;
     }
 
@@ -76,15 +74,15 @@ class Country extends Model implements HasOrderedScope, ActivatableInterface
         return $this->name;
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return [
-            'name'              => $this->name,
-            'iso_3166_2'        => $this->iso_3166_2,
-            'currency_code'     => $this->currency_code,
-            'currency_name'     => $this->currency_name,
-            'currency_symbol'   => $this->currency_symbol,
-            'created_at'        => $this->created_at
+            'name' => $this->name,
+            'iso_3166_2' => $this->iso_3166_2,
+            'currency_code' => $this->currency_code,
+            'currency_name' => $this->currency_name,
+            'currency_symbol' => $this->currency_symbol,
+            'created_at' => $this->created_at,
         ];
     }
 }

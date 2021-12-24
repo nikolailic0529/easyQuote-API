@@ -74,16 +74,7 @@ interface QuoteSubmittedRepositoryInterface
      * @param string $rfq
      * @return \App\Models\BaseQuote
      */
-    public function findByRfq(string $rfq): BaseQuote;
-
-    /**
-     * Find Submitted Quote Data by RFQ number.
-     *
-     * @param string $rfq
-     * @param boolean $serviceCaused
-     * @return \App\Models\Quote\BaseQuote
-     */
-    public function rfq(string $rfq, bool $serviceCaused = false): BaseQuote;
+    public function findByRFQ(string $rfq): BaseQuote;
 
     /**
      * Submitted Price List by RFQ number.
@@ -100,23 +91,6 @@ interface QuoteSubmittedRepositoryInterface
      * @return mixed
      */
     public function schedule(string $rfq);
-
-    /**
-     * Submitted Generated PDF file by RFQ number.
-     *
-     * @param string $rfq
-     * @return mixed
-     */
-    public function pdf(string $rfq);
-
-    /**
-     * Export the specified Quote in PDF format with specified type (quote/contract).
-     *
-     * @param \App\Models\Quote|string $quote
-     * @param int $type
-     * @return void
-     */
-    public function exportPdf($quote, int $type = QT_TYPE_QUOTE);
 
     /**
      * Delete Submitted Quote.
@@ -151,14 +125,6 @@ interface QuoteSubmittedRepositoryInterface
     public function unSubmit(string $id): bool;
 
     /**
-     * Copy Submitted Quote with Relations
-     *
-     * @param string $id
-     * @return void
-     */
-    public function copy(string $id);
-
-    /**
      * Set the specified Contract Template for the given Quote.
      *
      * @param string $id
@@ -174,12 +140,4 @@ interface QuoteSubmittedRepositoryInterface
      * @return \App\Http\Resources\QuoteRepository\SubmittedCollection
      */
     public function toCollection($resource): SubmittedCollection;
-
-    /**
-     * Flush cached Quote PDF.
-     *
-     * @param \App\Models\Quote\Quote $quote
-     * @return void
-     */
-    public function flushQuotePdfCache(Quote $quote): void;
 }

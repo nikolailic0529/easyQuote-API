@@ -4,8 +4,8 @@ namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\{
-    Repositories\Customer\CustomerRepositoryInterface as Customers,
-    Services\QuoteState
+    Services\QuoteState,
+    Services\CustomerState,
 };
 use App\Http\Requests\Customer\CreateEqCustomer;
 use App\Models\{
@@ -15,16 +15,14 @@ use App\Models\{
 use App\Services\EqCustomerService;
 use App\Facades\CustomerFlow;
 use App\Http\Requests\Customer\UpdateEqCustomer;
+use App\Http\Resources\CustomerRepositoryResource;
+use App\Services\CustomerQueries;
 use Illuminate\Http\Response;
 
 class CustomerController extends Controller
 {
-    protected Customers $customers;
-
-    public function __construct(Customers $customers)
+    public function __construct()
     {
-        $this->customers = $customers;
-
         $this->authorizeResource(Customer::class, 'customer', [
             'except' => ['store', 'update']
         ]);
@@ -33,14 +31,13 @@ class CustomerController extends Controller
     /**
      * Display a listing of the resource.
      *
+     * @param  CustomerQueries $queries
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(CustomerQueries $queries)
     {
         return response()->json(
-            $this->customers->toCollection(
-                $this->customers->list()
-            )
+            CustomerRepositoryResource::collection($queries->listingQuery()->get())
         );
     }
 
@@ -50,30 +47,28 @@ class CustomerController extends Controller
      * @param  CreateEqCustomer  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(CreateEqCustomer $request, QuoteState $quoteState)
+    public function store(CreateEqCustomer $request, CustomerState $customerState, QuoteState $quoteState)
     {
-        $customer = tap(
-            $this->customers->create($request->validated()),
-            fn (Customer $customer) => CustomerFlow::migrateCustomer($customer)
-        );
+        $customer = tap($customerState->createFromEqData($request->getEQCustomerData()), function (Customer $customer) {
+            CustomerFlow::migrateCustomer($customer);
+        }); 
 
         $quote = $quoteState->create(EqCustomerService::retrieveQuoteAttributes($customer));
 
-        return response()->json($quote, Response::HTTP_CREATED);
+        return response()->json($quote->load('customer:id,name,rfq'), Response::HTTP_CREATED);
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  UpdateEqCustomer  $request
-     * @param  \App\Models\Customer\Customer  $customer
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateEqCustomer $request, Customer $customer)
+    public function update(UpdateEqCustomer $request, CustomerState $customerState)
     {
-        $this->authorize('update', $customer);
-        
-        $resource = tap($this->customers->update($customer, $request->validated()), function (Customer $customer) {
+        $this->authorize('update', $customer = $request->getCustomer());
+
+        $resource = tap($customerState->updateFromEqData($customer, $request->getEQCustomerData()), function (Customer $customer) {
             $customer->load('addresses', 'contacts', 'vendors');
             CustomerFlow::migrateCustomer($customer);
         });
@@ -100,11 +95,11 @@ class CustomerController extends Controller
      * @param  \App\Models\Customer\Customer $company
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Customer $customer)
+    public function destroy(Customer $customer, CustomerState $processor)
     {
-        return response()->json(
-            $this->customers->delete($customer)
-        );
+        $processor->deleteCustomer($customer);
+
+        return response()->json([true], Response::HTTP_OK);
     }
 
     /**

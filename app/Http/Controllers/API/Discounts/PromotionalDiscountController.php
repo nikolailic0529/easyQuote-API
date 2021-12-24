@@ -4,16 +4,16 @@ namespace App\Http\Controllers\API\Discounts;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface as PromotionalDiscountRepository;
-use App\Http\Requests\Discount\{
+use App\Http\Requests\Discount\{DeletePromotionalDiscount,
     StorePromotionalDiscountRequest,
-    UpdatePromotionalDiscountRequest
-};
+    UpdatePromotionalDiscountRequest};
 use App\Http\Resources\Discount\DiscountList;
 use App\Http\Resources\Discount\DiscountListCollection;
 use App\Models\Quote\Discount\{
     Discount,
     PromotionalDiscount
 };
+use Illuminate\Http\JsonResponse;
 
 class PromotionalDiscountController extends Controller
 {
@@ -82,10 +82,12 @@ class PromotionalDiscountController extends Controller
     /**
      * Remove the specified Promotional Discount from storage.
      *
-     * @param  \App\Models\Quote\Discount\PromotionalDiscount $promotion
-     * @return \Illuminate\Http\Response
+     * @param DeletePromotionalDiscount $request
+     * @param \App\Models\Quote\Discount\PromotionalDiscount $promotion
+     * @return JsonResponse
      */
-    public function destroy(PromotionalDiscount $promotion)
+    public function destroy(DeletePromotionalDiscount $request,
+                            PromotionalDiscount       $promotion): JsonResponse
     {
         return response()->json(
             $this->promotionalDiscount->delete($promotion->id)

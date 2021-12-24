@@ -2,41 +2,39 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\Services\LocationService;
-use App\Contracts\Services\Stats;
+use App\Contracts\Services\AddressGeocoder;
+use App\DTO\Stats\SummaryRequestData;
 use App\DTO\Summary;
-use App\Models\{
-    Quote\Quote,
-    Quote\QuoteTotal,
-    Data\Country,
-};
-use App\Services\StatsAggregator;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
+use App\Models\{Data\Country, Quote\Quote, Quote\WorldwideQuote};
+use App\Services\Stats\StatsAggregationService;
 use Carbon\CarbonPeriod;
+use Grimzy\LaravelMysqlSpatial\Types\Point;
+use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
-use Tests\Unit\Traits\{
-    TruncatesDatabaseTables,
-    WithFakeUser
-};
+use Tests\Unit\Traits\{WithFakeUser};
 
+/**
+ * @group build
+ */
 class StatsTest extends TestCase
 {
-    use WithFakeUser, TruncatesDatabaseTables;
+    use WithFakeUser, DatabaseTransactions;
 
-    protected array $truncatableTables = ['quote_totals'];
-
-    /**
-     * Test stats calculation.
-     *
-     * @return void
-     */
-    public function testStatsCalculation()
-    {
-        app(Stats::class)->calculateQuoteTotals();
-
-        $this->assertEquals(QuoteTotal::count(), Quote::has('customer.equipmentLocation')->count());
-    }
+//    /**
+//     * Test stats calculation.
+//     *
+//     * @return void
+//     */
+//    public function testStatsCalculation()
+//    {
+//        app(Stats::class)->denormalizeSummaryOfQuotes();
+//
+//        $this->assertDatabaseCount('quote_totals', Quote::query()->count() + WorldwideQuote::query()->count());
+//    }
 
     /**
      * Test Quotes Stats by Location.
@@ -45,10 +43,10 @@ class StatsTest extends TestCase
      */
     public function testQuotesStatsByLocation()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
-        $quotes = $aggregator->quotesByLocation($this->faker->uuid);
+        $quotes = $aggregator->getQuoteTotalLocations($this->faker->uuid);
 
         $this->assertInstanceOf(Collection::class, $quotes);
     }
@@ -60,14 +58,14 @@ class StatsTest extends TestCase
      */
     public function testQuotesOnMap()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService $aggregator */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var LocationService */
-        $locationService = app(LocationService::class);
+        /** @var AddressGeocoder $locationService */
+        $locationService = $this->app->make(AddressGeocoder::class);
 
-        $quotes = $aggregator->mapQuoteTotals(
-            $locationService->renderPoint(
+        $quotes = $aggregator->getQuoteLocations(
+            new Point(
                 $this->faker->latitude,
                 $this->faker->longitude
             ),
@@ -81,7 +79,7 @@ class StatsTest extends TestCase
 
         $this->assertInstanceOf(Collection::class, $quotes);
     }
-    
+
     /**
      * Test Assets on Map aggregate.
      *
@@ -89,14 +87,14 @@ class StatsTest extends TestCase
      */
     public function testAssetsOnMap()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
-    
-        /** @var LocationService */
-        $locationService = app(LocationService::class);
-    
-        $assets = $aggregator->mapAssetTotals(
-            $locationService->renderPoint(
+        /** @var StatsAggregationService $aggregator */
+        $aggregator = $this->app->make(StatsAggregationService::class);
+
+        /** @var AddressGeocoder $locationService */
+        $locationService = $this->app->make(AddressGeocoder::class);
+
+        $assets = $aggregator->getAssetTotalLocations(
+            new Point(
                 $this->faker->latitude,
                 $this->faker->longitude
             ),
@@ -108,11 +106,11 @@ class StatsTest extends TestCase
             ),
             null
         );
-    
+
         $this->assertInstanceOf(Collection::class, $assets);
-        
+
     }
-    
+
     /**
      * Test Customers on Map aggregate.
      *
@@ -120,13 +118,13 @@ class StatsTest extends TestCase
      */
     public function testCustomersOnMap()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
-    
-        /** @var LocationService */
-        $locationService = app(LocationService::class);
-    
-        $customers = $aggregator->mapCustomerTotals(
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
+
+        /** @var AddressGeocoder */
+        $locationService = $this->app->make(AddressGeocoder::class);
+
+        $customers = $aggregator->getCustomerTotalLocations(
             $locationService->renderPolygon(
                 $this->faker->latitude,
                 $this->faker->longitude,
@@ -135,7 +133,7 @@ class StatsTest extends TestCase
             ),
             null
         );
-    
+
         $this->assertInstanceOf(Collection::class, $customers);
     }
 
@@ -143,14 +141,26 @@ class StatsTest extends TestCase
      * Test Customers Summary aggregate.
      *
      * @return void
+     * @throws BindingResolutionException
      */
-    public function testCustomersSummary()
+    public function testAggregatesSummaryOfCustomers()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
-    
-        $customers = $aggregator->customersSummary(
-            value($this->faker->randomElement([null, fn () => Country::value('id')]))
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
+
+        $classMap = array_flip(Relation::$morphMap);
+
+        $entityTypes = [
+            $classMap[Quote::class],
+            $classMap[WorldwideQuote::class]
+        ];
+
+        $customers = $aggregator->getCustomersSummary(new SummaryRequestData([
+                'country_id' => Country::query()->value('id'),
+                'entity_types' => $entityTypes,
+                'any_owner_entities' => true,
+                'acting_user_led_teams' => []
+            ])
         );
 
         $this->assertIsObject($customers);
@@ -161,16 +171,29 @@ class StatsTest extends TestCase
      * Test Quotes Summary aggregate.
      *
      * @return void
+     * @throws BindingResolutionException
      */
-    public function testQuotesSummary()
+    public function testAggregatesSummaryOfQuotes()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
         $period = CarbonPeriod::create(Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth());
-    
+
+        $classMap = array_flip(Relation::$morphMap);
+
+        $entityTypes = [
+            $classMap[Quote::class],
+            $classMap[WorldwideQuote::class]
+        ];
+
         /** @var Summary */
-        $quotes = $aggregator->quotesSummary($period);
+        $quotes = $aggregator->getQuotesSummary(new SummaryRequestData([
+            'period' => $period,
+            'entity_types' => $entityTypes,
+            'any_owner_entities' => true,
+            'acting_user_led_teams' => []
+        ]));
 
         $this->assertInstanceOf(Summary::class, $quotes);
 
@@ -199,7 +222,7 @@ class StatsTest extends TestCase
         $this->assertIsNumeric($quotes->totals['expiring_quotes_value']);
         $this->assertIsNumeric($quotes->totals['customers_count']);
         $this->assertIsNumeric($quotes->totals['locations_total']);
-        
+
         $this->assertEquals(setting('base_currency'), $quotes->base_currency);
     }
 }

@@ -3,9 +3,7 @@
 namespace App\Console\Commands\Routine;
 
 use App\Contracts\Services\Stats;
-use App\Services\StatsAggregator;
 use Illuminate\Console\Command;
-use Throwable;
 
 class CalculateQuoteLocations extends Command
 {
@@ -14,7 +12,7 @@ class CalculateQuoteLocations extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:calculate-quote-locations {--clear-cache}';
+    protected $signature = 'eq:calculate-quote-locations';
 
     /**
      * The console command description.
@@ -36,30 +34,19 @@ class CalculateQuoteLocations extends Command
     /**
      * Execute the console command.
      *
+     * @param Stats $service
      * @return mixed
      */
-    public function handle(Stats $service, StatsAggregator $aggregator)
+    public function handle(Stats $service)
     {
-        $this->warn(QLTC_S_01);
-        customlog(['message' => QLTC_S_01]);
+        $this->output->title('Quote location totals calculation started');
 
-        try {
-            $service->calculateQuoteLocationTotals($this->output->createProgressBar());
+        $service
+            ->setOutput($this->getOutput())
+            ->denormalizeSummaryOfLocations();
 
-            if ($this->option('clear-cache')) {
-                $aggregator->flushSummaryCache();
-                $this->info("\nSummary cache has been cleared!");
-            }
-        } catch (Throwable $e) {
-            $this->error(QLTC_ERR_01);
-            customlog(['ErrorCode' => 'QLTC_ERR_01'], customlog()->formatError(QLTC_ERR_01, $e));
+        $this->output->success('Quote location totals calculation successfully finished');
 
-            return false;
-        }
-
-        $this->info("\n".QLTC_F_01);
-        customlog(['message' => QLTC_F_01]);
-
-        return true;
+        return Command::SUCCESS;
     }
 }

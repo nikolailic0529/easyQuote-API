@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Data;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\CurrencyRepositoryInterface as Currencies;
-use App\Contracts\Services\ExchangeRateServiceInterface as ExchangeRateService;
+use App\Contracts\Services\ManagesExchangeRates as ExchangeRateService;
 use App\Http\Requests\Currency\TargetExchangeRateRequest;
 
 class CurrencyController extends Controller

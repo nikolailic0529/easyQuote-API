@@ -12,6 +12,11 @@ use Illuminate\Database\Eloquent\{
 use Rennokki\QueryCache\Traits\QueryCacheable;
 use Illuminate\Support\Str;
 
+/**
+ * Class Image
+ * @property array|null $thumbnails
+ * @property string|null $original
+ */
 class Image extends Model
 {
     use Uuid, SoftDeletes, QueryCacheable;

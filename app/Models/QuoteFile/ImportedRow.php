@@ -4,30 +4,34 @@ namespace App\Models\QuoteFile;
 
 use App\Casts\SchemalessColumns;
 use App\Traits\{
-    BelongsToUser,
     BelongsToQuoteFile,
     Draftable,
     Selectable,
     Uuid
 };
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
 };
 
+/**
+ * @property Collection|null $columns_data
+ * @property bool|null $is_one_pay
+ * @property int|null $page
+ */
 class ImportedRow extends Model
 {
-    use Uuid, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
+    use Uuid, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 
     protected $fillable = [
-        'id', 'page', 'quote_file_id', 'user_id', 'columns_data', 'is_one_pay'
+        'id', 'page', 'quote_file_id','columns_data', 'is_one_pay'
     ];
 
     protected $hidden = [
         'quote_file',
         'user',
         'quote_file_id',
-        'user_id',
         'created_at',
         'updated_at',
         'drafted_at',

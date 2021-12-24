@@ -85,13 +85,17 @@ class TaskEventSubscriber
                 $taskableName
             );
 
-            notification()
+            $notification = notification()
                 ->for($user)
                 ->message($message)
                 ->subject($task->taskable)
-                ->url($taskableRoute)
-                ->priority(2)
-                ->store();
+                ->priority(2);
+
+            transform($taskableRoute, function (string $taskableRoute) use ($notification) {
+                $notification->url($taskableRoute);
+            });
+
+            $notification->store();
 
             $user->notify(new AssignedNotification($task, $taskableName, $taskableRoute));
         });
@@ -103,7 +107,7 @@ class TaskEventSubscriber
         $taskableRoute = $this->service->qualifyTaskableRoute($task);
         $taskableName = $this->service->qualifyTaskableName($task);
 
-        $syncedUsers = $task->syncedUsers;
+        $syncedUsers = $event->usersSyncResult;
 
         $attachedUsers = $this->users->findMany(Arr::get($syncedUsers, 'attached', []));
         $detachedUsers = $this->users->findMany(Arr::get($syncedUsers, 'detached', []));
@@ -119,13 +123,17 @@ class TaskEventSubscriber
                 $taskableName
             );
 
-            notification()
+            $notification = notification()
                 ->for($user)
                 ->message($message)
                 ->subject($task->taskable)
-                ->url($taskableRoute)
-                ->priority(2)
-                ->store();
+                ->priority(2);
+
+            transform($taskableRoute, function (string $taskableRoute) use ($notification) {
+                $notification->url($taskableRoute);
+            });
+
+            $notification->store();
 
             $user->notify(new AssignedNotification($task, $taskableName, $taskableRoute));
         });

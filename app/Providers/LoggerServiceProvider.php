@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use App\Contracts\Services\Logger;
+use App\Http\Middleware\HttpResponseLogger;
+use App\Log\Http\HttpLogWriter;
 use App\Services\CustomLogger;
+use Illuminate\Support\ServiceProvider;
 
 class LoggerServiceProvider extends ServiceProvider
 {
@@ -19,7 +21,26 @@ class LoggerServiceProvider extends ServiceProvider
 
         $this->app->alias(Logger::class, 'customlogger');
 
+        $this->app->bind(HttpLogWriter::class, function () {
+            return new HttpLogWriter(
+                logger: $this->app['log']->channel('http-requests'),
+                config: $this->app['config'],
+            );
+        });
+
+        $this->app->bind(HttpResponseLogger::class, function () {
+            return new HttpResponseLogger(
+                logger: $this->app['log']->channel('http-requests'),
+                config: $this->app['config'],
+            );
+        });
+
         $this->registerHelpers();
+    }
+
+    protected function registerHelpers()
+    {
+        require_once base_path('bootstrap/loghelpers.php');
     }
 
     /**
@@ -30,10 +51,5 @@ class LoggerServiceProvider extends ServiceProvider
     public function boot()
     {
         //
-    }
-
-    protected function registerHelpers()
-    {
-        require_once base_path('bootstrap/loghelpers.php');
     }
 }

@@ -2,12 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use Elasticsearch\{Client as ElasticsearchClient,
+    ClientBuilder as ElasticsearchBuilder,
+    ConnectionPool\Selectors\StickyRoundRobinSelector};
 use Illuminate\Contracts\Support\DeferrableProvider;
-use Elasticsearch\{
-    Client as ElasticsearchClient,
-    ClientBuilder as ElasticsearchBuilder
-};
+use Illuminate\Support\ServiceProvider;
 
 class ElasticsearchServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -18,9 +17,12 @@ class ElasticsearchServiceProvider extends ServiceProvider implements Deferrable
      */
     public function register()
     {
-        $this->app->singleton(ElasticsearchClient::class, fn () => ElasticsearchBuilder::create()->setHosts(
-            $this->app['config']->get('services.search.hosts')
-        )->build());
+        $this->app->singleton(ElasticsearchClient::class, function () {
+            return ElasticsearchBuilder::create()
+                ->setHosts($this->app['config']['services.elasticsearch.hosts'])
+                ->setSelector(StickyRoundRobinSelector::class)
+                ->build();
+        });
 
         $this->app->alias(ElasticsearchClient::class, 'elasticsearch.client');
     }

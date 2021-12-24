@@ -44,7 +44,7 @@ trait ManagesSchemalessAttributes
                     STR_TO_DATE(`{$column}`, '%m/%d/%Y'),
                     STR_TO_DATE(`{$column}`, '%Y.%m.%d'),
                     STR_TO_DATE(`{$column}`, '%Y/%m/%d'),
-                    STR_TO_DATE(`{$column}`, '%Y-%d-%m'),
+                    STR_TO_DATE(`{$column}`, '%Y-%m-%d'),
                     {$excelDate},
                     {$default}
                 ),

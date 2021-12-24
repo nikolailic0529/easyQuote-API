@@ -1,0 +1,85 @@
+Service Agreement ID: 1086 5485 2355
+
+      Support Quotation                                                                 System Handle: ANZ-GB05
+
+      Agreement No.                                                                     London
+
+      Your PO Reference:                                                                HPE Reference No.: 56972841
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                                                                                         Hardware Subtotal                                             22.00
+
+                                                                                         Discounts                                                     -5.01
+
+                                                                                         Total                                                         16.99
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                      13.00-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                     58.50-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       2.53-
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+                                                                                         Software Subtotal                                              0.00
+
+                              HPE Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+                                                                                         Software Subtotal                                              0.00
+
+        *** Hardware ***
+
+        UJ558AC               HPE Ind Std Svrs Return to HW Supp                                                          30.11.2020                 771.00
+
+                                                                                         Hardware Subtotal                                           771.00
+
+                                                                                         Discounts                                                   -138.78
+
+                                                                                         Total                                                       632.22
+
+        Discount Summary
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                    138.78-
+
+                                                                        Hardware Total                                                              1,096.00
+
+                                                                        Discount Total                                                               -212.81
+
+                                                                        Contract Total                                                               883.19
+
+        Hardware products under warranty
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092V               16.01.2019    15.01.2022      1
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 14 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

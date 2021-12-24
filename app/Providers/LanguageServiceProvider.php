@@ -2,10 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\LanguageRepositoryInterface;
-use App\Repositories\LanguageRepository;
+use Illuminate\Support\ServiceProvider;
 
 class LanguageServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -16,13 +14,11 @@ class LanguageServiceProvider extends ServiceProvider implements DeferrableProvi
      */
     public function register()
     {
-        $this->app->singleton(LanguageRepositoryInterface::class, LanguageRepository::class);
+        //
     }
 
     public function provides()
     {
-        return [
-            LanguageRepositoryInterface::class,
-        ];
+        return [];
     }
 }

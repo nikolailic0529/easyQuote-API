@@ -2,22 +2,28 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Models\{
-    QuoteFile\QuoteFile
-};
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Collection;
-use \File;
 use Tests\Unit\Traits\{
     WithFakeQuote,
     WithFakeQuoteFile,
     WithFakeUser
 };
+use App\Models\{
+    QuoteFile\QuoteFile
+};
+use App\Services\QuoteFileService;
+use App\Contracts\Services\ManagesDocumentProcessors;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property ManagesDocumentProcessors $parser
+ */
 abstract class ParsingTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
+    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, DatabaseTransactions;
 
     public function message(QuoteFile $quoteFile)
     {
@@ -28,22 +34,24 @@ abstract class ParsingTest extends TestCase
 
     protected function fakeQuoteFiles(string $country)
     {
+        $quote = $this->createQuote($this->user);
+
+        Storage::persistentFake();
+
         $quoteFiles = collect($this->filesList($country))->map(function ($file) use ($country) {
-            return $this->user->quoteFiles()->make([
-                'user_id' => $this->user->id,
-                'original_file_path' => $file->getRealPath(),
+            Storage::putFileAs('', $file->getRealPath(), $file->getFilename());
+
+            Storage::assertExists($file->getFilename());
+
+            return tap(new QuoteFile([
+                'user_id'              => $this->user->getKey(),
+                'original_file_path'   => $file->getFilename(),
                 'quote_file_format_id' => $this->determineFileFormat($file),
-                'file_type' => $this->filesType(),
-                'pages' => $this->parser->countPages($file->getRealPath(), false),
-                'imported_page' => $this->getMappingAttribute('page', $file->getFilename()),
-                'original_file_name' => $file->getFilename()
-            ]);
-        });
-
-        $this->quote->quoteFiles()->saveMany($quoteFiles);
-
-        $quoteFiles->each(function ($quoteFile) {
-            $this->preHandle($quoteFile);
+                'file_type'            => $this->filesType(),
+                'pages'                => $this->app[QuoteFileService::class]->countPages($file->getRealPath()),
+                'imported_page'        => $this->getMappingAttribute('page', $file->getFilename()),
+                'original_file_name'   => $file->getFilename(),
+            ]))->save();
         });
 
         return $quoteFiles;
@@ -59,7 +67,7 @@ abstract class ParsingTest extends TestCase
         $quoteFiles = $this->fakeQuoteFiles($country);
 
         $quoteFiles->each(function ($quoteFile) use ($country) {
-            $this->parser->routeParser($quoteFile);
+            $this->parser->forwardProcessor($quoteFile);
             $this->performFileAssertions($quoteFile);
         });
     }

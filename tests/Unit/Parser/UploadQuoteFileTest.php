@@ -2,17 +2,20 @@
 
 namespace Tests\Unit\Parser;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\UploadedFile;
-use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Http\Testing\File as TestingFile;
-use Setting;
+use App\Facades\Setting;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class UploadQuoteFileTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     public function testUploadQuoteFileWithInfiniteCoordinatesRange()
     {
@@ -20,7 +23,7 @@ class UploadQuoteFileTest extends TestCase
 
         $file = UploadedFile::fake()->createWithContent($filePath, File::get($filePath));
 
-        $response = $this->uploadFile($file)->assertOk();
+        $response = $this->uploadFile($file)->assertCreated();
 
         $this->assertEquals(3, $response->json('pages'));
     }
@@ -32,30 +35,19 @@ class UploadQuoteFileTest extends TestCase
      */
     public function testUploadSupportedQuoteFile(): void
     {
-        $priceLists = collect(File::allFiles('tests/Unit/Parser/data/prices'))
-            ->filter(function ($file) {
-                $extension = strtoupper($file->getExtension());
+        $file = UploadedFile::fake()->createWithContent(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf'), File::get(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf')));
 
-                return isset(array_flip(Setting::get('supported_file_types'))[$extension]);
-            });
-
-        $priceList = $priceLists->random();
-
-        $file = UploadedFile::fake()->createWithContent($priceList->getRealPath(), File::get($priceList->getRealPath()));
-
-        $response = $this->uploadFile($file);
-
-        $response->assertStatus(200);
-
-        $response->assertJsonStructure([
-            'id',
-            'file_type',
-            'pages',
-            'original_file_path',
-            'original_file_name',
-            'user_id',
-            'quote_file_format_id'
-        ]);
+        $this->uploadFile($file)
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'file_type',
+                'pages',
+                'original_file_path',
+                'original_file_name',
+                'user_id',
+                'quote_file_format_id'
+            ]);
     }
 
     public function testUploadNonSupportedQuoteFile(): void

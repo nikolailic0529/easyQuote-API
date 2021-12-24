@@ -2,16 +2,14 @@
 
 namespace Tests;
 
+use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Tests\Unit\Traits\{
-    AssertsModelAttributes,
-    TruncatesDatabaseTables,
-    WithClientCredentials,
-    WithFakeQuote,
-    WithFakeQuoteFile,
-    WithFakeUser
-};
+use Laravel\Passport\Client;
+use Laravel\Passport\ClientRepository;
+use Laravel\Passport\Passport;
+use Tests\Unit\Traits\{AssertsModelAttributes, WithClientCredentials, WithFakeQuote, WithFakeQuoteFile, WithFakeUser};
 
 abstract class TestCase extends BaseTestCase
 {
@@ -25,10 +23,6 @@ abstract class TestCase extends BaseTestCase
     protected function setUpTraits()
     {
         $uses = parent::setUpTraits();
-
-        if (isset($uses[TruncatesDatabaseTables::class])) {
-            $this->truncateDatabaseTables();
-        }
 
         if (isset($uses[WithClientCredentials::class])) {
             $this->setUpClientCredentials();
@@ -56,15 +50,46 @@ abstract class TestCase extends BaseTestCase
      * @param  Authenticatable|null $user
      * @return $this
      */
-    protected function authenticateApi(?Authenticatable $user = null)
+    protected function authenticateApi(?Authenticatable $user = null): static
     {
-        $user ??= \App\Models\User::role(R_SUPER)->first();
+        return tap($this, function () use ($user) {
+            $user ??= factory(User::class)->create();
 
-        $this->withoutMiddleware(\App\Http\Middleware\PerformUserActivity::class);
-        
-        $this->actingAs($user, 'api');
+            $this->withoutMiddleware(\App\Http\Middleware\PerformUserActivity::class);
 
-        return $this;
+            $this->actingAs($user, 'api');
+
+            return $this;
+        });
+    }
+
+    protected function authenticateAsClient(): static
+    {
+        return tap($this, function () {
+
+            /** @var ClientRepository $clientRepository */
+            $clientRepository = $this->app[ClientRepository::class];
+
+            $appName = $this->app['config']['app.name'];
+            $clientName = "$appName::test_client";
+
+            /** @var Client $client */
+
+            try {
+                $client = Passport::client()->query()->where('name', $clientName)->sole();
+            } catch (ModelNotFoundException) {
+                $client = $clientRepository->create(userId: null, name: $clientName, redirect: '');
+            }
+
+            $response = $this->postJson('oauth/token', [
+                'client_id' => $client->getKey(),
+                'client_secret' => $client->secret,
+                'grant_type' => 'client_credentials',
+                'scope' => '*'
+            ]);
+
+            $this->withHeader('Authorization', "Bearer {$response->json('access_token')}");
+        });
     }
 
     /**

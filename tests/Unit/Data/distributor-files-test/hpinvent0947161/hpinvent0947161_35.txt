@@ -1,0 +1,41 @@
+Payment            Schedule           as   of 04.12.2020
+
+      Support Account ID: ANZ-MN
+
+      Settlement Period from: From:             01.11.2020       to: 31.10.2023
+
+       System Handle                            01.11.2020       01.11.2021      01.11.2022
+
+                                                31.10.2021       31.10.2022      31.10.2023
+
+       ANZ-DE-02                                 -1,172.49
+
+       ANZ-DE-02                                  1,949.83        3,241.56         3,241.56
+
+       ANZ-FR-01                                   749.28           749.28          749.28
+
+       ANZ-GB05                                  12,339.75       14,319.00        18,694.80
+
+       ANZ-GB05                                   3,643.86        3,011.64         3,011.64
+
+       ANZ-GB05                                   5,263.68        5,263.68         5,263.68
+
+       ANZ-GB10                                   3,902.02        4,940.44         7,201.86
+
+       ANZ-GB10                                   7,191.12        7,191.12         7,191.12
+
+       ANZ-UK-02                                  7,919.01       10,491.36        10,491.36
+
+       ANZ-UK-02                                  2,418.72        2,418.72         2,418.72
+
+       ANZ-UK-02                                  6,950.40        6,950.40         6,950.40
+
+       Total for the period
+
+       United kingdom                            51,155.18       58,577.20        65,214.42
+
+        Print Date 04.12.2020                                                                                                                                                                  Page 35 / 35
+
+      The Prices shown will be invoiced yearly in advance. All amounts shown are in GBP unless otherwise                       indicated.
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. RegisteredNo: 690597

@@ -2,70 +2,75 @@
 
 namespace App\Repositories\Concerns;
 
+use App\Queries\QuoteQueries;
+use App\Models\Quote\{Quote, BaseQuote, QuoteVersion};
 use App\DTO\RowsGroup;
-use App\Models\Quote\BaseQuote;
-use Illuminate\Support\Collection;
-use App\Http\Requests\{
-    Quote\MoveGroupDescriptionRowsRequest,
-    Quote\UpdateGroupDescriptionRequest
-};
-use App\Models\Quote\Quote;
-use App\Models\Quote\QuoteVersion;
-use App\Services\Exceptions\GroupDescription;
+use App\Collections\MappedRows;
+use Illuminate\Support\{Arr, Collection, Facades\DB, Facades\Cache};
 use Illuminate\Database\Query\Builder;
-use Webpatser\Uuid\Uuid;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Arr;
+use App\Services\Exceptions\GroupDescription;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use App\Enum\Lock;
+use Throwable;
 
 trait ManagesGroupDescription
 {
     use FetchesGroupDescription;
 
+    /** @param QuoteVersion|Quote $quote */
     public function retrieveRowsGroups(BaseQuote $quote): Collection
     {
         if (!$quote instanceof QuoteVersion) {
             /** @var BaseQuote */
-            $quote = $this->findVersion($quote);
+            $quote = $quote->activeVersionOrCurrent;
         }
 
         $rows = $quote->group_description->pluck('rows_ids')->collapse();
 
-        $groupableRows = $this->retrieveRows($quote, fn (Builder $builder) =>
-        $builder
+        $groupedRows = (new QuoteQueries)
+            ->mappedOrderedRowsQuery($quote)
             ->whereIn('id', $rows)
-            ->addSelect('price', DB::raw('1 as `is_selected`')));
+            ->addSelect('price', DB::raw('1 as `is_selected`'))
+            ->get();
 
-        return static::mapGroupDescriptionWithRows($quote, $groupableRows);
+        $groupedRows = MappedRows::make($groupedRows);
+
+        return static::mapGroupDescriptionWithRows($quote, $groupedRows);
     }
 
     public function searchRows(BaseQuote $quote, string $search = '', ?string $groupId = null): Collection
     {
         if (!$quote instanceof QuoteVersion) {
             /** @var BaseQuote */
-            $quote = $this->findVersion($quote);
+            $quote = $quote->activeVersionOrCurrent;
         }
 
         $inputs = collect(static::fetchRowsSearchInput($search));
 
         $rowsIds = transform($groupId, fn () => $quote->group_description->firstWhere('id', $groupId)->rows_ids ?? []);
 
-        return $this->retrieveRows(
-            $quote,
-            fn (Builder $builder) =>
-            $builder->where(fn (Builder $query) =>
-            $query->whereRaw("columns_data->'$.*.value' like ?", ['%' . $inputs->shift() . '%'])
+        $rows = (new QuoteQueries)
+            ->mappedOrderedRowsQuery($quote)
+            ->where(fn (Builder $query) => $query->whereRaw("columns_data->'$.*.value' like ?", ['%' . $inputs->shift() . '%'])
                 ->tap(function (Builder $query) use ($inputs) {
                     $inputs->each(fn ($input) => $query->orWhereRaw("columns_data->'$.*.value' like ?", ['%' . $input . '%']));
                 })
                 ->when($rowsIds !== null, fn (Builder $query) => $query->orWhereIn('id', $rowsIds))
                 ->addSelect(DB::raw("TRUE AS `is_selected`")))
-        );
+            ->get();
+
+        return MappedRows::make($rows);
     }
 
+    /**
+     * @param string $id
+     * @param Quote|QuoteVersion $quote
+     */
     public function findGroupDescription(string $id, BaseQuote $quote): Collection
     {
-        /** @var BaseQuote */
-        $quote = $this->findVersion($quote);
+        if (!$quote instanceof QuoteVersion) {
+            $quote = $quote->activeVersionOrCurrent;
+        }
 
         /** @var RowsGroup */
         $group = $quote->group_description->firstWhere('id', $id);
@@ -81,10 +86,16 @@ trait ManagesGroupDescription
 
     public function createGroupDescription(array $attributes, Quote $quote)
     {
-        return DB::transaction(function () use ($attributes, $quote) {
-            /** @var BaseQuote */
-            $version = $this->createNewVersionIfNonCreator($quote);
+        /** @var BaseQuote */
+        $version = $this->createNewVersionIfNonCreator($quote);
 
+        $lock = Cache::lock(Lock::UPDATE_QUOTE($version->getKey()), 10);
+
+        $lock->block(30);
+
+        DB::beginTransaction();
+
+        try {
             $initialGroupDescription = $this->retrieveRowsGroups($version);
 
             $group = RowsGroup::make([
@@ -94,12 +105,9 @@ trait ManagesGroupDescription
             ]);
 
             if ($quote->wasCreatedNewVersion) {
-                /** @var \Illuminate\Support\Collection */
-                $replicatedRows = $version->getMappedRows(
-                    fn (Builder $builder) => $builder->select('id')->whereIn('replicated_row_id', $group->rows_ids)
-                );
+                $replicatedRows = (new QuoteQueries)->mappedOrderedRowsQuery($version)->whereIn('replicated_row_id', $group->rows_ids)->pluck('id');
 
-                $group->rows_ids = $replicatedRows->pluck('id')->toArray();
+                $group->rows_ids = $replicatedRows->all();
             }
 
             $version->group_description = Collection::wrap($version->group_description)->push($group)->values();
@@ -117,34 +125,60 @@ trait ManagesGroupDescription
                 )
                 ->queue('updated');
 
-            $version->forgetCachedComputableRows();
+            DB::commit();
 
             return $group;
-        });
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
     }
 
     public function selectGroupDescription(array $ids, Quote $quote): bool
     {
-        return DB::transaction(function () use ($ids, $quote) {
-            /** @var BaseQuote */
-            $quote = $this->createNewVersionIfNonCreator($quote);
+        /** @var BaseQuote */
+        $quote = $this->createNewVersionIfNonCreator($quote);
 
+        $lock = Cache::lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
+
+        $lock->block(30);
+
+        DB::beginTransaction();
+
+        try {
             $quote->group_description->each(function (RowsGroup $group) use ($ids) {
                 $group->is_selected = in_array($group->id, $ids);
             });
 
             $quote->save();
 
-            return tap($quote)->forgetCachedComputableRows()->save();
-        });
+            DB::commit();
+
+            return true;
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
     }
 
     public function updateGroupDescription(string $id, Quote $quote, array $attributes): bool
     {
-        return DB::transaction(function () use ($id, $quote, $attributes) {
-            /** @var BaseQuote */
-            $version = $this->createNewVersionIfNonCreator($quote);
+        /** @var BaseQuote */
+        $version = $this->createNewVersionIfNonCreator($quote);
 
+        $lock = Cache::lock(Lock::UPDATE_QUOTE($version->getKey()), 10);
+
+        $lock->block(30);
+
+        DB::beginTransaction();
+
+        try {
             $initialGroupDescription = $this->retrieveRowsGroups($version);
 
             /** @var RowsGroup */
@@ -160,18 +194,17 @@ trait ManagesGroupDescription
                 $updatableGroup->rows_ids = Arr::get($attributes, 'rows') ?? Arr::get($attributes, 'rows_ids') ?? [];
 
                 if ($quote->wasCreatedNewVersion) {
-                    /** @var \Illuminate\Support\Collection */
-                    $replicatedRows = $version->getMappedRows(
-                        fn (Builder $builder) => $builder->select('id')->whereIn('replicated_row_id', $updatableGroup->rows_ids)
-                    );
+                    $replicatedRows = (new QuoteQueries)->mappedOrderedRowsQuery($version)->whereIn('replicated_row_id', $updatableGroup->rows_ids)->pluck('id');
 
-                    $updatableGroup->rows_ids = $replicatedRows->pluck('id')->toArray();
+                    $updatableGroup->rows_ids = $replicatedRows->all();
                 }
             });
 
             $saved = $version->save();
 
             $newGroupDescription = $this->retrieveRowsGroups($version);
+
+            DB::commit();
 
             activity()
                 ->on($version)
@@ -182,18 +215,28 @@ trait ManagesGroupDescription
                 )
                 ->queue('updated');
 
-            $version->forgetCachedComputableRows();
-
             return $saved;
-        });
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
     }
 
     public function moveGroupDescriptionRows(Quote $quote, array $attributes): bool
     {
-        return DB::transaction(function () use ($quote, $attributes) {
-            /** @var BaseQuote */
-            $version = $this->createNewVersionIfNonCreator($quote);
+        /** @var BaseQuote */
+        $version = $this->createNewVersionIfNonCreator($quote);
 
+        $lock = Cache::lock(Lock::UPDATE_QUOTE($version->getKey()), 10);
+
+        $lock->block(30);
+
+        DB::beginTransaction();
+
+        try {
             $initialGroupDescription = $this->retrieveRowsGroups($version);
 
             /** @var RowsGroup */
@@ -209,13 +252,12 @@ trait ManagesGroupDescription
 
             if ($quote->wasCreatedNewVersion) {
                 /** @var \Illuminate\Support\Collection */
-                $replicatedRows = $version->getMappedRows(
-                    fn (Builder $builder) => $builder->select('id', 'replicated_row_id')->whereIn('replicated_row_id', array_merge($fromGroup->rows_ids, $toGroup->rows_ids, $moveRows))
-                );
+                $replicatedRows = (new QuoteQueries)->mappedOrderedRowsQuery($version)->whereIn('replicated_row_id', array_merge($fromGroup->rows_ids, $toGroup->rows_ids, $moveRows))
+                    ->get(['id', 'replicated_row_id']);
 
-                $fromGroup->rows_ids = $replicatedRows->whereIn('replicated_row_id', $fromGroup->rows_ids)->pluck('id')->toArray();
-                $toGroup->rows_ids = $replicatedRows->whereIn('replicated_row_id', $toGroup->rows_ids)->pluck('id')->toArray();
-                $moveRows = $replicatedRows->whereIn('replicated_row_id', $moveRows)->pluck('id')->toArray();
+                $fromGroup->rows_ids = $replicatedRows->whereIn('replicated_row_id', $fromGroup->rows_ids)->pluck('id')->all();
+                $toGroup->rows_ids = $replicatedRows->whereIn('replicated_row_id', $toGroup->rows_ids)->pluck('id')->all();
+                $moveRows = $replicatedRows->whereIn('replicated_row_id', $moveRows)->pluck('id')->all();
             }
 
             $fromGroup->rows_ids = Collection::wrap($fromGroup->rows_ids)->reject(fn ($id) => in_array($id, $moveRows))->values()->toArray();
@@ -230,6 +272,8 @@ trait ManagesGroupDescription
 
             $newGroupDescription = $this->retrieveRowsGroups($version);
 
+            DB::commit();
+
             activity()
                 ->on($version)
                 ->withAttribute(
@@ -239,18 +283,26 @@ trait ManagesGroupDescription
                 )
                 ->queue('updated');
 
-            $version->forgetCachedComputableRows();
-
             return true;
-        });
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
     }
 
     public function deleteGroupDescription(string $id, Quote $quote): bool
     {
-        return DB::transaction(function () use ($id, $quote) {
-            /** @var BaseQuote */
-            $quote = $this->createNewVersionIfNonCreator($quote);
+        /** @var BaseQuote */
+        $quote = $this->createNewVersionIfNonCreator($quote);
 
+        $lock = Cache::lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
+
+        $lock->block(30);
+
+        try {
             $initialGroupDescription = $this->retrieveRowsGroups($quote);
 
             $groupDescription = $quote->group_description;
@@ -265,6 +317,8 @@ trait ManagesGroupDescription
 
             $newGroupDescription = $this->retrieveRowsGroups($quote);
 
+            DB::commit();
+
             activity()
                 ->on($quote)
                 ->withAttribute(
@@ -274,23 +328,34 @@ trait ManagesGroupDescription
                 )
                 ->queue('updated');
 
-            $quote->forgetCachedComputableRows();
-
             return $saved;
-        });
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
     }
 
     protected function findGroupDescriptionKey(string $id, BaseQuote $quote)
     {
-        return tap($quote->findGroupDescriptionKey($id), fn ($key) => abort_if($key === false, 404, QG_NF_01));
+        $key = $quote->findGroupDescriptionKey($id);
+
+        if ($key === false) {
+            throw new NotFoundHttpException(QG_NF_01);
+        }
+
+        return $key;
     }
 
     protected function getGroupDescriptionRows(BaseQuote $quote, array $rowsIds)
     {
-        return $this->retrieveRows(
-            $quote,
-            fn (Builder $builder) =>
-            $builder->whereIn('id', $rowsIds)->addSelect('price')
-        );
+        $rows = (new QuoteQueries)
+            ->mappedOrderedRowsQuery($quote)
+            ->whereIn('id', $rowsIds)
+            ->addSelect('price');
+
+        return MappedRows::make($rows);
     }
 }

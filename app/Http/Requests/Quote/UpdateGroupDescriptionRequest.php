@@ -47,7 +47,7 @@ class UpdateGroupDescriptionRequest extends FormRequest
 
     public function groupDescription(): Collection
     {
-        return collect($this->route('quote')->usingVersion->group_description);
+        return collect(($this->route('quote')->activeVersion ?? $this->route('quote'))->group_description);
     }
 
     public function group()

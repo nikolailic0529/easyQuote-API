@@ -2,16 +2,19 @@
 
 namespace Tests\Unit\User;
 
-use App\Http\Middleware\PerformUserActivity;
-use Tests\TestCase;
 use App\Models\User;
+use App\Services\User\UserActivityService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\{Arr, Str};
+use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
-use Illuminate\Support\{Str, Arr};
 
+/**
+ * @group build
+ */
 class AuthTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     protected bool $dontAuthenticate = true;
 
@@ -27,15 +30,17 @@ class AuthTest extends TestCase
         $user = factory(User::class)->create();
 
         $attributes = [
-            'email'       => $user->email,
-            'local_ip'    => $user->ip_address,
-            'password'    => 'password',
+            'email' => $user->email,
+            'local_ip' => $user->ip_address,
+            'password' => 'password',
             'g_recaptcha' => Str::random(),
         ];
 
         $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
-        $response->assertOk()
+        $response
+//            ->dump()
+            ->assertOk()
             ->assertJsonStructure(['access_token', 'token_type', 'expires_at']);
     }
 
@@ -49,9 +54,9 @@ class AuthTest extends TestCase
         $user = factory(User::class)->create();
 
         $attributes = [
-            'email'       => $user->email,
-            'local_ip'    => $user->ip_address,
-            'password'    => Str::random(20),
+            'email' => $user->email,
+            'local_ip' => $user->ip_address,
+            'password' => Str::random(20),
             'g_recaptcha' => Str::random(),
         ];
 
@@ -81,12 +86,14 @@ class AuthTest extends TestCase
      */
     public function testAuthUserWithoutLocalIp()
     {
+        $this->markTestSkipped('Skipped since IP detection has been disabled');
+
         $user = factory(User::class)->create();
 
         $attributes = [
-            'email'       => $user->email,
-            'local_ip'    => $user->ip_address,
-            'password'    => 'password',
+            'email' => $user->email,
+            'local_ip' => $user->ip_address,
+            'password' => 'password',
             'g_recaptcha' => Str::random(),
         ];
 
@@ -98,34 +105,16 @@ class AuthTest extends TestCase
     }
 
     /**
-     * User Registration Test.
-     *
-     * @return void
-     */
-    public function testSignupUser()
-    {
-        $user = factory(User::class)->raw();
-
-        $attributes = array_merge($user, [
-            'local_ip'              => $user['ip_address'],
-            'password'              => 'password',
-            'password_confirmation' => 'password',
-            'g_recaptcha'           => Str::random(),
-        ]);
-
-        $this->postJson(url('/api/auth/signup'), $attributes)
-            ->assertOk()
-            ->assertJsonStructure(['access_token', 'token_type', 'expires_at']);
-    }
-
-    /**
      * Test User logout due inactivity.
      *
      * @return void
      */
     public function testLogoutDueInactivity()
     {
-        $this->user->setLastActivityAt(now()->subHour());
+        /** @var \App\Services\User\UserActivityService $activityService */
+        $activityService = $this->app[UserActivityService::class];
+
+        $activityService->updateActivityTimeOfUser($this->user, now()->subHour());
 
         $this->authenticate()->getJson(url('api/auth/user'))
             ->assertUnauthorized()
@@ -148,7 +137,7 @@ class AuthTest extends TestCase
     public function testCurrentUserRetrieving()
     {
         $this->authenticate();
-        
+
         $this->getJson(url('api/auth/user'))
             ->assertOk()
             ->assertJsonStructure([

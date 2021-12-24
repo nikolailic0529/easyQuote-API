@@ -3,6 +3,7 @@
 namespace App\Models\Customer;
 
 use App\Models\Address;
+use App\Models\Company;
 use App\Traits\{
     BelongsToAddresses,
     BelongsToContacts,
@@ -18,10 +19,7 @@ use App\Traits\{
 };
 use App\Traits\Auth\Multitenantable;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-};
+use Illuminate\Database\Eloquent\{Collection, Model, Relations\BelongsTo, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Rennokki\QueryCache\Traits\QueryCacheable;
 use Staudenmeir\EloquentHasManyDeep\{
@@ -30,6 +28,29 @@ use Staudenmeir\EloquentHasManyDeep\{
     HasRelationships,
 };
 
+/**
+ * @property string|null $company_reference_id
+ * @property string|null $user_id
+ * @property string|null $country_id
+ * @property string $name
+ * @property string $support_start
+ * @property string $support_end
+ * @property string $rfq
+ * @property string $sequence_number
+ * @property string $source
+ * @property string $valid_until
+ * @property string $payment_terms
+ * @property string $invoicing_terms
+ * @property \Illuminate\Support\Collection $service_levels
+ * @property string $vat
+ * @property string $email
+ * @property string $phone
+ * @property string $int_company_id
+ * @property string|null $migrated_at
+ *
+ * @property-read Collection<Address>|Address[] $addresses
+ * @property-read Collection<Contact>|Contact[] $contacts
+ */
 class Customer extends Model
 {
     public const S4_SOURCE = 'S4', EQ_SOURCE = 'EQ';
@@ -256,5 +277,10 @@ class Customer extends Model
             'support_end'   => $this->support_end_date,
             'support_end_date'  => transform($this->getRawOriginal('support_end'), fn ($date) => Carbon::parse($date)->toDateString()),
         ];
+    }
+
+    public function referencedCompany(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_reference_id');
     }
 }

@@ -109,7 +109,6 @@ class NotificationRepository extends SearchableRepository implements Notificatio
         $deleted = $this->userQuery($user)->delete();
 
         event(new NotificationDeletedAll($user));
-        event('eloquent.deleted_all: ' . Notification::class);
 
         return $deleted;
     }
@@ -138,9 +137,9 @@ class NotificationRepository extends SearchableRepository implements Notificatio
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByPriority::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

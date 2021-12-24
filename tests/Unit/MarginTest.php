@@ -2,19 +2,23 @@
 
 namespace Tests\Unit;
 
-use App\Models\Quote\Margin\CountryMargin;
+use App\Models\Data\Country;
+use App\Models\Vendor;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing,
-    TruncatesDatabaseTables
 };
-use Str;
+use App\Models\Quote\Margin\CountryMargin;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class MarginTest extends TestCase
 {
-    use TruncatesDatabaseTables, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected array $truncatableTables = [
         'country_margins'
@@ -80,9 +84,9 @@ class MarginTest extends TestCase
      */
     public function testMarginCreatingWithCountryNonRelatedToVendor()
     {
-        $vendor = app('vendor.repository')->random();
+        $vendor = factory(Vendor::class)->create();
 
-        $country = app('country.repository')->all()->whereNotIn('id', $vendor->countries->pluck('id'))->first();
+        $country = Country::query()->whereNotIn('id', $vendor->countries->pluck('id'))->first();
 
         $attributes = factory(CountryMargin::class)->raw(['vendor_id' => $vendor->id, 'country_id' => $country->id]);
 

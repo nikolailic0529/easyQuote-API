@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\Routine;
 
+use App\Contracts\Services\MigratesCustomerEntity;
+use App\Contracts\WithOutput;
 use App\Facades\CustomerFlow;
 use Illuminate\Console\Command;
 use Throwable;
@@ -37,22 +39,17 @@ class MigrateCustomers extends Command
      *
      * @return mixed
      */
-    public function handle()
+    public function handle(MigratesCustomerEntity $customerMigrateService)
     {
-        $this->warn(CUSMG_S_01);
-        customlog(['message' => CUSMG_S_01]);
-
-        try {
-            CustomerFlow::migrateCustomers($this->output->createProgressBar());
-        } catch (Throwable $e) {
-            $this->error(CUSMG_ERR_01);
-            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(CUSMG_ERR_01, $e));
-
-            return false;
+        if ($customerMigrateService instanceof WithOutput) {
+            $customerMigrateService->setOutput($this->getOutput());
         }
 
-        $this->info("\n".CUSMG_F_01);
-        customlog(['message' => CUSMG_F_01]);
+        $this->getOutput()->title("Migrating Customer entities into Companies...");
+
+        $customerMigrateService->migrateCustomers();
+
+        $this->getOutput()->success("Migration has been finished.");
 
         return true;
     }

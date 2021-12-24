@@ -2,12 +2,11 @@
 
 namespace App\Console\Commands\Routine\Notifications;
 
-use Illuminate\Console\Command;
-use App\Contracts\Repositories\UserRepositoryInterface as Users;
 use App\Models\User;
 use App\Notifications\PasswordExpiration as PasswordExpirationNotification;
-use Illuminate\Database\Eloquent\Builder;
 use Closure;
+use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 
 class PasswordExpiration extends Command
 {
@@ -38,15 +37,19 @@ class PasswordExpiration extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return int
      */
-    public function handle(Users $users)
+    public function handle(): int
     {
-        \DB::transaction(
-            fn () =>
-            $users->cursor(static::scope())
-                ->each(fn (User $user) => $this->serveUser($user))
-        );
+        $cursor = User::query()
+            ->where(self::scope())
+            ->lazyById();
+
+        foreach ($cursor as $user) {
+            $this->serveUser($user);
+        }
+
+        return self::SUCCESS;
     }
 
     protected function serveUser(User $user): void
@@ -70,11 +73,9 @@ class PasswordExpiration extends Command
     {
         $beforeDays = ENF_PWD_CHANGE_DAYS - setting('password_expiry_notification');
 
-        return fn (Builder $query) =>
-        $query->whereNull('password_changed_at')
+        return fn(Builder $query) => $query->whereNull('password_changed_at')
             ->orWhere(
-                fn (Builder $query) =>
-                $query->whereRaw('datediff(now(), `password_changed_at`) >= ?', [$beforeDays])
+                fn(Builder $query) => $query->whereRaw('datediff(now(), `password_changed_at`) >= ?', [$beforeDays])
                     ->whereRaw('datediff(now(), `password_changed_at`) < ?', ENF_PWD_CHANGE_DAYS)
             );
     }

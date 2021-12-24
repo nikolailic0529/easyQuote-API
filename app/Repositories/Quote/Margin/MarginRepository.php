@@ -103,12 +103,12 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByCountry::class,
             \App\Http\Query\OrderByVendor::class,
             \App\Http\Query\Margin\OrderByQuoteType::class,
-            \App\Http\Query\Margin\OrderByValue::class
+            \App\Http\Query\Margin\OrderByValue::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

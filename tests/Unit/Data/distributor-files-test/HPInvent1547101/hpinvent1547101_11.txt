@@ -1,0 +1,87 @@
+Support Schedule
+
+                                                                                      Service Agreement ID: 1086 6360          0856
+
+              Support Quotation                                                       System Handle: SPWBOU-FR04
+
+              Agreement No.                                                           France
+
+              Your PO Reference:                                                      HPE Reference No.: 56943483
+
+              Equipment Address:                                                      Software Update Address:
+
+              Bouygues Telecom                                                        Bouygues Telecom
+
+              1 Rue Jean Pierre Timbaud                                               1 Rue Jean Pierre Timbaud
+
+              F-78180 MONTIGNY                                                        F-78180 MONTIGNY
+
+              Hardware Contact:                                                       Software Contact:
+
+              Chris Cann                                                              Chris Cann
+
+              Tel: 0800 072 0950                                                      Tel: 0800 072 0950
+
+              Fax:                                                                    Fax:
+
+              ENThe quoted prices are valid to: 20.06.2021
+
+              Coverage from: 21.06.2021 to: 31.12.2022
+
+              mer Care Reception on: 0845 161 0050
+
+       Product No.           Description                                         Serial No.              Coverage Period            Qty         Price/GBP
+
+                                                                                                         from:         to:
+
+       H7J32AC               HPE Foundation Care NBD SVC
+
+       *** Hardware ***
+
+                             HPE Hardware Maintenance Onsite Support
+
+                                      Hardware Problem Diagnosis
+
+                                      Onsite Support
+
+                                      Parts and Material provided
+
+                                      Next Cov Day Onsite Response
+
+                                      Std Office Hrs Std Office Days
+
+                                                                                       Hardware Subtotal                                           0.00
+
+                             HPE Collaborative Remote Support
+
+                                      Basic Software Phone Support
+
+                                      Collaborative Call Managemnt
+
+                                      24 Hours, Day 1-7 Phone Supp
+
+                                      Standard Response Time
+
+                                                                                       Hardware Subtotal                                           0.00
+
+       *** Software ***
+
+                             HPE Software Technical Unlimited Support
+
+                                      SW Technical Support
+
+                                      SW Electronic Support
+
+                                      24 Hrs Std Office Days
+
+                                      Standard Response
+
+       P9U41A                VMw vCenter Server Std for vSph 3yr SW             UA9AAEGHA6Y3             08.05.2022                   1           48.79
+
+       P9U41A                VMw vCenter Server Std for vSph 3yr SW             C6JYAEGHA6AJ             08.05.2022                   1           48.79
+
+      Single Payment for Duration.
+
+          Printed on: 24.11.2020                              Please Note: Thisisnotan invoice, charges shown are exclusive of VAT              Page: 11 / 15
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

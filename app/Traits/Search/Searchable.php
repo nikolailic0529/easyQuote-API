@@ -10,7 +10,7 @@ trait Searchable
 
     public static function bootSearchable()
     {
-        if (!app()->runningUnitTests() && config('services.search.enabled')) {
+        if (!app()->runningUnitTests() && config('services.elasticsearch.enabled')) {
             static::observe(SearchObserver::class);
         }
     }
@@ -39,12 +39,12 @@ trait Searchable
         return $this->reindexEnabled === false;
     }
 
-    public function getSearchIndex()
+    public function getSearchIndex(): string
     {
         return $this->getTable();
     }
 
-    public function getSearchType()
+    public function getSearchType(): string
     {
         if (property_exists($this, 'useSearchType')) {
             return $this->useSearchType;
@@ -53,7 +53,7 @@ trait Searchable
         return $this->getTable();
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return $this->toArray();
     }

@@ -2,12 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\System\ClientCredentialsInterface;
 use App\Contracts\Services\AuthServiceInterface;
-use App\Repositories\System\ClientCredentialsRepository;
+use App\Services\Auth\AuthenticatedCase;
 use App\Services\Auth\AuthService;
+use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\ClientRepository;
 
 class AuthenticationServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -19,24 +18,21 @@ class AuthenticationServiceProvider extends ServiceProvider implements Deferrabl
      */
     public function register()
     {
-        $this->app->singleton(ClientCredentialsInterface::class, ClientCredentialsRepository::class);
-
         $this->app->singleton(AuthServiceInterface::class, AuthService::class);
 
         $this->app->alias(AuthServiceInterface::class, 'auth.service');
 
         $this->app->alias(ClientRepository::class, 'passport.client.repository');
 
-        $this->app->alias(ClientCredentialsInterface::class, 'client.repository');
+        $this->app->alias(AuthenticatedCase::class, 'auth.case');
     }
 
-    public function provides()
+    public function provides(): array
     {
         return [
             AuthServiceInterface::class,
             'auth.service',
-            ClientCredentialsInterface::class,
-            'client.repository',
+            'auth.case',
             'passport.client.repository',
         ];
     }

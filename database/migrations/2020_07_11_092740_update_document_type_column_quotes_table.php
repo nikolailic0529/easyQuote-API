@@ -15,7 +15,7 @@ class UpdateDocumentTypeColumnQuotesTable extends Migration
      */
     public function up()
     {
-        DB::update("UPDATE `quotes` SET `document_type` = CASE WHEN `document_type` = 'c' THEN ? ELSE ? END", [Q_TYPE_CONTRACT, Q_TYPE_QUOTE]);
+        DB::update("UPDATE `quotes` SET `document_type` = CASE WHEN `document_type` = 'c' THEN ? ELSE ? END", [2, 1]);
 
         DB::statement("ALTER TABLE `quotes` CHANGE COLUMN `document_type` `document_type` TINYINT(1) NOT NULL COMMENT 'Determines whether it quote / contract / hpe-contract'");
 

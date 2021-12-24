@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -31,7 +31,7 @@ class HpeContractTemplatePolicy
      * Determine whether the user can view the contract template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\HpeContractTemplate  $hpeContractTemplate
+     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
      * @return mixed
      */
     public function view(User $user, HpeContractTemplate $hpeContractTemplate)
@@ -66,7 +66,7 @@ class HpeContractTemplatePolicy
      * Determine whether the user can update the contract template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\HpeContractTemplate  $hpeContractTemplate
+     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
      * @return mixed
      */
     public function update(User $user, HpeContractTemplate $hpeContractTemplate)
@@ -91,7 +91,7 @@ class HpeContractTemplatePolicy
      * Determine whether the user can delete the contract template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\HpeContractTemplate  $hpeContractTemplate
+     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
      * @return mixed
      */
     public function delete(User $user, HpeContractTemplate $hpeContractTemplate)
@@ -116,7 +116,7 @@ class HpeContractTemplatePolicy
      * Determine whether the user can make copy of the template.
      *
      * @param \App\Models\User $user
-     * @param \App\Models\QuoteTemplate\HpeContractTemplate $hpeContractTemplate
+     * @param \App\Models\Template\HpeContractTemplate $hpeContractTemplate
      * @return mixed
      */
     public function copy(User $user, HpeContractTemplate $hpeContractTemplate)

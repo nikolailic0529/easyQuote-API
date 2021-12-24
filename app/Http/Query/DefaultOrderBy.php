@@ -1,4 +1,6 @@
-<?php namespace App\Http\Query;
+<?php
+
+namespace App\Http\Query;
 
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
@@ -7,23 +9,31 @@ class DefaultOrderBy
 {
     protected string $column;
 
-    public function __construct(string $column = 'created_at')
+    protected string $ignoreColumn;
+
+    public function __construct(string $column = 'created_at', string $ignoreColumn = 'is_active')
     {
         $this->column = $column;
+        $this->ignoreColumn = $ignoreColumn;
     }
 
-    public function handle($request, Closure $next)
+    /**
+     * Handle the builder instance.
+     *
+     * @param Builder $builder
+     * @param Closure $next
+     * @return Builder
+     */
+    public function handle(Builder $builder, Closure $next)
     {
-        $builder = $next($request);
+        $orders = array_filter($builder->getQuery()->orders ?? [], function (array $order) {
+            return !isset($order['column']) || $order['column'] !== $this->ignoreColumn;
+        });
 
-        $orders = $builder instanceof Builder
-            ? $builder->getQuery()->orders
-            : $builder->orders;
-
-        if (filled($orders)) {
-            return $builder;
+        if (empty($orders)) {
+            $builder->orderBy($this->column, 'desc');
         }
 
-        return $builder->orderBy($this->column, 'desc');
+        return $next($builder);
     }
 }

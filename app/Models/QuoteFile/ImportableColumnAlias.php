@@ -8,11 +8,14 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property string|null $alias
+ */
 class ImportableColumnAlias extends Model
 {
     use Uuid, BelongsToImportableColumn;
 
     public $timestamps = false;
 
-    protected $fillable = ['alias'];
+    protected $guarded = [];
 }

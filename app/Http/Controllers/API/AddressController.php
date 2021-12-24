@@ -3,59 +3,63 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\AddressRepositoryInterface as AddressRepository;
+use App\Http\Requests\Address\{StoreAddressRequest, UpdateAddressRequest};
 use App\Models\Address;
-use App\Http\Requests\Address\{
-    StoreAddressRequest,
-    UpdateAddressRequest
-};
+use App\Queries\AddressQueries;
+use App\Services\Address\AddressEntityService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class AddressController extends Controller
 {
-    protected $address;
-
-    public function __construct(AddressRepository $address)
+    public function __construct()
     {
-        $this->address = $address;
         $this->authorizeResource(Address::class, 'address');
     }
 
     /**
      * Display a listing of the address.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param AddressQueries $queries
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request, AddressQueries $queries): JsonResponse
     {
         return response()->json(
-            request()->filled('search')
-                ? $this->address->search(request('search'))
-                : $this->address->all()
+            $queries->listOfAddressesQuery($request)->apiPaginate(),
         );
     }
 
     /**
      * Store a newly created address in storage.
      *
-     * @param  \App\Http\Requests\Address\StoreAddressRequest $request
-     * @return \Illuminate\Http\Response
+     * @param StoreAddressRequest $request
+     * @param AddressEntityService $entityService
+     * @return JsonResponse
      */
-    public function store(StoreAddressRequest $request)
+    public function store(StoreAddressRequest  $request,
+                          AddressEntityService $entityService): JsonResponse
     {
-        $resource = $this->address->create($request);
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->createAddress($request->getCreateAddressData())
+            ->loadMissing('country');
 
         return response()->json(
-            $resource->loadMissing('country')
+            $resource
         );
     }
 
     /**
      * Display the specified address.
      *
-     * @param  \App\Models\Address  $address
-     * @return \Illuminate\Http\Response
+     * @param Address $address
+     * @return JsonResponse
      */
-    public function show(Address $address)
+    public function show(Address $address): JsonResponse
     {
         return response()->json(
             $address->loadMissing('country')
@@ -65,59 +69,85 @@ class AddressController extends Controller
     /**
      * Update the specified address in storage.
      *
-     * @param  \App\Http\Requests\Address\UpdateAddressRequest  $request
-     * @param  \App\Models\Address  $address
-     * @return \Illuminate\Http\Response
+     * @param UpdateAddressRequest $request
+     * @param AddressEntityService $entityService
+     * @param Address $address
+     * @return JsonResponse
      */
-    public function update(UpdateAddressRequest $request, Address $address)
+    public function update(UpdateAddressRequest $request,
+                           AddressEntityService $entityService,
+                           Address              $address): JsonResponse
     {
-        $resource = $this->address->update($request, $address->id);
-        
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->updateAddress($address, $request->getUpdateAddressData())
+            ->loadMissing('country');
+
         return response()->json(
-            $resource->loadMissing('country')
+            $resource
         );
     }
 
     /**
      * Remove the specified address from storage.
      *
-     * @param  \App\Models\Address  $address
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param AddressEntityService $entityService
+     * @param Address $address
+     * @return JsonResponse
      */
-    public function destroy(Address $address)
+    public function destroy(Request              $request,
+                            AddressEntityService $entityService,
+                            Address              $address): JsonResponse
     {
-        return response()->json(
-            $this->address->delete($address->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->deleteAddress($address);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 
     /**
      * Activate the specified address.
      *
+     * @param Request $request
+     * @param AddressEntityService $entityService
      * @param Address $address
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function activate(Address $address)
+    public function activate(Request              $request,
+                             AddressEntityService $entityService,
+                             Address              $address): JsonResponse
     {
         $this->authorize('update', $address);
 
-        return response()->json(
-            $this->address->activate($address->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->markAddressAsActive($address);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 
     /**
      * Deactivate the specified address.
      *
+     * @param Request $request
+     * @param AddressEntityService $entityService
      * @param Address $address
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function deactivate(Address $address)
+    public function deactivate(Request              $request,
+                               AddressEntityService $entityService,
+                               Address              $address): JsonResponse
     {
         $this->authorize('update', $address);
 
-        return response()->json(
-            $this->address->deactivate($address->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->markAddressAsInactive($address);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 }

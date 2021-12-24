@@ -2,49 +2,58 @@
 
 namespace App\Http\Middleware;
 
-use App\Repositories\UserRepository;
+use App\Models\User;
+use App\Services\Auth\AuthService;
+use App\Services\User\UserActivityService;
 use Closure;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class PerformUserActivity
 {
+    public function __construct(protected UserActivityService $activityService,
+                                protected AuthService         $authService)
+    {
+    }
+
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
+     * @param \Illuminate\Http\Request $request
+     * @param \Closure $next
      * @return mixed
      */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
-        if (!auth()->check()) {
+        $user = $request->user();
+
+        if (false === $user instanceof User) {
             return $next($request);
         }
-
-        /** @var \App\Models\User */
-        $user = auth()->user();
 
         /**
          * If the User hasn't recent activity his token will be revoked and User will be logged out.
          */
-        if ($user->doesntHaveRecentActivity()) {
-            error_abort(LO_00, 'LO_00',  401);
+        if (false === $this->activityService->userHasRecentActivity($user)) {
+            error_abort(LO_00, 'LO_00', 401);
         }
 
         return $next($request);
     }
 
-    public function terminate($request, $response)
+    public function terminate(Request $request, Response $response)
     {
-        /** @var \App\Models\User|null */
-        if (is_null($user = $request->user())) {
+        $user = $request->user();
+
+        if (false === $user instanceof User) {
             return;
         }
 
-        if ($user->doesntHaveRecentActivity()) {
-            app('auth.service')->logout($user);
+        if (false === $this->activityService->userHasRecentActivity($user)) {
+            $this->authService->logout($user);
             return;
         }
 
-        UserRepository::lock($user->getKey(), 2)->get(fn () => $user->freshActivity());
+        $this->activityService->updateActivityTimeOfUser($user);
     }
 }

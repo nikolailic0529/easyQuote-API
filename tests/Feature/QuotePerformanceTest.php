@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\EnforceChangePassword;
-use App\Http\Middleware\PerformUserActivity;
-use App\Models\User;
+use App\Models\Quote\Quote;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
-use DB;
+use Tests\Unit\Traits\WithFakeUser;
 
 class QuotePerformanceTest extends TestCase
 {
+    use WithFakeUser, DatabaseTransactions;
+
     /**
      * Test Submitted Quotes Querying Performance.
      *
@@ -17,22 +20,25 @@ class QuotePerformanceTest extends TestCase
      */
     public function testSubmittedQuotesListingPerformance()
     {
-        $this->be(User::first(), 'api');
+        $this->markTestSkipped();
 
-        $this->withoutMiddleware([PerformUserActivity::class, EnforceChangePassword::class]);
+        factory(Quote::class, 100)->create();
+
+        $this->authenticate();
+
+        $this->withoutMiddleware([EnforceChangePassword::class]);
 
         DB::enableQueryLog();
 
-        $this->get('/api/quotes/submitted')->assertOk();
         $this->get('/api/quotes/submitted')->assertOk();
 
         $queries = DB::getQueryLog();
 
         $time = collect($queries)->sum('time');
 
-        $this->assertLessThanOrEqual(16, count($queries));
+        $this->assertLessThanOrEqual(6, count($queries));
 
-        $this->assertLessThan(23, $time);
+        $this->assertLessThan(15, $time);
     }
 
     /**
@@ -42,21 +48,24 @@ class QuotePerformanceTest extends TestCase
      */
     public function testDraftedQuotesListingPerformance()
     {
-        $this->be(User::first(), 'api');
+        $this->markTestSkipped();
 
-        $this->withoutMiddleware([PerformUserActivity::class, EnforceChangePassword::class]);
+        factory(Quote::class, 100)->create();
+
+        $this->authenticate();
+
+        $this->withoutMiddleware([EnforceChangePassword::class]);
 
         DB::enableQueryLog();
 
-        $this->get('/api/quotes/drafted')->assertOk();
         $this->get('/api/quotes/drafted')->assertOk();
 
         $queries = DB::getQueryLog();
 
         $time = collect($queries)->sum('time');
 
-        $this->assertLessThanOrEqual(18, count($queries));
+        $this->assertLessThanOrEqual(6, count($queries));
 
-        $this->assertLessThan(23, $time);
+        $this->assertLessThan(15, $time);
     }
 }

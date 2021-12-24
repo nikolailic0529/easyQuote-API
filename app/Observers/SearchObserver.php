@@ -2,7 +2,7 @@
 
 namespace App\Observers;
 
-use App\Jobs\IndexModel;
+use App\Jobs\IndexSearchableEntity;
 use Elasticsearch\Client;
 use Illuminate\Database\Eloquent\Model;
 
@@ -21,7 +21,7 @@ class SearchObserver
             return;
         }
 
-        dispatch(new IndexModel($model));
+        dispatch(new IndexSearchableEntity($model));
     }
 
     public function deleted(Model $model)
@@ -30,7 +30,6 @@ class SearchObserver
             $this->elasticsearch->delete([
                 'index' => $model->getSearchIndex(),
                 'id'    => $model->getKey(),
-                'type'  => $model->getSearchType(),
             ]);
         });
     }

@@ -34,9 +34,9 @@ return [
         'secret' => env('SPARKPOST_SECRET'),
     ],
 
-    'search' => [
-        'enabled' => env('ELASTICSEARCH_ENABLED', false),
-        'hosts' => explode(',', env('ELASTICSEARCH_HOSTS')),
+    'elasticsearch' => [
+        'enabled' => env('ELASTICSEARCH_ENABLED', true),
+        'hosts' => explode(',', env('ELASTICSEARCH_HOSTS', 'localhost:9200')),
     ],
 
     'slack' => [
@@ -63,18 +63,38 @@ return [
 
     'vs' => [
         'url' => env('VS_API_URL'),
-        
+
         'token_route' => 'api/oauth/token',
+        'submit_sales_order_route' => 'nav-data',
+        'check_sales_order_route' => 'bc-data/{id}',
+        'cancel_sales_order_route' => 'bc-data/{id}/cancel',
 
         'service_routes' => [
             'DEL' => 'dell-data/{serial}',
-            'HPE' => 'hpe-data/{serial}',
+            'HPE' => 'hpe-data/serial/{serial}/sku/{sku}/country/{country}',
             'LEN' => 'lenovo-data/serial/{serial}/type/{sku}',
             'IBM' => 'ibm-data/serial/{serial}/type/{sku}',
         ],
 
+        'support_lookup_routes' => [
+            'HPE' => 'hpe-data/sku/{sku}/country/{country}',
+            'LEN' => 'lenovo-data/sku/{sku}/country/{country}/currency/{currency}'
+        ],
+
         'client_id' => env('VS_API_CLIENT_ID'),
         'client_secret' => env('VS_API_CLIENT_SECRET'),
-    ]
+    ],
+
+    'document_api' => [
+        'url' => env('DOCUMENT_API_URL'),
+
+        // Basic auth credentials
+        'client_username' => env('DOCUMENT_API_CLIENT_USERNAME'),
+        'client_password' => env('DOCUMENT_API_CLIENT_PASSWORD'),
+
+        // Client credentials
+        'client_id' => env('DOCUMENT_API_CLIENT_ID'),
+        'client_secret' => env('DOCUMENT_API_CLIENT_SECRET'),
+    ],
 
 ];

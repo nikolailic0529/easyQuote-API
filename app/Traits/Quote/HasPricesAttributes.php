@@ -2,8 +2,8 @@
 
 namespace App\Traits\Quote;
 
-use App\Contracts\Services\QuoteState;
-use Str;
+use App\Queries\QuoteQueries;
+use Illuminate\Support\Str;
 
 trait HasPricesAttributes
 {
@@ -15,7 +15,7 @@ trait HasPricesAttributes
 
     public function initializeHasPricesAttributes()
     {
-        $this->fillable = array_merge($this->fillable, ['calculate_list_price', 'buy_price']);
+        $this->mergeFillable(['calculate_list_price', 'buy_price']);
     }
 
     public function getBuyPriceAttribute($value): float
@@ -29,10 +29,9 @@ trait HasPricesAttributes
             return $this->totalPrice;
         }
 
-        /** @var QuoteState */
-        $stateProcessor = app(QuoteState::class);
-
-        return $this->totalPrice = $stateProcessor->calculateTotalPrice($this);
+        return $this->totalPrice = (new QuoteQueries)
+            ->mappedSelectedRowsQuery($this)
+            ->sum('price');
     }
 
     public function setTotalPriceAttribute(float $value): void

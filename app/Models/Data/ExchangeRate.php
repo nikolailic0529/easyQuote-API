@@ -3,11 +3,16 @@
 namespace App\Models\Data;
 
 use App\Traits\Uuid;
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-};
+use Illuminate\Database\Eloquent\{Model, SoftDeletes,};
 
+/**
+ * @property string|null $currency_id
+ * @property string|null $country_id
+ * @property string|null $currency_code
+ * @property string|null $date
+ * @property string|null $base_currency
+ * @property float|null $exchange_rate
+ */
 class ExchangeRate extends Model
 {
     use Uuid, SoftDeletes;

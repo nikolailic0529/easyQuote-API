@@ -1,0 +1,99 @@
+Produkteliste
+
+               Kundendienstvereinbarung                                                        Service Agreement ID 108663999700
+
+               Vertragsgruppe: 71-C896312                                                      System Referenz LOGIC-DEUTSCHLAND-01
+
+                                                                                               LOGICDATA GmbH
+
+                                                                                               HPE Referenz Nr.: 0056948336
+
+               Hardware Adresse:                                                               Software Adresse:
+
+               LOGICDATA GmbH                                                                  LOGICDATA GmbH
+
+               Wirtschaftspark 18                                                              Wirtschaftspark 18
+
+               8530 Deutschlandsberg                                                           8530 Deutschlandsberg
+
+               Hardware Kontakt:                                                               Software Kontakt:
+
+               Herr Walter Weinberger                                                          Herr Walter Weinberger
+
+               Tel: +43 3462 5198 1010                                                         Tel: +43 3462 5198 1010
+
+               Fax:                                                                            Fax:
+
+               E-Mail: walter.weinberger@logicdata.net                                         E-Mail: walter.weinberger@logicdata.net
+
+               Die angebotenen Preise sind gültig bis zum 30.11.2020.
+
+               Vertragsperiode: 01.12.2020 - 30.11.2021
+
+               Ihre Möglichkeiten Support anzufordern:
+
+               - Besuchen Sie die Website: www.hpe.com/support/hpesc
+
+               - Telefonische Supportanfragen: Tel: +43 810 00 2000
+
+          Produkt Nr.       Beschreibung                                   Serien Nr.                         Berechnung                     Menge       Monatspreis
+
+                                                                                                              von:           bis:                       (Netto) EUR
+
+          H7J32AC           HPE Foundation Care NBD Service
+
+                            Hardware Support, Vor Ort
+
+                                HW Problem Diagnose
+
+                                Vor Ort Unterstützung
+
+                                Ersatzteile
+
+                                Reaktionsz: Nächster Arbeitst.
+
+                                Servicezeit: Mo-Fr, 8-17 Uhr
+
+                                NextAvail TechResource Onsite
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172801BN                                                             1            10.89
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172801BR                                                             1            10.89
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172801BM                                                             1            10.89
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172800WC                                                             1            10.89
+
+                            HPE Collaborative Remote Support
+
+                                Basic Software Phone Support
+
+                                Collaborative Call Managemnt
+
+                                24 Hours, Day 1-7 Phone Supp
+
+                                Standard Response Time
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172801BN                                                             1             1.98
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172801BR                                                             1             1.98
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172801BM                                                             1             1.98
+
+          830701-425        HPE DL20 Gen9 E3-1220v5 NHP EU Svr/TV          CZ172800WC                                                             1             1.98
+
+          Gesamtpreis pro Gruppe                                                                                                                               51.48
+
+          Übersicht Rabatte (Alle Rabatte sind bereits in den Angebotspreisen berücksichtigt)
+
+          Vorauszahlungsrabatt -1.0 %                                                                                                                           0.52-
+
+          UJ558AC           HPE Ind Std Svrs Return to HW Supp
+
+                            HPE Ind Std Svrs Return to HW Supp                                                               31.12.2020           1           183.00
+
+          Gesamtpreis pro Gruppe                                                                                                                              183.00
+
+          Die aufgeführten Preise werden für die gesamte Laufzeit fakturiert.
+
+          Gedruckt am: 27.11.2020                                              Preise pro Monat ohne USt.                                                    Seite 2 / 2

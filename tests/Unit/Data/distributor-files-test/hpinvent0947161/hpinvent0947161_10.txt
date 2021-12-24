@@ -1,0 +1,105 @@
+Service Agreement ID: 1086 5485 2355
+
+      Support Quotation                                                                 System Handle: ANZ-GB05
+
+      Agreement No.                                                                     London
+
+      Your PO Reference:                                                                HPE Reference No.: 56896733
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        719061-B21            HP DL380 Gen9 12LFF CTO Server                       CZJ6370JT8                                             1             7.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ8380384                                             1             5.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ8380385                                             1             5.00
+
+        603251R-B21           HP BL460c G7 X5670 12G 1P Reman Svr                  CZ3226MSYH                                             1             4.00
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ43504CC                                             1             5.00
+
+        727021-B21            HP BL460c Gen9 10Gb/20Gb FLB CTO Blade               CZ3548NYNM               27.12.2020                    1             4.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ54808G9               27.12.2020                    1             5.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ54808GB               27.12.2020                    1             5.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N3               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N1               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N4               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N5               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N0               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MZ               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MY               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MX               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MW               09.06.2023                    1             4.00
+
+                                                                                         Hardware Subtotal                                           108.00
+
+                                                                                         Discounts                                                    -37.19
+
+                                                                                         Total                                                         70.81
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                     122.28-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                    550.26-
+
+        Special Neg HdrDisc% -15%                                                                                                                    357.75-
+
+        Pre Payment HdrDisc% -1%                                                                                                                      20.25-
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+                                       Access to Adv Tech Specialists
+
+        651910-B21            HP ZMOD IC Environment CTO Nm BL 16 Lic              CZ3336MSWY                             30.04.2021      1            58.00
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+        651910-B21            HP ZMOD IC Environment CTO Nm BL 16 Lic              CZ3335M7DR                             30.04.2021      1            58.00
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+        437787-B23            HP ZMOD HP IC Environment BL 8 LIC                   CZ220708DH                             30.04.2021      1            30.00
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+                                                                                         Software Subtotal                                           146.00
+
+                                                                                         Discounts                                                    -50.17
+
+                                                                                         Total                                                         95.83
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 10 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

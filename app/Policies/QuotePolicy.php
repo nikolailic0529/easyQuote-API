@@ -2,33 +2,39 @@
 
 namespace App\Policies;
 
-use App\Models\{
-    User,
-    Quote\Quote,
-    Quote\QuoteVersion
-};
+use App\Models\{Quote\Quote, Quote\QuoteVersion, User};
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class QuotePolicy
 {
     use HandlesAuthorization;
 
+    protected UserTeamGate $userTeamGate;
+
+    public function __construct(UserTeamGate $userTeamGate)
+    {
+        $this->userTeamGate = $userTeamGate;
+    }
+
     /**
      * Determine whether the user can view any quotes.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function viewAny(User $user)
     {
-        return $user->can('view_quotes') || $user->can('view_own_quotes');
+        if ($user->can('view_quotes') || $user->can('view_own_quotes')) {
+            return true;
+        }
     }
 
     /**
      * Determine whether the user can view the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function view(User $user, Quote $quote)
@@ -37,15 +43,23 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.read.{$quote->id}")) {
+        if ($user->can("quotes.read.".$quote->getKey())) {
             return true;
         }
 
-        if ($user->can("quotes.read.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.read.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('view_own_quotes') && $user->id === $quote->user_id) {
+        if (false === $user->can('view_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -53,7 +67,7 @@ class QuotePolicy
     /**
      * Determine whether the user can create quotes.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function create(User $user)
@@ -64,13 +78,13 @@ class QuotePolicy
     /**
      * Determine whether the user can update the quote state.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function state(User $user, Quote $quote)
     {
-        if ($quote->isSubmitted()) {
+        if (!is_null($quote->submitted_at)) {
             return $this->deny(QSU_01);
         }
 
@@ -78,15 +92,23 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.update.{$quote->id}")) {
+        if ($user->can("quotes.update.".$quote->getKey())) {
             return true;
         }
 
-        if ($user->can("quotes.update.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.update.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('update_own_quotes') && $user->id === $quote->user_id) {
+        if (false === $user->can('update_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -94,8 +116,8 @@ class QuotePolicy
     /**
      * Determine whether the user can update the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function update(User $user, Quote $quote)
@@ -104,15 +126,23 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.update.{$quote->id}")) {
+        if ($user->can("quotes.update.".$quote->getKey())) {
             return true;
         }
 
-        if ($user->can("quotes.update.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.update.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('update_own_quotes') && $user->id === $quote->user_id) {
+        if (false === $user->can('update_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -129,11 +159,6 @@ class QuotePolicy
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
-
-        /**
-         * @todo If user is not super-administrator check owner id. We are checking only parent quote (not any its version)
-         * return $user->id === $quote->user_id
-         */
     }
 
     /**
@@ -141,25 +166,20 @@ class QuotePolicy
      *
      * @param User $user
      * @param Quote $quote
-     * @return void
+     * @return mixed
      */
     public function revokePermission(User $user, Quote $quote)
     {
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
-
-        /**
-         * @todo If user is not super-administrator check owner id. We are checking only parent quote (not any its version)
-         * return $user->id === $quote->user_id
-         */
     }
 
     /**
      * Determine whether the user can unravel the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function unravel(User $user, Quote $quote)
@@ -168,7 +188,7 @@ class QuotePolicy
             return false;
         }
 
-        if ($quote->isSubmitted() && $quote->contract->exists) {
+        if (!is_null($quote->submitted_at) && (!is_null($quote->contract_id) || $quote->contract->exists)) {
             return $this->deny(QCE_UN_01);
         }
 
@@ -178,8 +198,8 @@ class QuotePolicy
     /**
      * Determine whether the user can activate the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function activate(User $user, Quote $quote)
@@ -202,13 +222,13 @@ class QuotePolicy
     /**
      * Determine whether the user can delete the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function delete(User $user, Quote $quote)
     {
-        if ($quote->isSubmitted() && $quote->contract->exists) {
+        if (!is_null($quote->submitted_at) && (!is_null($quote->contract_id) || $quote->contract->exists)) {
             return $this->deny(QCE_D_01);
         }
 
@@ -216,11 +236,19 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.delete.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.delete.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('delete_own_quotes') && $user->id === $quote->user_id) {
+        if (false === $user->can('delete_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -235,7 +263,7 @@ class QuotePolicy
      */
     public function deleteVersion(User $user, Quote $quote, QuoteVersion $version)
     {
-        if ($quote->isSubmitted()) {
+        if (!is_null($quote->submitted_at)) {
             return $this->deny(QV_SD_01);
         }
 
@@ -243,11 +271,19 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.delete.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.delete.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('delete_own_quotes') && $user->id === $version->user_id) {
+        if (false === $user->can('delete_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -294,7 +330,7 @@ class QuotePolicy
      * @param User $user
      * @param Quote $quote
      * @param string $fileType
-     * @return void
+     * @return mixed
      */
     public function downloadFile(User $user, Quote $quote, string $fileType)
     {

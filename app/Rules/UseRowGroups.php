@@ -32,7 +32,7 @@ class UseRowGroups implements Rule
             return true;
         }
 
-        return !empty($this->quote->usingVersion->selected_group_description_names);
+        return !empty(($this->quote->activeVersion ?? $this->quote)->selected_group_description_names);
     }
 
     /**

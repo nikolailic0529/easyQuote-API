@@ -2,51 +2,61 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Contracts\Repositories\{
-    Quote\QuoteSubmittedRepositoryInterface as QuoteSubmittedRepository,
-    Customer\CustomerRepositoryInterface as CustomerRepository
-};
-use App\Events\RfqReceived;
+use App\Http\Middleware\HttpResponseLogger;
+use App\Contracts\Repositories\{Quote\QuoteSubmittedRepositoryInterface as QuoteSubmittedRepository,};
+use App\Contracts\Services\CustomerState;
+use App\Contracts\Services\QuoteView;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\S4\StoreContractRequest;
 use App\Http\Resources\CustomerResponseResource;
 use App\Http\Resources\QuoteResource;
 use App\Models\Customer\Customer;
+use App\Models\Quote\Quote;
+use App\Queries\QuoteQueries;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class S4QuoteController extends Controller
 {
     protected $quote;
 
-    public function __construct(QuoteSubmittedRepository $quote, CustomerRepository $customer)
+    public function __construct(QuoteSubmittedRepository $quote)
     {
         $this->quote = $quote;
-        $this->customer = $customer;
 
-        $this->middleware('client:s4,proteus,triton,epd');
+        $this->middleware(['client', HttpResponseLogger::class]);
     }
 
     /**
      * Handle the incoming request.
      *
-     * @param  string  $rfq
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param QuoteView $quoteViewService
+     * @param string $rfq
+     * @return JsonResponse
      */
-    public function show(string $rfq)
+    public function showQuoteByRfqNumber(Request   $request,
+                                         QuoteView $quoteViewService,
+                                         string    $rfq): JsonResponse
     {
-        $quote = $this->quote->rfq($rfq, true);
+        $resource = $quoteViewService
+            ->setCauser($request->user())
+            ->requestForQuote(rfqNumber: $rfq);
 
         return response()->json(
-            QuoteResource::make($quote)
+            QuoteResource::make($resource)
         );
     }
 
     /**
-     * Retrieve if exists Price List file by RFQ number.
+     * Download an existing price list file by RFQ number.
      *
      * @param string $rfq
-     * @return \Illuminate\Http\Response
+     * @return BinaryFileResponse
      */
-    public function price(string $rfq)
+    public function downloadPriceListFile(string $rfq): BinaryFileResponse
     {
         return response()->download(
             $this->quote->price($rfq)
@@ -54,12 +64,12 @@ class S4QuoteController extends Controller
     }
 
     /**
-     * Retrieve if exists Schedule file by RFQ number.
+     * Download an existing payment schedule file by RFQ number.
      *
      * @param string $rfq
-     * @return \Illuminate\Http\Response
+     * @return BinaryFileResponse
      */
-    public function schedule(string $rfq)
+    public function downloadPaymentScheduleFile(string $rfq): BinaryFileResponse
     {
         return response()->download(
             $this->quote->schedule($rfq)
@@ -69,28 +79,39 @@ class S4QuoteController extends Controller
     /**
      * Retrieve if exists Generated PDF file by RFQ number.
      *
+     * @param Request $request
+     * @param QuoteQueries $queries
+     * @param QuoteView $quoteViewService
      * @param string $rfq
-     * @return \Illuminate\Http\Response
+     * @return Response
      */
-    public function pdf(string $rfq)
+    public function exportToPdf(Request      $request,
+                                QuoteQueries $queries,
+                                QuoteView    $quoteViewService,
+                                string       $rfq): Response
     {
-        return $this->quote->pdf($rfq);
+        /** @var Quote $quote */
+        $quote = $queries->quoteByRfqNumberQuery($rfq)->sole();
+
+        return $quoteViewService
+            ->setCauser($request->user())
+            ->export($quote);
     }
 
     /**
      * Receive Quote Data from S4 and Create a Customer with New RFQ number.
      *
      * @param StoreContractRequest $request
-     * @return \Illuminate\Http\Response
+     * @param CustomerState $processor
+     * @return JsonResponse
      */
-    public function store(StoreContractRequest $request)
+    public function storeS4Customer(StoreContractRequest $request,
+                                    CustomerState        $processor): JsonResponse
     {
-        $resource = tap(
-            $this->customer->create($request->validated()),
-            fn (Customer $customer) => dispatch(
-                fn () => event(new RfqReceived($customer, $request->get('client_name', 'service')))
-            )->afterResponse()
-        );
+        $resource = tap($processor->createFromS4Data($request->getS4CustomerData()), function (Customer $customer) use ($request) {
+            $customer->load('country', 'addresses');
+            $request->dispatchReceivedEvent($customer);
+        });
 
         return response()->json(
             CustomerResponseResource::make($resource)

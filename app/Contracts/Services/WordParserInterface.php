@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Services;
 
-use Devengine\PhpWord\PhpWord;
+use PhpOffice\PhpWord\PhpWord;
 
 interface WordParserInterface
 {
@@ -10,27 +10,25 @@ interface WordParserInterface
      * Load file and return PhpWord instance reader
      *
      * @param string $path
-     * @param bool $storage
      * @return $this
      */
-    public function load(string $path, bool $storage = true);
+    public function load(string $path): static;
 
     /**
-     * Extract and return raw text from Word file
+     * Parse Docx Distributor File.
      *
-     * @param string $path
-     * @param bool $storage
+     * @param  string $filePath
      * @return array
      */
-    public function getText(string $path, bool $storage = true);
+    public function parseAsDistributorFile(string $filePath): array;
 
     /**
      * Extract all first level tables from DOCX format file
      *
      * @param PhpWord|null $phpWord
-     * @return $this
+     * @return array
      */
-    public function getTables(?PhpWord $phpWord = null);
+    public function getTables(?PhpWord $phpWord = null): array;
 
     /**
      * Recursive search header by $needle and rows on the same nesting level
@@ -39,5 +37,5 @@ interface WordParserInterface
      * @param array $tables
      * @return array [[header][rows]]
      */
-    public function findRows(string $needle, array $tables = []);
+    public function findRows(string $needle, array $tables = []): array;
 }

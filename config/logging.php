@@ -43,14 +43,70 @@ return [
 
         'single' => [
             'driver' => 'single',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel.log',
+            'path' => storage_path('/logs/laravel.log'),
             'level' => 'debug',
             'permission' => 0777
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel-' . get_current_user() . '.log',
+            'path' => storage_path('/logs/laravel.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'http-requests' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/http.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'document-processor' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/document-processor.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'document-engine-api' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/document-engine-api.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'stats-calculation' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/stats-calculation.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'geocoding' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/geocoding.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'vendor-services' => [
+          'driver' => 'daily',
+            'path' => storage_path('/logs/vendor-services.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'sales-orders' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/sales-orders.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777
@@ -80,6 +136,19 @@ return [
             'formatter' => env('LOG_STDERR_FORMATTER'),
             'with' => [
                 'stream' => 'php://stderr',
+            ],
+        ],
+
+        'stdout' => [
+            'driver' => 'monolog',
+            'handler' => StreamHandler::class,
+            'formatter' => \Bramus\Monolog\Formatter\ColoredLineFormatter::class,
+            'formatter_with' => [
+                'allowInlineLineBreaks' => true,
+                'ignoreEmptyContextAndExtra' => true,
+            ],
+            'with' => [
+                'stream' => 'php://stdout',
             ],
         ],
 

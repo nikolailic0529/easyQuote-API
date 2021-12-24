@@ -26,6 +26,19 @@ class CompanyPolicy
     }
 
     /**
+     * Determine whether the user can view entities of any owner.
+     *
+     * @param \App\Models\User $user
+     * @return mixed
+     */
+    public function viewAnyOwnerEntities(User $user)
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+    }
+
+    /**
      * Determine whether the user can view the company.
      *
      * @param  \App\Models\User  $user
@@ -34,7 +47,7 @@ class CompanyPolicy
      */
     public function view(User $user, Company $company)
     {
-        if ($user->can('view_companies')) {
+        if ($user->canAny(['view_companies', 'view_opportunities', "companies.*.{$company->getKey()}"])) {
             return true;
         }
     }
@@ -65,10 +78,16 @@ class CompanyPolicy
             return true;
         }
 
-        if (
-            $user->can('update_companies') &&
-            $user->getKey() === $company->{$company->user()->getForeignKeyName()}
-        ) {
+        if ($user->can("companies.*.{$company->getKey()}")) {
+            return true;
+        }
+
+        if ($user->canAny('update_companies')) {
+
+            if ($user->getKey() !== $company->{$company->user()->getForeignKeyName()}) {
+                return $this->deny("You can't update the company owned by another user.");
+            }
+
             return true;
         }
     }
@@ -86,18 +105,20 @@ class CompanyPolicy
             return $this->deny(CPSD_01);
         }
 
-        if ($company->inUse()) {
-            return $this->deny(CPUD_01);
-        }
-
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
 
-        if (
-            $user->can('delete_companies') &&
-            $user->getKey() === $company->{$company->user()->getForeignKeyName()}
-        ) {
+        if ($user->can("companies.*.{$company->getKey()}")) {
+            return true;
+        }
+
+        if ($user->canAny('delete_companies')) {
+
+            if ($user->getKey() !== $company->{$company->user()->getForeignKeyName()}) {
+                return $this->deny("You can't delete the company owned by another user.");
+            }
+
             return true;
         }
     }

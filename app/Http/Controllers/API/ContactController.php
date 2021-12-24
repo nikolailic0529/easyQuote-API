@@ -3,117 +3,151 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\ContactRepositoryInterface as ContactRepository;
+use App\Http\Requests\Contact\{StoreContactRequest, UpdateContactRequest};
 use App\Models\Contact;
-use App\Http\Requests\Contact\{
-    StoreContactRequest,
-    UpdateContactRequest
-};
+use App\Queries\ContactQueries;
+use App\Services\Contact\ContactEntityService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class ContactController extends Controller
 {
-    protected $contact;
-
-    public function __construct(ContactRepository $contact)
+    public function __construct()
     {
-        $this->contact = $contact;
         $this->authorizeResource(Contact::class, 'contact');
     }
 
     /**
-     * Display a listing of the contact.
+     * Display a listing of available contacts.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param ContactQueries $queries
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request, ContactQueries $queries): JsonResponse
     {
         return response()->json(
-            request()->filled('search')
-                ? $this->contact->search(request('search'))
-                : $this->contact->all()
+            $queries->listOfContactsQuery($request)->apiPaginate()
         );
     }
 
     /**
      * Store a newly created contact in storage.
      *
-     * @param  \App\Http\Requests\Contact\StoreContactRequest $request
-     * @return \Illuminate\Http\Response
+     * @param StoreContactRequest $request
+     * @param ContactEntityService $entityService
+     * @return JsonResponse
      */
-    public function store(StoreContactRequest $request)
+    public function store(StoreContactRequest  $request,
+                          ContactEntityService $entityService): JsonResponse
     {
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->createContact($request->getCreateContactData())
+            ->withAppends();
+
         return response()->json(
-            $this->contact->create($request)
+            $resource
         );
     }
 
     /**
      * Display the specified contact.
      *
-     * @param  \App\Models\Contact  $contact
-     * @return \Illuminate\Http\Response
+     * @param Contact $contact
+     * @return JsonResponse
      */
-    public function show(Contact $contact)
+    public function show(Contact $contact): JsonResponse
     {
         return response()->json(
-            $this->contact->find($contact->id)
+            $contact->withAppends()
         );
     }
 
     /**
      * Update the specified contact in storage.
      *
-     * @param  \App\Http\Requests\Contact\UpdateContactRequest  $request
-     * @param  \App\Models\Contact  $contact
-     * @return \Illuminate\Http\Response
+     * @param UpdateContactRequest $request
+     * @param ContactEntityService $entityService
+     * @param Contact $contact
+     * @return JsonResponse
      */
-    public function update(UpdateContactRequest $request, Contact $contact)
+    public function update(UpdateContactRequest $request,
+                           ContactEntityService $entityService,
+                           Contact              $contact): JsonResponse
     {
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->updateContact($contact, $request->getUpdateContactData())
+            ->withAppends();
+
         return response()->json(
-            $this->contact->update($request, $contact->id)
+            $resource
         );
     }
 
     /**
      * Remove the specified contact from storage.
      *
-     * @param  \App\Models\Contact  $contact
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param ContactEntityService $entityService
+     * @param Contact $contact
+     * @return JsonResponse
      */
-    public function destroy(Contact $contact)
+    public function destroy(Request              $request,
+                            ContactEntityService $entityService,
+                            Contact              $contact): JsonResponse
     {
-        return response()->json(
-            $this->contact->delete($contact->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->deleteContact($contact);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 
     /**
      * Activate the specified contact.
      *
+     * @param Request $request
+     * @param ContactEntityService $entityService
      * @param Contact $contact
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function activate(Contact $contact)
+    public function activate(Request              $request,
+                             ContactEntityService $entityService,
+                             Contact              $contact): JsonResponse
     {
         $this->authorize('update', $contact);
 
-        return response()->json(
-            $this->contact->activate($contact->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->markContactAsActive($contact);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 
     /**
      * Deactivate the specified contact.
      *
+     * @param Request $request
+     * @param ContactEntityService $entityService
      * @param Contact $contact
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function deactivate(Contact $contact)
+    public function deactivate(Request              $request,
+                               ContactEntityService $entityService,
+                               Contact              $contact): JsonResponse
     {
         $this->authorize('update', $contact);
 
-        return response()->json(
-            $this->contact->deactivate($contact->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->markContactAsInactive($contact);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 }

@@ -4,17 +4,21 @@ namespace App\Http\Controllers\API\Templates;
 
 use App\Contracts\Repositories\QuoteTemplate\ContractTemplateRepositoryInterface as Repository;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\QuoteTemplate\{
-    DeleteTemplate,
-    StoreQuoteTemplateRequest,
-    UpdateQuoteTemplateRequest
-};
-use App\Http\Resources\TemplateRepository\{
-    TemplateCollection,
-    TemplateResourceListing,
-    TemplateResourceWithIncludes
-};
-use App\Models\QuoteTemplate\ContractTemplate;
+use App\Http\Requests\ContractTemplate\DeleteContractTemplate;
+use App\Http\Requests\ContractTemplate\FilterContractTemplatesByCompanyVendorCountry;
+use App\Http\Requests\ContractTemplate\StoreContractTemplate;
+use App\Http\Requests\ContractTemplate\UpdateContractTemplate;
+use App\Models\SalesOrder;
+use App\Services\Template\TemplateSchemaDataMapper;
+use App\Http\Resources\TemplateRepository\{TemplateCollection, TemplateResourceListing, TemplateResourceWithIncludes};
+use App\Models\Template\ContractTemplate;
+use App\Queries\ContractTemplateQueries;
+use App\Services\ContractTemplateService;
+use App\Services\Exceptions\ValidationException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class ContractTemplateController extends Controller
 {
@@ -29,13 +33,13 @@ class ContractTemplateController extends Controller
     /**
      * Display a listing of the Contract Templates.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param ContractTemplateQueries $queries
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request, ContractTemplateQueries $queries): JsonResponse
     {
-        $resource = request()->filled('search')
-            ? $this->contractTemplate->search(request('search'))
-            : $this->contractTemplate->paginate();
+        $resource = $queries->paginateContractTemplatesQuery($request)->apiPaginate();
 
         return response()->json(TemplateCollection::make($resource));
     }
@@ -43,10 +47,11 @@ class ContractTemplateController extends Controller
     /**
      * Display a listing of the Quote Templates by specified Country.
      *
-     * @param  string $country
-     * @return \Illuminate\Http\Response
+     * @param string $country
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function country(string $country)
+    public function country(string $country): JsonResponse
     {
         $this->authorize('viewAny', ContractTemplate::class);
 
@@ -58,37 +63,97 @@ class ContractTemplateController extends Controller
     /**
      * Store a newly created Quote Template in storage.
      *
-     * @param  \App\Http\Requests\QuoteTemplate\StoreQuoteTemplateRequest  $request
-     * @return \Illuminate\Http\Response
+     * @param StoreContractTemplate $request
+     * @param ContractTemplateService $service
+     * @return JsonResponse
+     * @throws ValidationException
      */
-    public function store(StoreQuoteTemplateRequest $request)
+    public function store(StoreContractTemplate $request, ContractTemplateService $service): JsonResponse
     {
-        $template = $this->contractTemplate->create($request->validated());
+        $template = $service->createContractTemplate($request->getCreateContractTemplateData());
 
-        return response()->json(TemplateResourceWithIncludes::make($template));
+        return response()->json(
+            TemplateResourceWithIncludes::make($template),
+            Response::HTTP_CREATED
+        );
     }
 
     /**
      * Display the specified Contract Template.
      *
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param ContractTemplate $contract_template
+     * @return JsonResponse
      */
-    public function show(ContractTemplate $contract_template)
+    public function show(ContractTemplate $contract_template): JsonResponse
     {
         return response()->json(TemplateResourceWithIncludes::make($contract_template));
     }
 
     /**
+     * Filter Worldwide Contract Service Contract Templates by specified company.
+     *
+     * @param FilterContractTemplatesByCompanyVendorCountry $request
+     * @param ContractTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function filterWorldwideContractContractTemplates(FilterContractTemplatesByCompanyVendorCountry $request,
+                                                             ContractTemplateQueries $queries): JsonResponse
+    {
+        $this->authorize('viewAny', SalesOrder::class);
+
+        $data = $queries->filterWorldwideContractServiceContractTemplatesQuery(
+            $request->getCompanyId(),
+            $request->getVendorId(),
+            $request->getCountryId()
+        )->get();
+
+        return response()->json(
+            $data
+        );
+    }
+
+    /**
+     * Filter Worldwide Pack Contract Templates by specified company.
+     *
+     * @param FilterContractTemplatesByCompanyVendorCountry $request
+     * @param ContractTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function filterWorldwidePackContractTemplates(FilterContractTemplatesByCompanyVendorCountry $request,
+                                                         ContractTemplateQueries $queries): JsonResponse
+    {
+        $this->authorize('viewAny', SalesOrder::class);
+
+        $data = $queries->filterWorldwidePackContractTemplatesQuery(
+            $request->getCompanyId(),
+            $request->getVendorId(),
+            $request->getCountryId()
+        )->get();
+
+        return response()->json(
+            $data
+        );
+    }
+
+    /**
      * Update the specified Contract Template in storage.
      *
-     * @param  \App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest  $request
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param UpdateContractTemplate $request
+     * @param ContractTemplate $contractTemplate
+     * @param ContractTemplateService $service
+     * @return JsonResponse
+     * @throws ValidationException
      */
-    public function update(UpdateQuoteTemplateRequest $request, ContractTemplate $contract_template)
+    public function update(UpdateContractTemplate $request,
+                           ContractTemplate $contractTemplate,
+                           ContractTemplateService $service): JsonResponse
     {
-        $template = $this->contractTemplate->update($request->validated(), $contract_template->id);
+        $template = $service->updateContractTemplate(
+            $contractTemplate,
+            $request->getUpdateContractTemplateData()
+        );
 
         return response()->json(TemplateResourceWithIncludes::make($template));
     }
@@ -96,74 +161,79 @@ class ContractTemplateController extends Controller
     /**
      * Remove the specified Contract Template from storage.
      *
-     * @param  DeleteTemplate $request
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $contract_template
-     * @return \Illuminate\Http\Response
+     * @param DeleteContractTemplate $request
+     * @param ContractTemplate $contractTemplate
+     * @return JsonResponse
      */
-    public function destroy(DeleteTemplate $request, ContractTemplate $contract_template)
+    public function destroy(DeleteContractTemplate $request, ContractTemplate $contractTemplate): JsonResponse
     {
         return response()->json(
-            $this->contractTemplate->delete($contract_template->id)
+            $this->contractTemplate->delete($contractTemplate->getKey())
         );
     }
 
     /**
      * Activate the specified Contract Template from storage.
      *
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $contract_template
-     * @return \Illuminate\Http\Response
+     * @param ContractTemplate $contract_template
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function activate(ContractTemplate $contract_template)
+    public function activate(ContractTemplate $contract_template): JsonResponse
     {
         $this->authorize('update', $contract_template);
 
         return response()->json(
-            $this->contractTemplate->activate($contract_template->id)
+            $this->contractTemplate->activate($contract_template->getKey())
         );
     }
 
     /**
      * Deactivate the specified Contract Template from storage.
      *
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $contract_template
-     * @return \Illuminate\Http\Response
+     * @param ContractTemplate $contract_template
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function deactivate(ContractTemplate $contract_template)
+    public function deactivate(ContractTemplate $contract_template): JsonResponse
     {
         $this->authorize('update', $contract_template);
 
         return response()->json(
-            $this->contractTemplate->deactivate($contract_template->id)
+            $this->contractTemplate->deactivate($contract_template->getKey())
         );
     }
 
     /**
      * Get Data for Template Designer.
      *
-     * @param \App\Models\QuoteTemplate\ContractTemplate $contract_template
-     * @return \Illuminate\Http\Response
+     * @param ContractTemplate $contractTemplate
+     * @param TemplateSchemaDataMapper $schemaDataMapper
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function designer(ContractTemplate $contract_template)
+    public function showTemplateForm(ContractTemplate $contractTemplate, TemplateSchemaDataMapper $schemaDataMapper): JsonResponse
     {
-        $this->authorize('view', $contract_template);
+        $this->authorize('view', $contractTemplate);
 
         return response()->json(
-            $this->contractTemplate->designer($contract_template->id)
+            $schemaDataMapper->mapContractTemplateSchema($contractTemplate)
         );
     }
 
     /**
      * Create copy of the specified Contract Template.
      *
-     * @param \App\Models\QuoteTemplate\ContractTemplate $contract_template
-     * @return \Illuminate\Http\Response
+     * @param ContractTemplate $contract_template
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function copy(ContractTemplate $contract_template)
+    public function copy(ContractTemplate $contract_template): JsonResponse
     {
         $this->authorize('copy', $contract_template);
 
         return response()->json(
-            $this->contractTemplate->copy($contract_template->id)
+            $this->contractTemplate->copy($contract_template->getKey())
         );
     }
 }

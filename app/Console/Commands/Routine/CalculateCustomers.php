@@ -3,9 +3,7 @@
 namespace App\Console\Commands\Routine;
 
 use App\Contracts\Services\Stats;
-use App\Services\StatsAggregator;
 use Illuminate\Console\Command;
-use Throwable;
 
 class CalculateCustomers extends Command
 {
@@ -14,7 +12,7 @@ class CalculateCustomers extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:calculate-customers {--clear-cache}';
+    protected $signature = 'eq:calculate-customers';
 
     /**
      * The console command description.
@@ -36,30 +34,19 @@ class CalculateCustomers extends Command
     /**
      * Execute the console command.
      *
+     * @param Stats $service
      * @return mixed
      */
-    public function handle(Stats $service, StatsAggregator $aggregator)
+    public function handle(Stats $service)
     {
-        $this->warn(CUSTC_S_01);
-        customlog(['message' => CUSTC_S_01]);
+        $this->output->title('Customer totals calculation started');
 
-        try {
-            $service->calculateCustomerTotals($this->output->createProgressBar());
+        $service
+            ->setOutput($this->getOutput())
+            ->denormalizeSummaryOfCustomers();
 
-            if ($this->option('clear-cache')) {
-                $aggregator->flushSummaryCache();
-                $this->info("\nSummary cache has been cleared!");
-            }
-        } catch (Throwable $e) {
-            $this->error(CUSTC_ERR_01);
-            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(CUSTC_ERR_01, $e));
+        $this->output->success('Calculation of Customer totals successfully finished');
 
-            return false;
-        }
-
-        $this->info("\n".CUSTC_F_01);
-        customlog(['message' => CUSTC_F_01]);
-
-        return true;
+        return Command::SUCCESS;
     }
 }

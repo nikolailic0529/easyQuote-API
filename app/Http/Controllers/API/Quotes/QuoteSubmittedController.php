@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\API\Quotes;
 
+use App\Contracts\{Repositories\Quote\QuoteSubmittedRepositoryInterface as Repository, Services\ContractState};
+use App\Contracts\Services\QuoteState;
+use App\Contracts\Services\QuoteView;
 use App\Http\Controllers\Controller;
-use App\Contracts\{
-    Services\ContractState,
-    Repositories\Quote\QuoteSubmittedRepositoryInterface as Repository
-};
 use App\Http\Requests\Quote\Copy;
 use App\Http\Requests\Quote\CreateQuoteContractRequest;
 use App\Http\Resources\ContractVersionResource;
-use App\Models\{
-    Quote\Quote,
-    QuoteTemplate\ContractTemplate
-};
+use App\Models\{Quote\Quote, Template\ContractTemplate};
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class QuoteSubmittedController extends Controller
 {
@@ -31,9 +31,9 @@ class QuoteSubmittedController extends Controller
     /**
      * Display a listing of the Submitted Quotes.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function index()
+    public function index(): JsonResponse
     {
         return response()->json(
             request()->filled('search')
@@ -45,56 +45,58 @@ class QuoteSubmittedController extends Controller
     /**
      * Retrieve the specified Submitted Quote.
      *
-     * @param \App\Models\Quote\Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @return JsonResponse
      */
-    public function show(Quote $submitted)
+    public function show(Quote $submitted): JsonResponse
     {
         return response()->json(
-            $this->repository->find($submitted->id)
+            $this->repository->find($submitted->getKey())
         );
     }
 
     /**
      * Remove the specified Submitted Quote
      *
-     * @param  Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @return JsonResponse
      */
-    public function destroy(Quote $submitted)
+    public function destroy(Quote $submitted): JsonResponse
     {
         return response()->json(
-            $this->repository->delete($submitted->id)
+            $this->repository->delete($submitted->getKey())
         );
     }
 
     /**
      * Activate the specified Submitted Quote
      *
-     * @param  Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function activate(Quote $submitted)
+    public function activate(Quote $submitted): JsonResponse
     {
         $this->authorize('activate', $submitted);
 
         return response()->json(
-            $this->repository->activate($submitted->id)
+            $this->repository->activate($submitted->getKey())
         );
     }
 
     /**
      * Deactivate the specified Submitted Quote
      *
-     * @param  Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function deactivate(Quote $submitted)
+    public function deactivate(Quote $submitted): JsonResponse
     {
         $this->authorize('update', $submitted);
 
         return response()->json(
-            $this->repository->deactivate($submitted->id)
+            $this->repository->deactivate($submitted->getKey())
         );
     }
 
@@ -102,41 +104,49 @@ class QuoteSubmittedController extends Controller
      * Create copy of the specified Submitted Quote
      *
      * @param Copy $request
-     * @param \App\Models\Quote\Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @param QuoteState $quoteProcessor
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function copy(Copy $request, Quote $submitted)
+    public function copy(Copy $request, Quote $submitted, QuoteState $quoteProcessor): JsonResponse
     {
         $this->authorize('copy', $submitted);
 
+        $quoteProcessor->replicateQuote($submitted);
+
         return response()->json(
-            $this->repository->copy($submitted)
+            true
         );
     }
 
     /**
      * Back a specified Quote to drafted.
      *
-     * @param \App\Models\Quote\Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @param QuoteState $quoteProcessor
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function unSubmit(Quote $submitted)
+    public function unravelQuote(Quote $submitted, QuoteState $quoteProcessor): JsonResponse
     {
         $this->authorize('unravel', $submitted);
 
+        $quoteProcessor->processQuoteUnravel($submitted);
+
         return response()->json(
-            $this->repository->unSubmit($submitted->id)
+            true
         );
     }
 
     /**
      * Create a new Contract based on the given Quote.
      *
-     * @param \App\Http\Requests\Quote\CreateQuoteContractRequest $request
-     * @param \App\Models\Quote\Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param CreateQuoteContractRequest $request
+     * @param Quote $submitted
+     * @return JsonResponse
      */
-    public function createContract(CreateQuoteContractRequest $request, Quote $submitted)
+    public function createContract(CreateQuoteContractRequest $request, Quote $submitted): JsonResponse
     {
         $resource = $this->contractProcessor->createFromQuote($submitted, $request->validated());
 
@@ -148,42 +158,58 @@ class QuoteSubmittedController extends Controller
     /**
      * Export the specified Quote as PDF.
      *
-     * @param \App\Models\Quote\Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @param QuoteView $quoteViewService
+     * @return Response
+     * @throws AuthorizationException
      */
-    public function pdf(Quote $submitted)
+    public function exportQuoteToPdf(Quote $submitted, QuoteView $quoteViewService): Response
     {
         $this->authorize('downloadPdf', $submitted);
 
-        return $this->repository->exportPdf($submitted, QT_TYPE_QUOTE);
+        return $quoteViewService->export($submitted->activeVersionOrCurrent, QT_TYPE_QUOTE);
     }
 
     /**
      * Export the specified Quote as Contract PDF.
      *
-     * @param \App\Models\Quote\Quote $submitted
-     * @return \Illuminate\Http\Response
+     * @param Quote $submitted
+     * @param QuoteView $quoteViewService
+     * @return Response
+     * @throws AuthorizationException
      */
-    public function contractPdf(Quote $submitted)
+    public function exportContractOfQuoteToPdf(Quote $submitted, QuoteView $quoteViewService)
     {
         $this->authorize('downloadContractPdf', $submitted);
+        return $quoteViewService->export($submitted->activeVersionOrCurrent, QT_TYPE_CONTRACT);
+    }
 
-        return $this->repository->exportPdf($submitted, QT_TYPE_CONTRACT);
+    /**
+     * Show contract of quote web preview. Dev only.
+     *
+     * @param Quote $submitted
+     * @param QuoteView $quoteViewService
+     * @return View
+     */
+    public function showContractOfQuotePreview(Quote $submitted, QuoteView $quoteViewService): View
+    {
+        return $quoteViewService->buildView($submitted->activeVersionOrCurrent, QT_TYPE_CONTRACT);
     }
 
     /**
      * Set the specified Contract Template for the Quote.
      *
-     * @param \App\Models\Quote\Quote $submitted
+     * @param Quote $submitted
      * @param ContractTemplate $template
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function setContractTemplate(Quote $submitted, ContractTemplate $template)
+    public function setContractTemplate(Quote $submitted, ContractTemplate $template): JsonResponse
     {
         $this->authorize('update', $submitted);
 
         return response()->json(
-            $this->repository->setContractTemplate($submitted->id, $template->id)
+            $this->repository->setContractTemplate($submitted->getKey(), $template->getKey())
         );
     }
 }

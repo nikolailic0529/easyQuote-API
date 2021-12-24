@@ -9,14 +9,13 @@ abstract class DiscountRepository extends SearchableRepository
     protected function filterQueryThrough(): array
     {
         $through = [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByVendor::class,
             \App\Http\Query\OrderByCountry::class,
-            \App\Http\Query\OrderByName::class
+            \App\Http\Query\OrderByName::class,
         ];
 
-        return array_merge($through, $this->appendFilterQueryThrough());
+        return array_merge($through, $this->appendFilterQueryThrough(), [\App\Http\Query\DefaultOrderBy::class]);
     }
 
     /**

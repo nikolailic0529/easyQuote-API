@@ -42,7 +42,7 @@ class CollaborationsUpdate extends Command
 
         activity()->disableLogging();
 
-        $users = json_decode(file_get_contents(database_path('seeds/models/users.json')), true);
+        $users = json_decode(file_get_contents(database_path('seeders/models/users.json')), true);
 
         User::whereIn('email', collect($users)->pluck('email')->toArray())
             ->nonAdministrators()

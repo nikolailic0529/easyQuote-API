@@ -6,8 +6,10 @@ use App\Contracts\Repositories\System\SystemSettingRepositoryInterface;
 use App\Models\System\SystemSetting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection as SupportCollection;
-use Str, Arr, DB;
+use Illuminate\Support\Collection as BaseCollection;
+use Illuminate\Support\Str;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class SystemSettingRepository implements SystemSettingRepositoryInterface
 {
@@ -96,7 +98,7 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         $attributes = collect($attributes)->keyBy('id');
 
         $updated = DB::transaction(function () use ($systemSettings, $attributes) {
-            return $systemSettings->reduce(function (SupportCollection $carry, $systemSetting) use ($attributes) {
+            return $systemSettings->reduce(function (BaseCollection $carry, $systemSetting) use ($attributes) {
                 $value = data_get($attributes->get($systemSetting->id), 'value');
                 $systemSetting->fill(compact('value'));
                 

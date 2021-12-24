@@ -16,7 +16,7 @@ class StoreFile extends FormRequest
         $max = setting('file_upload_size_kb');
 
         return [
-            'file' => "required|file|mimes:csv,txt|min:1|max:{$max}"
+            'file' => "required|file|mimes:csv,txt|max:{$max}"
         ];
     }
 }

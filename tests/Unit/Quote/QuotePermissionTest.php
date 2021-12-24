@@ -12,6 +12,7 @@ use App\Notifications\{
     GrantedQuoteAccess,
     RevokedQuoteAccess,
 };
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\{
     Event,
     Notification,
@@ -23,7 +24,7 @@ use Tests\Unit\Traits\{
 
 class QuotePermissionTest extends TestCase
 {
-    use WithFakeQuote, WithFakeUser;
+    use WithFakeQuote, WithFakeUser, DatabaseTransactions;
 
     /**
      * Test authorized users listing.
@@ -32,7 +33,9 @@ class QuotePermissionTest extends TestCase
      */
     public function testQuoteAuthorizedUsersListing()
     {
-        $this->getJson(url('api/quotes/permissions/' . $this->quote->id))->assertOk();
+        $quote = $this->createQuote($this->user);
+
+        $this->getJson(url('api/quotes/permissions/' . $quote->id))->assertOk();
     }
 
     /**
@@ -42,6 +45,8 @@ class QuotePermissionTest extends TestCase
      */
     public function testGrantQuotePermissions()
     {
+        $quote = $this->createQuote($this->user);
+
         Event::fake([
             NotificationCreated::class
         ]);
@@ -53,7 +58,7 @@ class QuotePermissionTest extends TestCase
 
         $authorizableUsers = factory(User::class, 5)->create(['role_id' => $role->id]);
 
-        $this->putJson(url('api/quotes/permissions/' . $this->quote->id), ['users' => $authorizableUsers->pluck('id')->toArray()])
+        $this->putJson(url('api/quotes/permissions/' . $quote->id), ['users' => $authorizableUsers->pluck('id')->toArray()])
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -69,12 +74,13 @@ class QuotePermissionTest extends TestCase
      */
     public function testRevokeQuotePermissions()
     {
+        $quote = $this->createQuote($this->user);
         /** System default role which does not have access to all quotes. */
         $role = Role::whereName('Sales Manager')->first();
 
         $authorizableUsers = factory(User::class, 5)->create(['role_id' => $role->id]);
 
-        $permission = app('quote.state')->getQuotePermission($this->quote, ['read', 'update']);
+        $permission = app('quote.state')->getQuotePermission($quote, ['read', 'update']);
 
         /** Grant quote permissions to newly created users. */
         app('user.repository')->syncUsersPermission($authorizableUsers->pluck('id')->toArray(), $permission);
@@ -89,7 +95,7 @@ class QuotePermissionTest extends TestCase
 
         $unuathorizableUsers = $authorizableUsers->splice(0, 2);
 
-        $this->putJson(url('api/quotes/permissions/' . $this->quote->id), ['users' => $authorizableUsers->pluck('id')->toArray()])
+        $this->putJson(url('api/quotes/permissions/' . $quote->id), ['users' => $authorizableUsers->pluck('id')->toArray()])
             ->assertOk()
             ->assertExactJson([true]);
 

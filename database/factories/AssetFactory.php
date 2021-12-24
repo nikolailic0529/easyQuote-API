@@ -9,9 +9,9 @@ use App\Models\Vendor;
 use Faker\Generator as Faker;
 
 $factory->define(Asset::class, function (Faker $faker) {
-    $vendor = Vendor::query()->system()->inRandomOrder()->first();
-    $category = AssetCategory::query()->inRandomOrder()->first();
-    $address = Address::query()->inRandomOrder()->first();
+    $vendor = Vendor::first();
+    $category = AssetCategory::first();
+    $address = factory(Address::class)->create();
 
     return [
         'serial_number'                 => $faker->regexify('[A-Z0-9]{6}'),

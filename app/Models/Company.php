@@ -2,68 +2,65 @@
 
 namespace App\Models;
 
-use App\Contracts\{
-    WithImage,
-    ActivatableInterface,
-    HasOrderedScope,
-    WithLogo
-};
-use App\Models\{
-    Data\Country,
-    QuoteTemplate\QuoteTemplate,
-};
+use App\Contracts\{ActivatableInterface, HasImagesDirectory, HasOrderedScope, SearchableEntity, WithLogo};
+use App\Models\{Data\Country, Quote\WorldwideQuote, Template\QuoteTemplate};
 use App\Models\Customer\CustomerTotal;
-use App\Traits\{
-    Activatable,
+use App\Services\ThumbHelper;
+use App\Traits\{Activatable,
+    Auth\Multitenantable,
     BelongsToAddresses,
     BelongsToContacts,
     BelongsToUser,
     BelongsToVendors,
-    Image\HasImage,
-    Image\HasLogo,
-    Search\Searchable,
-    Systemable,
     Quote\HasQuotes,
     QuoteTemplate\HasQuoteTemplates,
-    Activity\LogsActivity,
-    Auth\Multitenantable,
-    Uuid
-};
-use Illuminate\Database\Eloquent\{
-    Builder,
-    Model,
-    SoftDeletes,
-};
-use Illuminate\Database\Eloquent\{
+    Search\Searchable,
+    Systemable,
+    Uuid};
+use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
+use Illuminate\Database\Eloquent\{Collection,
     Relations\BelongsTo,
     Relations\BelongsToMany,
-};
+    Relations\HasManyThrough,
+    Relations\MorphToMany};
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Staudenmeir\EloquentHasManyDeep\{
-    HasManyDeep,
-    HasRelationships,
-};
+use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Support\Str;
+use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
 
-class Company extends Model implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
+/**
+ * Class Company
+ *
+ * @property string|null $user_id
+ * @property string|null $default_country_id
+ * @property string|null $default_vendor_id
+ * @property string|null $default_template_id
+ * @property string|null $name
+ * @property string|null $short_code
+ * @property string|null $vs_company_code
+ * @property string|null $type
+ * @property string|null $source
+ * @property string|null $category
+ * @property string|null $email
+ * @property string|null $vat
+ * @property string|null $vat_type
+ * @property string|null $phone
+ * @property string|null $website
+ * @property string|null $activated_at
+ *
+ * @property Image|null $image
+ * @property Collection<Address>|Address[] $addresses
+ * @property Collection<Contact>|Contact[] $contacts
+ * @property-read Collection<Opportunity>|Opportunity[] $opportunities
+ * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
+ * @property-read Collection<CompanyNote>|CompanyNote[] $companyNotes
+ * @property-read Collection<Vendor>|Vendor[] $vendors
+ * @property-read Collection<Country>|Country[] $countries
+ */
+class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity
 {
-    public const TYPES = ['Internal', 'External'];
-
-    public const CATEGORIES = ['End User', 'Reseller', 'Business Partner'];
-
-    public const SOURCES = ['EQ', 'S4'];
-
-    public const INT_TYPE = 'Internal';
-
-    public const EXT_TYPE = 'External';
-
-    public const REGULAR_RELATIONSHIPS = [
-        'defaultCountry', 'defaultVendor', 'defaultTemplate', 'vendors', 'addresses.country', 'contacts', 'vendors.countries', 'addresses.country', 'contacts'
-    ];
-
     use Uuid,
         Multitenantable,
-        HasLogo,
-        HasImage,
         BelongsToUser,
         BelongsToVendors,
         BelongsToAddresses,
@@ -73,26 +70,26 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
         Systemable,
         HasQuoteTemplates,
         HasQuotes,
-        LogsActivity,
         SoftDeletes,
         HasRelationships;
 
     protected $fillable = [
-        'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id'
+        'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id',
     ];
-
-    protected static $logAttributes = [
-        'name', 'category', 'vat', 'type', 'email', 'category', 'website', 'phone', 'defaultVendor.name', 'defaultCountry.name', 'defaultTemplate.name'
-    ];
-
-    protected static $logOnlyDirty = true;
-
-    protected static $submitEmptyLogs = false;
 
     public function vendors(): BelongsToMany
     {
-        return $this->belongsToMany(Vendor::class)->join('companies', 'companies.id', '=', 'company_vendor.company_id')
-            ->orderByRaw("field(`vendors`.`id`, `companies`.`default_vendor_id`, null) desc");
+        return tap($this->belongsToMany(Vendor::class), function (BelongsToMany $relation) {
+
+            $relation->leftJoin($this->getTable(), $relation->getQualifiedForeignPivotKeyName(), $this->getQualifiedKeyName())
+                ->select("{$relation->getRelated()->getTable()}.*")
+                ->addSelect([
+                    "{$this->qualifyColumn('default_vendor_id')} as company_default_vendor_id",
+                    "{$this->qualifyColumn('default_country_id')} as company_default_country_id",
+                ])
+                ->orderByRaw("field({$relation->getQualifiedRelatedKeyName()}, `company_default_vendor_id`, null) desc");
+
+        });
     }
 
     public function locations(): HasManyDeep
@@ -131,44 +128,45 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
     public function scopeWithTotalQuotedValue(Builder $query): Builder
     {
         return $query->addSelect([
-            'total_quoted_value' => fn ($q) =>
-            $q
-                ->select('total_value')
-                ->from('customer_totals')
-                ->whereColumn('customer_totals.company_id', 'companies.id')
-                ->limit(1)
+            'total_quoted_value' => function (BaseBuilder $baseBuilder) {
+                return $baseBuilder
+                    ->selectRaw('SUM(total_price)')
+                    ->from('quote_totals')
+                    ->whereColumn('quote_totals.company_id', 'companies.id');
+            },
         ])
             ->withCasts([
-                'total_quoted_value' => 'decimal:2'
+                'total_quoted_value' => 'decimal:2',
             ]);
     }
 
-    public function sortVendorsCountries(): self
+    public function prioritizeDefaultCountryOnVendors(): static
     {
-        $vendors = $this->vendors->map(
-            fn ($vendor) =>
-            $vendor->setRelation(
-                'countries',
-                $vendor->countries->sortByDesc(fn ($country) => ($this->default_country_id === $country->id))->values()
-            )
-        );
+        return tap($this, function () {
 
-        return $this->setRelation('vendors', $vendors);
+            $this->vendors->each(function (Vendor $vendor) {
+                $vendor->setRelation(
+                    relation: 'countries',
+                    value: $vendor->countries
+                        ->sortByDesc(function (Country $country) {
+                            return $this->default_country_id === $country->getKey();
+                        })
+                        ->values()
+                );
+            });
+
+        });
+
     }
 
     public function scopeVendor($query, string $id)
     {
-        return $query->whereHas('vendors', fn ($query) => $query->where('vendors.id', $id));
+        return $query->whereHas('vendors', fn($query) => $query->where('vendors.id', $id));
     }
 
     public function scopeOrdered($query)
     {
         return $query->orderByRaw("field(`vat`, ?, null) desc", [CP_DEF_VAT]);
-    }
-
-    public function inUse(): bool
-    {
-        return $this->quotes()->exists() || $this->quoteTemplates()->exists();
     }
 
     public function getItemNameAttribute()
@@ -181,15 +179,123 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
         return $this->append('logo');
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return [
-            'name'          => $this->name,
-            'vat'           => $this->vat,
-            'type'          => $this->type,
-            'email'         => $this->email,
-            'phone'         => $this->phone,
-            'created_at'    => $this->created_at
+            'name' => $this->name,
+            'vat' => $this->vat,
+            'type' => $this->type,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'created_at' => $this->created_at,
         ];
+    }
+
+    public function createLogo($file, $fake = false)
+    {
+        return ThumbHelper::createLogoThumbnails($this, $file, $fake);
+    }
+
+    public function thumbnailProperties(): array
+    {
+        return [
+            'x1' => [
+                'width' => 60,
+                'height' => 30,
+            ],
+            'x2' => [
+                'width' => 120,
+                'height' => 60,
+            ],
+            'x3' => [
+                'width' => 240,
+                'height' => 120,
+            ],
+        ];
+    }
+
+    public function imagesDirectory(): string
+    {
+        return 'images/'.Str::snake(Str::plural(class_basename($this)));
+    }
+
+    public function appendLogo()
+    {
+        return $this->makeVisible('logo')->setAppends(['logo']);
+    }
+
+    public function getLogoAttribute()
+    {
+        return ThumbHelper::getImageThumbnails(
+            $this->image,
+            $this->thumbnailProperties()
+        );
+    }
+
+    public function getLogoDimensionsAttribute()
+    {
+        return ThumbHelper::getLogoDimensionsFromImage(
+            $this->image,
+            $this->thumbnailProperties(),
+            Str::snake(class_basename(static::class))
+        );
+    }
+
+    public function getLogoSelectionAttribute()
+    {
+        return ThumbHelper::getLogoDimensionsFromImage(
+            $this->image,
+            $this->thumbnailProperties(),
+            Str::snake(class_basename(static::class)),
+            ThumbHelper::WITH_KEYS | ThumbHelper::ABS_PATH
+        );
+    }
+
+    public function getLogoSelectionWithKeysAttribute()
+    {
+        return ThumbHelper::getLogoDimensionsFromImage(
+            $this->image,
+            $this->thumbnailProperties(),
+            Str::snake(class_basename(static::class)),
+            ThumbHelper::WITH_KEYS
+        );
+    }
+
+    public function image()
+    {
+        return $this->morphOne(Image::class, 'imageable')->cacheForever();
+    }
+
+    public function opportunities(): HasMany
+    {
+        return $this->hasMany(Opportunity::class, 'primary_account_id');
+    }
+
+    public function worldwideQuotes(): HasManyThrough
+    {
+        return $this->hasManyThrough(WorldwideQuote::class, Opportunity::class, firstKey: 'primary_account_id');
+    }
+
+    public function worldwideQuoteVersions(): HasManyDeep
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->worldwideQuotes(),
+            (new WorldwideQuote())->versions()
+        );
+    }
+
+    public function companyNotes(): HasMany
+    {
+        return $this->hasMany(CompanyNote::class);
+    }
+
+    public function assets(): BelongsToMany
+    {
+        return $this->belongsToMany(Asset::class);
+    }
+
+    public function attachments(): MorphToMany
+    {
+        return $this->morphToMany(Attachment::class, 'attachable', relatedPivotKey: 'attachment_id');
     }
 }

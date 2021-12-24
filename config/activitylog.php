@@ -55,6 +55,8 @@ return [
             \App\Models\Quote\Quote::class,
             \App\Models\Quote\QuoteVersion::class
         ],
+        'worldwide_quote' => \App\Models\Quote\WorldwideQuote::class,
+        'opportunity' => \App\Models\Opportunity::class,
         'quote_note' => \App\Models\Quote\QuoteNote::class,
         'task' => \App\Models\Task::class,
         'contract' => [
@@ -72,8 +74,8 @@ return [
         'vendor' => \App\Models\Vendor::class,
         'company' => \App\Models\Company::class,
         'template' => [
-            \App\Models\QuoteTemplate\QuoteTemplate::class,
-            \App\Models\QuoteTemplate\ContractTemplate::class
+            \App\Models\Template\QuoteTemplate::class,
+            \App\Models\Template\ContractTemplate::class
         ],
         'country' => \App\Models\Data\Country::class,
         'address' => \App\Models\Address::class,
@@ -84,7 +86,22 @@ return [
         'importable_column' => \App\Models\QuoteFile\ImportableColumn::class,
         'invitation' => \App\Models\Collaboration\Invitation::class
     ],
-    'types' => ['created', 'updated', 'deleted', 'copied', 'retrieved', 'submitted', 'unravel', 'activated', 'deactivated', 'created_version', 'authenticated', 'deauthenticated'],
+    'types' => [
+        'created',
+        'updated',
+        'deleted',
+        'copied',
+        'retrieved',
+        'submitted',
+        'exported',
+        'unravel',
+        'activated',
+        'deactivated',
+        'created_version',
+        'deleted_version',
+        'authenticated',
+        'unauthenticated'
+    ],
     'periods' => [
         'today',
         'yesterday',

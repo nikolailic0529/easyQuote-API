@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use App\Repositories\CountryRepository;
-use App\Services\StatsAggregator;
 use Illuminate\Cache\CacheManager;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\ServiceProvider;
 
 class CacheServiceProvider extends ServiceProvider
 {
@@ -17,15 +17,15 @@ class CacheServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->when(StatsAggregator::class)->needs(Repository::class)
-            ->give(fn ($app) => $app['config']['cache.default'] === 'redis'
-                ? (new CacheManager($app))->driver()->tags(StatsAggregator::SUMMARY_CACHE_TAG)
-                : (new CacheManager($app))->driver());
-
-        $this->app->when(CountryRepository::class)->needs(Repository::class)
-            ->give(fn ($app) => $app['config']['cache.default'] === 'redis'
+        $this->app->when(CountryRepository::class)->needs(Repository::class)->give(function ($app) {
+            return $app['config']['cache.default'] === 'redis'
                 ? (new CacheManager($app))->driver()->tags(CountryRepository::CACHE_TAG)
-                : (new CacheManager($app))->driver());
+                : (new CacheManager($app))->driver();
+        });
+
+        $this->app->singleton(LockProvider::class, function () {
+            return $this->app['cache']->driver()->getStore();
+        });
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace App\Traits\QuoteTemplate;
 
-use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\Template\ContractTemplate;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToContractTemplate

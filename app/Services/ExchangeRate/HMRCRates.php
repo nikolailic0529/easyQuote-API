@@ -2,21 +2,84 @@
 
 namespace App\Services\ExchangeRate;
 
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\File;
+use App\DTO\ExchangeRate\ExchangeRateCollection;
+use App\DTO\ExchangeRate\ExchangeRateData;
+use App\Models\Data\Country;
+use App\Models\Data\Currency;
 use Carbon\Carbon;
-use Throwable;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class HMRCRates extends ExchangeRateService
 {
-    public function requestUrl(): string
+    public function buildRequestUrl(\DateTimeInterface $dateTime): string
     {
-        $date = $this->time;
+        return strtr(HMRC::SERVICE_URL, ['{m}' => $dateTime->format('m'), '{y}' => $dateTime->format('y')]);
+    }
 
-        $month = static::normilizeDatePeriod($date->month);
-        $year = static::normilizeDatePeriod($date->year);
+    /**
+     * @inheritDoc
+     * @throws RequestException
+     */
+    public function getRatesData(\DateTimeInterface $dateTime): ExchangeRateCollection
+    {
+        $url = $this->buildRequestUrl($dateTime);
 
-        return strtr(HMRC::SERVICE_URL, ['{m}' => $month, '{y}' => $year]);
+        $xml = Http::get($url)->throw()->body();
+
+        return $this->parseRatesData($xml, $dateTime);
+    }
+
+    /**
+     * @inheritDoc
+     * @throws RequestException
+     */
+    public function getRateDataOfCurrency(string $currencyCode, \DateTimeInterface $dateTime): ?ExchangeRateData
+    {
+        $rateCollection = $this->getRatesData($dateTime);
+
+        foreach ($rateCollection as $rateData) {
+
+            if ($rateData->currency_code === $currencyCode) {
+                return $rateData;
+            }
+
+        }
+
+        return null;
+
+    }
+
+    protected function parseRatesData(string $data, \DateTimeInterface $dateTime): ExchangeRateCollection
+    {
+        $data = iterator_to_array(simplexml_load_string($data), false);
+
+        $collection = array_map(function (object $rate) use ($dateTime) {
+            return $this->parseRateObject($rate, $dateTime);
+        }, $data);
+
+        return new ExchangeRateCollection($collection);
+    }
+
+    /**
+     * @param string $filepath
+     * @return Carbon
+     * @throws FileNotFoundException
+     */
+    public function parseRatesDateFromFile(string $filepath): Carbon
+    {
+        $content = File::get($filepath, true);
+
+        $xml = simplexml_load_string($content);
+
+        $period = (string)data_get($xml->attributes(), 'Period');
+
+        $period = Str::before($period, ' ');
+
+        return Carbon::createFromFormat('d/M/Y', $period);
     }
 
     public function baseCurrency(): string
@@ -24,65 +87,19 @@ class HMRCRates extends ExchangeRateService
         return 'GBP';
     }
 
-    public function fetchRates($content): array
+    protected function parseRateObject(object $rate, \DateTimeInterface $dateTime): ExchangeRateData
     {
-        try {
-            $data = iterator_to_array(simplexml_load_string($content), false);
+        $countryCode = (string)$rate->{HMRC::XML_ATTR_COUNTRY_CODE};
+        $currencyCode = (string)$rate->{HMRC::XML_ATTR_CURRENCY_CODE};
+        $exchangeRate = (float)$rate->{HMRC::XML_ATTR_EXCHANGE_RATE};
 
-            return collect($data)->map(fn ($attributes) => $this->prepareAttributes($attributes))->toArray();
-        } catch (Throwable $e) {
-            customlog(['ErrorCode' => 'ER_PARSE_ERR_01'], ER_PARSE_ERR_01);
-
-            throw $e;
-        }
-    }
-
-
-    public function retrieveDateFromFile(string $filepath): Carbon
-    {
-        try {
-            $content = File::get($filepath, true);
-
-            $xml = simplexml_load_string($content);
-
-            $period = (string) data_get($xml->attributes(), 'Period');
-
-            $period = Str::before($period, ' ');
-
-            return Carbon::createFromFormat('d/M/Y', $period);
-        } catch (Throwable $e) {
-            customlog(
-                ['ErrorCode' => 'ER_PARSE_ERR_02'],
-                sprintf("%s Filepath: '%s'. Original error: '%s'.", ER_DT_ERR_01, $filepath, $e->getMessage())
-            );
-
-            static::fetchDateError($filepath);
-        }
-    }
-
-    protected function prepareAttributes($rate): array
-    {
-        $countryCode = (string) $rate->{HMRC::XML_ATTR_COUNTRY_CODE};
-        $currencyCode = (string) $rate->{HMRC::XML_ATTR_CURRENCY_CODE};
-        $exchangeRate = (float) $rate->{HMRC::XML_ATTR_EXCHANGE_RATE};
-
-        return [
-            'country_id'    => $this->countries->findIdByCode($countryCode),
-            'currency_id'   => $this->currencies->findIdByCode($currencyCode),
-            'country_code'  => $countryCode,
+        return new ExchangeRateData([
+            'country_id' => Country::query()->where('iso_3166_2', $countryCode)->value('id'),
+            'currency_id' => Currency::query()->where('code', $currencyCode)->value('id'),
+            'country_code' => $countryCode,
             'currency_code' => $currencyCode,
-            'date'          => (string) $this->time,
+            'date' => Carbon::instance($dateTime)->startOfMonth()->format('Y-m-d'),
             'exchange_rate' => $exchangeRate
-        ];
-    }
-
-    protected function requestTime(): Carbon
-    {
-        return Carbon::now()->startOfMonth();
-    }
-
-    private static function normilizeDatePeriod(int $value): string
-    {
-        return sprintf('%02d', substr($value, -2));
+        ]);
     }
 }

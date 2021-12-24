@@ -7,6 +7,6 @@ class OrderByRfq extends Query
 {
     public function applyQuery($builder, string $table)
     {
-        return $builder->orderByCachedRelation('customer.rfq', $this->value);
+        return $builder->orderBy('customer_rfq_number', $this->value);
     }
 }

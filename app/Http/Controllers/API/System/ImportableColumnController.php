@@ -3,131 +3,157 @@
 namespace App\Http\Controllers\API\System;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumns;
-use App\Http\Requests\ImportableColumn\{
-    CreateImportableColumnRequest,
-    UpdateImportableColumnRequest
-};
-use App\Http\Resources\ImportableColumn\{
-    ImportableColumnCollection,
-    ImportableColumnResource
-};
+use App\Http\Requests\ImportableColumn\{CreateImportableColumnRequest, UpdateImportableColumnRequest};
+use App\Http\Resources\ImportableColumn\{ImportableColumnCollection, ImportableColumnWithIncludes};
 use App\Models\QuoteFile\ImportableColumn;
+use App\Queries\ImportableColumnQueries;
+use App\Services\ImportableColumn\ImportableColumnEntityService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class ImportableColumnController extends Controller
 {
-    /** @var \App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface */
-    protected $importableColumns;
-
-    public function __construct(ImportableColumns $importableColumns)
+    public function __construct()
     {
-        $this->importableColumns = $importableColumns;
-
         $this->authorizeResource(ImportableColumn::class, 'importable_column');
     }
 
     /**
-     * Display a listing of the resource.
+     * Show a paginated listing of the existing importable column entities.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param ImportableColumnQueries $importableColumnQueries
+     * @return JsonResponse
      */
-    public function index()
+    public function index(Request $request,
+                          ImportableColumnQueries $importableColumnQueries): JsonResponse
     {
-        $resource = request()->filled('search')
-            ? $this->importableColumns->search(request('search'))
-            : $this->importableColumns->paginate();
+        $pagination = $importableColumnQueries->listOfImportableColumnsQuery(request: $request)->apiPaginate();
 
         return response()->json(
-            ImportableColumnCollection::make($resource)
+            ImportableColumnCollection::make($pagination)
         );
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create a new importable column entity.
      *
-     * @param  \App\Http\Requests\ImportableColumn\CreateImportableColumnRequest  $request
-     * @return \Illuminate\Http\Response
+     * @param \App\Http\Requests\ImportableColumn\CreateImportableColumnRequest $request
+     * @param ImportableColumnEntityService $entityService
+     * @return JsonResponse
      */
-    public function store(CreateImportableColumnRequest $request)
+    public function store(CreateImportableColumnRequest $request,
+                          ImportableColumnEntityService $entityService): JsonResponse
     {
-        $importableColumn = $this->importableColumns->create($request->validated());
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->createColumn(data: $request->getCreateColumnData());
 
         return response()->json(
-            filter(ImportableColumnResource::make($importableColumn)),
-            Response::HTTP_CREATED
+            data: filter(ImportableColumnWithIncludes::make($resource)),
+            status: Response::HTTP_CREATED
         );
     }
 
     /**
-     * Display the specified resource.
+     * Show the specified importable column entity.
      *
-     * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
-     * @return \Illuminate\Http\Response
+     * @param ImportableColumn $importableColumn
+     * @return JsonResponse
      */
-    public function show(ImportableColumn $importableColumn)
+    public function show(ImportableColumn $importableColumn): JsonResponse
     {
         return response()->json(
-            filter(ImportableColumnResource::make($importableColumn))
+            filter(ImportableColumnWithIncludes::make($importableColumn))
         );
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update the specified importable column entity.
      *
-     * @param  \App\Http\Requests\ImportableColumn\UpdateImportableColumnRequest  $request
-     * @param \App\Models\QuoteFile\ImportableColumn  $importableColumn
-     * @return \Illuminate\Http\Response
+     * @param UpdateImportableColumnRequest $request
+     * @param ImportableColumnEntityService $entityService
+     * @param ImportableColumn $importableColumn
+     * @return JsonResponse
      */
-    public function update(UpdateImportableColumnRequest $request, ImportableColumn $importableColumn)
+    public function update(UpdateImportableColumnRequest $request,
+                           ImportableColumnEntityService $entityService,
+                           ImportableColumn $importableColumn): JsonResponse
     {
-        $importableColumn = $this->importableColumns->update($request->validated(), $importableColumn->id);
+
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->updateColumn(
+                column: $importableColumn,
+                data: $request->getUpdateColumnData()
+            );
 
         return response()->json(
-            filter(ImportableColumnResource::make($importableColumn))
+            filter(ImportableColumnWithIncludes::make($resource))
         );
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified importable column entity.
      *
-     * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param ImportableColumnEntityService $entityService
+     * @param ImportableColumn $importableColumn
+     * @return JsonResponse
      */
-    public function destroy(ImportableColumn $importableColumn)
+    public function destroy(Request $request,
+                            ImportableColumnEntityService $entityService,
+                            ImportableColumn $importableColumn): JsonResponse
     {
-        return response()->json(
-            $this->importableColumns->delete($importableColumn->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->deleteColumn(column: $importableColumn);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 
     /**
-     * Activate the specified resource in storage.
+     * Mark as active the specified importable column entity.
      *
-     * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param ImportableColumnEntityService $entityService
+     * @param ImportableColumn $importableColumn
+     * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function activate(ImportableColumn $importableColumn)
+    public function activate(Request $request,
+                             ImportableColumnEntityService $entityService,
+                             ImportableColumn $importableColumn): JsonResponse
     {
         $this->authorize('activate', $importableColumn);
 
-        return response()->json(
-            $this->importableColumns->activate($importableColumn->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->markColumnAsActive(column: $importableColumn);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 
     /**
      * Deactivate the specified resource in storage.
      *
-     * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param ImportableColumnEntityService $entityService
+     * @param ImportableColumn $importableColumn
+     * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function deactivate(ImportableColumn $importableColumn)
+    public function deactivate(Request $request,
+                               ImportableColumnEntityService $entityService,
+                               ImportableColumn $importableColumn): JsonResponse
     {
         $this->authorize('deactivate', $importableColumn);
 
-        return response()->json(
-            $this->importableColumns->deactivate($importableColumn->id)
-        );
+        $entityService
+            ->setCauser($request->user())
+            ->markColumnAsInactive(column: $importableColumn);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 }

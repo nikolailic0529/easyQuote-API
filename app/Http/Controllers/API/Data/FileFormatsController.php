@@ -3,20 +3,17 @@
 namespace App\Http\Controllers\API\Data;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;
+use App\Queries\FileFormatQueries;
+use Illuminate\Http\JsonResponse;
 
 class FileFormatsController extends Controller
 {
-    protected $fileFormat;
-
-    public function __construct(FileFormatRepositoryInterface $fileFormat)
+    public function __invoke(FileFormatQueries $queries): JsonResponse
     {
-        $this->fileFormat = $fileFormat;
-    }
+        $resource = $queries->listOfFileFormatsQuery()->get();
 
-    public function __invoke()
-    {
-        $fileFormats = $this->fileFormat->all();
-        return response()->json($fileFormats);
+        return response()->json(
+            data: $resource,
+        );
     }
 }

@@ -3,12 +3,18 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Contracts\Services\ExchangeRateServiceInterface as Service;
+use App\Contracts\Services\ManagesExchangeRates as Service;
 use App\Repositories\RateFileRepository as RateFiles;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class ExchangeRateTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected ?Service $service = null;
 
     protected function setUp(): void

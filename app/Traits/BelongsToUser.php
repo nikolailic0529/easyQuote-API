@@ -22,7 +22,7 @@ trait BelongsToUser
 
     public function initializeBelongsToUser()
     {
-        $this->fillable = array_merge($this->fillable, ['user_id']);
+        $this->mergeFillable(['user_id']);
     }
 
     public function user(): BelongsTo

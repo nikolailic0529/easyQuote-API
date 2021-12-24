@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Contracts\Services\MigratesCustomerEntity;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
-use App\Contracts\Services\CustomerFlow;
-use App\Repositories\Customer\CustomerRepository;
-use App\Services\CustomerFlow as ServicesCustomerFlow;
+use App\Services\CustomerFlowService as ServicesCustomerFlow;
+use App\Contracts\Services\CustomerState;
+use App\Services\CustomerQueries;
+use App\Services\CustomerStateProcessor;
+use App\Queries\WorldwideCustomerQueries;
 
 class CustomerServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -18,19 +20,22 @@ class CustomerServiceProvider extends ServiceProvider implements DeferrableProvi
      */
     public function register()
     {
-        $this->app->singleton(CustomerRepositoryInterface::class, CustomerRepository::class);
+        $this->app->singleton(CustomerQueries::class);
 
-        $this->app->singleton(CustomerFlow::class, ServicesCustomerFlow::class);
+        $this->app->singleton(MigratesCustomerEntity::class, ServicesCustomerFlow::class);
 
-        $this->app->alias(CustomerRepositoryInterface::class, 'customer.repository');
+        $this->app->singleton(CustomerState::class, CustomerStateProcessor::class);
+
+        $this->app->singleton(WorldwideCustomerQueries::class);
     }
 
     public function provides()
     {
         return [
-            CustomerRepositoryInterface::class,
-            CustomerFlow::class,
-            'customer.repository',
+            MigratesCustomerEntity::class,
+            WorldwideCustomerQueries::class,
+            CustomerQueries::class,
+            CustomerState::class,
         ];
     }
 }

@@ -6,7 +6,7 @@ use Illuminate\Console\{
     Command,
     ConfirmableTrait,
 };
-use App\Contracts\Services\ExchangeRateServiceInterface as Service;
+use App\Contracts\Services\ManagesExchangeRates as Service;
 use App\Repositories\RateFileRepository as Repository;
 use Carbon\Carbon;
 use Throwable;
@@ -42,14 +42,15 @@ class UpdateExchangeRates extends Command
     /**
      * Execute the console command.
      *
+     * @param Service $service
      * @return mixed
      */
-    public function handle(Service $service, Repository $repository)
+    public function handle(Service $service)
     {
         /** Perform scheduled update if option '--file' is missing. */
         if (!$this->option('file')) {
             $result = $service->updateRates();
-            
+
             return $this->interpretUpdateResult($result);
         }
 
@@ -87,7 +88,7 @@ class UpdateExchangeRates extends Command
         $service = app(Service::class);
 
         try {
-            $date = $service->retrieveDateFromFile($filepath);
+            $date = $service->parseRatesDateFromFile($filepath);
 
             return tap(
                 $date,

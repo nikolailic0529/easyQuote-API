@@ -41,7 +41,7 @@ class CustomersUpdate extends Command
      */
     public function handle()
     {
-        $addresses = head(json_decode(file_get_contents(database_path('seeds/models/customers_addresses.json')), true))['addresses'];
+        $addresses = head(json_decode(file_get_contents(database_path('seeders/models/customers_addresses.json')), true))['addresses'];
         $addresses = collect($addresses)->transform(function ($address) {
             $country_id = Country::code(data_get($address, 'country_code'))->firstOrFail()->id;
             data_set($address, 'country_id', $country_id);
@@ -50,7 +50,7 @@ class CustomersUpdate extends Command
             return $address;
         })->keyBy('address_type');
 
-        $contacts = head(json_decode(file_get_contents(database_path('seeds/models/customers_contacts.json')), true))['contacts'];
+        $contacts = head(json_decode(file_get_contents(database_path('seeders/models/customers_contacts.json')), true))['contacts'];
         $contacts = collect($contacts)->keyBy('contact_type');
 
         $addresses = collect([

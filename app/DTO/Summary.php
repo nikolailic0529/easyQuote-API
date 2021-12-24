@@ -4,7 +4,6 @@ namespace App\DTO;
 
 use Carbon\CarbonPeriod;
 use Spatie\DataTransferObject\DataTransferObject;
-use Illuminate\Support\Str;
 
 class Summary extends DataTransferObject
 {
@@ -18,31 +17,33 @@ class Summary extends DataTransferObject
 
     public string $base_currency;
 
-    public static function create(array $totals, float $base_rate, string $base_currency, ?CarbonPeriod $period): Summary
+    public static function fromArrayOfTotals(array $totals, float $baseRateValue, string $baseCurrency, ?CarbonPeriod $period): Summary
     {
-        $totals = collect($totals)->map(fn ($value, $key) => static::castTotalValue($key, $value, $base_rate))->toArray();
+        $totals = collect($totals)->map(function ($value, $key) use ($baseRateValue) {
+            return static::castTotalValue($key, $value, $baseRateValue);
+        })->all();
 
         $period = [
-            'start_date' => optional($period, fn ($p) => $p->getStartDate()->toDateString()),
-            'end_date' => optional($period, fn ($p) => $p->getEndDate()->toDateString()),
+            'start_date' => transform($period, fn(CarbonPeriod $p) => $p->getStartDate()->toDateString()),
+            'end_date' => transform($period, fn(CarbonPeriod $p) => $p->getEndDate()->toDateString()),
         ];
 
-        return new static(compact(
-            'totals',
-            'period',
-            'base_currency',
-            'base_rate'
-        ));
+        return new static([
+            'totals' => $totals,
+            'period' => $period,
+            'base_currency' => $baseCurrency,
+            'base_rate' => $baseRateValue
+        ]);
     }
 
     protected static function castTotalValue($key, $value, $base_rate)
     {
-        if (Str::contains($key, '_count')) {
-            return (int) $value;
+        if (str_contains($key, '_count')) {
+            return (int)$value;
         }
 
-        if (Str::contains($key, '_value')) {
-            return (float) $value * $base_rate;
+        if (str_contains($key, '_value')) {
+            return round((float)$value * $base_rate, 2);
         }
 
         return $value;

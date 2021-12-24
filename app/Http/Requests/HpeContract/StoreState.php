@@ -32,7 +32,7 @@ class StoreState extends FormRequest
         return [
             'company_id'            => ['nullable', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
             'country_id'            => ['nullable', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
-            'quote_template_id'     => ['nullable', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')],
+            'quote_template_id'     => ['nullable', 'uuid', Rule::exists('hpe_contract_templates', 'id')->whereNull('deleted_at')],
             'hpe_contract_file_id'  => ['nullable', 'uuid', Rule::exists('hpe_contract_files', 'id')->whereNull('deleted_at')],
 
             'sold_contact'           => ['nullable', 'array'],

@@ -4,9 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Services\LocationService;
+use App\Contracts\Services\AddressGeocoder;
 use App\Services\Auth\AuthenticatedCase;
-use App\Services\LocationService as ServicesLocationService;
+use App\Services\GoogleAddressGeocodingService as ServicesLocationService;
 
 class LocationServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -17,16 +17,13 @@ class LocationServiceProvider extends ServiceProvider implements DeferrableProvi
      */
     public function register()
     {
-        $this->app->singleton(LocationService::class, ServicesLocationService::class);
-
-        $this->app->alias(AuthenticatedCase::class, 'auth.case');
+        $this->app->bind(AddressGeocoder::class, ServicesLocationService::class);
     }
 
-    public function provides()
+    public function provides(): array
     {
         return [
-            LocationService::class,
-            'auth.case',
+            AddressGeocoder::class,
         ];
     }
 }

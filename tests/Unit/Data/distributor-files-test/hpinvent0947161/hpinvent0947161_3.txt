@@ -1,0 +1,49 @@
+Service Agreement ID: 1086 5485 2295
+
+      Support Quotation                                                                 System Handle: ANZ-DE-02
+
+      Agreement No.                                                                     Germany
+
+      Your PO Reference:                                                                HPE Reference No.: 56896738
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        *** Hardware ***
+
+        U9087AC               Hardware Support Upgrade                                                                    30.09.2021                 -155.57
+
+                                                                                         Hardware Subtotal                                           -155.57
+
+                                                                                         Discounts                                                     53.55
+
+                                                                                         Total                                                       -102.02
+
+        H5UN7AC               Collaborative Support Upgrade                                                               30.09.2021                   -6.97
+
+                                                                                         Hardware Subtotal                                             -6.97
+
+                                                                                         Discounts                                                      2.40
+
+                                                                                         Total                                                         -4.57
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                        6.50
+
+        Special Neg HdrDisc% -31%                                                                                                                      48.37
+
+        Pre Payment HdrDisc% -1%                                                                                                                        1.08
+
+                                                                        Hardware Total                                                               -162.54
+
+                                                                        Discount Total                                                                 55.95
+
+                                                                        Contract Total                                                               -106.59
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT    Page: 3 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

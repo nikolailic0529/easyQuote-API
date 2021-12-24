@@ -3,38 +3,36 @@
 namespace App\Models;
 
 use App\Contracts\ActivatableInterface;
-use App\Models\Permission;
+use App\Contracts\SearchableEntity;
 use App\Services\PermissionHelper;
-use App\Traits\{
-    Activatable,
-    BelongsToUser,
-    Search\Searchable,
-    Systemable,
+use App\Traits\{Activatable,
     Activity\LogsActivity,
     Auth\Multitenantable,
+    BelongsToUser,
     HasUsers,
+    Search\Searchable,
+    Systemable,
     Uuid
 };
-use Spatie\Permission\{
-    Guard,
-    Traits\HasPermissions,
-    Traits\RefreshesPermissionCache,
-    Exceptions\RoleDoesNotExist,
+use Illuminate\Database\Eloquent\{Model, Relations\BelongsToMany, Relations\MorphToMany, SoftDeletes,};
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Spatie\Permission\{Contracts\Role as RoleContract,
     Exceptions\GuardDoesNotMatch,
     Exceptions\RoleAlreadyExists,
-    Contracts\Role as RoleContract,
-    PermissionRegistrar
+    Exceptions\RoleDoesNotExist,
+    Guard,
+    PermissionRegistrar,
+    Traits\HasPermissions,
+    Traits\RefreshesPermissionCache
 };
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-    Relations\MorphToMany,
-    Relations\BelongsToMany,
-};
-use Illuminate\Support\Collection;
-use Illuminate\Support\Arr;
 
-class Role extends Model implements RoleContract, ActivatableInterface
+/**
+ * @property string|null $name
+ * @property string|null $guard_name
+ * @property bool|null $is_system
+ */
+class Role extends Model implements RoleContract, ActivatableInterface, SearchableEntity
 {
     use Uuid,
         Multitenantable,
@@ -49,21 +47,21 @@ class Role extends Model implements RoleContract, ActivatableInterface
         LogsActivity;
 
     protected $fillable = [
-        'name', 'guard_name', 'is_system'
+        'name', 'guard_name', 'is_system',
     ];
 
     protected $hidden = [
-        'permissions', 'user', 'deleted_at'
+        'permissions', 'user', 'deleted_at',
     ];
 
     protected $casts = [
-        'is_system' => 'boolean'
+        'is_system' => 'boolean',
     ];
 
     protected ?array $permissionsCache = null;
 
     protected static $logAttributes = [
-        'name', 'modules_privileges'
+        'name', 'modules_privileges',
     ];
 
     protected static $logOnlyDirty = true;
@@ -88,10 +86,10 @@ class Role extends Model implements RoleContract, ActivatableInterface
         }
 
         if (
-            static::where('name', $attributes['name'])
+        static::where('name', $attributes['name'])
             ->where('guard_name', $attributes['guard_name'])
             ->where(
-                fn ($query) => $query->where('user_id', optional($attributes)['user_id'])
+                fn($query) => $query->where('user_id', optional($attributes)['user_id'])
                     ->orWhere('is_system', true)
             )
             ->first()

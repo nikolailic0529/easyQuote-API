@@ -2,48 +2,39 @@
 
 namespace App\Repositories\Quote;
 
-use App\Contracts\{
-    Repositories\Quote\QuoteSubmittedRepositoryInterface,
-    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
-    Services\QuoteServiceInterface
-};
+use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
 use App\Repositories\{
     SearchableRepository,
     Concerns\ResolvesImplicitModel,
     Concerns\ResolvesTargetModel,
 };
 use App\Http\Resources\QuoteRepository\SubmittedCollection;
+use App\Models\Company;
+use App\Models\Customer\Customer;
 use App\Models\Quote\{
     Quote,
-    BaseQuote
+    BaseQuote,
+    Contract
 };
+use App\Models\QuoteFile\QuoteFile;
+use App\Models\User;
 use Closure;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
-use File, DB, Storage;
-use Illuminate\Support\LazyCollection;
+use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\{LazyCollection, Facades\File, Facades\Storage};
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
     use ResolvesImplicitModel, ResolvesTargetModel;
 
-    const EXPORT_CACHE_TTL = 60;
-
-    const EXPORT_CACHE_PREFIX = 'quote-pdf';
-
     protected Quote $quote;
 
-    protected QuoteFileRepository $quoteFile;
-
-    protected QuoteServiceInterface $quoteService;
-
-    public function __construct(Quote $quote, QuoteFileRepository $quoteFile, QuoteServiceInterface $quoteService)
+    public function __construct(Quote $quote)
     {
         $this->quote = $quote;
-        $this->quoteFile = $quoteFile;
-        $this->quoteService = $quoteService;
     }
 
     public function all()
@@ -72,24 +63,71 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function userQuery(): Builder
     {
-        /** @var \App\Models\User */
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
-        return $this->quote
+        return Quote::query()
             ->when(
                 /** If user is not super-admin we are retrieving the user's own quotes */
-                $user->cant('view_quotes'),
-                fn (Builder $query) => $query->currentUser()
-                    /** Adding quotes that have been granted access to */
-                    ->orWhereIn('id', $user->getPermissionTargets('quotes.read'))
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
+                false === $user->hasRole(R_SUPER),
+                function (Builder $builder) use ($user) {
+                    $builder->where(function (Builder $builder) use ($user) {
+                        $builder->where('quotes.user_id', auth()->id())
+                            /** Adding quotes that have been granted access to */
+                            ->orWhereIn($builder->qualifyColumn('id'), $user->getPermissionTargets('quotes.read'))
+                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('quotes.read'))
+                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->ledTeamUsers()->getQuery()->select($user->ledTeamUsers()->getRelated()->getQualifiedKeyName()));
+                    });
+                }
             )
-            ->with(
-                'quoteFiles:id,quote_id,file_type,quote_id,original_file_name',
-                'usingVersion.quoteFiles:id,quote_id,file_type,quote_id,original_file_name',
-                'contract:id,quote_id,submitted_at'
+            ->join('customers', function (JoinClause $join) {
+                $join->on('customers.id', 'quotes.customer_id');
+            })
+            ->leftJoin('contracts', function (JoinClause $join) {
+                $join->on('contracts.quote_id', '=', 'quotes.id')->whereNull('contracts.deleted_at');
+            })
+            ->select(
+                'quotes.id',
+                'quotes.active_version_id',
+                'quotes.user_id',
+                'quotes.company_id',
+                'quotes.customer_id',
+                'quotes.distributor_file_id',
+                'quotes.schedule_file_id',
+                'quotes.contract_template_id',
+                'quotes.completeness',
+                'quotes.created_at',
+                'quotes.updated_at',
+                'quotes.activated_at'
             )
-            ->submitted();
+            ->addSelect([
+                'company_name' => Company::select('name')->whereColumn('companies.id', 'quotes.company_id'),
+                'user_fullname' => User::select('user_fullname')->whereColumn('users.id', 'quotes.user_id')->limit(1),
+
+                'customers.name as customer_name',
+                'customers.rfq as customer_rfq_number',
+                'customers.source as customer_source',
+                'customers.valid_until as customer_valid_until_date',
+                'customers.support_start as customer_support_start_date',
+                'customers.support_end as customer_support_end_date',
+
+                'contracts.id as contract_id',
+                'contracts.contract_number as contract_number',
+                'contracts.submitted_at as contract_submitted_at',
+
+                'price_list_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quotes.distributor_file_id')->limit(1),
+                'payment_schedule_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quotes.schedule_file_id')->limit(1),
+
+            ])
+            ->with([
+                'activeVersion' => fn ($query) => $query->select('id', 'quote_id', 'user_id', 'distributor_file_id', 'schedule_file_id', 'company_id', 'version_number', 'completeness', 'updated_at')
+                    ->addSelect([
+                        'company_name' => Company::select('name')->whereColumn('companies.id', 'quote_versions.company_id')->limit(1),
+                        'price_list_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.distributor_file_id')->limit(1),
+                        'payment_schedule_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.schedule_file_id')->limit(1)
+                    ]),
+            ])
+            ->whereNotNull('quotes.submitted_at');
     }
 
     public function toCollection($resource): SubmittedCollection
@@ -97,9 +135,13 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return SubmittedCollection::make($resource);
     }
 
-    public function findByRfq(string $rfq): BaseQuote
+    public function findByRFQ(string $rfq): BaseQuote
     {
-        $quote = $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->first();
+        $quote = $this->quote->query()
+            ->whereNotNull('submitted_at')
+            ->whereNotNull('activated_at')
+            ->rfq($rfq)
+            ->first();
 
         error_abort_if(is_null($quote), EQ_NF_01, 'EQ_NF_01', 422);
 
@@ -108,7 +150,9 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function find(string $id): Quote
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        return $this->quote->query()
+            ->whereKey($id)
+            ->firstOrFail();
     }
 
     public function batchUpdate(array $values, array $where = []): bool
@@ -116,25 +160,10 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->quote->whereNotNull('submitted_at')->where($where)->update($values);
     }
 
-    public function rfq(string $rfq, bool $serviceCaused = false): BaseQuote
-    {
-        $quote = $this->findByRfq($rfq);
-
-        if ($serviceCaused) {
-            activity()->on($quote)->causedByService(request('client_name', 'Service'))->queue('retrieved');
-        }
-
-        $quote = $quote->usingVersion->disableReview();
-
-        $this->quoteService->prepareQuoteReview($quote);
-
-        return $quote;
-    }
-
     public function price(string $rfq)
     {
         $quote = $this->findByRfq($rfq);
-        $priceList = $quote->usingVersion->priceList;
+        $priceList = ($quote->activeVersionOrCurrent)->priceList;
 
         $path = $priceList->original_file_path;
         $storagePath = $this->resolveFilepath($priceList->original_file_path);
@@ -153,23 +182,9 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function schedule(string $rfq)
     {
         $quote = $this->findByRfq($rfq);
-        $paymentSchedule = $quote->usingVersion->paymentSchedule;
+        $paymentSchedule = ($quote->activeVersionOrCurrent)->paymentSchedule;
 
         return $this->resolveFilepath($paymentSchedule->original_file_path);
-    }
-
-    public function pdf(string $rfq)
-    {
-        $quote = $this->findByRfq($rfq);
-
-        return $this->retrieveCachedQuotePdf($quote);
-    }
-
-    public function exportPdf($quote, int $type = QT_TYPE_QUOTE)
-    {
-        $quote = $this->resolveModel($quote);
-
-        return $this->retrieveCachedQuotePdf($quote->switchModeTo($type));
     }
 
     public function delete(string $id)
@@ -192,73 +207,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->find($id)->unsubmit();
     }
 
-    public function copy($quote)
-    {
-        $quote = $this->resolveModel($quote);
-        $version = $this->resolveTargetModel($quote, $quote->usingVersion);
-
-        return DB::transaction(function () use ($quote, $version) {
-            $replicatedQuote = $version->replicate(['laravel_through_key']);
-            $replicatedQuote->is_version = false;
-
-            $quote->deactivate();
-
-            $replicatedQuote->unSubmit();
-            $pass = $replicatedQuote->save();
-
-            /**
-             * Discounts Replication
-             */
-            $discounts = DB::table('quote_discount')
-                ->select(DB::raw("'{$replicatedQuote->id}' `quote_id`"), 'discount_id', 'duration')
-                ->where('quote_id', $quote->id);
-            DB::table('quote_discount')->insertUsing(['quote_id', 'discount_id', 'duration'], $discounts);
-
-            /**
-             * Mapping Replication
-             */
-            $mapping = DB::table('quote_field_column')
-                ->select(DB::raw("'{$replicatedQuote->id}' as `quote_id`"), 'template_field_id', 'importable_column_id', 'is_default_enabled')
-                ->where('quote_id', $quote->id);
-            DB::table('quote_field_column')->insertUsing(
-                ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled'],
-                $mapping
-            );
-
-            $quoteFilesToSave = collect();
-
-            $priceList = $quote->quoteFiles()->priceLists()->first();
-            if (isset($priceList)) {
-                $quoteFilesToSave->push($this->quoteFile->replicatePriceList($priceList));
-            }
-
-            $schedule = $quote->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
-            if (isset($schedule)) {
-                $replicatedSchedule = $schedule->replicate();
-                unset($replicatedSchedule->scheduleData);
-                $replicatedSchedule->save();
-
-                if (isset($schedule->scheduleData)) {
-                    $replicatedSchedule->scheduleData()->save($schedule->scheduleData->replicate());
-                }
-
-                $quoteFilesToSave->push($replicatedSchedule);
-            }
-
-            $copied = $pass && $replicatedQuote->quoteFiles()->saveMany($quoteFilesToSave);
-
-            if ($copied) {
-                activity()
-                    ->on($replicatedQuote)
-                    ->withProperties(['old' => Quote::logChanges($version), 'attributes' => Quote::logChanges($replicatedQuote)])
-                    ->by(request()->user())
-                    ->queue('copied');
-            }
-
-            return $copied;
-        });
-    }
-
     public function setContractTemplate(string $id, string $contract_template_id): bool
     {
         return $this->find($id)->update(compact('contract_template_id'));
@@ -267,11 +215,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function model(): string
     {
         return Quote::class;
-    }
-
-    public function flushQuotePdfCache(Quote $quote): void
-    {
-        collect(QT_TYPES)->each(fn ($type) => cache()->forget($this->quotePdfCacheKey($quote, $type)));
     }
 
     protected function resolveFilepath($path)
@@ -284,7 +227,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function filterQueryThrough(): array
     {
         return [
-            app(\App\Http\Query\DefaultOrderBy::class, ['column' => 'updated_at']),
+            new \App\Http\Query\ActiveFirst('quotes.is_active'),
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Quote\OrderByName::class,
             \App\Http\Query\Quote\OrderByCompanyName::class,
@@ -292,16 +235,14 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             \App\Http\Query\Quote\OrderByValidUntil::class,
             \App\Http\Query\Quote\OrderBySupportStart::class,
             \App\Http\Query\Quote\OrderBySupportEnd::class,
-            \App\Http\Query\Quote\OrderByCompleteness::class
+            \App\Http\Query\Quote\OrderByCompleteness::class,
+            new \App\Http\Query\DefaultOrderBy(column: 'quotes.updated_at', ignoreColumn: 'quotes.is_active'),
         ];
     }
 
     protected function filterableQuery()
     {
-        return [
-            $this->userQuery()->runPaginationCountQueryUsing($this->userQuery())->activated()->with('contract.customer'),
-            $this->userQuery()->deactivated()->with('contract.customer')
-        ];
+        return $this->userQuery();
     }
 
     protected function searchableModel(): Model
@@ -311,7 +252,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     protected function searchableQuery()
     {
-        return $this->userQuery()->with('contract.customer');
+        return $this->userQuery();
     }
 
     protected function searchableFields(): array
@@ -332,21 +273,5 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function searchableScope($query)
     {
         return $query;
-    }
-
-    private function retrieveCachedQuotePdf(Quote $quote)
-    {
-        return cache()->remember(
-            $this->quotePdfCacheKey($quote),
-            static::EXPORT_CACHE_TTL,
-            fn () => $this->quoteService->export(
-                tap($quote->usingVersion)->switchModeTo($quote->mode)
-            )
-        );
-    }
-
-    private function quotePdfCacheKey(Quote $quote): string
-    {
-        return static::EXPORT_CACHE_PREFIX . '-' . $quote->mode . ':' . $quote->id;
     }
 }

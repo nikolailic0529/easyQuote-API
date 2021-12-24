@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Task;
 
-use App\Http\Resources\AttachmentResource;
+use App\Http\Resources\Attachment\CreatedAttachment;
 use App\Http\Resources\User\UserRelationResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,7 +28,7 @@ class TaskListResource extends JsonResource
             'expiry_date'   => optional($this->expiry_date)->tz($tz)->format(config('date.format_time')),
             'priority'      => (int) $this->priority,
             'users'         => UserRelationResource::collection($this->whenLoaded('users')),
-            'attachments'   => AttachmentResource::collection($this->whenLoaded('attachments')),
+            'attachments'   => CreatedAttachment::collection($this->whenLoaded('attachments')),
             'created_at'    => optional($this->created_at)->tz($tz)->format(config('date.format_time')),
             'updated_at'    => optional($this->updated_at)->tz($tz)->format(config('date.format_time')),
         ];

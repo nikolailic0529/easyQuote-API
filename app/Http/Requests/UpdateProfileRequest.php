@@ -2,18 +2,17 @@
 
 namespace App\Http\Requests;
 
+use App\Enum\CompanyType;
 use App\Models\Company;
 use App\Models\Data\Country;
 use App\Models\Data\Timezone;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Validation\Rule;
 
 class UpdateProfileRequest extends FormRequest
 {
-    use PreparesNullValues;
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -27,12 +26,12 @@ class UpdateProfileRequest extends FormRequest
             'last_name'                     => 'string|min:2|alpha_spaces',
             'email'                         => ['string', 'email', Rule::unique('users')->ignore($this->user())->whereNull('deleted_at')],
             'phone'                         => 'nullable|string|min:4|phone',
-            
+
             'timezone_id'                   => ['uuid', Rule::exists(Timezone::class, 'id')],
             'country_id'                    => ['uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
-            
-            'company_id'                    => ['nullable', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')],
-            'hpe_contract_template_id'      => ['nullable', 'uuid', Rule::exists(HpeContractTemplate::class, 'id')->where('type', QT_TYPE_HPE_CONTRACT)->whereNull('deleted_at')],
+
+            'company_id'                    => ['nullable', 'uuid', Rule::exists(Company::class, 'id')->where('type', CompanyType::INTERNAL)->whereNull('deleted_at')],
+            'hpe_contract_template_id'      => ['nullable', 'uuid', Rule::exists(HpeContractTemplate::class, 'id')->whereNull('deleted_at')],
 
             'picture'                       => 'image|max:2048',
             'delete_picture'                => 'nullable|boolean',
@@ -52,12 +51,20 @@ class UpdateProfileRequest extends FormRequest
             'current_password.password' => 'You have entered invalid current password.',
             'password.different'        => "Your new password shouldn't be same as your last password",
             'first_name.min'            => 'The first name/last name must be of at least :min characters.',
-            'last_name.min'             => 'The first name/last name must be of at least :min characters.'
+            'last_name.min'             => 'The first name/last name must be of at least :min characters.',
         ];
     }
 
-    protected function nullValues()
+    protected function prepareForValidation(): void
     {
-        return ['phone', 'middle_name'];
+        $nullable = array_map(function ($value) {
+            if ($value === 'null') {
+                return null;
+            }
+
+            return $value;
+        }, $this->only(['phone', 'middle_name', 'hpe_contract_template_id']));
+
+        $this->merge($nullable);
     }
 }

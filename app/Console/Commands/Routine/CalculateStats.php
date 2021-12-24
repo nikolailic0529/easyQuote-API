@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Services\StatsAggregator;
 use Illuminate\Console\Command;
 
 class CalculateStats extends Command
@@ -36,22 +35,22 @@ class CalculateStats extends Command
      *
      * @return mixed
      */
-    public function handle(StatsAggregator $aggregator)
+    public function handle()
     {
         /** Calculate quote totals. */
-        $this->call('eq:calculate-quotes');
+        $this->call(CalculateQuotes::class);
 
         /** Calculate quote location totals. */
-        $this->call('eq:calculate-quote-locations');
+        $this->call(CalculateQuoteLocations::class);
 
         /** Calculate customer totals for each location based on quote totals. */
-        $this->call('eq:calculate-customers');
+        $this->call(CalculateCustomers::class);
 
         /** Calculate existing assets. */
-        $this->call('eq:calculate-assets');
+        $this->call(CalculateAssets::class);
 
-        $aggregator->flushSummaryCache();
-        
         $this->info("\nSummary cache has been cleared!");
+
+        return Command::SUCCESS;
     }
 }

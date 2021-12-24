@@ -15,8 +15,11 @@ use Illuminate\Database\Eloquent\{
     Relations\MorphTo,
 };
 use Illuminate\Support\Collection;
-use Str;
+use Illuminate\Support\Str;
 
+/**
+ * @property-read Model $discountable
+ */
 class Discount extends Model
 {
     use Uuid;
@@ -36,7 +39,12 @@ class Discount extends Model
 
     public function quotes(): BelongsToMany
     {
-        return $this->belongsToMany(Quote::class);
+        return $this->belongsToMany(Quote::class, 'quote_discount');
+    }
+
+    public function quoteVersions(): BelongsToMany
+    {
+        return $this->belongsToMany(QuoteVersion::class, 'quote_version_discount', relatedPivotKey: 'quote_version_id');
     }
 
     public function getDiscountTypeAttribute()

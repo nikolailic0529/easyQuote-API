@@ -6,7 +6,7 @@ use App\Models\{
     Quote\BaseQuote,
     Quote\QuoteVersion,
 };
-use App\Services\AssetService;
+use App\Services\AssetFlowService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -36,7 +36,7 @@ class MigrateQuoteAssets implements ShouldQueue
      *
      * @return void
      */
-    public function handle(AssetService $service)
+    public function handle(AssetFlowService $service)
     {
         $quote = $this->quote;
 
@@ -44,6 +44,6 @@ class MigrateQuoteAssets implements ShouldQueue
             $quote = $quote->quote;
         }
 
-        $service->migrateQuoteAssets($quote);
+        $service->migrateAssetsFromRescueQuote($quote);
     }
 }

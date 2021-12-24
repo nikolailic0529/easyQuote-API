@@ -2,6 +2,7 @@
 
 use App\Facades\Failure;
 use App\Mail\FailureReportMail;
+use Illuminate\Support\Facades\Mail;
 
 if (!function_exists('customlog')) {
     /**

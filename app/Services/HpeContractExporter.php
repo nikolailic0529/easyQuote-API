@@ -6,17 +6,20 @@ use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Contracts\Services\HpeExporter;
 use App\DTO\HpeContractExportFile;
 use App\DTO\PreviewHpeContractData;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Foundation\TemporaryDirectory;
+use App\Models\Template\HpeContractTemplate;
 use Barryvdh\Snappy\PdfWrapper;
-use File;
+use Illuminate\Contracts\Filesystem\Factory as DiskFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Filesystem\FilesystemAdapter as Disk;
 use Illuminate\Support\{Arr, Str};
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use LynX39\LaraPdfMerger\PdfManage;
-use Illuminate\Filesystem\FilesystemAdapter as Disk;
-use Illuminate\Contracts\Filesystem\Factory as DiskFactory;
-use Spatie\PdfToText\Pdf as PdfToText;
 use Smalot\PdfParser\Parser as PdfParser;
+use Spatie\PdfToText\Pdf as PdfToText;
+use iio\libmergepdf\Merger;
+use iio\libmergepdf\Pages;
 
 class HpeContractExporter implements HpeExporter
 {
@@ -24,56 +27,55 @@ class HpeContractExporter implements HpeExporter
 
     protected Disk $disk;
 
-    protected string $exportView;
-
-    public function __construct(Vendors $vendors, DiskFactory $diskFactory,  string $exportView = 'hpecontracts.pdf')
+    public function __construct(Vendors $vendors, DiskFactory $diskFactory)
     {
         $this->vendors = $vendors;
         $this->disk = $diskFactory->disk();
-        $this->exportView = $exportView;
     }
 
     public function export(HpeContractTemplate $template, PreviewHpeContractData $data)
     {
         $form = Collection::wrap($template->form_data);
-
         $form = static::sortFormPages($form);
 
-        $data->images = Collection::wrap($this->retrieveTemplateImages($template, ThumbnailManager::PREFER_SVG))->pluck('abs_src', 'id')->toArray();
+        $exportView = $this->resolveExportView($template);
+
+        $templateImages = $this->retrieveTemplateImages($template, ThumbHelper::PREFER_SVG | ThumbHelper::ABS_PATH);
+
+        $data->images = Collection::wrap($templateImages)->pluck('src', 'id')->all();
 
         $data->translations = $template->data_headers->pluck('value', 'key')->toArray();
 
         $tempDir = (new TemporaryDirectory)->create();
 
         $portraitPages = $tempDir->path('portrait-pages.pdf');
-        
+
         $landscapePages = $tempDir->path('landscape-pages.pdf');
 
         $this->pdfWrapper()
             ->setPaper('letter', 'Portrait')
             ->setOption('margin-left', 26)
             ->setOption('margin-right', 26)
-            ->loadView($this->exportView, ['form' => $form->only('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'P'])
+            ->loadView($exportView, ['form' => $form->only('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'P'])
             ->save($portraitPages, true);
 
         $this->pdfWrapper()
             ->setPaper('letter', 'Landscape')
             ->setOption('enable-javascript', true)
-            ->loadView($this->exportView, ['form' => $form->except('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'L'])
+            ->loadView($exportView, ['form' => $form->except('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'L'])
             ->save($landscapePages, true);
 
-        $pdfMerger = $this->pdfMerger()->init();
+        $merger = new Merger();
 
         $portraitPagesNumbers = $this->findFilledPages($portraitPages);
         $landscapePagesNumbers = $this->findFilledPages($landscapePages);
 
-        $pdfMerger->addPDF($portraitPages, implode(',', $portraitPagesNumbers), 'P');
-        $pdfMerger->addPDF($landscapePages, implode(',', $landscapePagesNumbers), 'L');
-        $pdfMerger->merge();
+        $merger->addFile($portraitPages, new Pages(implode(',', $portraitPagesNumbers)));
+        $merger->addFile($landscapePages, new Pages(implode(',', $landscapePagesNumbers)));
+
+        $content = $merger->merge();
 
         $filePath = 'hpe_contracts' . DIRECTORY_SEPARATOR .  static::makeDownloadFileName($data);
-
-        $content = $pdfMerger->save(null, 'string');
 
         File::put($tempDir->path($filePath), $content);
 
@@ -85,15 +87,15 @@ class HpeContractExporter implements HpeExporter
 
     public function retrieveTemplateImages(HpeContractTemplate $template, int $flags = 0): array
     {
-        $hpe = $this->vendors->findByCode('HPE');
+        $vendor = $template->vendor;
 
-        return Collection::wrap([$template->company, $hpe])
+        return Collection::wrap([$template->company, $vendor])
             ->whereInstanceOf(Model::class)
             ->reduce(function (Collection $carry, Model $model) use ($flags) {
-                $images = ThumbnailManager::retrieveLogoDimensions(
+                $images = ThumbHelper::getLogoDimensionsFromImage(
                     $model->image,
                     $model->thumbnailProperties(),
-                    get_class($model),
+                    Str::snake(class_basename($model::class)),
                     $flags
                 );
 
@@ -101,6 +103,14 @@ class HpeContractExporter implements HpeExporter
             }, Collection::make())
             ->filter()
             ->toArray();
+    }
+
+    protected function resolveExportView(HpeContractTemplate $template): string
+    {
+        return [
+            'HPE' => 'hpecontracts.hpe-pdf',
+            'ARU' => 'hpecontracts.aruba-pdf',
+        ][$template->vendor->short_code] ?? 'hpecontracts.aruba-pdf';
     }
 
     protected function pdfWrapper(): PdfWrapper

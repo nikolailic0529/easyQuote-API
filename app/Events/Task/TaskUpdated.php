@@ -12,14 +12,17 @@ class TaskUpdated
 
     public Task $task;
 
+    public array $usersSyncResult;
+
     /**
      * Create a new event instance.
      *
      * @param Task $task
-     * @return void
+     * @param array $usersSyncResult
      */
-    public function __construct(Task $task)
+    public function __construct(Task $task, array $usersSyncResult)
     {
         $this->task = $task;
+        $this->usersSyncResult = $usersSyncResult;
     }
 }

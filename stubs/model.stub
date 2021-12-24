@@ -9,5 +9,5 @@ class {{ class }} extends Model
 {
     use Uuid;
 
-    protected $fillable = [];
+    protected $guarded = [];
 }

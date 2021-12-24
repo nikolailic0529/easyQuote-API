@@ -3,8 +3,8 @@
 namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\ContractTemplateRepositoryInterface;
-use App\Models\QuoteTemplate\ContractTemplate;
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Template\ContractTemplate;
+use App\Models\Template\QuoteTemplate;
 use App\Repositories\SearchableRepository;
 use Illuminate\Database\Eloquent\{
     Model,
@@ -12,7 +12,8 @@ use Illuminate\Database\Eloquent\{
     Collection as EloquentCollection
 };
 use Illuminate\Support\Collection;
-use Closure, Arr;
+use Illuminate\Support\Arr;
+use Closure;
 
 class ContractTemplateRepository extends SearchableRepository implements ContractTemplateRepositoryInterface
 {
@@ -63,18 +64,18 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
         $quoteTemplate = data_get($request, 'quote_template');
 
         return $this->query()
-            ->where('quote_templates.company_id', $company_id)
-            ->where('quote_templates.vendor_id', $vendor_id)
-            ->join('country_quote_template', function ($join) use ($country_id) {
-                $join->on('quote_templates.id', '=', 'country_quote_template.quote_template_id')
+            ->where('contract_templates.company_id', $company_id)
+            ->where('contract_templates.vendor_id', $vendor_id)
+            ->join('country_contract_template', function ($join) use ($country_id) {
+                $join->on('contract_templates.id', '=', 'country_contract_template.contract_template_id')
                     ->where('country_id', $country_id);
             })
             ->joinWhere('companies', 'companies.id', '=', $company_id)
             ->when($quoteTemplate instanceof QuoteTemplate, function ($query) use ($quoteTemplate) {
-                $query->orderByRaw('field(`quote_templates`.`name`, ?, null) desc', [$quoteTemplate->name]);
+                $query->orderByRaw('field(`contract_templates`.`name`, ?, null) desc', [$quoteTemplate->name]);
             })
-            ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null) desc')
-            ->select('quote_templates.*')
+            ->orderByRaw('field(`contract_templates`.`id`, `companies`.`default_template_id`, null) desc')
+            ->select('contract_templates.*')
             ->get();
     }
 
@@ -156,13 +157,12 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
         activity()->disableLogging();
 
         $replicatableTemplate = $this->find($id);
-        $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields']);
+        $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields', 'is_active']);
         $countries = $replicatableTemplate->countries->pluck('id')->toArray();
-        $templateFields = $replicatableTemplate->templateFields->pluck('id')->toArray();
 
         $copied = $template->save();
 
-        $copied && $template->syncCountries($countries) && $template->syncTemplateFields($templateFields);
+        $copied && $template->syncCountries($countries);
 
         activity()->enableLogging();
 
@@ -185,11 +185,11 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByName::class,
             \App\Http\Query\QuoteTemplate\OrderByCompanyName::class,
-            \App\Http\Query\QuoteTemplate\OrderByVendorName::class
+            \App\Http\Query\QuoteTemplate\OrderByVendorName::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

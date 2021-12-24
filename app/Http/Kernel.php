@@ -19,7 +19,8 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-        \Fruitcake\Cors\HandleCors::class
+        \Fruitcake\Cors\HandleCors::class,
+        \Spatie\HttpLogger\Middlewares\HttpLogger::class,
     ];
 
     /**
@@ -30,11 +31,11 @@ class Kernel extends HttpKernel
     protected $middlewareGroups = [
         'web' => [
             \App\Http\Middleware\EncryptCookies::class,
-            // \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-            // \Illuminate\Session\Middleware\StartSession::class,
-            // \Illuminate\Session\Middleware\AuthenticateSession::class,
-            // \Illuminate\View\Middleware\ShareErrorsFromSession::class,
-            // \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\Session\Middleware\AuthenticateSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
@@ -42,7 +43,7 @@ class Kernel extends HttpKernel
             'throttle:600,1',
             'bindings',
             \App\Http\Middleware\PerformUserActivity::class,
-            \App\Http\Middleware\EnforceChangePassword::class
+            \App\Http\Middleware\EnforceChangePassword::class,
         ],
     ];
 
@@ -64,7 +65,7 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-        'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class
+        'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
     ];
 
     /**
@@ -75,7 +76,7 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $middlewarePriority = [
-        \Barryvdh\Cors\HandleCors::class,
+        \Fruitcake\Cors\HandleCors::class,
         \Illuminate\Session\Middleware\StartSession::class,
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \App\Http\Middleware\Authenticate::class,

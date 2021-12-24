@@ -40,21 +40,6 @@ class AuthController extends Controller
     }
 
     /**
-     * Register a new User with Administrator Role
-     *
-     * @param UserSignUpRequest $request
-     * @return \Illuminate\Http\Response
-     */
-    public function signup(UserSignUpRequest $request)
-    {
-        $this->user->createAdministrator($request->validated());
-
-        return response()->json(
-            $this->auth->authenticate($request->validated())
-        );
-    }
-
-    /**
      * Show specified Invitation
      *
      * @param string $invitation
@@ -64,20 +49,6 @@ class AuthController extends Controller
     {
         return response()->json(
             InvitationPublicResource::make($this->user->invitation($invitation))
-        );
-    }
-
-    /**
-     * Register a new Collaboration User with Invitation specified Role and Collaboration
-     *
-     * @param CompleteInvitationRequest $request
-     * @param Invitation $invitation
-     * @return \Illuminate\Http\Response
-     */
-    public function signupCollaborator(CompleteInvitationRequest $request, Invitation $invitation)
-    {
-        return response()->json(
-            $this->user->createCollaborator($request->validated(), $invitation)
         );
     }
 

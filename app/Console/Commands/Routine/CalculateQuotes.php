@@ -3,9 +3,7 @@
 namespace App\Console\Commands\Routine;
 
 use App\Contracts\Services\Stats;
-use App\Services\StatsAggregator;
 use Illuminate\Console\Command;
-use Throwable;
 
 class CalculateQuotes extends Command
 {
@@ -14,7 +12,7 @@ class CalculateQuotes extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:calculate-quotes {--clear-cache}';
+    protected $signature = 'eq:calculate-quotes';
 
     /**
      * The console command description.
@@ -36,30 +34,19 @@ class CalculateQuotes extends Command
     /**
      * Execute the console command.
      *
+     * @param Stats $service
      * @return mixed
      */
-    public function handle(Stats $service, StatsAggregator $aggregator)
+    public function handle(Stats $service)
     {
-        $this->warn(QTC_S_01);
-        customlog(['message' => QTC_S_01]);
+        $this->output->title('Quote totals calculation started');
 
-        try {
-            $service->calculateQuoteTotals($this->output->createProgressBar());
+        $service
+            ->setOutput($this->getOutput())
+            ->denormalizeSummaryOfQuotes();
 
-            if ($this->option('clear-cache')) {
-                $aggregator->flushSummaryCache();
-                $this->info("\nSummary cache has been cleared!");
-            }
-        } catch (Throwable $e) {
-            $this->error(QTC_ERR_01);
-            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(QTC_ERR_01, $e));
+        $this->output->success('Quote totals calculation successfully finished');
 
-            return false;
-        }
-
-        $this->info("\n".QTC_F_01);
-        customlog(['message' => QTC_F_01]);
-
-        return true;
+        return Command::SUCCESS;
     }
 }

@@ -1,0 +1,38 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateCustomFieldsTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('custom_fields', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+
+            $table->string('field_name')->comment('Custom Field Name');
+
+            $table->softDeletes()->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::disableForeignKeyConstraints();
+
+        Schema::dropIfExists('custom_fields');
+
+        Schema::enableForeignKeyConstraints();
+    }
+}

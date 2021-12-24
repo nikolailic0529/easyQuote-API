@@ -2,12 +2,15 @@
 
 namespace Tests\Unit;
 
-use App\Events\Slack\Sent;
-use Event;
 use Tests\TestCase;
+use App\Events\Slack\Sent;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Event;
 
 class SlackTest extends TestCase
 {
+    use DatabaseTransactions;
+    
     /**
      * Test Slack Message sending.
      *

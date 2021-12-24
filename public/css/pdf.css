@@ -64,10 +64,10 @@ tr {
     border-bottom: 0
 }
 
-.border-right {
-    border-right: 1px solid;
-    border-color: #eee
-}
+/*.border-right {*/
+/*    border-right: 1px solid;*/
+/*    border-color: #eee*/
+/*}*/
 
 .blue {
     color: #1876BD !important;
@@ -123,10 +123,19 @@ hr.blue {
     margin-left: 1.5em
 }
 
+.group-logo {
+    padding: 5px 20px;
+    min-height: 40px;
+}
+
 .mt-1 {
     margin-top: 1rem
 }
 
 .mt-2 {
     margin-top: 2rem
+}
+
+.preline {
+    white-space: pre-line;
 }

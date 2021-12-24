@@ -1,0 +1,87 @@
+Soupis podporovaných produkt
+
+              Identifikacní císlo           smlouvy       SWCZ-NEMOC                    Identifikacní císlo smlouvy: 1086 6489 1301
+
+              Cenová nabídka                                                            Identifikacní císlo systému CZ-SUPP-LL02
+
+              Vase objednávka c.
+
+                                                                                        Objednávka HPE c. 56959691
+
+              Adresa místa instalace                                                    Adresa pro zasílání SW dokumentace
+
+              Nemocnice Tgm Hodonín                                                     Nemocnice Tgm Hodonín
+
+              Purkynova 2731/11                                                         Purkynova 2731/11
+
+              69501 Hodonin                                                             69501 Hodonin
+
+              Kontaktní osoba     pro HW                                                Kontaktní osoba     pro SW
+
+              Tomas Plachy                                                              Tomas Plachy
+
+              Tel 518309292                                                             Tel 518309292
+
+              Fax                                                                       Fax
+
+              Navrzené ceny maji platnost do 20.12.2020
+
+              Doba platnosti od: 21.12.2020              do: 20.12.2021
+
+              - V pípad HW ci SW závady volejte prosím: 00420-239018793
+
+        Produkt c.            Popis                                                 Výrobní císlo           Doba platnosti           Mnozství         Cena/Kc
+
+                                                                                                            od:            do:
+
+        H7J32AC               HPE Foundation Care NBD SVC
+
+        *** Hardware    ***
+
+                              HPE   Hardware Maintenance Onsite Support
+
+                                       Hardware Problem Diagnosis
+
+                                       Onsite Support
+
+                                       Parts and Material provided
+
+                                       Next Cov Day Onsite Response
+
+                                       Std Office Hrs Std Office Days
+
+        C8S55A                HP MSA 2040 SAS DC SFF Storage                       2S6523D350                                             1        2.442,05
+
+        AW594A                HP P2000 G3 SAS MSA Dual Cntrl SFF          Array    2S6232D065                                             1        2.124,15
+
+                              Konec servisní podpory od: 31.12.2021
+
+        *** Software  ***
+
+                              HPE   Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       Std Office Hrs Std Office Days
+
+                                       Standard Response
+
+        C8S55A                HP MSA 2040 SAS DC SFF Storage                       2S6523D350                                             1          106,25
+
+        AW594A                HP P2000 G3 SAS MSA Dual Cntrl SFF          Array    2S6232D065                                             1          212,50
+
+                              Konec servisní podpory od: 31.12.2021
+
+                              HPE   Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+        C8S55A                HP MSA 2040 SAS DC SFF Storage                       2S6523D350                                             1          106,25
+
+          Datum vystavení 02.12.2020                            Toto není faktura. Cástky jsou uvedeny bezDPH.                                    Strana 2/ 4

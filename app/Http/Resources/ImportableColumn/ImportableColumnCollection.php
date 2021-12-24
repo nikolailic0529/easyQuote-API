@@ -11,6 +11,6 @@ class ImportableColumnCollection extends ResourceCollection
 
     protected function resource(): string
     {
-        return ImportableColumnResource::class;
+        return ImportableColumnList::class;
     }
 }

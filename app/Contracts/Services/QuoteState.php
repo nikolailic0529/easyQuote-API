@@ -2,19 +2,11 @@
 
 namespace App\Contracts\Services;
 
-use App\Models\Quote\{
-    Quote, QuoteVersion, BaseQuote
-};
-use App\Http\Requests\Quote\{
-    StoreQuoteStateRequest,
-    MoveGroupDescriptionRowsRequest,
-    StoreGroupDescriptionRequest,
-    UpdateGroupDescriptionRequest,
-    TryDiscountsRequest
-};
+use App\Http\Requests\Quote\{StoreQuoteStateRequest, TryDiscountsRequest};
+use App\Models\Quote\{BaseQuote, Quote, QuoteVersion};
+use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 interface QuoteState
 {
@@ -22,9 +14,31 @@ interface QuoteState
      * Store current state of the Quote
      *
      * @param StoreQuoteStateRequest $request
-     * @return \App\Models\Quote\Quote
+     * @return array
      */
-    public function storeState(StoreQuoteStateRequest $request);
+    public function storeState(StoreQuoteStateRequest $request): array;
+
+    /**
+     * Process quote file import.
+     *
+     * @param Quote $quote
+     * @param QuoteFile $quoteFile
+     * @param int|null $importablePageNumber
+     * @param string|null $dataSeparatorReference
+     * @return mixed
+     */
+    public function processQuoteFileImport(Quote     $quote,
+                                           QuoteFile $quoteFile,
+                                           ?int      $importablePageNumber = null,
+                                           ?string   $dataSeparatorReference = null): mixed;
+
+
+    /**
+     * Guess quote mapping basis on the previous saved mapping.
+     *
+     * @param Quote $quote
+     */
+    public function guessQuoteMapping(Quote $quote): void;
 
     /**
      * Create a new Quote.
@@ -33,41 +47,6 @@ interface QuoteState
      * @return Quote
      */
     public function create(array $attributes): Quote;
-
-    /**
-     * Retrieve mapped imported rows.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @param array|Closuse $criteria
-     * @return mixed
-     */
-    public function retrieveRows(BaseQuote $quote, $criteria = []);
-
-    /**
-     * Find Rows by query.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @param string $query
-     * @param string|null $groupId
-     * @return \Illuminate\Support\Collection
-     */
-    public function searchRows(BaseQuote $quote, string $query = '', ?string $groupId = null): Collection;
-
-    /**
-     * Calculate list price based on current mapping.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @return float
-     */
-    public function calculateListPrice(BaseQuote $quote): float;
-
-    /**
-     * Calculate list price based on current mapping and selected rows & groups.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @return float
-     */
-    public function calculateTotalPrice(BaseQuote $quote): float;
 
     /**
      * Get User's Quotes Query.
@@ -97,7 +76,7 @@ interface QuoteState
      * Set a specified Version for a specified Quote.
      *
      * @param string $version_id
-     * @param \App\Models\Quote|string $quote
+     * @param \App\Models\Quote\Quote|string $quote
      * @return boolean
      */
     public function setVersion(string $version_id, $quote): bool;
@@ -131,7 +110,7 @@ interface QuoteState
     /**
      * Retrieve Groups of Imported Rows.
      *
-     * @param  BaseQuote $quote
+     * @param BaseQuote $quote
      * @return Collection
      */
     public function retrieveRowsGroups(BaseQuote $quote): Collection;
@@ -176,8 +155,8 @@ interface QuoteState
     /**
      * Mark as selected specific Rows Group Descriptions.
      *
-     * @param  array $ids
-     * @param  Quote $quote
+     * @param array $ids
+     * @param Quote $quote
      * @return boolean
      */
     public function selectGroupDescription(array $ids, Quote $quote): bool;
@@ -185,8 +164,8 @@ interface QuoteState
     /**
      * Delete specified Rows Group Description from specified Quote.
      *
-     * @param  string $id
-     * @param  Quote $quote
+     * @param string $id
+     * @param Quote $quote
      * @return bool
      */
     public function deleteGroupDescription(string $id, Quote $quote): bool;
@@ -195,27 +174,35 @@ interface QuoteState
      * Create a new Quote Version if an authenticated user is not the initial Quote creator.
      *
      * @param Quote $quote
-     * @return QuoteVersion
+     * @return BaseQuote
      */
-    public function createNewVersionIfNonCreator(Quote $quote): QuoteVersion;
+    public function createNewVersionIfNonCreator(Quote $quote): BaseQuote;
 
     /**
      * Replicate Discounts from Source Quote to Target Quote.
      *
-     * @param string $sourceId
-     * @param string $targetId
+     * @param BaseQuote $source
+     * @param QuoteVersion $target
      * @return void
      */
-    public function replicateDiscounts(string $sourceId, string $targetId): void;
+    public function replicateDiscounts(BaseQuote $source, QuoteVersion $target): void;
 
     /**
      * Replicate Mapping from Source Quote to Target Quote.
      *
-     * @param string $sourceId
-     * @param string $targetId
+     * @param BaseQuote $source
+     * @param QuoteVersion $target
      * @return void
      */
-    public function replicateMapping(string $sourceId, string $targetId): void;
+    public function replicateMapping(BaseQuote $source, QuoteVersion $target): void;
+
+    /**
+     * Replicate an entire quote model.
+     *
+     * @param Quote $quote
+     * @return Quote
+     */
+    public function replicateQuote(Quote $quote): Quote;
 
     /**
      * Get wildcard quote permission.
@@ -225,4 +212,11 @@ interface QuoteState
      * @return string
      */
     public function getQuotePermission(Quote $quote, array $permissions = ['*']): string;
+
+    /**
+     * Process quote unravel.
+     *
+     * @param Quote $quote
+     */
+    public function processQuoteUnravel(Quote $quote): void;
 }

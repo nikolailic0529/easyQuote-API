@@ -1,27 +1,16 @@
-<?php namespace App\Http\Requests;
+<?php
+
+namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
+use App\Models\Quote\Quote;
+use App\Models\QuoteFile\QuoteFile;
 
 class HandleQuoteFileRequest extends FormRequest
 {
-    protected $quoteFile;
+    protected ?Quote $quote = null;
 
-    public function __construct(QuoteFileRepositoryInterface $quoteFile)
-    {
-        $this->quoteFile = $quoteFile;
-    }
-
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
+    protected ?QuoteFile $quoteFile = null;
 
     /**
      * Get the validation rules that apply to the request.
@@ -31,29 +20,44 @@ class HandleQuoteFileRequest extends FormRequest
     public function rules()
     {
         return [
-            'quote_id' => 'required|exists:quotes,id',
-            'quote_file_id' => 'required|exists:quote_files,id',
-            'data_select_separator_id' => $this->requiredIfCsv(),
+            'quote_id' => 'bail|required|exists:quotes,id',
+            'quote_file_id' => 'bail|required|exists:quote_files,id',
+            'data_select_separator_id' => value(function () {
+                if (!$this->getQuoteFile()->isCsv()) {
+                    return '';
+                }
+
+                return 'required|exists:data_select_separators,id';
+            }),
             'page' => 'integer|min:1'
         ];
     }
 
-    public function requiredIfCsv()
+    public function getQuote(): Quote
     {
-        $id = $this->quote_file_id;
-
-        if(!$this->quoteFile->exists($id)) {
-            return '';
-        };
-
-        $quoteFile = $this->quoteFile->find($id);
-
-        if(is_null($quoteFile) || !$quoteFile->isCsv()) {
-            return '';
+        if (isset($this->quote)) {
+            return $this->quote;
         }
 
-        $extension = $quoteFile->format->extension;
+        return Quote::findOrFail($this->input('quote_id'));
+    }
 
-        return $extension === 'csv' ? 'required|exists:data_select_separators,id' : '';
+    public function getQuoteFile(): QuoteFile
+    {
+        if (isset($this->quoteFile)) {
+            return $this->quoteFile;
+        }
+
+        return QuoteFile::findOrFail($this->input('quote_file_id'));
+    }
+
+    public function getImportablePageNumber(): ?int
+    {
+        return $this->input('page');
+    }
+
+    public function getDataSelectSeparatorReference(): ?string
+    {
+        return $this->input('data_select_separator_id');
     }
 }

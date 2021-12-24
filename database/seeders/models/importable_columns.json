@@ -1,0 +1,206 @@
+[
+    {
+        "header": "Product No.",
+        "name": "product_no",
+        "type": "text",
+        "country": "GB",
+        "order": 0,
+        "aliases": [
+            "product number",
+            "product_no",
+            "product_number",
+            "product",
+            "part_id",
+            "product nu",
+            "product_nu",
+            "product nu",
+            "item",
+            "line",
+            "line no",
+            "proof of purchase",
+            "numéro de produit",
+            "produktnummer",
+            "varenummer",
+            "part number",
+            "référence constructeur",
+            "type",
+            "part number",
+            "machine type",
+            "type-model",
+            "machine",
+            "item extension"
+        ]
+    },
+    {
+        "header": "Description",
+        "name": "description",
+        "type": "text",
+        "country": "GB",
+        "order": 1,
+        "aliases": [
+            "description",
+            "product description",
+            "desc",
+            "beskrivelse",
+            "description du produit",
+            "beskrivelse",
+            "descrizione",
+            "line item description"
+        ]
+    },
+    {
+        "header": "Serial No.",
+        "name": "serial_no",
+        "type": "text",
+        "country": "GB",
+        "order": 2,
+        "aliases": [
+            "serial",
+            "serial_no",
+            "serial_number",
+            "serial number",
+            "sn",
+            "serienummer",
+            "serial no",
+            "numéro de série"
+        ]
+    },
+    {
+        "header": "Coverage from",
+        "name": "date_from",
+        "type": "date",
+        "order": 3,
+        "country": "GB",
+        "aliases": [
+            "start",
+            "start date",
+            "date_from",
+            "coverage_from",
+            "coverage_period_from",
+            "coverage period from",
+            "coverage start",
+            "start_date",
+            "startdate",
+            "dæknings periode fra",
+            "dekning fra",
+            "fra",
+            "couverture du",
+            "charges start",
+            "charge start date",
+            "service start date"
+        ]
+    },
+    {
+        "header": "Coverage to",
+        "name": "date_to",
+        "type": "date",
+        "order": 4,
+        "country": "GB",
+        "aliases": [
+            "end",
+            "end date",
+            "date_to",
+            "coverage_to",
+            "coverage_period_to",
+            "coverage period to",
+            "end_date",
+            "enddate",
+            "coverage end",
+            "dæknings periode til",
+            "dekning til",
+            "til",
+            "couverture au",
+            "charges stop",
+            "charge end date",
+            "service end date"
+        ]
+    },
+    {
+        "header": "Quantity",
+        "name": "qty",
+        "type": "number",
+        "order": 5,
+        "country": "GB",
+        "aliases": [
+            "quantity",
+            "qty",
+            "antal",
+            "quantité",
+            "q.ta"
+        ]
+    },
+    {
+        "header": "Price",
+        "name": "price",
+        "type": "decimal",
+        "order": 6,
+        "country": "GB",
+        "aliases": [
+            "price",
+            "priceeur",
+            "price/eur",
+            "line_amount",
+            "lineamount",
+            "monthly list price",
+            "unit net price",
+            "line amount",
+            "line item",
+            "total",
+            "subtotal",
+            "subtotal/€",
+            "prix",
+            "pris",
+            "prix liste par élément",
+            "upfront betaling",
+            "line item price",
+            "line item total list price",
+            "line item monthly list price",
+            "line item total net price",
+            "line item monthly net price",
+            "totalt nok",
+            "monthly cost/cad",
+            "total price ex. vat",
+            "bp charges",
+            "totale netto",
+            "ext list cost",
+            "unit price (ex vat)"
+        ]
+    },
+    {
+        "header": "Pricing Document",
+        "name": "pricing_document",
+        "type": "text",
+        "order": 7,
+        "country": "GB",
+        "aliases": [
+            "pricing document",
+            "pricing document id"
+        ]
+    },
+    {
+        "header": "System Handle",
+        "name": "system_handle",
+        "type": "text",
+        "order": 8,
+        "country": "GB",
+        "aliases": [
+            "system handle",
+            "system handle id",
+            "support account reference"
+        ]
+    },
+    {
+        "header": "Searchable",
+        "name": "searchable",
+        "type": "text",
+        "order": 9,
+        "country": "GB",
+        "aliases": [
+            "searchable",
+            "service agreement",
+            "service agreement id",
+            "n° accord service",
+            "service coverage"
+        ]
+    }
+]

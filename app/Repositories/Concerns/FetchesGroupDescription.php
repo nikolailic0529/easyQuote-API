@@ -4,13 +4,21 @@ namespace App\Repositories\Concerns;
 
 use App\Collections\MappedRows;
 use App\DTO\RowsGroup;
-use App\Models\Quote\BaseQuote;
+use App\Models\Quote\{BaseQuote, Contract};
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 trait FetchesGroupDescription
 {
-    protected static function mapGroupDescriptionWithRows(BaseQuote $quote, Collection $rows)
+    /** @var BaseQuote|Contract */
+    protected static function mapGroupDescriptionWithRows($quote, Collection $rows)
     {
+        throw_unless(
+            $quote instanceof BaseQuote || $quote instanceof Contract,
+            InvalidArgumentException::class,
+            "Unsupported model. Expected either instance of " . BaseQuote::class . " or " . Contract::class
+        );
+
         return MappedRows::wrap($quote->group_description)->map(
             fn (RowsGroup $group) => static::unionGroupRowsWithDescription($group->toArray(), $rows->whereIn('id', $group->rows_ids))
         )

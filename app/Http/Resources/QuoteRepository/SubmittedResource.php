@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\QuoteRepository;
 
-use Carbon\Carbon;
+use Illuminate\Support\{Str, Carbon};
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class SubmittedResource extends JsonResource
@@ -17,27 +17,29 @@ class SubmittedResource extends JsonResource
     {
         $user = $request->user();
 
+        $userFullname = Str::of($this->user_fullname)->explode(' ');
+
         return [
             'id'                        => $this->id,
             'user' => [
                 'id'                    => $this->user_id,
-                'first_name'            => $this->cached_relations->user->first_name,
-                'last_name'             => $this->cached_relations->user->last_name
+                'first_name'            => $userFullname->first(),
+                'last_name'             => $userFullname->last(),
             ],
             'company' => [
-                'id'                    => $this->usingVersion->company_id,
-                'name'                  => $this->usingVersion->cached_relations->company->name
+                'id'                    => $this->activeVersionOrCurrent->company_id,
+                'name'                  => $this->activeVersionOrCurrent->company_name
             ],
             'customer' => [
                 'id'                    => $this->customer_id,
-                'name'                  => $this->cached_relations->customer->name,
-                'rfq'                   => $this->cached_relations->customer->rfq,
+                'name'                  => $this->customer_name,
+                'rfq'                   => $this->customer_rfq_number,
 
-                'source'                => __($this->cached_relations->customer->source),
+                'source'                => __($this->customer_source),
 
-                'valid_until'           => optional($this->cached_relations->customer->valid_until_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
-                'support_start'         => optional($this->cached_relations->customer->support_start_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
-                'support_end'           => optional($this->cached_relations->customer->support_end_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
+                'valid_until'           => optional($this->customer_valid_until_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
+                'support_start'         => optional($this->customer_support_start_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
+                'support_end'           => optional($this->customer_support_end_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
             ],
             'permissions'               => [
                 'view'      => $user->can('view', $this->resource),
@@ -45,16 +47,19 @@ class SubmittedResource extends JsonResource
                 'delete'    => $user->can('delete', $this->resource),
             ],
             'last_drafted_step'         => $this->last_drafted_step,
-            'completeness'              => $this->completeness,
-            'contract_id'               => $this->contract->id,
-            'has_contract_template'     => (bool) $this->hasContractTemplate,
-            'has_contract'              => (bool) $this->hasContract,
-            'contract_submitted'        => (bool) $this->contractSubmitted,
-            'contract_number'           => $this->contract->contract_number,
-            'has_price_list'            => $this->whenLoaded('usingVersion', fn () => $this->usingVersion->quoteFiles->contains('file_type', QFT_PL)),
-            'price_list_filename'       => $this->whenLoaded('usingVersion', fn () => $this->usingVersion->resolveQuoteFile(QFT_PL)->original_file_name),
-            'has_payment_schedule'      => $this->whenLoaded('usingVersion', fn () => $this->usingVersion->quoteFiles->contains('file_type', QFT_PS)),
-            'payment_schedule_filename' => $this->whenLoaded('usingVersion', fn () => $this->usingVersion->resolveQuoteFile(QFT_PS)->original_file_name),
+            'completeness'              => $this->activeVersionOrCurrent->completeness,
+            'contract_id'               => $this->contract_id,
+            'has_contract_template'     => !is_null($this->contract_template_id),
+
+            'has_contract'              => !is_null($this->contract_id),
+            'contract_submitted'        => !is_null($this->contract_submitted_at),
+            'contract_number'           => $this->contract_number,
+
+            'has_price_list'            => !is_null($this->activeVersionOrCurrent->distributor_file_id),
+            'price_list_filename'       => $this->activeVersionOrCurrent->price_list_original_file_name,
+            'has_payment_schedule'      => !is_null($this->activeVersionOrCurrent->schedule_file_id),
+            'payment_schedule_filename' => $this->activeVersionOrCurrent->payment_schedule_original_file_name,
+
             'created_at'                => optional($this->created_at)->format(config('date.format_time')),
             'activated_at'              => $this->activated_at,
         ];

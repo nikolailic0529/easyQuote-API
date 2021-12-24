@@ -21,13 +21,6 @@ interface VendorRepositoryInterface
     public function all();
 
     /**
-     * Get All Vendors without pagination
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function allFlatten(): Collection;
-
-    /**
      * Retrieve all vendors from cache.
      *
      * @return mixed

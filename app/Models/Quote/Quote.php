@@ -3,30 +3,38 @@
 namespace App\Models\Quote;
 
 use App\Contracts\Multitenantable;
-use App\Scopes\{
-    QuoteTypeScope,
-    NonVersionScope
-};
-use App\Traits\{
-    Migratable,
-    NotifiableModel,
-    Quote\HasVersions,
-    Quote\HasContract
-};
+use App\Models\Attachment;
+use App\Models\Customer\Customer;
+use App\Models\Quote\QuoteNote;
+use App\Traits\{Activatable, Migratable, NotifiableModel, Quote\HasContract, Quote\HasQuoteVersions, Submittable};
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
+/**
+ * @property Customer|null $customer
+ * @property string|null $submitted_at
+ * @property string|null $assets_migrated_at
+ *
+ * @property-read Collection<Attachment>|Attachment[] $attachments
+ */
 class Quote extends BaseQuote implements Multitenantable
 {
-    use HasVersions, HasContract, NotifiableModel, Migratable;
+    use HasQuoteVersions, HasContract, NotifiableModel, Submittable, Activatable, Migratable;
 
-    protected static function boot()
+    public function attachments(): MorphToMany
     {
-        parent::boot();
-
-        static::addGlobalScope(new NonVersionScope);
-        static::addGlobalScope(new QuoteTypeScope);
+        return $this->morphToMany(
+            related: Attachment::class,
+            name: 'attachable',
+            relatedPivotKey: 'attachment_id'
+        );
     }
 
-    protected $attributes = [
-        'document_type' => Q_TYPE_QUOTE
-    ];
+    public function note(): HasOne
+    {
+        return $this->hasOne(QuoteNote::class)
+            ->whereNull('quote_version_id')
+            ->where('is_from_quote', true);
+    }
 }

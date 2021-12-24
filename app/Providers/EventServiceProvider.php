@@ -2,7 +2,41 @@
 
 namespace App\Providers;
 
+use App\Events\{Company\CompanyUpdated,
+    ExchangeRatesUpdated,
+    Opportunity\OpportunityUpdated,
+    Permission\GrantedModulePermission,
+    RfqReceived,
+    WorldwideQuote\WorldwideQuoteNoteCreated,
+    WorldwideQuote\WorldwideQuoteSubmitted};
+use App\Listeners\{AddressEventAuditor,
+    AttachmentEventAuditor,
+    CompanyEventAuditor,
+    CompanyNoteAuditor,
+    ContactEventAuditor,
+    DocumentMappingSyncSubscriber,
+    ExchangeRatesListener,
+    ImportableColumnEventAuditor,
+    LogSentMessage,
+    MigrateWorldwideQuoteAssets,
+    ModulePermissionListener,
+    NotifyNoteCreatedOnWorldwideQuote,
+    OpportunityEventAuditor,
+    OpportunityFormEventAuditor,
+    PipelineEventAuditor,
+    RescueQuoteEventAuditor,
+    RfqReceivedListener,
+    SalesOrderEventAuditor,
+    StatsDependentEntityEventSubscriber,
+    SyncOpportunityPrimaryAccountContacts,
+    SyncWorldwideContractQuoteWithOpportunityData,
+    TaskEventSubscriber,
+    TeamEventSubscriber,
+    WorldwideQuoteEventAuditor};
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Mail\Events\MessageSent;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -12,21 +46,42 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        \Illuminate\Auth\Events\Registered::class => [
-            \Illuminate\Auth\Listeners\SendEmailVerificationNotification::class,
+
+        Registered::class => [
+            SendEmailVerificationNotification::class,
         ],
-        \Illuminate\Mail\Events\MessageSent::class => [
-            \App\Listeners\LogSentMessage::class
+
+        MessageSent::class => [
+            LogSentMessage::class,
         ],
-        \App\Events\RfqReceived::class => [
-            \App\Listeners\RfqReceivedListener::class
+
+        RfqReceived::class => [
+            RfqReceivedListener::class,
         ],
-        \App\Events\ExchangeRatesUpdated::class => [
-            \App\Listeners\ExchangeRatesListener::class
+
+        ExchangeRatesUpdated::class => [
+            ExchangeRatesListener::class,
         ],
-        \App\Events\Permission\GrantedModulePermission::class => [
-            \App\Listeners\ModulePermissionListener::class
+
+        GrantedModulePermission::class => [
+            ModulePermissionListener::class,
         ],
+
+        WorldwideQuoteNoteCreated::class => [
+            NotifyNoteCreatedOnWorldwideQuote::class,
+        ],
+
+        OpportunityUpdated::class => [
+            SyncWorldwideContractQuoteWithOpportunityData::class,
+        ],
+
+        CompanyUpdated::class => [
+            SyncOpportunityPrimaryAccountContacts::class,
+        ],
+
+        WorldwideQuoteSubmitted::class => [
+            MigrateWorldwideQuoteAssets::class,
+        ]
     ];
 
     /**
@@ -35,8 +90,39 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $subscribe = [
-        \App\Listeners\EloquentEventSubscriber::class,
-        \App\Listeners\TaskEventSubscriber::class,
+
+        TaskEventSubscriber::class,
+
+        OpportunityEventAuditor::class,
+
+        SalesOrderEventAuditor::class,
+
+        TeamEventSubscriber::class,
+
+        WorldwideQuoteEventAuditor::class,
+
+        RescueQuoteEventAuditor::class,
+
+        StatsDependentEntityEventSubscriber::class,
+
+        PipelineEventAuditor::class,
+
+        OpportunityFormEventAuditor::class,
+
+        ImportableColumnEventAuditor::class,
+
+        DocumentMappingSyncSubscriber::class,
+
+        AttachmentEventAuditor::class,
+
+        CompanyNoteAuditor::class,
+
+        AddressEventAuditor::class,
+
+        ContactEventAuditor::class,
+
+        CompanyEventAuditor::class,
+
     ];
 
     /**

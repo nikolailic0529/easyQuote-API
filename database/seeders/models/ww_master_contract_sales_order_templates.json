@@ -1,0 +1,83 @@
+[
+    {
+        "id": "b22dbda9-1607-474d-965e-c823ba6dbdb1",
+        "business_division_id": "f911cb0b-a1b0-4943-91e7-0a1c796984a1",
+        "contract_type_id": "c3c9d470-cb8b-48a2-9d3f-3614534b24a3",
+        "company_id": "b86170d9-ceca-4f58-8a04-99ed2b0acb87",
+        "company": "EPD",
+        "vendor_id": "ea960120-7478-44e3-9ac9-4ac6ad5d51eb",
+        "vendor": "LEN",
+        "currency_id": "ba14da59-e6ff-43c9-ae2f-6c5491dd7e49",
+        "name": "SO-Contract-EPD-LEN-Master",
+        "template_schema": "f8a24c09-c5b0-410e-b625-d5f7cae0a510.json",
+        "countries": [
+            "1def30a0-a092-40d0-87b4-c1ee825a86f9",
+            "360fefaa-5e32-4b01-b426-85e060d2498f",
+            "3f631aa9-c60e-4034-b3a7-28a113650592",
+            "4829d2e0-3a54-4374-9a57-ea53fc5193df",
+            "518e4ff8-3af9-41d1-8243-b763e91fb7be",
+            "648d1ac0-4822-4bab-892d-a05fadefe0cb",
+            "7a33ff79-1b8e-498c-821f-fa8cf636d7a7",
+            "7d4631f0-6fbe-4818-92e7-2b37ed05de22",
+            "7eb07362-a0f8-401f-99a3-95acf6f28adf",
+            "84327eab-6d3b-4558-a9f6-6bfc7394fb0e",
+            "84a08892-f05c-4650-b9d3-73d2df62a6e4",
+            "c847ce6d-16b9-4447-b1a4-66756a6cf8cd",
+            "e589fa28-a820-426c-b98e-01c435d4d766"
+        ]
+    },
+    {
+        "id": "6b5f8f66-7ee0-416c-9b9d-d603d45dc38f",
+        "business_division_id": "f911cb0b-a1b0-4943-91e7-0a1c796984a1",
+        "contract_type_id": "c3c9d470-cb8b-48a2-9d3f-3614534b24a3",
+        "company_id": "a79dd54d-0963-40cd-b878-58ccfe672016",
+        "company": "SWH",
+        "vendor_id": "ea960120-7478-44e3-9ac9-4ac6ad5d51eb",
+        "vendor": "LEN",
+        "currency_id": "ba14da59-e6ff-43c9-ae2f-6c5491dd7e49",
+        "name": "SO-Contract-SWH-LEN-Master",
+        "template_schema": "cb01140e-e626-44b7-aa72-550232c50a73.json",
+        "countries": [
+            "1def30a0-a092-40d0-87b4-c1ee825a86f9",
+            "360fefaa-5e32-4b01-b426-85e060d2498f",
+            "3f631aa9-c60e-4034-b3a7-28a113650592",
+            "4829d2e0-3a54-4374-9a57-ea53fc5193df",
+            "518e4ff8-3af9-41d1-8243-b763e91fb7be",
+            "648d1ac0-4822-4bab-892d-a05fadefe0cb",
+            "7a33ff79-1b8e-498c-821f-fa8cf636d7a7",
+            "7d4631f0-6fbe-4818-92e7-2b37ed05de22",
+            "7eb07362-a0f8-401f-99a3-95acf6f28adf",
+            "84327eab-6d3b-4558-a9f6-6bfc7394fb0e",
+            "84a08892-f05c-4650-b9d3-73d2df62a6e4",
+            "c847ce6d-16b9-4447-b1a4-66756a6cf8cd",
+            "e589fa28-a820-426c-b98e-01c435d4d766"
+        ]
+    },
+    {
+        "id": "8a9d739f-7566-499d-9529-527bfa2271c3",
+        "business_division_id": "f911cb0b-a1b0-4943-91e7-0a1c796984a1",
+        "contract_type_id": "c4da2cab-7fd0-4f60-87df-2cc9ea602fee",
+        "company_id": "b86170d9-ceca-4f58-8a04-99ed2b0acb87",
+        "company": "EPD",
+        "vendor_id": "ea960120-7478-44e3-9ac9-4ac6ad5d51eb",
+        "vendor": "LEN",
+        "currency_id": "ba14da59-e6ff-43c9-ae2f-6c5491dd7e49",
+        "name": "SO-Pack-EPD-LEN-Master",
+        "template_schema": "f2ee9001-47f3-46de-9b5e-537bd7e317bc.json",
+        "countries": [
+            "1def30a0-a092-40d0-87b4-c1ee825a86f9",
+            "360fefaa-5e32-4b01-b426-85e060d2498f",
+            "3f631aa9-c60e-4034-b3a7-28a113650592",
+            "4829d2e0-3a54-4374-9a57-ea53fc5193df",
+            "518e4ff8-3af9-41d1-8243-b763e91fb7be",
+            "648d1ac0-4822-4bab-892d-a05fadefe0cb",
+            "7a33ff79-1b8e-498c-821f-fa8cf636d7a7",
+            "7d4631f0-6fbe-4818-92e7-2b37ed05de22",
+            "7eb07362-a0f8-401f-99a3-95acf6f28adf",
+            "84327eab-6d3b-4558-a9f6-6bfc7394fb0e",
+            "84a08892-f05c-4650-b9d3-73d2df62a6e4",
+            "c847ce6d-16b9-4447-b1a4-66756a6cf8cd",
+            "e589fa28-a820-426c-b98e-01c435d4d766"
+        ]
+    }
+]

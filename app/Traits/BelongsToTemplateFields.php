@@ -2,7 +2,7 @@
 
 namespace App\Traits;
 
-use App\Models\QuoteTemplate\TemplateField;
+use App\Models\Template\TemplateField;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -18,7 +18,7 @@ trait BelongsToTemplateFields
 
     public function templateFields(): BelongsToMany
     {
-        return $this->belongsToMany(TemplateField::class, 'quote_template_template_field')->ordered();
+        return $this->belongsToMany(TemplateField::class, 'quote_template_template_field')->orderBy('template_fields.order');
     }
 
     public function syncTemplateFields(?array $templateFields): void

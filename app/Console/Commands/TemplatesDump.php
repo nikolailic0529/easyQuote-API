@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\QuoteTemplate\{
+use App\Models\Template\{
     QuoteTemplate,
     ContractTemplate
 };

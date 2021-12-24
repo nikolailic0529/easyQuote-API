@@ -19,7 +19,7 @@ class AddShortCodeCompaniesTable extends Migration
             $table->char('short_code', 3)->nullable()->index()->after('name')->comment('Company short name');
         });
 
-        $seeds = collect(json_decode(file_get_contents(database_path('seeds/models/companies.json')), true));
+        $seeds = collect(yaml_parse_file(database_path('seeders/models/companies.yaml')));
 
         DB::transaction(fn () => $seeds->each(
             fn ($attributes) => Company::whereName($attributes['name'])->update(['short_code' => $attributes['short_code']])

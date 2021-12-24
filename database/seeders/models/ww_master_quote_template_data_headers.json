@@ -1,0 +1,102 @@
+{
+    "qty": {
+        "key": "qty",
+        "label": "Quantity",
+        "value": "Quantity"
+    },
+    "price": {
+        "key": "price",
+        "label": "Price",
+        "value": "Price"
+    },
+    "total": {
+        "key": "total",
+        "label": "Total",
+        "value": "Total"
+    },
+    "date_to": {
+        "key": "date_to",
+        "label": "To Date",
+        "value": "To Date"
+    },
+    "duration": {
+        "key": "duration",
+        "label": "Duration",
+        "value": "Duration"
+    },
+    "date_from": {
+        "key": "date_from",
+        "label": "From Date",
+        "value": "From Date"
+    },
+    "serial_no": {
+        "key": "serial_no",
+        "label": "Serial Number",
+        "value": "Serial Number"
+    },
+    "sub_total": {
+        "key": "sub_total",
+        "label": "Sub Total",
+        "value": "Sub Total"
+    },
+    "product_no": {
+        "key": "product_no",
+        "label": "Product No",
+        "value": "Product Type"
+    },
+    "description": {
+        "key": "description",
+        "label": "Description",
+        "value": "Description"
+    },
+    "grand_total": {
+        "key": "grand_total",
+        "label": "Grand Total",
+        "value": "Grand Total"
+    },
+    "service_sku": {
+        "key": "service_sku",
+        "label": "Service SKU",
+        "value": "Service SKU"
+    },
+    "total_price": {
+        "key": "total_price",
+        "label": "Total Price",
+        "value": "Total"
+    },
+    "vendor_name": {
+        "key": "vendor_name",
+        "label": "Manufacturer",
+        "value": "Manufacturer"
+    },
+    "country_name": {
+        "key": "country_name",
+        "label": "Country",
+        "value": "Country"
+    },
+    "service_level": {
+        "key": "service_level",
+        "label": "Service Level",
+        "value": "SLA"
+    },
+    "vendor_short_code": {
+        "key": "vendor_short_code",
+        "label": "Vendor Name",
+        "value": "Vendor"
+    },
+    "total_including_tax": {
+        "key": "total_including_tax",
+        "label": "Total including tax",
+        "value": "Total (inc. tax)"
+    },
+    "machine_address_string": {
+        "key": "machine_address_string",
+        "label": "Machine Address",
+        "value": "Machine Address"
+    },
+    "service_level_description": {
+        "key": "service_level_description",
+        "label": "Service Level",
+        "value": "Service Level"
+    }
+}

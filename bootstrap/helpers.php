@@ -11,8 +11,8 @@ if (!function_exists('to_array_recursive')) {
     }
 }
 
-if (!function_exists('carbon_parse')) {
-    function carbon_format($time = null, $format)
+if (!function_exists('carbon_format')) {
+    function carbon_format($time, $format)
     {
         return transform($time, fn ($time) => Carbon::parse($time)->format($format));
     }
@@ -62,7 +62,7 @@ if (!function_exists('error_response')) {
     {
         /** @var HttpInterface */
         $http = app(HttpInterface::class);
-        
+
         return $http->makeErrorResponse($details, $code, $status, $headers);
     }
 }

@@ -15,18 +15,9 @@ class HpeContractAsset extends FlexibleDataTransferObject
 
     public int $product_quantity;
 
-    public string $product_number, $product_description, $serial_number, $support_start_date, $support_end_date;
+    public string $product_number, $product_description, $support_start_date, $support_end_date;
 
-    public ?string  $support_account_reference, $contract_number;
+    public ?string  $support_account_reference, $contract_number, $serial_number;
 
     public bool $is_selected = false;
-
-    public function toArray(): array
-    {
-        $array = collect(parent::toArray());
-
-        $dates = $array->only('support_start_date', 'support_end_date')->map(fn ($date) => Carbon::parse($date)->format(config('date.format_ui')));
-
-        return $array->merge($dates)->toArray();
-    }
 }

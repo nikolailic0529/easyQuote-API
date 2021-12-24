@@ -3,7 +3,6 @@
 namespace App\Models\QuoteFile;
 
 use App\Traits\{
-    BelongsToUser,
     BelongsToQuoteFile,
     Uuid
 };
@@ -14,14 +13,14 @@ use Illuminate\Database\Eloquent\{
 
 class ScheduleData extends Model
 {
-    use Uuid, BelongsToUser, BelongsToQuoteFile, SoftDeletes;
+    use Uuid, BelongsToQuoteFile, SoftDeletes;
 
     protected $fillable = [
-        'value', 'user_id', 'quote_file_id'
+        'value', 'quote_file_id'
     ];
 
     protected $hidden = [
-        'user', 'quoteFile', 'created_at', 'updated_at', 'deleted_at', 'user_id', 'quote_file_id'
+        'user', 'quoteFile', 'created_at', 'updated_at', 'deleted_at', 'quote_file_id'
     ];
 
     protected $casts = [

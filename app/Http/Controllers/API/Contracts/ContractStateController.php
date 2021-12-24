@@ -5,8 +5,11 @@ namespace App\Http\Controllers\API\Contracts;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Contracts\Services\ContractState;
-use App\Contracts\Services\QuoteServiceInterface as QuoteService;
+use App\Contracts\Services\ContractView;
+use App\Contracts\Services\QuoteView as QuoteService;
+use App\Http\Requests\Contract\ShowContractState;
 use App\Http\Requests\Quote\StoreContractStateRequest;
+use App\Http\Resources\ContractReview;
 use App\Models\Quote\Contract;
 use App\Http\Resources\ContractVersionResource;
 use App\Http\Resources\QuoteReviewResource;
@@ -46,13 +49,16 @@ class ContractStateController extends Controller
     /**
      * Display the specified resource.
      *
+     * @param  \App\Http\Requests\Contract\ShowContractState
      * @param  \App\Models\Quote\Contract $contract
      * @return \Illuminate\Http\Response
      */
-    public function show(Contract $contract)
+    public function show(ShowContractState $request, Contract $contract)
     {
         return response()->json(
-            ContractVersionResource::make($contract)
+            ContractVersionResource::make(
+                $request->loadContractAttributes($contract)
+            )
         );
     }
 
@@ -60,17 +66,17 @@ class ContractStateController extends Controller
      * Display the specified resource prepared for review.
      *
      * @param  \App\Models\Quote\Contract $contract
-     * @param  \App\Contracts\Services\QuoteServiceInterface $service
+     * @param  \App\Contracts\Services\ContractView $service
      * @return \Illuminate\Http\Response
      */
-    public function review(Contract $contract, QuoteService $service)
+    public function review(Contract $contract, ContractView $service)
     {
         $this->authorize('view', $contract);
 
-        $service->prepareQuoteReview($contract->usingVersion);
+        $service->prepareContractReview($contract);
 
         return response()->json(
-            QuoteReviewResource::make($contract->usingVersion->enableReview())
+            ContractReview::make($contract->enableReview())
         );
     }
 
@@ -88,7 +94,9 @@ class ContractStateController extends Controller
         $resource = $this->processor->storeState($request->validated(), $contract);
 
         return response()->json(
-            ContractVersionResource::make($resource)
+            ContractVersionResource::make(
+               $request->loadContractAttributes($resource)
+            )
         );
     }
 

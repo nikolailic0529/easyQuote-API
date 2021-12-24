@@ -2,7 +2,7 @@
 
 namespace App\Traits\Misc;
 
-use Arr, Str;
+use Illuminate\Support\{Arr, Str};
 
 trait GeneratesException
 {

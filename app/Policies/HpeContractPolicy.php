@@ -109,14 +109,12 @@ class HpeContractPolicy
      */
     public function copy(User $user, HpeContract $contract)
     {
-        if (false === $user->hasRole(R_SUPER) || $user->cant('update_own_contracts')) {
-            return false;    
+        if ($user->hasRole(R_SUPER)) {
+            return true;
         }
 
-        if (is_null($contract->submitted_at)) {
-            return $this->deny(HPEC_DC_01);
+        if ($user->can('update_own_contracts')) {
+            return true;
         }
-
-        return true;
     }
 }

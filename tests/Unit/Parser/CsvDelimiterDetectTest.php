@@ -4,10 +4,16 @@ namespace Tests\Unit\Parser;
 
 use Tests\TestCase;
 use App\Contracts\Services\CsvParserInterface;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\File;
 
+/**
+ * @group build
+ */
 class CsvDelimiterDetectTest extends TestCase
 {
+    use DatabaseTransactions;
+    
     /**
      * CsvParser singleton.
      *
@@ -20,7 +26,7 @@ class CsvDelimiterDetectTest extends TestCase
      *
      * @var string
      */
-    protected $filesDirectory = 'tests/Unit/Parser/data/csv';
+    protected $filesDirectory = 'tests/Unit/Data/csv-files-test';
 
     protected function setUp(): void
     {

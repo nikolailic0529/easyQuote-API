@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Quote;
 
+use App\Models\Quote\Contract;
+use App\Models\Template\TemplateField;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -35,5 +37,14 @@ class StoreContractStateRequest extends FormRequest
     public function messages()
     {
         return [];
+    }
+
+    public function loadContractAttributes(Contract $contract): Contract
+    {
+        return tap($contract, function (Contract $contract) {
+            $templateFields = TemplateField::with('templateFieldType')->orderBy('order')->get();
+            
+            $contract->contractTemplate->setAttribute('template_fields', $templateFields);
+        });
     }
 }

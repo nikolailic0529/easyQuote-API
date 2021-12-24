@@ -1,0 +1,77 @@
+Service Agreement ID: 1086 5485            2295
+
+      Support Quotation                                                                 System Handle: ANZ-DE-02
+
+      Agreement No.                                                                     Germany
+
+      Your PO Reference:                                                                HPE Reference No.: 56972840
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                                       Standard Response Time
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ3350VP5                                             1             3.75
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ416000D                                             1             3.75
+
+        719064-B21            HPE DL380 Gen9 8SFF CTO Server                       CZJ6370JRC               01.10.2021                    1             6.74
+
+                                                                                         Hardware Subtotal                                             14.24
+
+                                                                                         Discounts                                                     -3.25
+
+                                                                                         Total                                                         10.99
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                      14.00-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                     62.97-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       2.72-
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+                                       Access to Adv Tech Specialists
+
+                                                                                         Software Subtotal                                              0.00
+
+                              HPE Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+                                                                                         Software Subtotal                                              0.00
+
+                                                                        Hardware Total                                                               349.82
+
+                                                                        Discount Total                                                                -79.69
+
+                                                                        Contract Total                                                               270.13
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT    Page: 5 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

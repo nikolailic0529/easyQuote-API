@@ -1,0 +1,29 @@
+Payment            Schedule          as    of   24.11.2020
+
+      Support Agreement ID: SPW-BOU
+
+      Settlement Period from: From:           04.01.2021       to: 31.12.2022
+
+       System Handle                           04.01.2021      01.01.2022
+
+                                               31.12.2021      31.12.2022
+
+      SPWBOU-FR                                 16,655.72
+
+      SPWBOU-FR01                                 836.55        1,585.05
+
+      SPWBOU-FR02                                 622.60        1,179.66
+
+      SPWBOU-FR03                                 598.48        1,133.96
+
+      SPWBOU-FR04                                 425.10          805.46
+
+      Total for the period
+
+      United Kingdom                            19,138.45       4,704.13
+
+        Print Date 24.11.2020                                                                                                                                                             Page 13 / 15
+
+      Single Payment for Duration. All amounts shown are in GBP unless otherwise indicated.
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. RegisteredNo: 690597

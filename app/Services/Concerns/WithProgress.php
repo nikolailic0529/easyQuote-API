@@ -8,7 +8,7 @@ trait WithProgress
 {
     private ?ProgressBar $progressBar = null;
 
-    private function setProgressBar($bar, $maxSteps)
+    private function setProgressBar($bar, $maxSteps = 0)
     {
         if ($bar instanceof ProgressBar) {
             $this->progressBar = $bar;

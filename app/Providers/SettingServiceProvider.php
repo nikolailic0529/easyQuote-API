@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\Repositories\SettingRepository;
+use App\Repositories\System\CachedSettingRepository;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use App\Contracts\Repositories\System\SystemSettingRepositoryInterface;
@@ -19,6 +21,8 @@ class SettingServiceProvider extends ServiceProvider implements DeferrableProvid
         $this->app->singleton(SystemSettingRepositoryInterface::class, SystemSettingRepository::class);
 
         $this->app->alias(SystemSettingRepositoryInterface::class, 'setting.repository');
+
+        $this->app->singleton(SettingRepository::class, CachedSettingRepository::class);
     }
 
     public function provides()
@@ -26,6 +30,7 @@ class SettingServiceProvider extends ServiceProvider implements DeferrableProvid
         return [
             SystemSettingRepositoryInterface::class,
             'setting.repository',
+            SettingRepository::class,
         ];
     }
 }

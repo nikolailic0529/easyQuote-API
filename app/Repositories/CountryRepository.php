@@ -169,9 +169,9 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
-            \App\Http\Query\OrderByName::class
+            \App\Http\Query\OrderByName::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

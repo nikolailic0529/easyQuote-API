@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use Arr;
+use Illuminate\Support\Arr;
 
 class QuoteReviewResource extends QuoteResource
 {

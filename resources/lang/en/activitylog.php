@@ -6,14 +6,16 @@ return [
         'updated' => 'Updated',
         'deleted' => 'Deleted',
         'submitted' => 'Submitted',
+        'exported' => 'Exported',
         'unravel' => 'Unravel',
         'activated' => 'Activated',
         'deactivated' => 'Deactivated',
         'copied' => 'Copied',
         'retrieved' => 'Retrieved',
         'authenticated' => 'Authenticated',
-        'deauthenticated' => 'Deauthenticated',
-        'created_version' => 'Created Version'
+        'unauthenticated' => 'Unauthenticated',
+        'created_version' => 'Created Version',
+        'deleted_version' => 'Deleted Version',
     ],
     'totals' => [
         'total' => 'Total',
@@ -21,13 +23,15 @@ return [
         'updated' => 'Updated',
         'deleted' => 'Deleted',
         'submitted' => 'Submitted',
+        'exported' => 'Exported',
         'unravel' => 'Unravel',
         'activated' => 'Activated',
         'deactivated' => 'Deactivated',
         'copied' => 'Copied',
         'retrieved' => 'Retrieved',
         'authenticated' => 'Authenticated',
-        'deauthenticated' => 'Deauthenticated',
-        'created_version' => 'Created Version'
+        'unauthenticated' => 'Unauthenticated',
+        'created_version' => 'Created Version',
+        'deleted_version' => 'Deleted Version', 
     ]
 ];
