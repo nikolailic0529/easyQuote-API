@@ -865,7 +865,7 @@ class WorldwideQuoteDataMapper
                 'price' => $this->formatter->format('number', $assetPrice, prepend: $outputCurrency->symbol),
                 'price_float' => (float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
                 'country_code' => $row->machineAddress?->country?->iso_3166_2 ?? '',
-                'state' => '',
+                'state' => $row->machineAddress?->state ?? '',
                 'machine_address_string' => self::formatMachineAddressToString($row->machineAddress),
                 'pricing_document' => $row->pricing_document ?? '',
                 'system_handle' => $row->system_handle ?? '',
@@ -916,10 +916,8 @@ class WorldwideQuoteDataMapper
             return ['date_from', 'date_to'];
         });
 
-        $machineAddressField = $distribution->worldwideQuote->are_end_user_addresses_available ? ['machine_address'] : [];
-
         $templateFieldNames = [
-            ...$machineAddressField,
+            'machine_address',
             'product_no',
             'description',
             'serial_no',
@@ -1291,10 +1289,8 @@ class WorldwideQuoteDataMapper
             return ['date_from', 'date_to'];
         });
 
-        $machineAddressField = $quote->activeVersion->are_end_user_addresses_available ? ['machine_address_string'] : [];
-
         $assetFieldNames = [
-            ...$machineAddressField,
+            'machine_address_string',
             'vendor_short_code',
             'product_no',
             'description',

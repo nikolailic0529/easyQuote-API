@@ -256,6 +256,28 @@ class CompanyTest extends TestCase
     }
 
     /**
+     * Test an ability to create a new company without vat attributes.
+     *
+     * @return void
+     */
+    public function testCanCreateCompanyWithoutVatAttributes()
+    {
+        $attributes = factory(Company::class)->raw();
+
+        unset($attributes['vat']);
+        unset($attributes['vat_type']);
+
+        $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
+        $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
+        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
+
+        $this->postJson('api/companies', $attributes)
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure(array_keys($attributes));
+    }
+
+    /**
      * Test an ability to create a new company with an existing VAT code.
      *
      * @return void
@@ -425,8 +447,6 @@ class CompanyTest extends TestCase
 
         $newAttributes = [
             'name' => $company->name,
-            'vat' => Str::random(40),
-            'vat_type' => 'VAT Number',
             'email' => $this->faker->safeEmail(),
             'phone' => $this->faker->e164PhoneNumber(),
             'website' => Str::random(40),

@@ -9,10 +9,13 @@ use App\DTO\WorldwideQuote\Export\WorldwideDistributionData;
 use App\DTO\WorldwideQuote\Export\WorldwideQuotePreviewData;
 use App\Events\SalesOrder\SalesOrderExported;
 use App\Events\WorldwideQuote\WorldwideQuoteExported;
+use App\Foundation\TemporaryDirectory;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\SalesOrder;
 use App\Services\Exceptions\ValidationException;
+use App\Services\WorldwideQuote\Models\PageLocatedElements;
 use Barryvdh\Snappy\PdfWrapper;
+use iio\libmergepdf\Merger;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Events\Dispatcher;
@@ -44,12 +47,66 @@ class WorldwideQuoteExporter
 
         $this->eventDispatcher->dispatch($event);
 
-        return $this->pdfWrapper
-            ->loadView(
-                'ww-quotes.pdf-export',
-                ['template_data' => $previewData->template_data]
-            )
-            ->download("$rfqNumber.pdf");
+        $tempDir = (new TemporaryDirectory)->create();
+
+        $pagePaths = [];
+
+        foreach ($this->iterateTemplateDataPages($previewData->template_data) as $name => $pageElements) {
+            /** @var TemplateElement[] $pageElements */
+
+            $locatedElements = $this->locatePageTemplateElements(...$pageElements);
+
+            $pagePaths[] = $pagePath = $tempDir->path(Str::random().'.pdf');
+
+            $this->pdfWrapper
+                ->loadView(
+                    view: 'ww-quotes.pdf-page',
+                    data: ['elements' => $locatedElements->bodyElements]
+                )
+                ->setOption('margin-bottom', '15')
+                ->setOption('footer-html', $this->viewFactory->make('ww-quotes.pdf-footer', ['elements' => $locatedElements->footerElements]))
+                ->save($pagePath, true);
+        }
+
+        $merger = new Merger();
+
+        foreach ($pagePaths as $path) {
+            $merger->addFile($path);
+        }
+
+        $content = $merger->merge();
+
+        return new Response($content, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'."$rfqNumber.pdf".'"',
+        ]);
+    }
+
+    private function iterateTemplateDataPages(TemplateData $templateData): \Generator
+    {
+        foreach ($templateData as $page => $elements) {
+            if ('template_assets' === $page) {
+                continue;
+            }
+
+            yield $page => $elements;
+        }
+    }
+
+    private function locatePageTemplateElements(TemplateElement ...$elements): PageLocatedElements
+    {
+        $bodyElements = [];
+        $footerElements = [];
+
+        foreach ($elements as $element) {
+            if (str_contains($element->css, 'footer-html')) {
+                $footerElements[] = $element;
+            } else {
+                $bodyElements[] = $element;
+            }
+        }
+
+        return new PageLocatedElements(bodyElements: $bodyElements, footerElements: $footerElements);
     }
 
     public function buildView(WorldwideQuotePreviewData $previewData): View
@@ -455,10 +512,10 @@ class WorldwideQuoteExporter
     private function hideTemplateElements(WorldwideQuotePreviewData $data): void
     {
         foreach ([
-            $data->template_data->first_page_schema,
-            $data->template_data->assets_page_schema,
-            $data->template_data->payment_schedule_page_schema,
-            $data->template_data->last_page_schema,
+                     $data->template_data->first_page_schema,
+                     $data->template_data->assets_page_schema,
+                     $data->template_data->payment_schedule_page_schema,
+                     $data->template_data->last_page_schema,
                  ] as $pageElements) {
 
             foreach ($pageElements as $element) {

@@ -56,7 +56,7 @@ class AssetFlagResolver
     protected function seeContainCountryCode(string $countryCode): bool
     {
         foreach ($this->iterateAssetCollection() as $asset) {
-            if ($countryCode === $asset->end_user_invoice_country_code) {
+            if ($countryCode === $asset->country_code) {
                 return true;
             }
         }
@@ -69,7 +69,7 @@ class AssetFlagResolver
         foreach ($this->iterateAssetCollection() as $asset) {
 
             foreach ($states as $state) {
-                if (str_contains(strtolower($asset->end_user_invoice_state), strtolower($state))) {
+                if (strtolower($state) === trim(strtolower($asset->state))) {
                     return true;
                 }
             }

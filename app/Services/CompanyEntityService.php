@@ -172,8 +172,8 @@ class CompanyEntityService implements CauserAware
     {
         return $this->updateCompany($company, new UpdateCompanyData([
             'name' => $companyData->name,
-            'vat' => $companyData->vat,
-            'vat_type' => $companyData->vat_type,
+            'vat' => $company->vat,
+            'vat_type' => $company->vat_type,
             'logo' => $companyData->logo,
             'delete_logo' => $companyData->delete_logo,
             'email' => $companyData->email,

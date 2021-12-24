@@ -22,7 +22,7 @@ class StoreCompanyRequest extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'name' => [
@@ -32,7 +32,7 @@ class StoreCompanyRequest extends FormRequest
                 'min:2',
                 Rule::unique(Company::class)
                     ->where('user_id', auth()->id())
-                    ->whereNull('deleted_at')
+                    ->whereNull('deleted_at'),
             ],
             'vat' => [
                 'nullable',
@@ -41,12 +41,12 @@ class StoreCompanyRequest extends FormRequest
                 'max:191',
                 Rule::unique(Company::class)
                     ->where('user_id', auth()->id())
-                    ->whereNull('deleted_at')
+                    ->whereNull('deleted_at'),
             ],
             'vat_type' => [
-                'required',
+                'nullable',
                 'string',
-                Rule::in(VAT::getValues())
+                Rule::in(VAT::getValues()),
             ],
             'short_code' => [
                 Rule::requiredIf(fn() => $this->type === CompanyType::INTERNAL),
@@ -54,28 +54,28 @@ class StoreCompanyRequest extends FormRequest
                 'size:3',
                 Rule::unique(Company::class)
                     ->where('user_id', auth()->id())
-                    ->whereNull('deleted_at')
+                    ->whereNull('deleted_at'),
             ],
             'type' => [
                 'required',
                 'string',
-                Rule::in(CompanyType::getValues())
+                Rule::in(CompanyType::getValues()),
             ],
             'source' => [
                 'nullable',
                 Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(CompanySource::getValues())
+                Rule::in(CompanySource::getValues()),
             ],
             'logo' => [
                 'image',
-                'max:2048'
+                'max:2048',
             ],
             'category' => [
                 'nullable',
                 Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(CompanyCategory::getValues())
+                Rule::in(CompanyCategory::getValues()),
             ],
             'email' => 'required|email',
             'phone' => 'nullable|string|min:4|phone',
@@ -86,38 +86,38 @@ class StoreCompanyRequest extends FormRequest
                 'nullable',
                 'string',
                 'uuid',
-                Rule::in($this->vendors)
+                Rule::in($this->vendors),
             ],
             'default_country_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id)
+                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id),
             ],
             'default_template_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id)
+                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id),
             ],
 
             'addresses' => ['nullable', 'array'],
             'addresses.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Address::class, 'id')->whereNull('deleted_at'),
             ],
             'addresses.*.is_default' => [
-                'bail', 'required', 'boolean'
+                'bail', 'required', 'boolean',
             ],
 
             'contacts' => ['nullable', 'array'],
             'contacts.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
             ],
             'contacts.*.is_default' => [
-                'bail', 'required', 'boolean'
-            ]
+                'bail', 'required', 'boolean',
+            ],
         ];
     }
 
@@ -141,7 +141,7 @@ class StoreCompanyRequest extends FormRequest
                 'default_template_id' => $this->input('default_template_id'),
                 'default_country_id' => $this->input('default_country_id'),
                 'addresses' => $this->input('addresses') ?? [],
-                'contacts' => $this->input('contacts') ?? []
+                'contacts' => $this->input('contacts') ?? [],
             ]);
         });
     }
@@ -150,7 +150,7 @@ class StoreCompanyRequest extends FormRequest
     {
         return [
             'name.exists' => CPE_01,
-            'vat.exists' => CPE_01
+            'vat.exists' => CPE_01,
         ];
     }
 

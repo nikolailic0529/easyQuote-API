@@ -135,3 +135,7 @@ hr.blue {
 .mt-2 {
     margin-top: 2rem
 }
+
+.preline {
+    white-space: pre-line;
+}

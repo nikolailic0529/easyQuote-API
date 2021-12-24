@@ -51,7 +51,7 @@
               "type": "richtext",
               "class": null,
               "label": "Rich Text",
-              "value": "<p><strong>Account Management</strong> &ndash; Your account manager will help you to manage your services contract, and will arrange quarterly support reviews for you to ensure that the service levels within the services contract remain appropriate for the applications running on the hardware. If your IT environment changes, with the addition or decommissioning of hardware, we can update your services contract at any time.</p>\n<p><strong>Renewal Service</strong> &ndash; Your account manager will remind you when your services contract is due to expire, normally 45 to 90 days in advance. This gives us enough time to review your current IT support, take into account any changes that have taken place in your IT environment, and create an up-to-date tailored quotation.</p>\n<p><strong>Assistance with Vendor tools</strong> &ndash; We are experienced in using the proprietary tools and resources available to make managing your IT support easier. We can help you to link your support with the Support Centre portal and introduce you to contacts that can assist with installing IRS.</p>\n<p><strong>Support for the whole lifecycle</strong> &ndash; Europlus Direct can provide support for your IT environment from initial product purchase through to decommissioning and technology refresh.</p>\n<p>Consolidate your IT Support &ndash; Your account manager will help you to consolidate your various IT support agreements and certificates under one Vendor services contract. This can include Vendor hardware and some multi-vendor hardware.</p>\n<p><strong>Flexibility</strong> &ndash; Once a services contract is in place with Vendor, it is possible for you to add new hardware to the contract (with 30 days&rsquo; notice) or remove hardware from the contract (with 90 days&rsquo; notice). Any difference in cost will be invoiced or credited accordingly. Services Contracts can also be cancelled entirely, subject to minimum periods of cover and notice periods.</p>",
+              "value": "<p><strong>Account Management</strong> – Your account manager will help you to manage your services contract, and will arrange quarterly support reviews for you to ensure that the service levels within the services contract remain appropriate for the applications running on the hardware. If your IT environment changes, with the addition or decommissioning of hardware, we can update your services contract at any time.</p><p><strong>Renewal Service</strong> – Your account manager will remind you when your services contract is due to expire, normally 45 to 90 days in advance. This gives us enough time to review your current IT support, take into account any changes that have taken place in your IT environment, and create an up-to-date tailored quotation.</p><p><strong>Assistance with Vendor tools</strong> – We are experienced in using the proprietary tools and resources available to make managing your IT support easier. We can help you to link your support with the Support Centre portal and introduce you to contacts that can assist with installing IRS.</p><p><strong>Support for the whole lifecycle</strong> – Europlus Direct can provide support for your IT environment from initial product purchase through to decommissioning and technology refresh.</p><p>Consolidate your IT Support – Your account manager will help you to consolidate your various IT support agreements and certificates under one Vendor services contract. This can include Vendor hardware and some multi-vendor hardware.</p><p><strong>Flexibility</strong> – Once a services contract is in place with Vendor, it is possible for you to add new hardware to the contract (with 30 days’ notice) or remove hardware from the contract (with 90 days’ notice). Any difference in cost will be invoiced or credited accordingly. Services Contracts can also be cancelled entirely, subject to minimum periods of cover and notice periods.</p>",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -59,80 +59,6 @@
               "is_required": false,
               "attached_child_id": "20b8033e-434b-47ac-96c0-dfb361dcc6d3",
               "attached_element_id": "7487ada6-1182-4737-9a62-34c893e7fbd1"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1"
-    },
-    {
-      "id": "fb35cfb7-fdde-4022-91d0-3524b3df4f32",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "328a2ad6-9090-478e-b719-b23489239dd1",
-              "css": null,
-              "src": null,
-              "name": "h-1",
-              "show": false,
-              "type": "hr",
-              "class": null,
-              "label": "Line",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-              "attached_element_id": "fb35cfb7-fdde-4022-91d0-3524b3df4f32"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1"
-    },
-    {
-      "id": "9d794895-65cf-4656-be58-1d9a2715bb04",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "cbb82c75-c7a1-4cf9-be44-a1d60c696665",
-              "css": null,
-              "src": null,
-              "name": "richtext-1",
-              "show": false,
-              "type": "richtext",
-              "class": null,
-              "label": "Rich Text",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-              "attached_element_id": "9d794895-65cf-4656-be58-1d9a2715bb04"
             }
           ],
           "position": 1
@@ -260,15 +186,15 @@
   ],
   "first_page": [
     {
-      "id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4",
+      "id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0",
       "name": "Two Column",
       "child": [
         {
-          "id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
+          "id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
           "class": "col-lg-4",
           "controls": [
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
+              "id": "dbb7dd0e-c4ad-4353-830d-35e522a654db",
               "css": null,
               "src": null,
               "name": "p-1",
@@ -282,11 +208,11 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
-              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+              "attached_child_id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
             },
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
+              "id": "dbb7dd0e-c4ad-4353-830d-35e522a654db",
               "css": null,
               "src": null,
               "name": "p-1",
@@ -300,11 +226,11 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
-              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+              "attached_child_id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
             },
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
+              "id": "dbb7dd0e-c4ad-4353-830d-35e522a654db",
               "css": null,
               "src": null,
               "name": "p-1",
@@ -318,20 +244,20 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
-              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+              "attached_child_id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
             }
           ],
           "position": 1
         },
         {
-          "id": "69f41f57-31b7-4cb8-9ed7-e26239933b9f",
+          "id": "b754ed16-e8b2-4cbc-b58f-dcecaeb8546d",
           "class": "col-lg-8 border-right text-right",
           "controls": [
             {
               "id": "company_logo_x3",
               "css": null,
-              "src": "{{company_logo_x3}}",
+              "src": "http://68.183.35.153/easyQuote-API/public/storage/images/companies/b86170d9-ceca-4f58-8a04-99ed2b0acb87@x3.png",
               "name": "company_logo_x3",
               "show": false,
               "type": "img",
@@ -343,25 +269,25 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "69f41f57-31b7-4cb8-9ed7-e26239933b9f",
-              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+              "attached_child_id": "b754ed16-e8b2-4cbc-b58f-dcecaeb8546d",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
             },
             {
-              "id": "logo_set_x2",
+              "id": "logo_set_x3",
               "css": null,
-              "name": "logo_set_x2",
+              "name": "logo_set_x3",
               "show": false,
               "type": "tag",
-              "class": "s4-form-control",
-              "label": "Logo Set X2",
+              "class": "group-logo",
+              "label": "Logo Set X3",
               "value": null,
               "is_field": true,
               "is_image": false,
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "69f41f57-31b7-4cb8-9ed7-e26239933b9f",
-              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+              "attached_child_id": "b754ed16-e8b2-4cbc-b58f-dcecaeb8546d",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
             }
           ],
           "position": 2
@@ -377,22 +303,22 @@
       "visibility": false
     },
     {
-      "id": "6a9b95c3-0c9c-47dd-996a-ad363b3d1ff6",
+      "id": "49b9ad57-0d51-4d1a-a091-072cefcce506",
       "css": "mt-3 mb-3",
       "name": "Single Column",
       "child": [
         {
-          "id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
+          "id": "3c3a94de-6f3a-4d98-af8c-c3becc3a2bf9",
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "184aa50a-1878-40a7-b2af-3facb0c74e93",
+              "id": "0758051c-d8d9-4bfb-beb5-d92b88b2d03f",
               "css": null,
               "src": null,
               "name": "h-1",
               "show": false,
               "type": "h",
-              "class": "heading-text blue",
+              "class": "blue heading-text",
               "label": "Heading",
               "value": "Service Quotation",
               "is_field": true,
@@ -400,11 +326,11 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-              "attached_element_id": "6a9b95c3-0c9c-47dd-996a-ad363b3d1ff6"
+              "attached_child_id": "3c3a94de-6f3a-4d98-af8c-c3becc3a2bf9",
+              "attached_element_id": "49b9ad57-0d51-4d1a-a091-072cefcce506"
             },
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "513a441b-f70f-4844-9fa7-a6adaaa72367",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -418,8 +344,8 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-              "attached_element_id": "6a9b95c3-0c9c-47dd-996a-ad363b3d1ff6"
+              "attached_child_id": "3c3a94de-6f3a-4d98-af8c-c3becc3a2bf9",
+              "attached_element_id": "49b9ad57-0d51-4d1a-a091-072cefcce506"
             },
             {
               "id": "account_manager_name",
@@ -427,7 +353,7 @@
               "name": "account_manager_name",
               "show": false,
               "type": "tag",
-              "class": "s4-form-control",
+              "class": null,
               "label": "Account Manager Name",
               "value": null,
               "is_field": true,
@@ -435,32 +361,32 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-              "attached_element_id": "6a9b95c3-0c9c-47dd-996a-ad363b3d1ff6"
+              "attached_child_id": "3c3a94de-6f3a-4d98-af8c-c3becc3a2bf9",
+              "attached_element_id": "49b9ad57-0d51-4d1a-a091-072cefcce506"
             }
           ],
           "position": 1
         }
       ],
-      "class": "single-column field-dragger",
+      "class": "single-column field-dragger mt-3 mb-3",
       "order": 1,
-      "toggle": false,
       "controls": [],
       "is_field": false,
+      "settings": "show",
       "droppable": false,
       "decoration": "1",
       "visibility": false
     },
     {
-      "id": "005475d5-dca0-43bd-ad63-d218933a17e1",
+      "id": "c5e3493f-d4d9-42d4-806e-24ce35411d02",
       "name": "Two Column",
       "child": [
         {
-          "id": "29ee5b26-27d3-4fcf-b4ea-8044afa8fcb6",
+          "id": "e9f9809c-774c-459d-a35e-cd411a56034a",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "22ffebbe-4c98-4a48-a00f-c67c72fafaf6",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -474,14 +400,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "29ee5b26-27d3-4fcf-b4ea-8044afa8fcb6",
-              "attached_element_id": "005475d5-dca0-43bd-ad63-d218933a17e1"
+              "attached_child_id": "e9f9809c-774c-459d-a35e-cd411a56034a",
+              "attached_element_id": "c5e3493f-d4d9-42d4-806e-24ce35411d02"
             }
           ],
           "position": 1
         },
         {
-          "id": "09e4e7b6-5048-4799-98c0-a1f333aa4115",
+          "id": "0f160401-81ce-4abc-a192-a48017a502a9",
           "class": "col-lg-9 border-right",
           "controls": [
             {
@@ -498,8 +424,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "09e4e7b6-5048-4799-98c0-a1f333aa4115",
-              "attached_element_id": "005475d5-dca0-43bd-ad63-d218933a17e1"
+              "attached_child_id": "0f160401-81ce-4abc-a192-a48017a502a9",
+              "attached_element_id": "c5e3493f-d4d9-42d4-806e-24ce35411d02"
             }
           ],
           "position": 2
@@ -515,15 +441,15 @@
       "visibility": false
     },
     {
-      "id": "f6b89b74-e7f9-4b33-a3ad-c13a4c9dad2a",
+      "id": "d99dc3c3-c222-4d9f-ab3a-1903566a4543",
       "name": "Two Column",
       "child": [
         {
-          "id": "29ee5b26-27d3-4fcf-b4ea-8044afa8fcb6",
+          "id": "e9f9809c-774c-459d-a35e-cd411a56034a",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "22ffebbe-4c98-4a48-a00f-c67c72fafaf6",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -537,23 +463,22 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "29ee5b26-27d3-4fcf-b4ea-8044afa8fcb6",
-              "attached_element_id": "f6b89b74-e7f9-4b33-a3ad-c13a4c9dad2a"
+              "attached_child_id": "e9f9809c-774c-459d-a35e-cd411a56034a",
+              "attached_element_id": "d99dc3c3-c222-4d9f-ab3a-1903566a4543"
             }
           ],
           "position": 1
         },
         {
-          "id": "09e4e7b6-5048-4799-98c0-a1f333aa4115",
+          "id": "0f160401-81ce-4abc-a192-a48017a502a9",
           "class": "col-lg-9 border-right",
           "controls": [
             {
               "id": "valid_until",
-              "css": null,
               "name": "valid_until",
-              "show": false,
+              "show": true,
               "type": "tag",
-              "class": "s4-form-control",
+              "class": "s4-form-control text-nowrap",
               "label": "Quotation Closing Date",
               "value": null,
               "is_field": true,
@@ -561,8 +486,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "09e4e7b6-5048-4799-98c0-a1f333aa4115",
-              "attached_element_id": "f6b89b74-e7f9-4b33-a3ad-c13a4c9dad2a"
+              "attached_child_id": "0f160401-81ce-4abc-a192-a48017a502a9",
+              "attached_element_id": "d99dc3c3-c222-4d9f-ab3a-1903566a4543"
             }
           ],
           "position": 2
@@ -578,15 +503,15 @@
       "visibility": false
     },
     {
-      "id": "80c8f94e-7667-40e0-82f8-8d24b7865951",
+      "id": "4775abf4-07e3-4890-9a82-7041b99618e1",
       "name": "Two Column",
       "child": [
         {
-          "id": "29ee5b26-27d3-4fcf-b4ea-8044afa8fcb6",
+          "id": "e9f9809c-774c-459d-a35e-cd411a56034a",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "22ffebbe-4c98-4a48-a00f-c67c72fafaf6",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -600,14 +525,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "29ee5b26-27d3-4fcf-b4ea-8044afa8fcb6",
-              "attached_element_id": "80c8f94e-7667-40e0-82f8-8d24b7865951"
+              "attached_child_id": "e9f9809c-774c-459d-a35e-cd411a56034a",
+              "attached_element_id": "4775abf4-07e3-4890-9a82-7041b99618e1"
             }
           ],
           "position": 1
         },
         {
-          "id": "09e4e7b6-5048-4799-98c0-a1f333aa4115",
+          "id": "0f160401-81ce-4abc-a192-a48017a502a9",
           "class": "col-lg-9 border-right",
           "controls": [
             {
@@ -624,8 +549,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "09e4e7b6-5048-4799-98c0-a1f333aa4115",
-              "attached_element_id": "80c8f94e-7667-40e0-82f8-8d24b7865951"
+              "attached_child_id": "0f160401-81ce-4abc-a192-a48017a502a9",
+              "attached_element_id": "4775abf4-07e3-4890-9a82-7041b99618e1"
             }
           ],
           "position": 2
@@ -641,12 +566,12 @@
       "visibility": false
     },
     {
-      "id": "15a2c17a-6ea9-4668-8664-7c43566d7a1d",
+      "id": "c7edd248-63a2-45a4-ba44-9524bfaba8e4",
       "css": "mt-5 mb-1",
       "name": "Single Column",
       "child": [
         {
-          "id": "568fbf4d-ad85-49c4-a209-e2f7e3de4865",
+          "id": "069b4a6a-9832-48de-ade8-2055e59a32c6",
           "class": "col-lg-12 border-right",
           "controls": [],
           "position": 1
@@ -654,21 +579,23 @@
       ],
       "class": "single-column field-dragger",
       "order": 1,
+      "toggle": false,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "1"
+      "decoration": "1",
+      "visibility": false
     },
     {
-      "id": "7657159f-a43c-49ce-9046-5ff0ed0b00d4",
+      "id": "e27ce333-bd9e-4c4a-8c8b-0d36caadd84e",
       "name": "Four Column",
       "child": [
         {
-          "id": "75272855-39f1-41f8-af75-a26721c5e6c3",
+          "id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -682,14 +609,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "75272855-39f1-41f8-af75-a26721c5e6c3",
-              "attached_element_id": "7657159f-a43c-49ce-9046-5ff0ed0b00d4"
+              "attached_child_id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
+              "attached_element_id": "e27ce333-bd9e-4c4a-8c8b-0d36caadd84e"
             }
           ],
           "position": 1
         },
         {
-          "id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
+          "id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
           "class": "col-lg-3",
           "controls": [
             {
@@ -706,18 +633,18 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
-              "attached_element_id": "7657159f-a43c-49ce-9046-5ff0ed0b00d4"
+              "attached_child_id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
+              "attached_element_id": "e27ce333-bd9e-4c4a-8c8b-0d36caadd84e"
             }
           ],
           "position": 2
         },
         {
-          "id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
+          "id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -731,14 +658,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
-              "attached_element_id": "7657159f-a43c-49ce-9046-5ff0ed0b00d4"
+              "attached_child_id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
+              "attached_element_id": "e27ce333-bd9e-4c4a-8c8b-0d36caadd84e"
             }
           ],
           "position": 3
         },
         {
-          "id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
+          "id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
           "class": "col-lg-3 border-right",
           "controls": [
             {
@@ -755,8 +682,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
-              "attached_element_id": "7657159f-a43c-49ce-9046-5ff0ed0b00d4"
+              "attached_child_id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
+              "attached_element_id": "e27ce333-bd9e-4c4a-8c8b-0d36caadd84e"
             }
           ],
           "position": 4
@@ -772,15 +699,15 @@
       "visibility": false
     },
     {
-      "id": "902dd114-eb13-4b69-8056-16afb7975ac7",
+      "id": "7f688a10-b283-4ec4-a845-164e15475ea2",
       "name": "Four Column",
       "child": [
         {
-          "id": "75272855-39f1-41f8-af75-a26721c5e6c3",
+          "id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -794,14 +721,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "75272855-39f1-41f8-af75-a26721c5e6c3",
-              "attached_element_id": "902dd114-eb13-4b69-8056-16afb7975ac7"
+              "attached_child_id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
+              "attached_element_id": "7f688a10-b283-4ec4-a845-164e15475ea2"
             }
           ],
           "position": 1
         },
         {
-          "id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
+          "id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
           "class": "col-lg-3",
           "controls": [
             {
@@ -818,18 +745,18 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
-              "attached_element_id": "902dd114-eb13-4b69-8056-16afb7975ac7"
+              "attached_child_id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
+              "attached_element_id": "7f688a10-b283-4ec4-a845-164e15475ea2"
             }
           ],
           "position": 2
         },
         {
-          "id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
+          "id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -843,14 +770,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
-              "attached_element_id": "902dd114-eb13-4b69-8056-16afb7975ac7"
+              "attached_child_id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
+              "attached_element_id": "7f688a10-b283-4ec4-a845-164e15475ea2"
             }
           ],
           "position": 3
         },
         {
-          "id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
+          "id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
           "class": "col-lg-3 border-right",
           "controls": [
             {
@@ -867,8 +794,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
-              "attached_element_id": "902dd114-eb13-4b69-8056-16afb7975ac7"
+              "attached_child_id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
+              "attached_element_id": "7f688a10-b283-4ec4-a845-164e15475ea2"
             }
           ],
           "position": 4
@@ -884,15 +811,15 @@
       "visibility": false
     },
     {
-      "id": "1045e45d-9f3d-4fff-8198-dfb7e4b1e963",
+      "id": "a06e3aeb-4711-413b-aa32-4dba1978d484",
       "name": "Four Column",
       "child": [
         {
-          "id": "75272855-39f1-41f8-af75-a26721c5e6c3",
+          "id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -906,14 +833,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "75272855-39f1-41f8-af75-a26721c5e6c3",
-              "attached_element_id": "1045e45d-9f3d-4fff-8198-dfb7e4b1e963"
+              "attached_child_id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
+              "attached_element_id": "a06e3aeb-4711-413b-aa32-4dba1978d484"
             }
           ],
           "position": 1
         },
         {
-          "id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
+          "id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
           "class": "col-lg-3",
           "controls": [
             {
@@ -930,18 +857,18 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
-              "attached_element_id": "1045e45d-9f3d-4fff-8198-dfb7e4b1e963"
+              "attached_child_id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
+              "attached_element_id": "a06e3aeb-4711-413b-aa32-4dba1978d484"
             }
           ],
           "position": 2
         },
         {
-          "id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
+          "id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -955,14 +882,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
-              "attached_element_id": "1045e45d-9f3d-4fff-8198-dfb7e4b1e963"
+              "attached_child_id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
+              "attached_element_id": "a06e3aeb-4711-413b-aa32-4dba1978d484"
             }
           ],
           "position": 3
         },
         {
-          "id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
+          "id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
           "class": "col-lg-3 border-right",
           "controls": [
             {
@@ -979,8 +906,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
-              "attached_element_id": "1045e45d-9f3d-4fff-8198-dfb7e4b1e963"
+              "attached_child_id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
+              "attached_element_id": "a06e3aeb-4711-413b-aa32-4dba1978d484"
             }
           ],
           "position": 4
@@ -996,15 +923,15 @@
       "visibility": false
     },
     {
-      "id": "39b73b99-7b52-41bc-a204-c95fd47f691e",
+      "id": "100a2dd2-a6d5-4842-a870-08876a4f0b43",
       "name": "Four Column",
       "child": [
         {
-          "id": "75272855-39f1-41f8-af75-a26721c5e6c3",
+          "id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1018,14 +945,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "75272855-39f1-41f8-af75-a26721c5e6c3",
-              "attached_element_id": "39b73b99-7b52-41bc-a204-c95fd47f691e"
+              "attached_child_id": "38c7ac5e-7e35-40af-ad97-b19177d6f18a",
+              "attached_element_id": "100a2dd2-a6d5-4842-a870-08876a4f0b43"
             }
           ],
           "position": 1
         },
         {
-          "id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
+          "id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
           "class": "col-lg-3",
           "controls": [
             {
@@ -1042,18 +969,18 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "3c6a7f29-b3a8-44f5-8044-e7ba147a126e",
-              "attached_element_id": "39b73b99-7b52-41bc-a204-c95fd47f691e"
+              "attached_child_id": "aa0e7a20-52f0-4a63-a4dc-eb27c58ffa4f",
+              "attached_element_id": "100a2dd2-a6d5-4842-a870-08876a4f0b43"
             }
           ],
           "position": 2
         },
         {
-          "id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
+          "id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "87e867a1-d4c0-4996-9d77-6cea475df556",
+              "id": "7e8185c2-b9b6-460f-916f-3a4ddad94931",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1067,14 +994,14 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "15bd12ba-aa04-4761-b4bf-a9e5955cc747",
-              "attached_element_id": "39b73b99-7b52-41bc-a204-c95fd47f691e"
+              "attached_child_id": "abf2792d-a49e-4434-9508-fd8a77d33a14",
+              "attached_element_id": "100a2dd2-a6d5-4842-a870-08876a4f0b43"
             }
           ],
           "position": 3
         },
         {
-          "id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
+          "id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
           "class": "col-lg-3 border-right",
           "controls": [
             {
@@ -1091,8 +1018,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "354d0a84-ef36-4972-8c87-ddf9967d4a92",
-              "attached_element_id": "39b73b99-7b52-41bc-a204-c95fd47f691e"
+              "attached_child_id": "cc1e773b-0125-4fcd-ba30-d17d704b111e",
+              "attached_element_id": "100a2dd2-a6d5-4842-a870-08876a4f0b43"
             }
           ],
           "position": 4
@@ -1142,14 +1069,15 @@
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "1"
+      "decoration": "1",
+      "visibility": false
     },
     {
-      "id": "fa3a8604-9e8f-45a1-bb3e-246b8a099a92",
+      "id": "330592d7-1533-4cb0-945d-b3d625dd0cd7",
       "name": "Single Column",
       "child": [
         {
-          "id": "37b9807a-e66d-4a73-94e3-62a99e6b48fb",
+          "id": "ee4a0026-34a8-4852-a095-90c57e72f561",
           "class": "col-lg-12 border-right",
           "controls": [
             {
@@ -1166,8 +1094,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "37b9807a-e66d-4a73-94e3-62a99e6b48fb",
-              "attached_element_id": "fa3a8604-9e8f-45a1-bb3e-246b8a099a92"
+              "attached_child_id": "ee4a0026-34a8-4852-a095-90c57e72f561",
+              "attached_element_id": "330592d7-1533-4cb0-945d-b3d625dd0cd7"
             }
           ],
           "position": 1
@@ -1175,22 +1103,24 @@
       ],
       "class": "single-column field-dragger",
       "order": 1,
+      "toggle": false,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "1"
+      "decoration": "1",
+      "visibility": false
     },
     {
-      "id": "92f3440e-bb38-4937-a46f-bc361766062f",
-      "css": "mt-5 footer-html",
+      "id": "240b044a-75c8-4c7e-9006-e0170f773ff8",
+      "css": "footer-html",
       "name": "Single Column",
       "child": [
         {
-          "id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
+          "id": "f5fb16dd-066b-4a32-bbf3-bdcd05097dd6",
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
+              "id": "4e6eb6ea-e536-4916-a300-24f7b42b5728",
               "css": null,
               "src": null,
               "name": "p-1",
@@ -1204,8 +1134,8 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-              "attached_element_id": "92f3440e-bb38-4937-a46f-bc361766062f"
+              "attached_child_id": "f5fb16dd-066b-4a32-bbf3-bdcd05097dd6",
+              "attached_element_id": "240b044a-75c8-4c7e-9006-e0170f773ff8"
             }
           ],
           "position": 1
@@ -1220,17 +1150,18 @@
       "decoration": "1",
       "visibility": false
     },
+
     {
-      "id": "ec69f316-ac87-47fb-98e2-47f15ca9f5c6",
+      "id": "240b044a-75c8-4c7e-9006-e0170f773ff8",
       "css": "footer-html",
       "name": "Single Column",
       "child": [
         {
-          "id": "bbcb8781-eb68-470d-9e26-98ad29667d0b",
+          "id": "f5fb16dd-066b-4a32-bbf3-bdcd05097dd6",
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
+              "id": "4e6eb6ea-e536-4916-a300-24f7b42b5728",
               "css": null,
               "src": null,
               "name": "p-1",
@@ -1238,14 +1169,14 @@
               "type": "p",
               "class": "font-sm",
               "label": "Paragraph",
-              "value": "Pricing will be valid until the end of the month only due to flunctuations in the currency exchange rate.",
+              "value": "Pricing will be valid until the end of the month only due to flunctuations in the currency exchange rate.\n",
               "is_field": true,
               "is_image": false,
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "bbcb8781-eb68-470d-9e26-98ad29667d0b",
-              "attached_element_id": "ec69f316-ac87-47fb-98e2-47f15ca9f5c6"
+              "attached_child_id": "f5fb16dd-066b-4a32-bbf3-bdcd05097dd6",
+              "attached_element_id": "240b044a-75c8-4c7e-9006-e0170f773ff8"
             }
           ],
           "position": 1
@@ -1261,12 +1192,11 @@
       "visibility": false
     },
     {
-      "id": "4514442f-2b63-4cee-be54-7d86c6ae0336",
-      "css": "footer-html",
+      "id": "6a4d40bb-1cb7-49e8-b420-7a6759485a29",
       "name": "Single Column",
       "child": [
         {
-          "id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
+          "id": "f5fb16dd-066b-4a32-bbf3-bdcd05097dd6",
           "class": "col-lg-12 border-right",
           "controls": [
             {
@@ -1283,8 +1213,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-              "attached_element_id": "4514442f-2b63-4cee-be54-7d86c6ae0336"
+              "attached_child_id": "f5fb16dd-066b-4a32-bbf3-bdcd05097dd6",
+              "attached_element_id": "6a4d40bb-1cb7-49e8-b420-7a6759485a29"
             }
           ],
           "position": 1
@@ -1302,11 +1232,11 @@
   ],
   "payment_page": [
     {
-      "id": "344b0e65-02bf-4be0-aa5f-499541389ba3",
+      "id": "20d0dd48-f3fc-4663-9fda-3b76e9e9d1e0",
       "name": "Single Column",
       "child": [
         {
-          "id": "76564aad-95f2-4ed3-ad83-f15ff542a45d",
+          "id": "9fa820ea-1bca-4136-ae6a-cbf6723a7073",
           "class": "col-lg-12 border-right",
           "controls": [
             {
@@ -1323,8 +1253,8 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "76564aad-95f2-4ed3-ad83-f15ff542a45d",
-              "attached_element_id": "344b0e65-02bf-4be0-aa5f-499541389ba3"
+              "attached_child_id": "9fa820ea-1bca-4136-ae6a-cbf6723a7073",
+              "attached_element_id": "20d0dd48-f3fc-4663-9fda-3b76e9e9d1e0"
             }
           ],
           "position": 1

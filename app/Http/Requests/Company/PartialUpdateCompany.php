@@ -43,21 +43,6 @@ class PartialUpdateCompany extends FormRequest
                     ->withoutTrashed()
                     ->ignore($this->company),
             ],
-            'vat' => [
-                'nullable',
-                Rule::requiredIf($this->input('vat_type') === VAT::VAT_NUMBER),
-                'string',
-                'max:191',
-                Rule::unique(Company::class)
-                    ->where('user_id', $this->company?->user_id)
-                    ->whereNull('deleted_at')
-                    ->ignore($this->company),
-            ],
-            'vat_type' => [
-                'required',
-                'string',
-                Rule::in(VAT::getValues()),
-            ],
             'logo' => [
                 'exclude_if:delete_logo,1',
                 'image',
@@ -75,7 +60,6 @@ class PartialUpdateCompany extends FormRequest
             'addresses.*.is_default' => [
                 'bail', 'required', 'boolean',
             ],
-
             'contacts' => ['array'],
             'contacts.*.id' => [
                 'bail', 'required', 'uuid',
@@ -92,8 +76,6 @@ class PartialUpdateCompany extends FormRequest
         return $this->companyData ??= with(true, function (): PartialUpdateCompanyData {
             return new PartialUpdateCompanyData([
                 'name' => $this->input('name'),
-                'vat' => $this->input('vat'),
-                'vat_type' => $this->input('vat_type') ?? VAT::NO_VAT,
                 'logo' => $this->file('logo'),
                 'delete_logo' => $this->boolean('delete_logo'),
                 'email' => $this->input('email'),

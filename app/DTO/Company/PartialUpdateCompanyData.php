@@ -9,15 +9,6 @@ final class PartialUpdateCompanyData extends DataTransferObject
 {
     public string $name;
 
-    public ?string $vat;
-
-    /**
-     * @Constraints\Choice({"EXEMPT", "NO VAT", "VAT Number"})
-     *
-     * @var string
-     */
-    public string $vat_type;
-
     public ?UploadedFile $logo;
 
     public bool $delete_logo;
