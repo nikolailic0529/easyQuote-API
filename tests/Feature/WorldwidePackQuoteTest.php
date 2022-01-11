@@ -1360,7 +1360,7 @@ class WorldwidePackQuoteTest extends TestCase
         // Assert the asset with generated serial number is marked with asterisk.
         $this->assertContains($assetWithGeneratedSerialNumber->serial_no." **", $response->json('pack_assets.*.assets.*.serial_no'));
         $this->assertNotEmpty($response->json('asset_notes'));
-        $this->assertStringStartsWith("**", $response->json('asset_notes'));
+        $this->assertStringStartsWith("*", $response->json('asset_notes'));
     }
 
     /**
@@ -1472,6 +1472,12 @@ class WorldwidePackQuoteTest extends TestCase
             'submitted_at' => now(),
         ]);
 
+        $wwQuote->opportunity->primaryAccountContact()->associate(factory(Contact::class)->create([
+            'email' => 'Francesco.Ziviani@surftech.com'
+        ]));
+
+        $wwQuote->opportunity->save();
+
         $wwQuote->activeVersion->update([
             'quote_template_id' => $template->getKey(),
             'multi_year_discount_id' => $multiYearDiscount->getKey(),
@@ -1515,9 +1521,9 @@ class WorldwidePackQuoteTest extends TestCase
             ->assertHeader('content-disposition', "attachment; filename=\"$expectedFileName\"");
 
 //        $fakeStorage = Storage::persistentFake();
-
+//
 //        $fakeStorage->put($expectedFileName, $response->getContent());
-
+//
 //        \exec("xdg-open {$fakeStorage->path($expectedFileName)}");
     }
 
@@ -2258,11 +2264,15 @@ TEMPLATE;
             'contract_type_id' => CT_PACK,
         ]);
 
-        /** @var \App\Models\Quote\Quote $quote */
+        /** @var \App\Models\Quote\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'opportunity_id' => $opportunity->getKey(),
             'contract_type_id' => CT_PACK,
         ]);
+
+        $quote->activeVersion->quoteCurrency()->disassociate();
+        $quote->activeVersion->buyCurrency()->disassociate();
+        $quote->activeVersion->save();
 
         $this->authenticateApi();
 
@@ -2322,6 +2332,8 @@ TEMPLATE;
                 ],
             ]);
 
+        /** Currencies should stay the same, once they are set **/
+
         $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
             'contract_type_id' => $opportunity->contract_type_id,
             'opportunity_start_date' => now()->toDateString(),
@@ -2356,12 +2368,12 @@ TEMPLATE;
             ])
             ->assertJson([
                 'quote_currency' => [
-                    'code' => 'USD',
+                    'code' => 'AUD',
                 ],
             ])
             ->assertJson([
                 'buy_currency' => [
-                    'code' => 'USD',
+                    'code' => 'AUD',
                 ],
             ]);
     }

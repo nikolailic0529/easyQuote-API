@@ -85,7 +85,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Collection<WorldwideDistribution>|WorldwideDistribution[] $worldwideDistributions
  * @property QuoteTemplate|null $quoteTemplate
  * @property Currency $quoteCurrency
- * @property Currency|null $buyCurrency
+ * @property Currency $buyCurrency
  * @property Currency $outputCurrency
  * @property Company|null $company
  * @property Collection<WorldwideQuoteAsset>|WorldwideQuoteAsset[] $assets

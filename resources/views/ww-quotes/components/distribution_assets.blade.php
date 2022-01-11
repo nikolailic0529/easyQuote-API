@@ -1,4 +1,4 @@
-<table class="table table-striped table-bordered">
+<table class="table table-striped table-bordered" style="font-size:12px;">
     <thead>
     <tr>
         @foreach ($asset_fields as $field)
@@ -24,5 +24,5 @@
 </table>
 
 @if (filled($asset_notes))
-    <p class="mt-1" style="white-space: pre-line">{{ $asset_notes }}</p>
+    <p class="mt-1" style="white-space: pre-line;">{{ $asset_notes }}</p>
 @endif

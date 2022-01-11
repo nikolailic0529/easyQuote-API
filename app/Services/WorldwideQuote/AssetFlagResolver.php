@@ -7,9 +7,9 @@ use App\DTO\WorldwideQuote\Export\AssetsGroupData;
 
 class AssetFlagResolver
 {
-    const GENERATED_SERIAL = 2;
-    const CANADA_LOCATION = 4;
-    const SPECIFIC_STATES = 8;
+    const GEN_SN = 2;
+    const CA_LOC = 4;
+    const US_LOC = 8;
 
     protected readonly array $assets;
 
@@ -28,15 +28,15 @@ class AssetFlagResolver
         $flags = 0;
 
         if ($this->seeContainGeneratedSerialNumber()) {
-            $flags |= self::GENERATED_SERIAL;
+            $flags |= self::GEN_SN;
         }
 
         if ($this->seeContainCountryCode('CA')) {
-            $flags |= self::CANADA_LOCATION;
+            $flags |= self::CA_LOC;
         }
 
-        if ($this->seeContainAnyState('California', 'Connecticut', 'Hawaii', 'Maryland', 'Massachusetts', 'Nevada', 'Puerto Rico', 'Rhode Island', 'Tennessee')) {
-            $flags |= self::SPECIFIC_STATES;
+        if ($this->seeContainCountryCode('US')) {
+            $flags |= self::US_LOC;
         }
 
         return $flags;

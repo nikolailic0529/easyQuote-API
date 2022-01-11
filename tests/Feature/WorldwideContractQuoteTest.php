@@ -1058,7 +1058,7 @@ class WorldwideContractQuoteTest extends TestCase
         $wwQuote->activeVersion->update(['quote_template_id' => $template->getKey(), 'quote_currency_id' => Currency::query()->where('code', 'USD')->value('id')]);
 
         $country = Country::query()->first();
-        $vendor = Vendor::query()->first();
+        $vendor = Vendor::query()->where('is_system', true)->first();
 
         $snDiscount = factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
         $promotionalDiscount = factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
@@ -1498,7 +1498,7 @@ TEMPLATE;
         );
 
         $country = Country::query()->first();
-        $vendor = Vendor::query()->first();
+        $vendor = Vendor::query()->where('is_system', true)->first();
 
         factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
         factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
@@ -1618,7 +1618,7 @@ TEMPLATE;
         );
 
         $country = Country::query()->first();
-        $vendor = Vendor::query()->first();
+        $vendor = Vendor::query()->where('is_system', true)->first();
 
         factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
         factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
@@ -1654,7 +1654,7 @@ TEMPLATE;
 
             $distribution->opportunitySupplier()->associate($supplier)->save();
 
-            $distribution->vendors()->sync($vendor);
+            $distribution->vendors()->sync($vendor->getKey());
 
             $distributorFile = factory(QuoteFile::class)->create([
                 'file_type' => QFT_WWPL,
@@ -1683,7 +1683,7 @@ TEMPLATE;
 
         $expectedFileName = $wwQuote->quote_number.'.pdf';
 
-        $response = $this->get('api/ww-quotes/'.$wwQuote->getKey().'/export')
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/export')
 //            ->dump()
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf')

@@ -1,4 +1,4 @@
-<table class="table table-striped table-bordered">
+<table class="table table-striped table-bordered" style="font-size:12px;">
     <thead>
     <tr>
         @foreach ($payment_schedule_fields as $field)
