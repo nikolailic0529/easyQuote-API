@@ -12,16 +12,17 @@ use App\DTO\WorldwideQuote\{AssetServiceLevel,
     InitializeWorldwideQuoteAssetData,
     ReadAssetRow,
     ReadBatchFileResult,
-    WorldwideQuoteAssetDataCollection};
+    WorldwideQuoteAssetDataCollection
+};
 use App\Enum\Lock;
 use App\Models\Address;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
-use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Services\Exceptions\ValidationException;
+use App\Services\ExchangeRate\CurrencyConverter;
 use App\Support\PriceParser;
 use Carbon\Carbon;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -36,35 +37,19 @@ use Webpatser\Uuid\Uuid;
 
 class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetState
 {
-    protected ConnectionInterface $connection;
-
-    protected LockProvider $lockProvider;
-
-    protected ValidatorInterface $validator;
-
-    protected Filesystem $storage;
-
-    protected Cache $cache;
-
-    protected AssetServiceLookupService $lookupService;
 
     private array $vendorsCache = [];
 
     private array $machineAddressCache = [];
 
-    public function __construct(ConnectionInterface $connection,
-                                LockProvider $lockProvider,
-                                ValidatorInterface $validator,
-                                Cache $cache,
-                                Filesystem $storage,
-                                AssetServiceLookupService $lookupService)
+    public function __construct(protected ConnectionInterface       $connection,
+                                protected LockProvider              $lockProvider,
+                                protected ValidatorInterface        $validator,
+                                protected Cache                     $cache,
+                                protected Filesystem                $storage,
+                                protected AssetServiceLookupService $lookupService,
+                                protected CurrencyConverter         $currencyConverter)
     {
-        $this->connection = $connection;
-        $this->lockProvider = $lockProvider;
-        $this->validator = $validator;
-        $this->cache = $cache;
-        $this->storage = $storage;
-        $this->lookupService = $lookupService;
     }
 
     public function initializeQuoteAsset(WorldwideQuoteVersion $quote, InitializeWorldwideQuoteAssetData $data): WorldwideQuoteAsset
@@ -82,7 +67,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $asset->sku = $data->sku;
             $asset->service_sku = $data->service_sku;
             $asset->product_name = $data->product_name;
-            $asset->expiry_date = transform($data->expiry_date, fn (\DateTimeInterface $dateTime) => $dateTime->format('Y-m-d'));
+            $asset->expiry_date = transform($data->expiry_date, fn(\DateTimeInterface $dateTime) => $dateTime->format('Y-m-d'));
             $asset->service_level_description = $data->service_level_description;
             $asset->buy_price = $data->buy_price;
             $asset->buy_price_margin = $data->buy_price_margin;
@@ -164,6 +149,40 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         }
     }
 
+    public function recalculateExchangeRateOfQuoteAssets(WorldwideQuoteVersion $quote): void
+    {
+        if (false === $quote->wasChanged($quote->quoteCurrency()->getForeignKeyName())) {
+            return;
+        }
+
+        $quote->assets->each(function (WorldwideQuoteAsset $asset) use ($quote): void {
+
+            if (is_null($asset->buyCurrency)) {
+                return;
+            }
+
+            $exchangeRate = $this->currencyConverter->convertCurrencies(
+                fromCode: $asset->buyCurrency->code,
+                toCode: $quote->quoteCurrency->code,
+                amount: 1,
+                dateTime: $quote?->created_at
+            );
+
+            $asset->exchange_rate_value = $exchangeRate + ($exchangeRate * ($asset->exchange_rate_margin / 100));
+
+            $asset->price = ($asset->buy_price + ($asset->buy_price * ($asset->buy_price_margin / 100))) * $asset->exchange_rate_value;
+
+            $this->lockProvider->lock(Lock::UPDATE_WWASSET($asset->getKey()), 10)
+                ->block(30, function () use ($asset) {
+
+                    $this->connection->transaction(fn() => $asset->save());
+
+                });
+
+        });
+
+    }
+
     public function readBatchAssetFile(UploadedFile $file): ReadBatchFileResult
     {
         $reader = new BatchAssetFileReader(
@@ -190,7 +209,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $readRows[] = new ReadAssetRow([
                 'header' => (string)$header,
                 'header_key' => (string)$key,
-                'value' => implode(', ', array_filter(Arr::pluck($rows, $key) ?? []))
+                'value' => implode(', ', array_filter(Arr::pluck($rows, $key) ?? [])),
             ]);
         }
 
@@ -210,7 +229,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
         return new ReadBatchFileResult([
             'file_id' => $fileUuid,
-            'read_rows' => $readRows
+            'read_rows' => $readRows,
         ]);
     }
 
@@ -424,7 +443,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
                 if (!is_null($asset->service_level_description) && !is_null($asset->price)) {
                     $asset->service_level_data = [
-                        ['description' => $asset->service_level_description, 'price' => $asset->price, 'code' => $asset->service_sku]
+                        ['description' => $asset->service_level_description, 'price' => $asset->price, 'code' => $asset->service_sku],
                     ];
                 }
 
@@ -445,7 +464,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 $asset->service_level_data = $serviceLevelsArray;
             } elseif (!is_null($asset->service_level_description) && isset($asset->price)) {
                 $asset->service_level_data = [
-                    ['description' => $asset->service_level_description, 'price' => $asset->price, 'code' => $asset->service_sku]
+                    ['description' => $asset->service_level_description, 'price' => $asset->price, 'code' => $asset->service_sku],
                 ];
             }
 
@@ -517,7 +536,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 'serial_no' => $asset['serial_no'],
                 'sku' => $asset['sku'],
                 'country_code' => $asset['country'],
-                'currency_code' => $currencyCode
+                'currency_code' => $currencyCode,
             ]);
         }
 

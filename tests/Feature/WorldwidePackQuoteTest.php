@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
+use App\Models\Data\ExchangeRate;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Quote\Discount\MultiYearDiscount;
@@ -20,10 +21,8 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
-use App\Models\Role;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
-use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
@@ -1298,7 +1297,7 @@ class WorldwidePackQuoteTest extends TestCase
                     'account_manager_name',
 
                     'quote_data_aggregation_fields' => [
-                        '*' => ['field_name', 'field_header']
+                        '*' => ['field_name', 'field_header'],
                     ],
 
                     'quote_data_aggregation' => [
@@ -1308,8 +1307,8 @@ class WorldwidePackQuoteTest extends TestCase
                             'duration',
                             'qty',
                             'total_price',
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
 
 
@@ -1473,7 +1472,7 @@ class WorldwidePackQuoteTest extends TestCase
         ]);
 
         $wwQuote->opportunity->primaryAccountContact()->associate(factory(Contact::class)->create([
-            'email' => 'Francesco.Ziviani@surftech.com'
+            'email' => 'Francesco.Ziviani@surftech.com',
         ]));
 
         $wwQuote->opportunity->save();
@@ -2701,5 +2700,81 @@ TEMPLATE;
             ]);
 
         // TODO: test that rows are moved to another group.
+    }
+
+    /**
+     * Test an ability to see recalculated selling price of assets when quote currency is changed.
+     *
+     * @return void
+     */
+    public function testCanSeeRecalculatedSellingPriceOfAssetsWhenQuoteCurrencyIsChanged(): void
+    {
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_PACK,
+        ]);
+
+        $quote->activeVersion->update([
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->sole()->getKey(),
+        ]);
+
+        $asset = factory(WorldwideQuoteAsset::class)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'buy_price' => 100, // buy price
+            'buy_price_margin' => 20,
+            'price' => 100, // selling price
+            'exchange_rate_value' => 1,
+            'exchange_rate_margin' => 0,
+            'buy_currency_id' => Currency::query()->where('code', 'GBP')->sole()->getKey(),
+        ]);
+
+        $this->authenticateApi();
+
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'?include[]=assets')
+            ->assertOk()
+            ->assertJsonStructure([
+                'assets' => [
+                    '*' => [
+                        'id', 'buy_price', 'buy_price_margin', 'price', 'exchange_rate_value', 'exchange_rate_margin',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('assets'));
+        $this->assertSame(100, $response->json('assets.0.price'));
+        $this->assertEquals(1, $response->json('assets.0.exchange_rate_value'));
+
+        $exchangeRate = ExchangeRate::query()->create([
+            'currency_code' => 'USD',
+            'exchange_rate' => 1.36,
+            'base_currency' => 'GBP',
+            'date' => $quote->created_at->toDateString(),
+        ]);
+
+        $this->postJson('api/ww-quotes/'.$quote->getKey().'/contacts', [
+            'company_id' => Company::query()->where('type', 'Internal')->first()->getKey(),
+            'quote_template_id' => factory(QuoteTemplate::class)->create()->getKey(),
+            'quote_expiry_date' => now()->addYear()->toDateString(),
+            'buy_price' => 100,
+            'payment_terms' => '30 Days',
+            'stage' => 'Assets Creation',
+            'quote_currency_id' => Currency::query()->where('code', 'USD')->sole()->getKey(),
+        ])
+            ->assertOk();
+
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'?include[]=assets')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'assets' => [
+                    '*' => [
+                        'id', 'buy_price', 'buy_price_margin', 'price', 'exchange_rate_value', 'exchange_rate_margin',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('assets'));
+        $this->assertEquals((100 + (100 * .2)) * 1.36, $response->json('assets.0.price'));
     }
 }

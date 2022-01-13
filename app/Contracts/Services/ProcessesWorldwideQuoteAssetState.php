@@ -32,6 +32,14 @@ interface ProcessesWorldwideQuoteAssetState
     public function batchUpdateQuoteAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetDataCollection $collection);
 
     /**
+     * Recalculate exchange rate of quote assets, when quote currency was changed.
+     *
+     * @param WorldwideQuoteVersion $quote
+     * @return void
+     */
+    public function recalculateExchangeRateOfQuoteAssets(WorldwideQuoteVersion $quote): void;
+
+    /**
      * Read headers & first rows from the batch asset file.
      *
      * @param UploadedFile $file

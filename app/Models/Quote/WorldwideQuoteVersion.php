@@ -105,6 +105,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read WorldwideQuoteNote|null $draftNote
  * @property-read WorldwideQuoteNote|null $submitNote
  * @property-read Collection<WorldwideQuoteAssetsGroup>|WorldwideQuoteAssetsGroup[] $assetsGroups
+ * @property-read \DateTimeInterface|null $created_at
  */
 class WorldwideQuoteVersion extends Model
 {

@@ -1507,7 +1507,7 @@ class WorldwideQuoteDataMapper
             'contact_country' => ($quoteInvoiceAddress ?? $quoteHardwareAddress)?->country?->iso_3166_2 ?? ND_02,
 
             'end_user_name' => $opportunity->endUser?->name ?? ND_02,
-            'end_user_contact_country' => $activeVersion->are_end_user_contacts_available ? collect($quoteDataAggregation)->map->country_code->unique()->implode(', ') : ND_02,
+            'end_user_contact_country' => collect($quoteDataAggregation)->map->country_code->unique()->implode(', '),
             'end_user_contact_name' => $activeVersion->are_end_user_contacts_available ? $contactStringFormatter($endUserHardwareContact) : ND_02,
             'end_user_contact_email' => $activeVersion->are_end_user_contacts_available ? ($endUserHardwareContact?->email ?? ND_02) : ND_02,
 

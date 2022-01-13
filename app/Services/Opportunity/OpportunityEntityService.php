@@ -845,8 +845,8 @@ class OpportunityEntityService implements CauserAware
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
-                    fromCurrencyCode: $data->opportunity_amount_currency_code ?? $baseCurrency,
-                    toCurrencyCode: $baseCurrency,
+                    fromCode: $data->opportunity_amount_currency_code ?? $baseCurrency,
+                    toCode: $baseCurrency,
                     amount: $value
                 );
             });
@@ -856,8 +856,8 @@ class OpportunityEntityService implements CauserAware
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
-                    fromCurrencyCode: $data->purchase_price_currency_code ?? $baseCurrency,
-                    toCurrencyCode: $baseCurrency,
+                    fromCode: $data->purchase_price_currency_code ?? $baseCurrency,
+                    toCode: $baseCurrency,
                     amount: $value
                 );
             });
@@ -869,8 +869,8 @@ class OpportunityEntityService implements CauserAware
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
-                    fromCurrencyCode: $data->list_price_currency_code ?? $baseCurrency,
-                    toCurrencyCode: $baseCurrency,
+                    fromCode: $data->list_price_currency_code ?? $baseCurrency,
+                    toCode: $baseCurrency,
                     amount: $value
                 );
             });
@@ -995,8 +995,8 @@ class OpportunityEntityService implements CauserAware
                     $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                     return $this->currencyConverter->convertCurrencies(
-                        fromCurrencyCode: $data->opportunity_amount_currency_code ?? $baseCurrency,
-                        toCurrencyCode: $baseCurrency,
+                        fromCode: $data->opportunity_amount_currency_code ?? $baseCurrency,
+                        toCode: $baseCurrency,
                         amount: $value
                     );
                 });
@@ -1006,8 +1006,8 @@ class OpportunityEntityService implements CauserAware
                     $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                     return $this->currencyConverter->convertCurrencies(
-                        fromCurrencyCode: $data->purchase_price_currency_code ?? $baseCurrency,
-                        toCurrencyCode: $baseCurrency,
+                        fromCode: $data->purchase_price_currency_code ?? $baseCurrency,
+                        toCode: $baseCurrency,
                         amount: $value
                     );
                 });
@@ -1019,8 +1019,8 @@ class OpportunityEntityService implements CauserAware
                     $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                     return $this->currencyConverter->convertCurrencies(
-                        fromCurrencyCode: $data->list_price_currency_code ?? $baseCurrency,
-                        toCurrencyCode: $baseCurrency,
+                        fromCode: $data->list_price_currency_code ?? $baseCurrency,
+                        toCode: $baseCurrency,
                         amount: $value
                     );
                 });
