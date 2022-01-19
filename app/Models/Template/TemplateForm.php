@@ -113,6 +113,8 @@ final class TemplateForm
                 ['id' => 'coverage_period', 'label' => 'Coverage Period'],
                 ['id' => 'coverage_period_from', 'label' => 'Coverage Period From'],
                 ['id' => 'coverage_period_to', 'label' => 'Coverage Period To'],
+                ['id' => 'support_start_assumed_char', 'label' => 'Support Start Assumed (*)'],
+                ['id' => 'support_end_assumed_char', 'label' => 'Support End Assumed (*)'],
                 // Quotation Service Level
                 ['id' => 'service_levels', 'label' => 'Service Level (s)'],
 

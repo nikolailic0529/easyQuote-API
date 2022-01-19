@@ -30,9 +30,8 @@ class StoreCompanyRequest extends FormRequest
                 'string',
                 'max:191',
                 'min:2',
-                Rule::unique(Company::class)
-                    ->where('user_id', auth()->id())
-                    ->whereNull('deleted_at'),
+                Rule::unique(Company::class, 'name')
+                    ->withoutTrashed(),
             ],
             'vat' => [
                 'nullable',

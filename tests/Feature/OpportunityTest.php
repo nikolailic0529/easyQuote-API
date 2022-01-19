@@ -1337,6 +1337,89 @@ class OpportunityTest extends TestCase
         }
     }
 
+
+    /**
+     * Test an ability to see matched own primary account in imported opportunity,
+     * when multiple companies are present with the same name owned by different users.
+     *
+     */
+    public function testCanSeeMatchedOwnPrimaryAccountInImportedOpportunity(): void
+    {
+        $this->app['db.connection']->table('opportunities')->delete();
+        $this->app['db.connection']->table('companies')->where('is_system', false)->delete();
+
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/ops-17012022.xlsx')));
+
+        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-17012022.xlsx')));
+
+        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-17012022.xlsx')));
+
+        $otherUserCompany = factory(Company::class)->create([
+            'user_id' => factory(User::class)->create()->getKey(),
+            'name' => 'ASA Computer',
+            'type' => 'External',
+        ]);
+
+        $this->authenticateApi();
+
+        $ownCompany = factory(Company::class)->create([
+            'user_id' => $this->app['auth.driver']->id(),
+            'name' => 'ASA Computer',
+            'type' => 'External',
+        ]);
+
+        $response = $this->postJson('api/opportunities/upload', [
+            'opportunities_file' => $opportunitiesFile,
+            'accounts_data_file' => $accountsDataFile,
+            'account_contacts_file' => $accountContactsFile,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'opportunities' => [
+                    '*' => [
+                        'id', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                    ],
+                ],
+                'errors',
+            ]);
+
+        $this->assertEmpty($response->json('errors'));
+        $this->assertCount(1, $response->json('opportunities'));
+
+        $this->patchJson('api/opportunities/save', [
+            'opportunities' => $response->json('opportunities.*.id'),
+        ])
+//            ->dump()
+            ->assertNoContent();
+
+        $response = $this->getJson('api/opportunities/')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id']
+                ]
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+
+        $response = $this->getJson('api/opportunities/'.$response->json('data.0.id'))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'user_id',
+                'primary_account' => [
+                    'id', 'user_id',
+                ],
+            ]);
+
+        $this->assertSame($this->app['auth.driver']->id(), $response->json('user_id'));
+        $this->assertSame($this->app['auth.driver']->id(), $response->json('primary_account.user_id'));
+        $this->assertSame($ownCompany->getKey(), $response->json('primary_account.id'));
+    }
+
     /**
      * Test an ability to mark an existing opportunity as lost.
      *

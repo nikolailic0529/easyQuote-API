@@ -555,16 +555,20 @@ class WorldwideQuoteDataMapper
             $opportunityStartDate = transform($opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
             $opportunityEndDate = transform($opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
-            $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
-                if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
-                    return implode('&nbsp;', [
-                        $this->formatter->format('date', $opportunityStartDate),
-                        'to',
-                        $this->formatter->format('date', $opportunityEndDate),
-                    ]);
+            $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate, $opportunity): string {
+                if (is_null($opportunityStartDate) || is_null($opportunityEndDate)) {
+                    return '';
                 }
 
-                return '';
+                $startDateAssumedChar = $opportunity->is_opportunity_start_date_assumed ? '*' : '';
+                $endDateAssumedChar = $opportunity->is_opportunity_end_date_assumed ? '*' : '';
+
+                return implode('&nbsp;', [
+                    $this->formatter->format('date', $opportunityStartDate).$startDateAssumedChar,
+                    'to',
+                    $this->formatter->format('date', $opportunityEndDate).$endDateAssumedChar,
+                ]);
+
             });
 
             /** @var Address|null $quoteHardwareAddress */

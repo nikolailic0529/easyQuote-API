@@ -7,10 +7,13 @@ use Illuminate\Database\Eloquent\Relations\MorphPivot;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
+ * @property string|null $attachment_id
  * @property Model|null $related
  */
 class Attachable extends MorphPivot
 {
+    public $timestamps = false;
+
     protected $table = 'attachables';
     protected $primaryKey = 'attachment_id';
 

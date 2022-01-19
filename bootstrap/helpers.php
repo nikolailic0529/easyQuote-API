@@ -149,3 +149,27 @@ if (!function_exists('ui_route')) {
         return app('ui.service')->route($route, $context);
     }
 }
+
+if (!function_exists('coalesce_blank')) {
+
+    /**
+     * Return the first not-blank argument.
+     *
+     * @param mixed ...$args
+     * @return mixed
+     */
+    function coalesce_blank(mixed ...$args): mixed
+    {
+        if (!count($args)) {
+            return null;
+        }
+
+        $value = array_shift($args);
+
+        if (blank($value)) {
+            return coalesce_blank(...$args);
+        }
+
+        return $value;
+    }
+}

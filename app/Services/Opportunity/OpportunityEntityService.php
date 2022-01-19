@@ -122,10 +122,26 @@ class OpportunityEntityService implements CauserAware
 
     private function projectImportedCompanyToPrimaryAccount(ImportedCompany $importedCompany): Company
     {
-        $company = Company::query()
+        $matchedCompanies = Company::query()
             ->where('name', trim($importedCompany->company_name))
             ->where('type', CompanyType::EXTERNAL)
-            ->first();
+            ->with('user:id,email')
+            ->get()
+            ->sortByDesc(function (Company $company): int {
+
+                if ($company->user?->is($this->causer)) {
+                    return 1;
+                }
+
+                if ($this->causer instanceof User && $this->causer->checkPermissionTo("companies.*.{$company->getKey()}")) {
+                    return 1;
+                }
+
+                return 0;
+
+            });
+
+        $company = $matchedCompanies->first();
 
         /** @var Company $company */
         $company ??= tap(new Company(), function (Company $company) use ($importedCompany) {

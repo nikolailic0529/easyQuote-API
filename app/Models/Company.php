@@ -3,7 +3,12 @@
 namespace App\Models;
 
 use App\Contracts\{ActivatableInterface, HasImagesDirectory, HasOrderedScope, SearchableEntity, WithLogo};
-use App\Models\{Data\Country, Quote\WorldwideQuote, Template\QuoteTemplate};
+use App\Models\{Data\Country,
+    Quote\WorldwideQuote,
+    Template\ContractTemplate,
+    Template\HpeContractTemplate,
+    Template\QuoteTemplate,
+    Template\SalesOrderTemplate};
 use App\Models\Customer\CustomerTotal;
 use App\Services\ThumbHelper;
 use App\Traits\{Activatable,
@@ -13,7 +18,6 @@ use App\Traits\{Activatable,
     BelongsToUser,
     BelongsToVendors,
     Quote\HasQuotes,
-    QuoteTemplate\HasQuoteTemplates,
     Search\Searchable,
     Systemable,
     Uuid};
@@ -56,6 +60,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property-read Collection<CompanyNote>|CompanyNote[] $companyNotes
  * @property-read Collection<Vendor>|Vendor[] $vendors
  * @property-read Collection<Country>|Country[] $countries
+ * @property-read User|null $user
  */
 class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity
 {
@@ -68,7 +73,6 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
         Activatable,
         Searchable,
         Systemable,
-        HasQuoteTemplates,
         HasQuotes,
         SoftDeletes,
         HasRelationships;
@@ -297,5 +301,25 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     public function attachments(): MorphToMany
     {
         return $this->morphToMany(Attachment::class, 'attachable', relatedPivotKey: 'attachment_id');
+    }
+
+    public function quoteTemplates(): HasMany
+    {
+        return $this->hasMany(QuoteTemplate::class);
+    }
+
+    public function contractTemplates(): HasMany
+    {
+        return $this->hasMany(ContractTemplate::class);
+    }
+
+    public function hpeContractTemplates(): HasMany
+    {
+        return $this->hasMany(HpeContractTemplate::class);
+    }
+
+    public function salesOrderTemplates(): HasMany
+    {
+        return $this->hasMany(SalesOrderTemplate::class);
     }
 }
