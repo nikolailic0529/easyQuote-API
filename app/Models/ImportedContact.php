@@ -19,5 +19,7 @@ class ImportedContact extends Model
 {
     use Uuid;
 
+    public bool $is_primary = false;
+
     protected $guarded = [];
 }

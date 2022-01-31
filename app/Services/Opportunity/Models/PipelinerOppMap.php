@@ -47,5 +47,11 @@ final class PipelinerOppMap
         NOTES = ['notes'],
         SALE_ACTION_NAME = ['sales_step'],
         CAMPAIGN_NAME = ['campaign'],
-        SUPPLIERS = ['suppliers'];
+        SUPPLIERS = ['suppliers'],
+        PRIMARY_EMAIL = ['primary_e_mail'],
+        PRIMARY_PHONE = ['primary_phone'],
+        HOME_PAGE = ['home_page'],
+        VENDOR = ['vendor'],
+        IS_RESELLER = ['reseller'],
+        IS_END_USER = ['end_user'];
 }

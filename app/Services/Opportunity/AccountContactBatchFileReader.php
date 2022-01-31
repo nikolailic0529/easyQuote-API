@@ -9,6 +9,7 @@ use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 class AccountContactBatchFileReader
 {
@@ -44,6 +45,14 @@ class AccountContactBatchFileReader
         if (!is_null($libxmlEntityLoaderPreviousValue)) {
             libxml_disable_entity_loader($libxmlEntityLoaderPreviousValue);
         }
+    }
+
+    public static function fromUploadedFile(UploadedFile $file): static
+    {
+        return new static(
+            $file->getRealPath(),
+            $file->getClientOriginalExtension(),
+        );
     }
 
     public function getRows(): \Iterator

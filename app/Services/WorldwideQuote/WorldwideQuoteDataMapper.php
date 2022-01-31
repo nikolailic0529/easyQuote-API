@@ -552,25 +552,6 @@ class WorldwideQuoteDataMapper
 
             $serviceLevels = implode(', ', $customer->service_levels ?? []); // TODO: add the service levels.
 
-            $opportunityStartDate = transform($opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
-            $opportunityEndDate = transform($opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
-
-            $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate, $opportunity): string {
-                if (is_null($opportunityStartDate) || is_null($opportunityEndDate)) {
-                    return '';
-                }
-
-                $startDateAssumedChar = $opportunity->is_opportunity_start_date_assumed ? '*' : '';
-                $endDateAssumedChar = $opportunity->is_opportunity_end_date_assumed ? '*' : '';
-
-                return implode('&nbsp;', [
-                    $this->formatter->format('date', $opportunityStartDate).$startDateAssumedChar,
-                    'to',
-                    $this->formatter->format('date', $opportunityEndDate).$endDateAssumedChar,
-                ]);
-
-            });
-
             /** @var Address|null $quoteHardwareAddress */
             $quoteHardwareAddress = $distribution->addresses
                 ->sortByDesc('pivot.is_default')
@@ -628,7 +609,7 @@ class WorldwideQuoteDataMapper
                     }) ?? ND_02,
 
                 'service_levels' => $serviceLevels,
-                'coverage_period' => $coveragePeriod,
+                'coverage_period' => $this->formatCoveragePeriod($opportunity),
                 'coverage_period_from' => $this->formatter->format('date', $opportunity->opportunity_start_date),
                 'coverage_period_to' => $this->formatter->format('date', $opportunity->opportunity_end_date),
                 'contract_duration' => $contractDuration,
@@ -673,6 +654,22 @@ class WorldwideQuoteDataMapper
         }
 
         return CarbonInterval::months($opportunity->contract_duration_months)->cascade()->forHumans();
+    }
+
+    public function formatCoveragePeriod(Opportunity $opportunity): string
+    {
+        if (is_null($opportunity->opportunity_start_date) || is_null($opportunity->opportunity_end_date)) {
+            return '';
+        }
+
+        $startDateAssumedChar = $opportunity->is_opportunity_start_date_assumed ? '*' : '';
+        $endDateAssumedChar = $opportunity->is_opportunity_end_date_assumed ? '*' : '';
+
+        return implode('&nbsp;', [
+            $this->formatter->format('date', $opportunity->opportunity_start_date).$startDateAssumedChar,
+            'to',
+            $this->formatter->format('date', $opportunity->opportunity_end_date).$endDateAssumedChar,
+        ]);
     }
 
     /**
@@ -1466,18 +1463,6 @@ class WorldwideQuoteDataMapper
             return implode(' ', [$contact->first_name, $contact->last_name]);
         };
 
-        $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
-            if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
-                return implode('&nbsp;', [
-                    $this->formatter->format('date', $opportunityStartDate),
-                    'to',
-                    $this->formatter->format('date', $opportunityEndDate),
-                ]);
-            }
-
-            return '';
-        });
-
         $footerNotes = [];
 
         return new QuoteSummary([
@@ -1530,7 +1515,7 @@ class WorldwideQuoteDataMapper
             'software_address' => $addressStringFormatter($quoteSoftwareAddress),
             'software_contact' => $contactStringFormatter($quoteSoftwareContact),
             'software_phone' => $quoteSoftwareContact?->phone ?? ND_02,
-            'coverage_period' => $coveragePeriod,
+            'coverage_period' => $this->formatCoveragePeriod($opportunity),
             'coverage_period_from' => $this->formatter->format('date', $opportunityStartDate),
             'coverage_period_to' => $this->formatter->format('date', $opportunityEndDate),
             'additional_details' => $activeVersion->additional_details ?? '',
