@@ -53,5 +53,7 @@ final class PipelinerOppMap
         HOME_PAGE = ['home_page'],
         VENDOR = ['vendor'],
         IS_RESELLER = ['reseller'],
-        IS_END_USER = ['end_user'];
+        IS_END_USER = ['end_user'],
+        VAT_TYPE = ['vat_type'],
+        VAT = ['vat'];
 }

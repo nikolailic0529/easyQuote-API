@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string|null $phone
  * @property string|null $website
  * @property string|null $vendors_cs
+ * @property string|null $vat
+ * @property string|null $vat_type
  * @property int|null $flags
  *
  * @property-read Collection<int, ImportedAddress>|ImportedAddress[] $addresses

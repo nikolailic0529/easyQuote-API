@@ -2,6 +2,8 @@
 
 namespace App\Services\Opportunity;
 
+use App\Contracts\CauserAware;
+use App\DTO\Opportunity\ImportedOpportunityData;
 use App\Enum\AccountCategory;
 use App\Enum\AddressType;
 use App\Enum\ContactType;
@@ -9,15 +11,32 @@ use App\Models\Data\Country;
 use App\Models\ImportedAddress;
 use App\Models\ImportedCompany;
 use App\Models\ImportedContact;
+use App\Models\Pipeline\Pipeline;
+use App\Models\User;
+use App\Queries\PipelineQueries;
 use App\Services\Opportunity\Models\PipelinerOppMap;
+use Carbon\Carbon;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Webpatser\Uuid\Uuid;
 
-class OpportunityDataMapper
+class OpportunityDataMapper implements CauserAware
 {
     const DEFAULT_OPP_TYPE = CT_PACK;
 
+    protected readonly ?Pipeline $defaultPipeline;
+
     protected array $countryNameOfSupplierCache = [];
+
+    protected ?Model $causer;
+
+    public function __construct(protected PipelineQueries              $pipelineQueries,
+                                protected AccountOwnerResolver         $accountOwnerResolver,
+                                protected ContractTypeResolver         $contractTypeResolver)
+    {
+    }
 
     public function mapSuppliers(array $row): array
     {
@@ -30,33 +49,17 @@ class OpportunityDataMapper
                 'contact_name' => $supplier['contact_name'] ?? null,
                 'contact_email' => $supplier['email_address'] ?? null,
             ])
+            // filter the suppliers with any filled field
             ->filter(static function (array $supplier): bool {
-                foreach (['supplier_name', 'country_name', 'contact_name', 'contact_email'] as $key) {
-                    if (filled($supplier[$key])) {
-                        return true;
-                    }
-                }
-
-                return false;
+                return collect($supplier)->contains(static fn(mixed $v): bool => filled($v));
             })
             ->values()
             ->all();
     }
 
-    public function mapContractType(array $row): string
-    {
-        $typeString = (string)OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::CONTRACT_TYPE);
-
-        return match (trim(strtolower($typeString))) {
-            'pack' => CT_PACK,
-            'contract' => CT_CONTRACT,
-            default => self::DEFAULT_OPP_TYPE,
-        };
-    }
-
     private function normalizeCountryNameOfSupplier(?string $countryName): ?string
     {
-        if (is_null($countryName) || trim($countryName) === '') {
+        if (blank($countryName)) {
             return null;
         }
 
@@ -100,6 +103,8 @@ class OpportunityDataMapper
             $account->phone = self::coalesceMap($accountData, PipelinerOppMap::PRIMARY_PHONE);
             $account->website = self::coalesceMap($accountData, PipelinerOppMap::HOME_PAGE);
             $account->vendors_cs = self::coalesceMap($accountData, PipelinerOppMap::VENDOR);
+            $account->vat_type = self::coalesceMap($accountData, PipelinerOppMap::VAT_TYPE);
+            $account->vat = self::coalesceMap($accountData, PipelinerOppMap::VAT);
 
             if (self::getFlag(self::coalesceMap($accountData, PipelinerOppMap::IS_RESELLER))) {
                 $account->flags |= ImportedCompany::IS_RESELLER;
@@ -161,37 +166,76 @@ class OpportunityDataMapper
         });
     }
 
+    private function mapImportedAddressFromAttributes(?string $type,
+                                                      ?string $addressOne,
+                                                      ?string $addressTwo,
+                                                      ?string $city,
+                                                      ?string $zipCode,
+                                                      ?string $stateProvince,
+                                                      ?string $stateCode,
+                                                      ?string $country): ImportedAddress
+    {
+        $address = new ImportedAddress();
+
+        $address->{$address->getKeyName()} = (string)Uuid::generate(4);
+
+        $address->address_type = match (trim(strtolower($type ?? ''))) {
+            'hardware' => AddressType::HARDWARE,
+            'software' => AddressType::SOFTWARE,
+            default => AddressType::INVOICE
+        };
+
+        $address->address_1 = $addressOne;
+        $address->address_2 = $addressTwo;
+
+        $address->city = $city;
+        $address->post_code = $zipCode;
+        $address->state = $stateProvince;
+        $address->state_code = $stateCode;
+
+        if (filled($country)) {
+            $address->country()->associate(
+                Country::query()->where('name', $country)->first()
+            );
+        } else {
+            $address->country()->disassociate();
+        }
+
+        return $address;
+    }
+
     private function mapAddressesOfAccount(array $account, array $contacts): Collection
     {
-        $newAddressDataOfCompany = new Collection();
+        return tap(new Collection(), function (Collection $newAddressDataOfCompany) use ($account, $contacts): void {
 
-        foreach ($contacts as $contactData) {
-            $newAddressDataOfCompany[] = tap(new ImportedAddress(), static function (ImportedAddress $address) use ($account, $contactData): void {
-                $address->address_type = AddressType::INVOICE;
+            $newAddressDataOfCompany[] = $this->mapImportedAddressFromAttributes(
+                type: null,
+                addressOne: $account['street_address'] ?? null,
+                addressTwo: self::coalesceMap($account, ['address_2', 'address_two']),
+                city: $account['city'] ?? null,
+                zipCode: $account['zip_code'] ?? null,
+                stateProvince: self::coalesceMap($account, ['state_province', 'stateprovince']),
+                stateCode: $account['state_code'] ?? null,
+                country: $account['country'] ?? null,
+            );
+
+            foreach ($contacts as $contactData) {
 
                 [$addressOne, $addressTwo] = self::splitStreetAddress($contactData['street_address'] ?? null);
 
-                $address->address_1 = $addressOne;
-                $address->address_2 = $addressTwo;
+                $newAddressDataOfCompany[] = $this->mapImportedAddressFromAttributes(
+                    type: $contactData['type'] ?? null,
+                    addressOne: $addressOne,
+                    addressTwo: $addressTwo,
+                    city: $contactData['city'] ?? null,
+                    zipCode: $contactData['zip_code'] ?? null,
+                    stateProvince: self::coalesceMap($contactData, ['state_province', 'stateprovince']),
+                    stateCode: $contactData['state_code'] ?? null,
+                    country: $contactData['country'] ?? null,
+                );
 
-                $address->city = $contactData['city'] ?? null;
-                $address->post_code = $contactData['zip_code'] ?? null;
-                $address->state = coalesce_blank($contactData['state_province'] ?? null, $account['state_province'] ?? null);
-
-                if (isset($contactData['country'])) {
-                    $address->country()->associate(
-                        Country::query()->where('name', $contactData['country'])->first()
-                    );
-                } else {
-                    $address->country()->disassociate();
-                }
-
-                $address->{$address->getCreatedAtColumn()} = $address->freshTimestampString();
-                $address->{$address->getUpdatedAtColumn()} = $address->freshTimestampString();
-            });
-        }
-
-        return $newAddressDataOfCompany;
+            }
+        });
     }
 
     public static function splitStreetAddress(?string $streetAddress): array
@@ -220,21 +264,38 @@ class OpportunityDataMapper
         $newContactDataOfCompany = new Collection();
 
         foreach ($contacts as $contactData) {
-            $newContactDataOfCompany[] = tap(new ImportedContact(), static function (ImportedContact $contact) use ($contactData): void {
-                $contact->contact_type = ContactType::HARDWARE;
-                $contact->first_name = $contactData['first_name'] ?? null;
-                $contact->last_name = $contactData['last_name'] ?? null;
-                $contact->email = $contactData['primary_e_mail'] ?? null;
-                $contact->phone = $contactData['primary_phone'] ?? null;
-                $contact->job_title = $contactData['titlesalutation'] ?? null;
-                $contact->is_verified = false;
-
-                $contact->{$contact->getCreatedAtColumn()} = $contact->freshTimestampString();
-                $contact->{$contact->getUpdatedAtColumn()} = $contact->freshTimestampString();
-            });
+            $newContactDataOfCompany[] = $this->mapImportedContactFromAttributes(
+                firstName: $contactData['first_name'] ?? null,
+                lastName: $contactData['last_name'] ?? null,
+                email: $contactData['primary_e_mail'] ?? null,
+                phone: $contactData['primary_phone'] ?? null,
+                title: $contactData['titlesalutation'] ?? null,
+            );
         }
 
         return $newContactDataOfCompany;
+    }
+
+    private function mapImportedContactFromAttributes(?string $firstName,
+                                                      ?string $lastName,
+                                                      ?string $email,
+                                                      ?string $phone,
+                                                      ?string $title,
+                                                      bool    $isPrimary = false): ImportedContact
+    {
+        return tap(new ImportedContact(), static function (ImportedContact $contact) use ($isPrimary, $firstName, $lastName, $email, $phone, $title) {
+            $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
+
+            $contact->contact_type = ContactType::HARDWARE;
+            $contact->first_name = $firstName;
+            $contact->last_name = $lastName;
+            $contact->email = $email;
+            $contact->phone = $phone;
+            $contact->job_title = $title;
+            $contact->is_verified = false;
+
+            $contact->is_primary = $isPrimary;
+        });
     }
 
     public static function resolveCategoryOfCompany(?array $accountData): string
@@ -270,5 +331,153 @@ class OpportunityDataMapper
         }
 
         return trim(mb_strtolower($value)) === 'yes';
+    }
+
+    private function getDefaultPipeline(): Pipeline
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return $this->defaultPipeline ??= $this->pipelineQueries->explicitlyDefaultPipelinesQuery()->sole();
+    }
+
+    public function mapImportedOpportunityDataFromImportedRow(array $row,
+                                                              array $accountsDataDictionary,
+                                                              array $accountContactsDataDictionary,
+                                                              User  $user): ImportedOpportunityData
+    {
+        $primaryAccount = $this->mapPrimaryAccountFromImportedRow(
+            row: $row,
+            accountsDataDictionary: $accountsDataDictionary,
+            accountContactsDataDictionary: $accountContactsDataDictionary
+        );
+
+        $suppliers = $this->mapSuppliers($row);
+
+        /** @var Pipeline $pipeline */
+        $pipeline = $this->pipelineQueries->explicitlyDefaultPipelinesQuery()->sole();
+
+        $saleActionName = OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::SALE_ACTION_NAME);
+        $stageName = OpportunityDataMapper::resolveStageNameFromSaleAction($saleActionName);
+
+        $pipelineStage = $pipeline->pipelineStages()->where('stage_name', $stageName)->first();
+
+        return new ImportedOpportunityData([
+            'pipeline_id' => $pipeline->getKey(),
+            'user_id' => $user->getKey(),
+            'contract_type_id' => ($this->contractTypeResolver)(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::CONTRACT_TYPE)),
+            'account_manager_id' => ($this->accountOwnerResolver)(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::ACCOUNT_MANAGER))?->getKey(),
+            'imported_primary_account_id' => $primaryAccount?->getKey(),
+            'imported_primary_account_contact_id' => $primaryAccount->primaryContact?->getKey(),
+            'project_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::PROJECT_NAME),
+            'nature_of_service' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::NATURE_OF_SERVICE),
+            'renewal_month' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::RENEWAL_MONTH),
+            'renewal_year' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::RENEWAL_YEAR), static fn(string $value) => (int)$value),
+            'customer_status' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::CUSTOMER_STATUS),
+            'end_user_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::END_USER_NAME),
+            'hardware_status' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::HARDWARE_STATUS),
+            'region_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::REGION_NAME),
+            'opportunity_start_date' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::OPPORTUNITY_START_DATE), static fn($date) => \Illuminate\Support\Carbon::parse($date)),
+            'is_opportunity_start_date_assumed' => OpportunityDataMapper::getFlag(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::IS_OPPORTUNITY_START_DATE_ASSUMED)),
+            'opportunity_end_date' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::OPPORTUNITY_END_DATE), static fn($date) => Carbon::parse($date)),
+            'is_opportunity_end_date_assumed' => OpportunityDataMapper::getFlag(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::IS_OPPORTUNITY_END_DATE_ASSUMED)),
+            'opportunity_closing_date' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::OPPORTUNITY_CLOSING_DATE), static fn($date) => Carbon::parse($date)),
+
+            'base_opportunity_amount' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::BASE_OPPORTUNITY_AMOUNT), static fn(string $value) => (float)$value),
+            'opportunity_amount' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::OPPORTUNITY_AMOUNT), static fn(string $value) => (float)$value),
+            'opportunity_amount_currency_code' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::OPPORTUNITY_AMOUNT_CURRENCY_CODE),
+
+            'base_list_price' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::BASE_LIST_PRICE), static fn(string $value) => (float)$value),
+            'list_price' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::LIST_PRICE), static fn(string $value) => (float)$value),
+            'list_price_currency_code' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::LIST_PRICE_CURRENCY_CODE),
+
+            'base_purchase_price' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::BASE_PURCHASE_PRICE), static fn(string $value) => (float)$value),
+            'purchase_price' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::PURCHASE_PRICE), static fn(string $value) => (float)$value),
+            'purchase_price_currency_code' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::PURCHASE_PRICE_CURRENCY_CODE),
+
+            'ranking' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::RANKING), static fn(string $value) => (float)$value),
+            'estimated_upsell_amount' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::ESTIMATED_UPSELL_AMOUNT), static fn(string $value) => (float)$value),
+            'estimated_upsell_amount_currency_code' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::ESTIMATED_UPSELL_AMOUNT_CURRENCY_CODE),
+
+            'personal_rating' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::PERSONAL_RATING),
+
+            'margin_value' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::MARGIN_VALUE), static fn(string $value) => (float)$value),
+
+            'competition_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::COMPETITION_NAME),
+
+            'service_level_agreement_id' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::SERVICE_LEVEL_AGREEMENT_ID),
+            'sale_unit_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::SALE_UNIT_NAME),
+            'drop_in' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::DROP_IN),
+            'lead_source_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::LEAD_SOURCE_NAME),
+            'has_higher_sla' => OpportunityDataMapper::getFlag(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::HAS_HIGHER_SLA, '')),
+            'is_multi_year' => OpportunityDataMapper::getFlag(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::IS_MULTI_YEAR, '')),
+            'has_additional_hardware' => OpportunityDataMapper::getFlag(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::HAS_ADDITIONAL_HARDWARE, '')),
+            'has_service_credits' => OpportunityDataMapper::getFlag(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::HAS_SERVICE_CREDITS, '')),
+            'remarks' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::REMARKS),
+            'notes' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::NOTES),
+            'sale_action_name' => $saleActionName,
+
+            'campaign_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::CAMPAIGN_NAME),
+
+            'create_suppliers' => $suppliers,
+        ]);
+    }
+
+    public function mapPrimaryAccountFromImportedRow(array $row,
+                                                     array $accountsDataDictionary,
+                                                     array $accountContactsDataDictionary): ?ImportedCompany
+    {
+        $accountName = $row['primary_account_name'];
+        $primaryContactName = $row['primary_contact_name'] ?? '';
+
+        if (blank($accountName)) {
+            return null;
+        }
+
+        $accountNameHash = md5($accountName);
+
+        $accountData = $accountsDataDictionary[$accountNameHash] ?? [];
+        $accountContactData = $accountContactsDataDictionary[$accountNameHash] ?? [];
+
+        $importedCompany = $this->mapImportedCompany(
+            accountName: $accountName,
+            primaryContactName: $primaryContactName,
+            accountData: $accountData,
+            contacts: $accountContactData
+        );
+
+        $importedCompany->primaryContact?->save();
+
+        $importedCompany->primaryContact()->associate($importedCompany->primaryContact);
+
+        $importedCompany->push();
+
+        $importedCompany->addresses()->attach($importedCompany->addresses);
+        $importedCompany->contacts()->attach($importedCompany->contacts);
+
+        return $importedCompany;
+    }
+
+    public static function resolveStageNameFromSaleAction(?string $value): ?string
+    {
+        if (is_null($value)) {
+            return null;
+        }
+
+        sscanf($value, '%d.%s', $order, $stage);
+
+        return $stage ?? $value;
+    }
+
+    private static function tryParseDateString(?string $date): ?DateTimeInterface
+    {
+        if (is_null($date)) {
+            return null;
+        }
+
+        return Carbon::parse($date);
+    }
+
+    public function setCauser(?Model $causer): static
+    {
+        return tap($this, fn() => $this->causer = $causer);
     }
 }

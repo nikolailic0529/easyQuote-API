@@ -154,7 +154,7 @@ class OpportunityController extends Controller
 
         $service
             ->setCauser($request->user())
-            ->batchSaveOpportunities($request->getBatchSaveData());
+            ->batchSaveOfImportedOpportunities($request->getBatchSaveData());
 
         return response()->noContent();
     }

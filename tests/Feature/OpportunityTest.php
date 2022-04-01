@@ -14,6 +14,7 @@ use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -1248,13 +1249,149 @@ class OpportunityTest extends TestCase
         $this->assertContains('LEN', $response->json('primary_account.vendors.*.short_code'));
         $this->assertContains('IBM', $response->json('primary_account.vendors.*.short_code'));
 
-        $this->assertSame('Invoice', $response->json('primary_account.addresses.0.address_type'));
-        $this->assertSame('Verseci u. 1-15', $response->json('primary_account.addresses.0.address_1'));
-        $this->assertSame('Székesfehérvár,', $response->json('primary_account.addresses.0.city'));
-        $this->assertSame('London', $response->json('primary_account.addresses.0.state'));
-        $this->assertSame('8000', $response->json('primary_account.addresses.0.post_code'));
-        $this->assertNull($response->json('primary_account.addresses.0.address_2'));
-        $this->assertSame('HU', $response->json('primary_account.addresses.0.country.iso_3166_2'));
+        $addressesFromResponse = collect($response->json('primary_account.addresses'))
+            ->map(static fn(array $a): array => [
+                'address_type' => $a['address_type'],
+                'address_1' => $a['address_1'],
+                'address_2' => $a['address_2'],
+                'city' => $a['city'],
+                'state' => $a['state'],
+                'state_code' => $a['state_code'],
+                'post_code' => $a['post_code'],
+                'country_code' => Arr::get($a, 'country.iso_3166_2'),
+            ])
+            ->all();
+
+        $expectedAddresses = [
+            [
+                "address_type" => "Invoice",
+                "address_1" => "Verseci u. 1-15",
+                "address_2" => null,
+                "city" => "Székesfehérvár,",
+                "state" => null,
+                "state_code" => null,
+                "post_code" => "8000",
+                "country_code" => "HU",
+            ],
+            [
+                "address_type" => "Invoice",
+                "address_1" => "Riverside One, 22 Hester Road",
+                "address_2" => null,
+                "city" => "London",
+                "state" => "London",
+                "state_code" => null,
+                "post_code" => "SW11 4AN",
+                "country_code" => "GB",
+            ],
+        ];
+
+        foreach ($expectedAddresses as $expectedAddress) {
+            $this->assertContainsEquals($expectedAddress, $addressesFromResponse);
+        }
+    }
+
+    /**
+     * Test an ability to batch upload the opportunities from a file.
+     * The new fields added to the accounts file: Address 2, Hardware Country Code, Hardware Country Code, VAT, VAT Type, State Code
+     * The new fields added to the contacts file: Type(Hardware, Software)
+     */
+    public function testCanUploadOpportunitiesBy20220323(): void
+    {
+        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-23032022.xlsx')));
+
+        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-23032022.xlsx')));
+
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/opps-23032022.xlsx')));
+
+        $this->authenticateApi();
+
+        $response = $this->postJson('api/opportunities/upload', [
+            'opportunities_file' => $opportunitiesFile,
+            'accounts_data_file' => $accountsDataFile,
+            'account_contacts_file' => $accountContactsFile,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'opportunities' => [
+                    '*' => [
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                    ],
+                ],
+                'errors',
+            ]);
+
+        $this->assertEmpty($response->json('errors'));
+
+        $this->assertNotEmpty($response->json('opportunities'));
+
+        $this->assertCount(1, $response->json('opportunities'));
+
+        $this->patchJson('api/opportunities/save', [
+            'opportunities' => $response->json('opportunities.*.id'),
+        ])
+//            ->dump()
+            ->assertNoContent();
+
+        $response = $this->getJson('api/opportunities/'.$response->json('opportunities.0.id'))
+//            ->dump()
+            ->assertJsonStructure([
+                'id',
+                'primary_account' => [
+                    'id', 'name',
+                    'vendors' => [
+                        '*' => ['id', 'name', 'short_code',],
+                    ],
+                    'addresses' => [
+                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2', 'country_id'],
+                    ],
+                    'contacts' => [
+                        '*' => ['id', 'contact_type', 'first_name', 'last_name'],
+                    ],
+                ],
+                'end_user' => [
+                    'id', 'name',
+                ],
+                'primary_account_contact' => [
+                    'id', 'first_name', 'last_name',
+                ],
+            ]);
+
+        $this->assertSame('Foster and Partners', $response->json('primary_account.name'));
+        $this->assertSame('Foster and Partners', $response->json('end_user.name'));
+        $this->assertSame($response->json('primary_account.id'), $response->json('end_user.id'));
+
+        $this->assertSame('Mehdi', $response->json('primary_account_contact.first_name'));
+        $this->assertSame('DOUMBIA', $response->json('primary_account_contact.last_name'));
+
+        $this->assertSame('1tFEnogc3tRACoEy', $response->json('primary_account.vat'));
+        $this->assertSame('VAT Number', $response->json('primary_account.vat_type'));
+
+        $addressOfPrimaryAccountByType = collect($response->json('primary_account.addresses'))->groupBy('address_type')->all();
+
+        $this->assertArrayHasKey('Invoice', $addressOfPrimaryAccountByType);
+        $this->assertArrayHasKey('Hardware', $addressOfPrimaryAccountByType);
+
+        $hardwareAddress = $addressOfPrimaryAccountByType['Hardware'][0];
+        $invoiceAddress = $addressOfPrimaryAccountByType['Invoice'][0];
+
+        $this->assertSame('Hardware', $hardwareAddress['address_type']);
+        $this->assertSame('Unit 5, Mole Business Park', $hardwareAddress['address_1']);
+        $this->assertSame('Leatherhead', $hardwareAddress['city']);
+        $this->assertSame('Surrey', $hardwareAddress['state']);
+        $this->assertNull($hardwareAddress['state_code']);
+        $this->assertSame('KT22 7BA', $hardwareAddress['post_code']);
+        $this->assertSame('Randalls Road', $hardwareAddress['address_2']);
+        $this->assertSame('GB', $hardwareAddress['country']['iso_3166_2']);
+
+        $this->assertSame('Invoice', $invoiceAddress['address_type']);
+        $this->assertSame('b5cohmuDjaXXQLAB', $invoiceAddress['address_1']);
+        $this->assertSame('q7MP5mllTHffSyGZ', $invoiceAddress['address_2']);
+        $this->assertSame('9lGBq3bflmjwClUz', $invoiceAddress['city']);
+        $this->assertSame('sNhUs3kLbEMYZVvZ', $invoiceAddress['post_code']);
+        $this->assertSame('5rne8e6cCnsF834v', $invoiceAddress['state_code']);
+        $this->assertSame('wFohxABSHPIWQyC3', $invoiceAddress['state']);
+        $this->assertSame('GB', $invoiceAddress['country']['iso_3166_2']);
     }
 
     /**
@@ -1289,7 +1426,7 @@ class OpportunityTest extends TestCase
     {
         $existingCompany = factory(Company::class)->create([
             'name' => 'AT Company 5',
-            'type' => 'External'
+            'type' => 'External',
         ]);
 
         $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/opps-25012022.xlsx')));
@@ -1342,8 +1479,8 @@ class OpportunityTest extends TestCase
                         'country_name',
                         'contact_name',
                         'contact_email',
-                    ]
-                ]
+                    ],
+                ],
             ]);
 
         $this->assertNotNull($response->json('primary_account'));

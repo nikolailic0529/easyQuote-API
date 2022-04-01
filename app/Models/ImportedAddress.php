@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property mixed|null $city
  * @property mixed|null $post_code
  * @property mixed|null $state
+ * @property mixed|null $state_code
  */
 class ImportedAddress extends Model
 {
