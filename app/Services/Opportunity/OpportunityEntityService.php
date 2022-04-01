@@ -212,6 +212,7 @@ class OpportunityEntityService implements CauserAware
 
         $contactToHash = static function (Contact|ImportedContact $contact): string {
             return md5(implode('~', [
+                $contact->contact_type,
                 $contact->first_name,
                 $contact->last_name,
                 $contact->email,

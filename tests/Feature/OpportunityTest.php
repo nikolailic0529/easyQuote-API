@@ -1392,6 +1392,14 @@ class OpportunityTest extends TestCase
         $this->assertSame('5rne8e6cCnsF834v', $invoiceAddress['state_code']);
         $this->assertSame('wFohxABSHPIWQyC3', $invoiceAddress['state']);
         $this->assertSame('GB', $invoiceAddress['country']['iso_3166_2']);
+
+        $groupedContacts = collect($response->json('primary_account.contacts'))->groupBy('contact_type')->all();
+
+        $this->assertArrayHasKey('Hardware', $groupedContacts);
+        $this->assertArrayHasKey('Software', $groupedContacts);
+
+        $this->assertCount(2, $groupedContacts['Hardware']);
+        $this->assertCount(1, $groupedContacts['Software']);
     }
 
     /**

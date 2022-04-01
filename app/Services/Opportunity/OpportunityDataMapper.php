@@ -7,6 +7,7 @@ use App\DTO\Opportunity\ImportedOpportunityData;
 use App\Enum\AccountCategory;
 use App\Enum\AddressType;
 use App\Enum\ContactType;
+use App\Enum\VAT;
 use App\Models\Data\Country;
 use App\Models\ImportedAddress;
 use App\Models\ImportedCompany;
@@ -32,9 +33,9 @@ class OpportunityDataMapper implements CauserAware
 
     protected ?Model $causer;
 
-    public function __construct(protected PipelineQueries              $pipelineQueries,
-                                protected AccountOwnerResolver         $accountOwnerResolver,
-                                protected ContractTypeResolver         $contractTypeResolver)
+    public function __construct(protected PipelineQueries      $pipelineQueries,
+                                protected AccountOwnerResolver $accountOwnerResolver,
+                                protected ContractTypeResolver $contractTypeResolver)
     {
     }
 
@@ -103,7 +104,12 @@ class OpportunityDataMapper implements CauserAware
             $account->phone = self::coalesceMap($accountData, PipelinerOppMap::PRIMARY_PHONE);
             $account->website = self::coalesceMap($accountData, PipelinerOppMap::HOME_PAGE);
             $account->vendors_cs = self::coalesceMap($accountData, PipelinerOppMap::VENDOR);
-            $account->vat_type = self::coalesceMap($accountData, PipelinerOppMap::VAT_TYPE);
+            $account->vat_type = match (strtolower(trim((string)self::coalesceMap($accountData, PipelinerOppMap::VAT_TYPE)))) {
+                'exempt' => VAT::EXEMPT,
+                'vat number' => VAT::VAT_NUMBER,
+                'no vat' => VAT::NO_VAT,
+                default => null,
+            };
             $account->vat = self::coalesceMap($accountData, PipelinerOppMap::VAT);
 
             if (self::getFlag(self::coalesceMap($accountData, PipelinerOppMap::IS_RESELLER))) {
@@ -265,6 +271,7 @@ class OpportunityDataMapper implements CauserAware
 
         foreach ($contacts as $contactData) {
             $newContactDataOfCompany[] = $this->mapImportedContactFromAttributes(
+                type: $contactData['type'] ?? null,
                 firstName: $contactData['first_name'] ?? null,
                 lastName: $contactData['last_name'] ?? null,
                 email: $contactData['primary_e_mail'] ?? null,
@@ -276,17 +283,22 @@ class OpportunityDataMapper implements CauserAware
         return $newContactDataOfCompany;
     }
 
-    private function mapImportedContactFromAttributes(?string $firstName,
+    private function mapImportedContactFromAttributes(?string $type,
+                                                      ?string $firstName,
                                                       ?string $lastName,
                                                       ?string $email,
                                                       ?string $phone,
                                                       ?string $title,
                                                       bool    $isPrimary = false): ImportedContact
     {
-        return tap(new ImportedContact(), static function (ImportedContact $contact) use ($isPrimary, $firstName, $lastName, $email, $phone, $title) {
+        return tap(new ImportedContact(), static function (ImportedContact $contact) use ($type, $isPrimary, $firstName, $lastName, $email, $phone, $title) {
             $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
 
-            $contact->contact_type = ContactType::HARDWARE;
+            $contact->contact_type = match (strtolower(trim((string)$type))) {
+                'software' => ContactType::SOFTWARE,
+                default => ContactType::HARDWARE,
+            };
+
             $contact->first_name = $firstName;
             $contact->last_name = $lastName;
             $contact->email = $email;
