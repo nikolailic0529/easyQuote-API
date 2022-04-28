@@ -1128,11 +1128,11 @@ class WorldwideQuoteDataMapper
         }
 
         $hashGenericAssetKey = function (Asset $asset) {
-            return sprintf("%s.%s", $asset->serial_number, $asset->product_number);
+            return sprintf("%s.%s.%s", $asset->serial_number, $asset->product_number, $asset->service_description);
         };
 
         $hashAssetKey = function (WorldwideQuoteAsset $asset) {
-            return sprintf("%s.%s", $asset->serial_no, $asset->sku);
+            return sprintf("%s.%s.%s", $asset->serial_no, $asset->sku, $asset->service_level_description);
         };
 
         $sameGenericAssetDict = $this->assetQueries->sameGenericAssetsQuery($assets)
@@ -1173,11 +1173,11 @@ class WorldwideQuoteDataMapper
         }
 
         $hashMappedRowKey = function (MappedRow $mappedRow) {
-            return sprintf("%s.%s", $mappedRow->serial_no, $mappedRow->product_no);
+            return sprintf("%s.%s.%s", $mappedRow->serial_no, $mappedRow->product_no, $mappedRow->service_level_description);
         };
 
         $hashGenericAssetKey = function (Asset $asset) {
-            return sprintf("%s.%s", $asset->serial_number, $asset->product_number);
+            return sprintf("%s.%s.%s", $asset->serial_number, $asset->product_number, $asset->service_description);
         };
 
         $sameGenericAssetDict = $this->mappedRowQueries->sameGenericAssetsQuery($rows)

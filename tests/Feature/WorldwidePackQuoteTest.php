@@ -297,6 +297,50 @@ class WorldwidePackQuoteTest extends TestCase
     }
 
     /**
+     * Test an ability to batch update of worldwide quote assets with duplicated combination of serial no, sku, and service level.
+     */
+    public function testCanNotBatchUpdateWorldwideQuoteAssetsWithDuplicatedCombinationOfSerialNoSkuServiceLevel(): void
+    {
+        $this->authenticateApi();
+
+        $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
+
+        $assetKeys = [];
+
+        foreach (range(1, 10) as $i) {
+            $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets')
+//            ->dump()
+                ->assertCreated()
+                ->assertJsonStructure([
+                    'id',
+                ]);
+
+            $assetKeys[] = $response->json('id');
+        }
+
+        $assetsData = array_map(static function (string $assetKey): array {
+
+            return factory(WorldwideQuoteAsset::class)->raw([
+                'id' => $assetKey,
+            ]);
+
+        }, $assetKeys);
+
+        for ($i = 0; $i < 2; $i++) {
+            $assetsData[$i]['serial_no'] = 'SAME_SERIAL_NO';
+            $assetsData[$i]['sku'] = 'SAME_SKU';
+            $assetsData[$i]['service_level_description'] = 'SAME_SERVICE_LEVEL_DESCRIPTION';
+        }
+
+        $this->patchJson('api/ww-quotes/'.$quote->getKey().'/assets',
+            ['assets' => $assetsData, 'stage' => 'Assets Creation'])
+//            ->dump()
+            ->assertJsonValidationErrors([
+                'assets' => 'The combination of serial, sku, service level has a duplicate value'
+            ], 'Error.original');
+    }
+
+    /**
      * Test an ability to save pack assets with duplicate serial number.
      *
      * @return void
@@ -1608,9 +1652,9 @@ TEMPLATE;
             ->assertHeader('content-type', 'application/pdf')
             ->assertHeader('content-disposition', "attachment; filename=\"$expectedFileName\"");
 
-        @mkdir("storage/framework/testing/ww-quotes/", recursive: true);
+//        @mkdir("storage/framework/testing/ww-quotes/", recursive: true);
 
-        file_put_contents("storage/framework/testing/ww-quotes/$expectedFileName", $response->content());
+//        file_put_contents("storage/framework/testing/ww-quotes/$expectedFileName", $response->content());
     }
 
     /**
