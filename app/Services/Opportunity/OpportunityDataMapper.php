@@ -200,9 +200,11 @@ class OpportunityDataMapper implements CauserAware
         $address->state_code = $stateCode;
 
         if (filled($country)) {
-            $address->country()->associate(
-                Country::query()->where('name', $country)->first()
-            );
+            $countryModel = strlen($country) == 2
+                ? Country::query()->where('iso_3166_2', $country)->first()
+                : Country::query()->where('name', $country)->first();
+
+            $address->country()->associate($countryModel);
         } else {
             $address->country()->disassociate();
         }
@@ -213,17 +215,6 @@ class OpportunityDataMapper implements CauserAware
     private function mapAddressesOfAccount(array $account, array $contacts): Collection
     {
         return tap(new Collection(), function (Collection $newAddressDataOfCompany) use ($account, $contacts): void {
-
-            $newAddressDataOfCompany[] = $this->mapImportedAddressFromAttributes(
-                type: null,
-                addressOne: $account['street_address'] ?? null,
-                addressTwo: self::coalesceMap($account, ['address_2', 'address_two']),
-                city: $account['city'] ?? null,
-                zipCode: $account['zip_code'] ?? null,
-                stateProvince: self::coalesceMap($account, ['state_province', 'stateprovince']),
-                stateCode: $account['state_code'] ?? null,
-                country: $account['country'] ?? null,
-            );
 
             foreach ($contacts as $contactData) {
 
@@ -237,7 +228,11 @@ class OpportunityDataMapper implements CauserAware
                     zipCode: $contactData['zip_code'] ?? null,
                     stateProvince: self::coalesceMap($contactData, ['state_province', 'stateprovince']),
                     stateCode: $contactData['state_code'] ?? null,
-                    country: $contactData['country'] ?? null,
+                    country: match (strtolower($contactData['type'] ?? '')) {
+                        'hardware' => $account['hardware_country_code'] ?? null,
+                        'software' => $account['software_country_code'] ?? null,
+                        default => $contactData['country'] ?? null,
+                    },
                 );
 
             }

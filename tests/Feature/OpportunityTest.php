@@ -1369,11 +1369,9 @@ class OpportunityTest extends TestCase
 
         $addressOfPrimaryAccountByType = collect($response->json('primary_account.addresses'))->groupBy('address_type')->all();
 
-        $this->assertArrayHasKey('Invoice', $addressOfPrimaryAccountByType);
         $this->assertArrayHasKey('Hardware', $addressOfPrimaryAccountByType);
 
         $hardwareAddress = $addressOfPrimaryAccountByType['Hardware'][0];
-        $invoiceAddress = $addressOfPrimaryAccountByType['Invoice'][0];
 
         $this->assertSame('Hardware', $hardwareAddress['address_type']);
         $this->assertSame('Unit 5, Mole Business Park', $hardwareAddress['address_1']);
@@ -1382,16 +1380,7 @@ class OpportunityTest extends TestCase
         $this->assertNull($hardwareAddress['state_code']);
         $this->assertSame('KT22 7BA', $hardwareAddress['post_code']);
         $this->assertSame('Randalls Road', $hardwareAddress['address_2']);
-        $this->assertSame('GB', $hardwareAddress['country']['iso_3166_2']);
-
-        $this->assertSame('Invoice', $invoiceAddress['address_type']);
-        $this->assertSame('b5cohmuDjaXXQLAB', $invoiceAddress['address_1']);
-        $this->assertSame('q7MP5mllTHffSyGZ', $invoiceAddress['address_2']);
-        $this->assertSame('9lGBq3bflmjwClUz', $invoiceAddress['city']);
-        $this->assertSame('sNhUs3kLbEMYZVvZ', $invoiceAddress['post_code']);
-        $this->assertSame('5rne8e6cCnsF834v', $invoiceAddress['state_code']);
-        $this->assertSame('wFohxABSHPIWQyC3', $invoiceAddress['state']);
-        $this->assertSame('GB', $invoiceAddress['country']['iso_3166_2']);
+        $this->assertSame('CH', $hardwareAddress['country']['iso_3166_2']);
 
         $groupedContacts = collect($response->json('primary_account.contacts'))->groupBy('contact_type')->all();
 
