@@ -12,8 +12,7 @@ use App\DTO\WorldwideQuote\{AssetServiceLevel,
     InitializeWorldwideQuoteAssetData,
     ReadAssetRow,
     ReadBatchFileResult,
-    WorldwideQuoteAssetDataCollection
-};
+    WorldwideQuoteAssetDataCollection};
 use App\Enum\Lock;
 use App\Models\Address;
 use App\Models\Data\Country;
@@ -294,6 +293,47 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 return null;
             });
 
+            $asset->buy_price = transform($mapping->buy_price_value, function (string $column) use ($row): ?float {
+                if (isset($row[$column])) {
+                    return PriceParser::parseAmount($row[$column]);
+                }
+
+                return null;
+            });
+
+            $asset->buyCurrency()->associate(transform($mapping->buy_price_currency, function (string $column) use ($row): ?Currency {
+                if (isset($row[$column])) {
+                    /** @noinspection PhpIncompatibleReturnTypeInspection */
+                    return Currency::query()->where('code', $row[$column])->first();
+                }
+
+                return null;
+            }));
+
+            $asset->buy_price_margin = transform($mapping->buy_price_margin, function (string $column) use ($row): ?float {
+                if (isset($row[$column])) {
+                    return (float)$row[$column];
+                }
+
+                return null;
+            });
+
+            $asset->exchange_rate_value = transform($mapping->exchange_rate_value, function (string $column) use ($row): ?float {
+                if (isset($row[$column])) {
+                    return (float)$row[$column];
+                }
+
+                return null;
+            });
+
+            $asset->exchange_rate_margin = transform($mapping->exchange_rate_margin, function (string $column) use ($row): ?float {
+                if (isset($row[$column])) {
+                    return (float)$row[$column];
+                }
+
+                return null;
+            });
+
             $asset->service_level_description = transform($mapping->service_level_description, function (string $serviceLevelColumn) use ($row) {
                 return $row[$serviceLevelColumn] ?? null;
             });
@@ -353,6 +393,9 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             });
 
             $asset->service_level_data = [];
+
+            $asset->setCreatedAt($asset->freshTimestamp());
+            $asset->setUpdatedAt($asset->freshTimestamp());
         });
     }
 
@@ -415,7 +458,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             );
         }
 
-        // Finally we are attaching the newly created machine addresses to the opportunity.
+        // Finally, we are attaching the newly created machine addresses to the opportunity.
         $machineAddressKeys = array_values(array_unique($machineAddressKeys));
 
         if (!empty($machineAddressKeys)) {
