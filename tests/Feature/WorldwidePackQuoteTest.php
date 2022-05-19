@@ -56,19 +56,19 @@ class WorldwidePackQuoteTest extends TestCase
 
         \DB::table('opportunities')->update(['deleted_at' => now()]);
 
-        $opportunities = factory(Opportunity::class, 2)->create();
+        $opportunities = Opportunity::factory()->count(2)->create();
 
         foreach ($opportunities as $opportunity) {
             /** @var Opportunity $opportunity */
 
             $address = factory(Address::class)->create();
-            $contact = factory(Contact::class)->create();
+            $contact = Contact::factory()->create();
 
             $opportunity->primaryAccount->addresses()->sync([$address->getKey() => ['is_default' => true]]);
             $opportunity->primaryAccount->contacts()->sync([$contact->getKey() => ['is_default' => true]]);
         }
 
-        $opportunityWithSameCustomer = factory(Opportunity::class)->create([
+        $opportunityWithSameCustomer = Opportunity::factory()->create([
             'primary_account_id' => $opportunities[0]->primary_account_id,
         ]);
 
@@ -248,6 +248,37 @@ class WorldwidePackQuoteTest extends TestCase
     }
 
     /**
+     * Test an ability to batch delete an existing worldwide quote asset.
+     */
+    public function testCanBachDeleteWorldwideQuoteAsset(): void
+    {
+        $this->authenticateApi();
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
+
+        foreach (range(1, 2) as $time) {
+            $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets')
+//            ->dump()
+                ->assertCreated()
+                ->assertJsonStructure([
+                    'id',
+                ]);
+            $assets[] = ['id' => $response->json('id')];
+        }
+
+
+        $this->deleteJson('api/ww-quotes/'.$quote->getKey().'/assets', ['assets' => $assets])
+//            ->dump()
+            ->assertNoContent();
+
+        foreach ($assets as $asset) {
+            $this->deleteJson('api/ww-quotes/'.$quote->getKey().'/assets/'.$asset['id'])
+                ->assertNotFound();
+        }
+    }
+
+    /**
      * Test an ability to batch update the existing worldwide quote assets.
      *
      * @return void
@@ -336,7 +367,7 @@ class WorldwidePackQuoteTest extends TestCase
             ['assets' => $assetsData, 'stage' => 'Assets Creation'])
 //            ->dump()
             ->assertJsonValidationErrors([
-                'assets' => 'The combination of serial, sku, service level has a duplicate value'
+                'assets' => 'The combination of serial, sku, service level has a duplicate value',
             ], 'Error.original');
     }
 
@@ -922,7 +953,7 @@ class WorldwidePackQuoteTest extends TestCase
      */
     public function testCanViewStateOfWorldwidePackQuote()
     {
-        $opportunity = factory(Opportunity::class)->create(['contract_type_id' => CT_PACK]);
+        $opportunity = Opportunity::factory()->create(['contract_type_id' => CT_PACK]);
 
         $snDiscount = factory(SND::class)->create(['value' => 10]);
 
@@ -937,7 +968,7 @@ class WorldwidePackQuoteTest extends TestCase
             'completeness' => PackQuoteStage::DISCOUNT,
             'margin_value' => 5,
             'custom_discount' => 2,
-            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id')
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
 //            'sn_discount_id' => $snDiscount->getKey()
         ]);
 
@@ -954,9 +985,10 @@ class WorldwidePackQuoteTest extends TestCase
         $sameAsset = factory(Asset::class)->create([
             'serial_number' => $assets[0]->serial_no,
             'product_number' => $assets[0]->sku,
+            'service_description' => $assets[0]->service_level_description,
         ]);
 
-        $sameAsset->companies()->sync(factory(Company::class)->create());
+        $sameAsset->companies()->sync(Company::factory()->create());
 
         $assetsGroup = factory(WorldwideQuoteAssetsGroup::class)->create([
             'worldwide_quote_version_id' => $quote->activeVersion->getKey(),
@@ -1021,7 +1053,7 @@ class WorldwidePackQuoteTest extends TestCase
         $duplicatedAssetCount = 0;
 
         foreach ($response->json('assets') as $asset) {
-            if ($asset['serial_no'] === $sameAsset->serial_number && $asset['sku'] === $sameAsset->product_number) {
+            if ($asset['serial_no'] === $sameAsset->serial_number && $asset['sku'] === $sameAsset->product_number && $asset['service_level_description'] === $sameAsset->service_description) {
                 $this->assertFalse($asset['is_customer_exclusive_asset']);
                 $this->assertArrayHasKey('owned_by_customer', $asset);
                 $this->assertArrayHasKey('permissions', $asset['owned_by_customer']);
@@ -1407,6 +1439,187 @@ class WorldwidePackQuoteTest extends TestCase
     }
 
     /**
+     * Test an ability to view grouped assets with the same serial no in preview data.
+     */
+    public function testCanViewGroupedAssetsWithSameSerialInPreviewData(): void
+    {
+        $this->authenticateApi();
+
+        $template = factory(QuoteTemplate::class)->create();
+
+        $template->vendors()->sync(Vendor::query()->limit(2)->get());
+
+        $country = Country::query()->first();
+        $vendor = Vendor::query()->first();
+
+        $snDiscount = factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        $promotionalDiscount = factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        $prePayDiscount = factory(PrePayDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        $multiYearDiscount = factory(MultiYearDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_PACK,
+        ]);
+
+        $quote->opportunity->update([
+            'contract_duration_months' => 53,
+//            'is_contract_duration_checked' => true,
+        ]);
+
+        $quote->activeVersion->update([
+            'quote_template_id' => $template->getKey(),
+//            'multi_year_discount_id' => $multiYearDiscount->getKey(),
+            'sort_rows_column' => 'vendor_short_code',
+            'sort_rows_direction' => 'asc',
+            'margin_value' => 10.00,
+            'custom_discount' => 5,
+            'tax_value' => 10,
+            'buy_price' => 5000,
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'use_groups' => false,
+        ]);
+
+        $defaultSoftwareAddress = factory(Address::class)->create(['address_type' => 'Software', 'address_1' => '-1 Default Software Address']);
+        $softwareAddress2 = factory(Address::class)->create(['address_type' => 'Software']);
+
+        $quote->activeVersion->addresses()->sync([
+            $softwareAddress2->getKey(),
+            $defaultSoftwareAddress->getKey(),
+        ]);
+
+        $assets = factory(WorldwideQuoteAsset::class, 5)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'is_selected' => true,
+            'buy_price' => 5000 / 5,
+            'price' => 1000,
+        ]);
+
+        /** @var WorldwideQuoteAsset[] $assetsWithSameSerial */
+        $assetsWithSameSerial = [
+            $assets[0],
+            $assets[count($assets) - 1]
+        ];
+
+        $assetsWithSameSerial[1]->serial_no = $assetsWithSameSerial[0]->serial_no;
+        $assetsWithSameSerial[1]->save();
+
+
+        /** @var WorldwideQuoteAssetsGroup $assetsGroup */
+        $assetsGroup = factory(WorldwideQuoteAssetsGroup::class)->create([
+            'worldwide_quote_version_id' => $quote->active_version_id,
+            'is_selected' => true,
+        ]);
+
+        $assetsGroup->assets()->sync($assets);
+
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'/preview')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'template_data' => [
+                    'first_page_schema',
+                    'assets_page_schema',
+                    'payment_schedule_page_schema',
+                    'last_page_schema',
+                    'template_assets',
+                ],
+
+                'quote_summary' => [
+                    'company_name',
+                    'quotation_number',
+                    'customer_name',
+                    'service_levels',
+                    'invoicing_terms',
+                    'support_start',
+                    'support_end',
+                    'valid_until',
+                    'contract_duration',
+                    'is_contract_duration_checked',
+                    'contact_name',
+                    'contact_country',
+                    'contact_email',
+                    'contact_phone',
+                    'end_user_name',
+                    'end_user_contact_country',
+                    'end_user_contact_name',
+                    'end_user_contact_email',
+                    'list_price',
+                    'final_price',
+                    'applicable_discounts',
+                    'sub_total_value',
+                    'total_value_including_tax',
+                    'quote_price_value_coefficient',
+                    'equipment_address',
+                    'hardware_contact',
+                    'hardware_phone',
+                    'software_address',
+                    'software_contact',
+                    'software_phone',
+                    'coverage_period',
+                    'coverage_period_from',
+                    'coverage_period_to',
+                    'additional_details',
+                    'pricing_document',
+                    'service_agreement_id',
+                    'system_handle',
+
+                    'account_manager_name',
+
+                    'quote_data_aggregation_fields' => [
+                        '*' => ['field_name', 'field_header'],
+                    ],
+
+                    'quote_data_aggregation' => [
+                        '*' => [
+                            'vendor_name',
+                            'country_name',
+                            'duration',
+                            'qty',
+                            'total_price',
+                        ],
+                    ],
+                ],
+
+
+                'pack_assets' => [
+                    '*' => [
+                        'product_no',
+                        'description',
+                        'serial_no',
+                        'date_from',
+                        'date_to',
+                        'contract_duration',
+                        'qty',
+                        'price',
+                        'price_float',
+                        'pricing_document',
+                        'system_handle',
+                        'searchable',
+                        'service_level_description',
+                        'machine_address_string',
+                    ],
+                ],
+
+                'pack_asset_fields' => [
+                    '*' => [
+                        'field_name',
+                        'field_header',
+                    ],
+                ],
+
+                'asset_notes',
+            ]);
+
+        $keyOfFirstAssetWithSameSerial = collect($response->json('pack_assets'))->search(static fn (array $asset): bool => $asset['serial_no'] === $assetsWithSameSerial[0]->serial_no);
+
+        $this->assertNotFalse($keyOfFirstAssetWithSameSerial);
+
+        $this->assertSame($response->json("pack_assets.".$keyOfFirstAssetWithSameSerial.".serial_no"), $response->json("pack_assets.".($keyOfFirstAssetWithSameSerial+1).".serial_no"));
+    }
+
+    /**
      * Test an ability to view prepared sales order data of worldwide pack quote.
      *
      * @return void
@@ -1515,7 +1728,7 @@ class WorldwidePackQuoteTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $wwQuote->opportunity->primaryAccountContact()->associate(factory(Contact::class)->create([
+        $wwQuote->opportunity->primaryAccountContact()->associate(Contact::factory()->create([
             'email' => 'Francesco.Ziviani@surftech.com',
         ]));
 
@@ -1539,11 +1752,11 @@ class WorldwidePackQuoteTest extends TestCase
             'address_type' => 'Software',
         ]);
 
-        $hardwareContact = factory(Contact::class)->create([
+        $hardwareContact = Contact::factory()->create([
             'contact_type' => 'Hardware',
         ]);
 
-        $softwareContact = factory(Contact::class)->create([
+        $softwareContact = Contact::factory()->create([
             'contact_type' => 'Software',
         ]);
 
@@ -1627,11 +1840,11 @@ TEMPLATE;
             'address_type' => 'Software',
         ]);
 
-        $hardwareContact = factory(Contact::class)->create([
+        $hardwareContact = Contact::factory()->create([
             'contact_type' => 'Hardware',
         ]);
 
-        $softwareContact = factory(Contact::class)->create([
+        $softwareContact = Contact::factory()->create([
             'contact_type' => 'Software',
         ]);
 
@@ -1705,11 +1918,11 @@ TEMPLATE;
             'address_type' => 'Software',
         ]);
 
-        $hardwareContact = factory(Contact::class)->create([
+        $hardwareContact = Contact::factory()->create([
             'contact_type' => 'Hardware',
         ]);
 
-        $softwareContact = factory(Contact::class)->create([
+        $softwareContact = Contact::factory()->create([
             'contact_type' => 'Software',
         ]);
 
@@ -2303,7 +2516,7 @@ TEMPLATE;
     public function testCanAffectOnPackQuoteDataByUpdatingOfOpportunity()
     {
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_PACK,
         ]);
 
@@ -2430,7 +2643,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2479,7 +2692,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2538,7 +2751,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2607,7 +2820,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2662,7 +2875,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2691,7 +2904,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
