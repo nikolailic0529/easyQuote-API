@@ -21,7 +21,7 @@ use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
 use voku\helper\ASCII;
 
-class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReading, WithCustomCsvSettings, WithStartRow, WithCustomValueBinder, WithValidation
+class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReading, WithCustomCsvSettings, WithStartRow, WithCustomValueBinder
 {
     use Importable;
 

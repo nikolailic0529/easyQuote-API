@@ -2,6 +2,7 @@
 
 namespace App\Console;
 
+use App\Console\Commands\Routine\UpdateExchangeRates;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -76,10 +77,11 @@ class Kernel extends ConsoleKernel
 
         /**
          * Update exchange rates from external service based on system setting schedule.
-         * 
-         * @see \App\Console\Commands\Routine\UpdateExchangeRates
          */
-        $schedule->command('eq:update-exchange-rates', ['--force' => true])->runInBackground()->{setting('exchange_rate_update_schedule')}();
+        $schedule->command(UpdateExchangeRates::class)
+            ->runInBackground()
+            ->emailOutputOnFailure(setting('failure_report_recipients')->all())
+            ->{setting('exchange_rate_update_schedule')}();
     }
 
     /**

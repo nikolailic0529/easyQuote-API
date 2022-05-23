@@ -20,7 +20,7 @@ trait HasMorphableDiscounts
         }
 
         return $this->discounts
-            ->reduce(fn ($carry, $discount) => $carry + $discount->getValue($this->list_price), 0)
+            ->reduce(fn ($carry, $discount) => $carry + $discount->getValue((float)$this->list_price), 0)
             + $this->custom_discount;
     }
 

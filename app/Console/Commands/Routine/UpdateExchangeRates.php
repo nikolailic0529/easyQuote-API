@@ -43,25 +43,23 @@ class UpdateExchangeRates extends Command
      * Execute the console command.
      *
      * @param Service $service
-     * @return mixed
+     * @return int
      */
-    public function handle(Service $service)
+    public function handle(Service $service): int
     {
-        /** Perform scheduled update if option '--file' is missing. */
-        if (!$this->option('file')) {
-            $result = $service->updateRates();
+        // Load exchange rates from the defined file.
+        if ($this->option('file')) {
+            $filepath = $this->resolveFilepath();
+
+            $date = $this->resolveRatesDate($filepath);
+
+            $result = $service->updateRatesFromFile($filepath, $date);
 
             return $this->interpretUpdateResult($result);
         }
 
-        $filepath = $this->resolveFilepath();
-        $date = $this->resolveRatesDate($filepath);
-
-        if (!$this->confirmToProceed()) {
-            return;
-        }
-
-        $result = $service->updateRatesFromFile($filepath, $date);
+        // Load exchange rates from API.
+        $result = $service->updateRates();
 
         return $this->interpretUpdateResult($result);
     }
@@ -116,14 +114,14 @@ class UpdateExchangeRates extends Command
         return Carbon::create($year, $month);
     }
 
-    protected function interpretUpdateResult($result): bool
+    protected function interpretUpdateResult($result): int
     {
         if ($result) {
             $this->info('Exchange Rates were successfully updated!');
-            return true;
+            return self::SUCCESS;
         }
 
         $this->error('Something went wrong when Exchange Rates updating.');
-        return false;
+        return self::FAILURE;
     }
 }

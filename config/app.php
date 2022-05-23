@@ -238,6 +238,8 @@ return [
         App\Providers\SalesOrderServiceProvider::class,
 
         LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
+
+        App\Providers\LogKeeperServiceProvider::class,
     ],
 
     /*

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\API\AddressController;
-use App\Http\Controllers\API\AppointmentController;
 use App\Http\Controllers\API\AssetController;
 use App\Http\Controllers\API\AttachmentController;
 use App\Http\Controllers\API\AuthController;
@@ -16,7 +15,6 @@ use App\Http\Controllers\API\Contracts\UnifiedContractController;
 use App\Http\Controllers\API\ContractTypeController;
 use App\Http\Controllers\API\Data\CountryController;
 use App\Http\Controllers\API\Data\CurrencyController;
-use App\Http\Controllers\API\Data\DateFormatController;
 use App\Http\Controllers\API\Data\ExchangeRateController;
 use App\Http\Controllers\API\Data\FileFormatsController;
 use App\Http\Controllers\API\Data\LanguagesController;
@@ -32,7 +30,6 @@ use App\Http\Controllers\API\HpeContractFileController;
 use App\Http\Controllers\API\InvitationController;
 use App\Http\Controllers\API\Margins\CountryMarginController;
 use App\Http\Controllers\API\OpportunityController;
-use App\Http\Controllers\API\OpportunityNoteController;
 use App\Http\Controllers\API\PermissionController;
 use App\Http\Controllers\API\Pipeline\PipelineController;
 use App\Http\Controllers\API\Quotes\CustomerController;
@@ -57,7 +54,6 @@ use App\Http\Controllers\API\System\ImportableColumnController;
 use App\Http\Controllers\API\System\MaintenanceController;
 use App\Http\Controllers\API\System\NotificationController;
 use App\Http\Controllers\API\System\SystemSettingController;
-use App\Http\Controllers\API\TaskController;
 use App\Http\Controllers\API\TeamController;
 use App\Http\Controllers\API\Templates\ContractTemplateController;
 use App\Http\Controllers\API\Templates\HpeContractTemplateController;
@@ -112,7 +108,6 @@ Route::group(['prefix' => 'data'], function () {
         Route::get('currencies', CurrencyController::class);
         Route::get('currencies/xr', [CurrencyController::class, 'showAllHavingExrate']);
         Route::get('fileformats', FileFormatsController::class);
-        Route::get('dateformats', DateFormatController::class);
     });
 
     Route::get('countries', CountryController::class);
@@ -174,8 +169,6 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::apiResource('contacts', ContactController::class);
         Route::put('contacts/activate/{contact}', [ContactController::class, 'activate']);
         Route::put('contacts/deactivate/{contact}', [ContactController::class, 'deactivate']);
-
-        Route::get('contacts/{contact}/appointments', [ContactController::class, 'showAppointmentsOfContact']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -327,8 +320,6 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('companies/{company}/attachments', [CompanyController::class, 'showAttachmentsOfCompany']);
         Route::post('companies/{company}/attachments', [CompanyController::class, 'storeAttachmentForCompany']);
         Route::delete('companies/{company}/attachments/{attachment:id}', [CompanyController::class, 'deleteAttachmentOfCompany']);
-
-        Route::get('companies/{company}/appointments', [CompanyController::class, 'showAppointmentsOfCompany']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -378,6 +369,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('hpe-contracts/{hpe_contract}/deactivate', [HpeContractController::class, 'deactivateHpeContract']);
     Route::get('hpe-contracts/{hpe_contract}/export', [HpeContractController::class, 'exportHpeContract']);
     Route::apiResource('hpe-contracts', HpeContractController::class);
+
 
     Route::group(['prefix' => 'contracts', 'as' => 'contracts.'], function () {
         Route::get('drafted/users', [UnifiedContractController::class, 'showUserNamesOfDraftedContracts']);
@@ -447,8 +439,6 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::patch('tasks/{quote}/{task}', [QuoteTaskController::class, 'updateRescueQuoteTask']);
         Route::delete('tasks/{quote}/{task}', [QuoteTaskController::class, 'destroyRescueQuoteTask']);
 
-        Route::get('{quote}/appointments', [QuoteController::class, 'showAppointmentsOfQuote']);
-
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('/discounts/{quote}', [QuoteController::class, 'discounts']);
             Route::post('/try-discounts/{quote}', [QuoteController::class, 'tryDiscounts']);
@@ -510,23 +500,12 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('opportunities/lost', [OpportunityController::class, 'paginateLostOpportunities']);
     Route::post('opportunities/upload', [OpportunityController::class, 'batchUploadOpportunities']);
     Route::patch('opportunities/save', [OpportunityController::class, 'batchSaveOpportunities']);
-    Route::get('opportunities/pipeliner-sync-status', [OpportunityController::class, 'showPipelinerSyncStatus']);
-    Route::patch('opportunities/queue-pipeliner-sync', [OpportunityController::class, 'queuePipelinerSync']);
     Route::get('opportunities/{opportunity}', [OpportunityController::class, 'showOpportunity']);
     Route::post('opportunities', [OpportunityController::class, 'storeOpportunity']);
     Route::patch('opportunities/{opportunity}', [OpportunityController::class, 'updateOpportunity']);
     Route::delete('opportunities/{opportunity}', [OpportunityController::class, 'destroyOpportunity']);
-    Route::patch('opportunities/{opportunity}/stage', [OpportunityController::class, 'setStageOfOpportunity']);
     Route::patch('opportunities/{opportunity}/lost', [OpportunityController::class, 'markOpportunityAsLost']);
     Route::patch('opportunities/{opportunity}/restore-from-lost', [OpportunityController::class, 'markOpportunityAsNotLost']);
-
-    Route::get('opportunities/{opportunity}/appointments', [OpportunityController::class, 'showAppointmentsOfOpportunity']);
-
-    Route::get('opportunities/{opportunity}/notes', [OpportunityNoteController::class, 'paginateOpportunityNotes']);
-    Route::post('opportunities/{opportunity}/notes', [OpportunityNoteController::class, 'storeOpportunityNote']);
-    Route::get('opportunity-notes/{note}', [OpportunityNoteController::class, 'showOpportunityNote']);
-    Route::patch('opportunity-notes/{note}', [OpportunityNoteController::class, 'updateOpportunityNote']);
-    Route::delete('opportunity-notes/{note}', [OpportunityNoteController::class, 'deleteOpportunityNote']);
 
     Route::get('opportunity-forms', [OpportunityFormController::class, 'paginateOpportunityForms']);
     Route::get('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'showOpportunityForm']);
@@ -534,7 +513,6 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'updateOpportunityForm']);
     Route::patch('opportunity-forms/{opportunity_form}/schema', [OpportunityFormController::class, 'updateSchemaOfOpportunityForm']);
     Route::delete('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'deleteOpportunityForm']);
-
 
     /**
      * Sales Orders.
@@ -595,8 +573,6 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('ww-quotes/{worldwide_quote}/tasks', [QuoteTaskController::class, 'storeWorldwideQuoteTask']);
     Route::patch('ww-quotes/{worldwide_quote}/tasks/{task:id}', [QuoteTaskController::class, 'updateWorldwideQuoteTask']);
     Route::delete('ww-quotes/{worldwide_quote}/tasks/{task:id}', [QuoteTaskController::class, 'destroyWorldwideQuoteTask']);
-
-    Route::get('ww-quotes/{worldwide_quote}/appointments', [WorldwideQuoteController::class, 'showAppointmentsOfQuote']);
 
     Route::get('ww-quotes/{worldwide_quote}/sales-order-data', [WorldwideQuoteController::class, 'showSalesOrderDataOfWorldwideQuote']);
 
@@ -702,17 +678,5 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('pipelines/{pipeline}', [PipelineController::class, 'updatePipeline']);
     Route::patch('pipelines/{pipeline}/default', [PipelineController::class, 'markPipelineAsDefault']);
     Route::delete('pipelines/{pipeline}', [PipelineController::class, 'deletePipeline']);
-    Route::get('pipeline-stages/{stage}/opportunities', [OpportunityController::class, 'paginateOpportunitiesOfPipelineStage']);
-
-    Route::get('tasks/taskable/{taskable}', [TaskController::class, 'listTasksOfTaskable'])->whereUuid('taskable');
-    Route::post('tasks', [TaskController::class, 'createTask']);
-    Route::get('tasks/{task}', [TaskController::class, 'showTask']);
-    Route::patch('tasks/{task}', [TaskController::class, 'updateTask']);
-    Route::delete('tasks/{task}', [TaskController::class, 'deleteTask']);
-
-    Route::post('appointments', [AppointmentController::class, 'storeAppointment']);
-    Route::get('appointments/{appointment}', [AppointmentController::class, 'showAppointment']);
-    Route::patch('appointments/{appointment}', [AppointmentController::class, 'updateAppointment']);
-    Route::delete('appointments/{appointment}', [AppointmentController::class, 'deleteAppointment']);
 });
 

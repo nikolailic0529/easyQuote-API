@@ -738,7 +738,7 @@ class WorldwideQuoteDataMapper
                 $builder->where('is_selected', true);
             }]);
 
-            $this->sortWorldwideDistributionRows($distribution);
+            $this->sortWorldwideDistributionRows($distribution, true);
 
             return tap($this->mappedRowsToArrayOfAssetData(
                 rows: $distribution->mappedRows,
@@ -773,7 +773,7 @@ class WorldwideQuoteDataMapper
             $builder->where('is_selected', true);
         }, 'rowsGroups.rows']);
 
-        $this->sortWorldwideDistributionRowsGroups($distribution);
+        $this->sortWorldwideDistributionRowsGroups($distribution, true);
 
         return $distribution->rowsGroups->map(function (DistributionRowsGroup $rowsGroup) use ($priceValueCoeff, $outputCurrency, $distribution) {
             $assets = tap($this->mappedRowsToArrayOfAssetData(
@@ -816,25 +816,30 @@ class WorldwideQuoteDataMapper
 
     /**
      * @param WorldwideDistribution $distribution
+     * @param bool $forPreview
      */
-    public function sortWorldwideDistributionRows(WorldwideDistribution $distribution): void
+    public function sortWorldwideDistributionRows(WorldwideDistribution $distribution, bool $forPreview = false): void
     {
-        if (is_null($distribution->sort_rows_column) || $distribution->sort_rows_column === '') {
-            return;
+        $results = $distribution->mappedRows;
+
+        if (filled($distribution->sort_rows_column)) {
+            $results = $results->sortBy(
+                callback: function (MappedRow $row) use ($distribution) {
+                    if ($distribution->sort_rows_column === 'machine_address') {
+                        return self::formatMachineAddressToString($row->machineAddress);
+                    }
+
+                    return $row->{$distribution->sort_rows_column};
+                },
+                options: SORT_NATURAL,
+                descending: $distribution->sort_rows_direction === 'desc'
+            )
+                ->values();
         }
 
-        $results = $distribution->mappedRows->sortBy(
-            callback: function (MappedRow $row) use ($distribution) {
-                if ($distribution->sort_rows_column === 'machine_address') {
-                    return self::formatMachineAddressToString($row->machineAddress);
-                }
-
-                return $row->{$distribution->sort_rows_column};
-            },
-            options: SORT_NATURAL,
-            descending: $distribution->sort_rows_direction === 'desc'
-        )
-            ->values();
+        if ($forPreview) {
+            $results = Collection::make($results->groupBy('serial_no')->collapse()->all());
+        }
 
         $distribution->setRelation('mappedRows', $results);
     }
@@ -883,18 +888,28 @@ class WorldwideQuoteDataMapper
 
     /**
      * @param WorldwideDistribution $distribution
+     * @param bool $forPreview
      */
-    public function sortWorldwideDistributionRowsGroups(WorldwideDistribution $distribution): void
+    public function sortWorldwideDistributionRowsGroups(WorldwideDistribution $distribution, bool $forPreview = false): void
     {
-        if (is_null($distribution->sort_rows_groups_column) || $distribution->sort_rows_groups_column === '') {
-            return;
-        }
+        $sortColumn = (string)$distribution->sort_rows_groups_column;
 
-        $results = $distribution->rowsGroups->sortBy(
-            $distribution->sort_rows_groups_column,
-            SORT_NATURAL,
-            $distribution->sort_rows_groups_direction === 'desc'
-        )
+        $results = $distribution->rowsGroups
+            ->when(filled($sortColumn), static function (Collection $groupsOfRows) use ($distribution): Collection {
+                return $groupsOfRows->sortBy(
+                    $distribution->sort_rows_groups_column,
+                    SORT_NATURAL,
+                    $distribution->sort_rows_groups_direction === 'desc'
+                );
+            })
+            ->when($forPreview, static function (Collection $groupsOfRows): Collection {
+                foreach ($groupsOfRows as $group) {
+                    /** @var DistributionRowsGroup $group */
+                    $group->setRelation('rows', Collection::make($group->rows->groupBy('serial_no')->collapse()->values()->all()));
+                }
+
+                return $groupsOfRows;
+            })
             ->values();
 
         $distribution->setRelation('rowsGroups', $results);
@@ -1004,7 +1019,7 @@ class WorldwideQuoteDataMapper
                 $builder->where('is_selected', true);
             }]);
 
-            $this->sortWorldwidePackQuoteAssets($quote);
+            $this->sortWorldwidePackQuoteAssets($quote, true);
 
             foreach ($activeVersionOfQuote->assets as $asset) {
                 $asset->setAttribute('date_to', $quote->opportunity->opportunity_end_date);
@@ -1033,7 +1048,7 @@ class WorldwideQuoteDataMapper
             $builder->where('is_selected', true);
         }, 'assetsGroups.assets', 'assetsGroups.assets.vendor:id,short_code']);
 
-        $this->sortGroupsOfPackAssets($quote);
+        $this->sortGroupsOfPackAssets($quote, true);
 
         return $quote->activeVersion->assetsGroups->map(function (WorldwideQuoteAssetsGroup $assetsGroup) use ($quote, $outputCurrency, $quotePriceData) {
 
@@ -1089,30 +1104,35 @@ class WorldwideQuoteDataMapper
         });
     }
 
-    public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote): void
+    public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote, bool $forPreview = false): void
     {
         $activeVersion = $quote->activeVersion;
 
         $sortRowsColumn = $activeVersion->sort_rows_column;
 
-        if (!is_string($sortRowsColumn) || $sortRowsColumn === '') {
-            return;
+        $results = $activeVersion->assets;
+
+        if (filled($sortRowsColumn)) {
+            $results = $activeVersion->assets
+                ->sortBy(
+                    function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
+                        if ($sortRowsColumn === 'machine_address') {
+                            return self::formatMachineAddressToString($asset->machineAddress);
+                        }
+
+                        return $asset->{$sortRowsColumn};
+                    },
+                    SORT_NATURAL,
+                    $activeVersion->sort_rows_direction === 'desc'
+                )
+                ->values();
         }
 
-        $results = $activeVersion->assets->sortBy(
-            function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
-                if ($sortRowsColumn === 'machine_address') {
-                    return self::formatMachineAddressToString($asset->machineAddress);
-                }
+        if ($forPreview) {
+            $results = Collection::make($results->groupBy('serial_no')->collapse()->all());
+        }
 
-                return $asset->{$sortRowsColumn};
-            },
-            SORT_NATURAL,
-            $activeVersion->sort_rows_direction === 'desc'
-        )
-            ->values();
-
-        $quote->setRelation('assets', $results);
+        $activeVersion->setRelation('assets', $results);
     }
 
     public function markExclusivityOfWorldwidePackQuoteAssetsForCustomer(WorldwideQuote $quote, Collection|WorldwideQuoteAsset $assets): void
@@ -1690,27 +1710,27 @@ class WorldwideQuoteDataMapper
         ]);
     }
 
-    public function sortGroupsOfPackAssets(WorldwideQuote $quote): void
+    public function sortGroupsOfPackAssets(WorldwideQuote $quote, bool $forPreview = false): void
     {
         $sortColumn = (string)$quote->activeVersion->sort_assets_groups_column;
 
-        if ($sortColumn === '') {
-            return;
-        }
-
-        /** @var string $sortColumn */
-        $sortColumn = with($sortColumn, function (string $sortColumn): string {
-
-            if ($sortColumn === 'assets_sum') {
-                return 'assets_sum_price';
-            }
-
-            return $sortColumn;
-
-        });
+        $sortColumn = match ($sortColumn) {
+            'assets_sum' => 'assets_sum_price',
+            default => $sortColumn,
+        };
 
         $results = $quote->activeVersion->assetsGroups
-            ->sortBy($sortColumn, SORT_NATURAL, $quote->activeVersion->sort_assets_groups_direction === 'desc')
+            ->when(filled($sortColumn), static function (Collection $groupsOfRows) use ($quote, $sortColumn): Collection {
+                return $groupsOfRows->sortBy($sortColumn, SORT_NATURAL, $quote->activeVersion->sort_assets_groups_direction === 'desc');
+            })
+            ->when($forPreview, static function (Collection $groupsOfRows): Collection {
+                foreach ($groupsOfRows as $group) {
+                    /** @var WorldwideQuoteAssetsGroup $group */
+                    $group->setRelation('assets', Collection::make($group->assets->groupBy('serial_no')->collapse()->values()->all()));
+                }
+
+                return $groupsOfRows;
+            })
             ->values();
 
         $quote->activeVersion->setRelation('assetsGroups', $results);

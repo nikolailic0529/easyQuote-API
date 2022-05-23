@@ -56,19 +56,19 @@ class WorldwidePackQuoteTest extends TestCase
 
         \DB::table('opportunities')->update(['deleted_at' => now()]);
 
-        $opportunities = Opportunity::factory()->count(2)->create();
+        $opportunities = factory(Opportunity::class, 2)->create();
 
         foreach ($opportunities as $opportunity) {
             /** @var Opportunity $opportunity */
 
             $address = factory(Address::class)->create();
-            $contact = Contact::factory()->create();
+            $contact = factory(Contact::class)->create();
 
             $opportunity->primaryAccount->addresses()->sync([$address->getKey() => ['is_default' => true]]);
             $opportunity->primaryAccount->contacts()->sync([$contact->getKey() => ['is_default' => true]]);
         }
 
-        $opportunityWithSameCustomer = Opportunity::factory()->create([
+        $opportunityWithSameCustomer = factory(Opportunity::class)->create([
             'primary_account_id' => $opportunities[0]->primary_account_id,
         ]);
 
@@ -953,7 +953,7 @@ class WorldwidePackQuoteTest extends TestCase
      */
     public function testCanViewStateOfWorldwidePackQuote()
     {
-        $opportunity = Opportunity::factory()->create(['contract_type_id' => CT_PACK]);
+        $opportunity = factory(Opportunity::class)->create(['contract_type_id' => CT_PACK]);
 
         $snDiscount = factory(SND::class)->create(['value' => 10]);
 
@@ -988,7 +988,7 @@ class WorldwidePackQuoteTest extends TestCase
             'service_description' => $assets[0]->service_level_description,
         ]);
 
-        $sameAsset->companies()->sync(Company::factory()->create());
+        $sameAsset->companies()->sync(factory(Company::class)->create());
 
         $assetsGroup = factory(WorldwideQuoteAssetsGroup::class)->create([
             'worldwide_quote_version_id' => $quote->activeVersion->getKey(),
@@ -1728,7 +1728,7 @@ class WorldwidePackQuoteTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $wwQuote->opportunity->primaryAccountContact()->associate(Contact::factory()->create([
+        $wwQuote->opportunity->primaryAccountContact()->associate(factory(Contact::class)->create([
             'email' => 'Francesco.Ziviani@surftech.com',
         ]));
 
@@ -1752,11 +1752,11 @@ class WorldwidePackQuoteTest extends TestCase
             'address_type' => 'Software',
         ]);
 
-        $hardwareContact = Contact::factory()->create([
+        $hardwareContact = factory(Contact::class)->create([
             'contact_type' => 'Hardware',
         ]);
 
-        $softwareContact = Contact::factory()->create([
+        $softwareContact = factory(Contact::class)->create([
             'contact_type' => 'Software',
         ]);
 
@@ -1840,11 +1840,11 @@ TEMPLATE;
             'address_type' => 'Software',
         ]);
 
-        $hardwareContact = Contact::factory()->create([
+        $hardwareContact = factory(Contact::class)->create([
             'contact_type' => 'Hardware',
         ]);
 
-        $softwareContact = Contact::factory()->create([
+        $softwareContact = factory(Contact::class)->create([
             'contact_type' => 'Software',
         ]);
 
@@ -1918,11 +1918,11 @@ TEMPLATE;
             'address_type' => 'Software',
         ]);
 
-        $hardwareContact = Contact::factory()->create([
+        $hardwareContact = factory(Contact::class)->create([
             'contact_type' => 'Hardware',
         ]);
 
-        $softwareContact = Contact::factory()->create([
+        $softwareContact = factory(Contact::class)->create([
             'contact_type' => 'Software',
         ]);
 
@@ -2516,7 +2516,7 @@ TEMPLATE;
     public function testCanAffectOnPackQuoteDataByUpdatingOfOpportunity()
     {
         /** @var Opportunity $opportunity */
-        $opportunity = Opportunity::factory()->create([
+        $opportunity = factory(Opportunity::class)->create([
             'contract_type_id' => CT_PACK,
         ]);
 
@@ -2643,7 +2643,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = Opportunity::factory()->create();
+        $opportunity = factory(Opportunity::class)->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2692,7 +2692,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = Opportunity::factory()->create();
+        $opportunity = factory(Opportunity::class)->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2751,7 +2751,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = Opportunity::factory()->create();
+        $opportunity = factory(Opportunity::class)->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2820,7 +2820,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = Opportunity::factory()->create();
+        $opportunity = factory(Opportunity::class)->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2875,7 +2875,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = Opportunity::factory()->create();
+        $opportunity = factory(Opportunity::class)->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -2904,7 +2904,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        $opportunity = Opportunity::factory()->create();
+        $opportunity = factory(Opportunity::class)->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);

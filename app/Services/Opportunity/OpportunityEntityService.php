@@ -175,7 +175,10 @@ class OpportunityEntityService implements CauserAware
                 $company->vat_type = $importedCompany->vat_type ?? VAT::NO_VAT;
             }
 
-            $company->vat = coalesce_blank($company->vat, $importedCompany->vat);
+            if (VAT::VAT_NUMBER === $company->vat) {
+                $company->vat = coalesce_blank($company->vat, $importedCompany->vat);
+            }
+
             $company->email = coalesce_blank($company->email, $importedCompany->email);
             $company->phone = coalesce_blank($company->phone, $company->phone, $importedCompany->phone);
             $company->website = coalesce_blank($company->website, $company->website, $importedCompany->website);
