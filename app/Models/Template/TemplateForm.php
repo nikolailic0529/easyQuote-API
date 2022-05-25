@@ -96,6 +96,9 @@ final class TemplateForm
                 ['id' => 'end_user_contact_country', 'label' => 'End Customer Contact Country'],
                 ['id' => 'end_user_contact_name', 'label' => 'End Customer Contact Name'],
                 ['id' => 'end_user_contact_email', 'label' => 'End Customer Contact Email'],
+                ['id' => 'end_user_company_email', 'label' => 'End User Email'],
+                ['id' => 'end_user_hw_post_code', 'label' => 'End User Hardware Post Code'],
+                ['id' => 'end_user_inv_post_code', 'label' => 'End User Invoice Post Code'],
 
                 # Account Manager
                 ['id' => 'account_manager_name', 'label' => 'Account Manager Name'],
