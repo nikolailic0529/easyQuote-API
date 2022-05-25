@@ -216,6 +216,17 @@ class OpportunityDataMapper implements CauserAware
     {
         return tap(new Collection(), function (Collection $newAddressDataOfCompany) use ($account, $contacts): void {
 
+            $newAddressDataOfCompany[] = $this->mapImportedAddressFromAttributes(
+                type: null,
+                addressOne: $account['street_address'] ?? null,
+                addressTwo: self::coalesceMap($account, ['address_2', 'address_two']),
+                city: $account['city'] ?? null,
+                zipCode: $account['zip_code'] ?? null,
+                stateProvince: self::coalesceMap($account, ['state_province', 'stateprovince']),
+                stateCode: $account['state_code'] ?? null,
+                country: $account['country'] ?? null,
+            );
+
             foreach ($contacts as $contactData) {
 
                 [$addressOne, $addressTwo] = self::splitStreetAddress($contactData['street_address'] ?? null);
