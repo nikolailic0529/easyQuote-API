@@ -41,10 +41,20 @@ class FirstStep extends FormRequest
         /** @var User $user */
         $user = $this->user();
 
+        $companiesQuery = $companyQueries->listOfInternalCompaniesQuery();
+
         /** @var Collection|Company[] $filteredCompanies */
-        $filteredCompanies = $companyQueries->listOfInternalCompaniesQuery()
+        $filteredCompanies = $companiesQuery
+            ->select([
+                $companiesQuery->getModel()->getQualifiedKeyName(),
+                $companiesQuery->qualifyColumn('name'),
+                $companiesQuery->qualifyColumn('short_code'),
+                $companiesQuery->qualifyColumn('default_country_id'),
+                $companiesQuery->qualifyColumn('default_vendor_id'),
+                $companiesQuery->qualifyColumn('default_template_id'),
+            ])
             ->with([
-                'vendors' => function (Relation $relation) {
+                'vendors' => static function (Relation $relation): void {
                     $relation->whereNotNull($relation->qualifyColumn('activated_at'));
                 },
                 'vendors.countries.defaultCurrency',
