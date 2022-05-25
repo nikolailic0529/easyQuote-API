@@ -118,15 +118,11 @@ class WorldwideQuoteDataMapper
 
     public function mapWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
     {
-        if ($worldwideQuote->contract_type_id === CT_CONTRACT) {
-            return $this->mapContractWorldwideQuoteSalesOrderData($worldwideQuote);
-        }
-
-        if ($worldwideQuote->contract_type_id === CT_PACK) {
-            return $this->mapPackWorldwideQuoteSalesOrderData($worldwideQuote);
-        }
-
-        throw new \RuntimeException('Unsupported Quote Contract Type to map into Sales Order Data.');
+        return match ($worldwideQuote->contract_type_id) {
+            CT_CONTRACT => $this->mapContractWorldwideQuoteSalesOrderData($worldwideQuote),
+            CT_PACK => $this->mapPackWorldwideQuoteSalesOrderData($worldwideQuote),
+            default => throw new \RuntimeException('Unsupported Quote Contract Type to map into Sales Order Data.'),
+        };
     }
 
     private function mapContractWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
@@ -1000,7 +996,7 @@ class WorldwideQuoteDataMapper
             return ND_02;
         }
 
-        return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
+        return implode(', ', array_filter([$address->address_1, $address->city, $address->country?->iso_3166_2, $address->post_code]));
     }
 
     public function getPackQuoteAssetsData(WorldwideQuote $quote, Currency $outputCurrency): array
@@ -1519,6 +1515,9 @@ class WorldwideQuoteDataMapper
             'end_user_contact_country' => collect($quoteDataAggregation)->map->country_code->unique()->implode(', '),
             'end_user_contact_name' => $activeVersion->are_end_user_contacts_available ? $contactStringFormatter($endUserHardwareContact) : ND_02,
             'end_user_contact_email' => $activeVersion->are_end_user_contacts_available ? ($endUserHardwareContact?->email ?? ND_02) : ND_02,
+            'end_user_company_email' => $opportunity->endUser?->email ?? ND_02,
+            'end_user_hw_post_code' => $endUserHardwareAddress?->post_code ?? ND_02,
+            'end_user_inv_post_code' => $endUserInvoiceAddress?->post_code ?? ND_02,
 
             'account_manager_name' => $opportunity->accountManager?->user_fullname ?? ND_02,
 
