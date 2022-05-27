@@ -81,6 +81,10 @@ class QuoteOpportunity extends JsonResource
                     $addresses = $addresses->merge($this->endUser->addresses);
                 }
 
+                if (isset($this->additional['addresses'])) {
+                    $addresses = $addresses->merge($this->additional['addresses']);
+                }
+
                 $addresses->each(function (Address $address) {
                     $address->setAttribute('address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($address));
                 });
@@ -101,6 +105,10 @@ class QuoteOpportunity extends JsonResource
 
                 if ($this->relationLoaded('endUser') && $this->endUser?->relationLoaded('contacts')) {
                     $contacts = $contacts->merge($this->endUser->contacts);
+                }
+
+                if (isset($this->additional['contacts'])) {
+                    $contacts = $contacts->merge($this->additional['contacts']);
                 }
 
                 return $contacts;
