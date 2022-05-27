@@ -176,16 +176,19 @@ class WorldwidePackQuoteTest extends TestCase
 
         $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
 
-        $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets')
+        $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets')
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'id',
+                'entity_order',
             ]);
+
+        $this->assertSame(1, $response->json('entity_order'));
 
         $machineAddress = factory(Address::class)->create();
 
-        $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets', [
+        $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets', [
             'buy_currency_id' => Currency::query()->value('id'),
             'vendor_id' => Vendor::query()->value('id'),
             'machine_address_id' => $machineAddress->getKey(),
@@ -218,7 +221,34 @@ class WorldwidePackQuoteTest extends TestCase
                 'buy_price',
                 'buy_price_margin',
                 'is_warranty_checked',
+                'entity_order',
             ]);
+
+        $this->assertSame(2, $response->json('entity_order'));
+    }
+
+    public function testCanBatchInitWorldwideQuoteAsset(): void
+    {
+        $this->authenticateApi();
+
+        $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
+
+        $data = collect()->times(10, function (int $time) {
+            return [
+                'product_name' => "($time) ".$this->faker->linuxProcessor,
+            ];
+        })
+        ->all();
+
+        $response = $this->putJson('api/ww-quotes/'.$quote->getKey().'/assets', ['assets' => $data])
+//            ->dump()
+            ->assertCreated();
+
+        $this->assertCount(10, $response->json());
+
+        foreach (collect()->times(10) as $time) {
+            $this->assertSame($time, $response->json(($time-1).".entity_order"));
+        }
     }
 
     /**
