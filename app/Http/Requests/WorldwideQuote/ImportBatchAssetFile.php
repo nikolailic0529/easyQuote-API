@@ -40,6 +40,9 @@ class ImportBatchAssetFile extends FormRequest
                 'price' => [
                     'bail', 'nullable', 'string',
                 ],
+                'selling_price' => [
+                    'bail', 'nullable', 'string',
+                ],
                 'buy_price_value' => [
                     'bail', 'nullable', 'string',
                 ],
@@ -97,6 +100,7 @@ class ImportBatchAssetFile extends FormRequest
                 'expiry_date' => $this->input('headers.expiry_date'),
                 'service_level_description' => $this->input('headers.service_level_description'),
                 'price' => $this->input('headers.price'),
+                'selling_price' => $this->input('headers.selling_price'),
                 'vendor' => $this->input('headers.vendor'),
                 'country' => $this->input('headers.country'),
                 'street_address' => $this->input('headers.street_address'),

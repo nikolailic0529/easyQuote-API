@@ -18,6 +18,8 @@ final class BatchAssetFileMapping extends DataTransferObject
 
     public ?string $service_level_description;
 
+    public ?string $selling_price;
+
     public ?string $price;
 
     public ?string $buy_price_value;
