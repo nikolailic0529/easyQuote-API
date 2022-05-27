@@ -28,6 +28,7 @@ class SalesOrderDraft extends JsonResource
             'company_name' => $this->company_name,
             'rfq_number' => $this->rfq_number,
             'order_type' => $this->order_type,
+            'opportunity_name' => $this->opportunity_name,
             'created_at' => $this->created_at,
             'activated_at' => $this->activated_at
         ];
