@@ -76,6 +76,7 @@ class SalesOrderTest extends TestCase
                         'company_name',
 //                        'sequence_number',
                         'order_type',
+                        'opportunity_name',
                         'created_at',
                         'activated_at',
                     ],
@@ -102,7 +103,7 @@ class SalesOrderTest extends TestCase
         $role->syncPermissions('view_own_sales_orders');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -149,7 +150,7 @@ class SalesOrderTest extends TestCase
         $role->syncPermissions('view_own_sales_orders');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -211,6 +212,7 @@ class SalesOrderTest extends TestCase
                         'company_name',
 //                        'sequence_number',
                         'order_type',
+                        'opportunity_name',
                         'created_at',
                         'activated_at',
                         'permissions' => [
@@ -529,7 +531,7 @@ class SalesOrderTest extends TestCase
         $this->authenticateApi();
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_PACK,
         ]);
 
@@ -613,7 +615,7 @@ class SalesOrderTest extends TestCase
         $this->authenticateApi();
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_CONTRACT,
         ]);
 
@@ -715,22 +717,39 @@ class SalesOrderTest extends TestCase
 
         $salesOrder = factory(SalesOrder::class)->create();
 
+        /** @var HttpFactory $oauthFactory */
+        $oauthFactory = $this->app[HttpFactory::class];
 
-        $this->app->when(CancelSalesOrderService::class)->needs(ClientInterface::class)
-            ->give(function () {
-                $mock = new MockHandler([
-                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234'])),
-                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'])),
-                ]);
+        $oauthFactory->fake([
+            '*' => HttpFactory::response(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234']),
+        ]);
 
-                $handlerStack = HandlerStack::create($mock);
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(function () use ($oauthFactory) {
+            return $oauthFactory;
+        });
 
-                return new Client(['handler' => $handlerStack]);
-            });
+        /** @var HttpFactory $factory */
+        $factory = $this->app[HttpFactory::class];
+
+        $factory->fakeSequence()
+            ->push(['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'])
+            ->push(
+                json_decode('{"ErrorCode":"INVDT-08","ErrorUrl":"http:\/\/10.22.14.13\/bc-customer","Error":{"headers":{},"original":{"message":"Server Error"},"exception":null},"ErrorDetails":"Invalid Data Provided."}', true),
+                422,
+            );
+
+        $factory->fake([
+            '*' => ['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'],
+        ]);
+
+        $this->app->when(CancelSalesOrderService::class)->needs(HttpFactory::class)->give(function () use ($factory) {
+            return $factory;
+        });
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey().'/cancel', [
             'status_reason' => 'Just cancelled',
         ])
+//            ->dump()
             ->assertStatus(Response::HTTP_ACCEPTED)
             ->assertJsonStructure([
                 'result',
@@ -747,6 +766,20 @@ class SalesOrderTest extends TestCase
             ->assertJson([
                 'status' => 3,
                 'status_reason' => 'Just cancelled',
+            ]);
+
+        $this->patchJson('api/sales-orders/'.$salesOrder->getKey().'/cancel', [
+            'status_reason' => 'Just cancelled',
+        ])
+//            ->dump()
+            ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
+            ->assertJsonStructure([
+                'result',
+                'failure_reason',
+            ])
+            ->assertJson([
+                'result' => 'failure',
+                'failure_reason' => "There was an issue while processing your sales order.\nPlease contact Software Team.\nThanks!"
             ]);
     }
 
