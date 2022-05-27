@@ -236,9 +236,8 @@ return [
         App\Providers\AttachmentServiceProvider::class,
         App\Providers\FormatterServiceProvider::class,
         App\Providers\SalesOrderServiceProvider::class,
-
-        LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
-
+        App\Providers\PipelinerServiceProvider::class,
+        App\Providers\VendorServicesServiceProvider::class,
         App\Providers\LogKeeperServiceProvider::class,
     ],
 
