@@ -86,10 +86,13 @@ class SubmitSalesOrderService
 
     private function getResponseStatusReason(Response $response): string
     {
-        $json = $response->json();
+        $errorDetails = Arr::wrap($response->json('ErrorDetails'));
+        $validationErrors = Arr::wrap($response->json('Error.original'));
+        $errorMessage = $response->json('Error.original.message');
 
-        $errorDetails = Arr::wrap(Arr::get($json, 'ErrorDetails'));
-        $validationErrors = Arr::wrap(Arr::get($json, 'Error.original'));
+        if (is_string($errorMessage) && 'server error' === mb_strtolower($errorMessage)) {
+            return $errorMessage;
+        }
 
         if (!empty($validationErrors)) {
             return implode(' ', array_unique(Arr::flatten($validationErrors)));
