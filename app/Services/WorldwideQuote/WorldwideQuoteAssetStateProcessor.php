@@ -9,6 +9,7 @@ use App\DTO\WorldwideQuote\{AssetServiceLevel,
     AssetServiceLookupResult,
     BatchAssetFileMapping,
     ImportBatchAssetFileData,
+    InitializeWorldwideQuoteAssetCollection,
     InitializeWorldwideQuoteAssetData,
     ReadAssetRow,
     ReadBatchFileResult,
@@ -29,6 +30,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -78,8 +80,23 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
             $asset->makeHidden('worldwideQuote');
 
-            $this->connection->transaction(fn() => $asset->save());
+            $this->lockProvider->lock(Lock::CREATE_WWASSET_FOR_QUOTE($quote->getKey()))->block(30, function () use ($quote, $asset) {
+                $asset->entity_order = $quote->assets()->max('entity_order') + 1;
+
+                $this->connection->transaction(fn() => $asset->save());
+            });
         });
+    }
+
+    public function batchInitializeQuoteAsset(WorldwideQuoteVersion $quote, InitializeWorldwideQuoteAssetCollection $collection): Collection
+    {
+        $assets = new Collection();
+
+        foreach ($collection as $item) {
+            $assets[] = $this->initializeQuoteAsset($quote, $item);
+        }
+
+        return $assets;
     }
 
     public function batchUpdateQuoteAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetDataCollection $collection)
@@ -232,9 +249,9 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         ]);
     }
 
-    private function mapAssetDataUsingFileMapping(BatchAssetFileMapping $mapping, array $row, WorldwideQuoteVersion $quote): WorldwideQuoteAsset
+    private function mapAssetDataUsingFileMapping(WorldwideQuoteVersion $quote, BatchAssetFileMapping $mapping, array $row, int $order): WorldwideQuoteAsset
     {
-        return tap(new WorldwideQuoteAsset(), function (WorldwideQuoteAsset $asset) use ($row, $mapping, $quote) {
+        return tap(new WorldwideQuoteAsset(), function (WorldwideQuoteAsset $asset) use ($order, $row, $mapping, $quote) {
             $asset->is_selected = true;
 
             $asset->{$asset->getKeyName()} = (string)Uuid::generate(4);
@@ -283,7 +300,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 return null;
             });
 
-            $asset->price = transform($mapping->price, function (string $priceColumn) use ($row) {
+            $asset->price = transform($mapping->selling_price, function (string $priceColumn) use ($row) {
                 $value = $row[$priceColumn] ?? null;
 
                 if (!is_null($value)) {
@@ -396,6 +413,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
             $asset->setCreatedAt($asset->freshTimestamp());
             $asset->setUpdatedAt($asset->freshTimestamp());
+            $asset->entity_order = $order;
         });
     }
 
@@ -431,10 +449,14 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             ->whereKey($quote->quote_currency_id)
             ->value('code');
 
+        $highestEntityOrder = $quote->assets()->max('entity_order');
+
         foreach ($chunkIterator as $chunk) {
 
             $assetBatch = array_map(
-                fn(array $row) => $this->mapAssetDataUsingFileMapping($data->file_mapping, $row, $quote),
+                function (array $row) use ($quote, $data, &$highestEntityOrder): WorldwideQuoteAsset {
+                    return $this->mapAssetDataUsingFileMapping($quote, $data->file_mapping, $row, ++$highestEntityOrder);
+                },
                 $chunk
             );
 

@@ -126,7 +126,8 @@ class WorldwideQuoteVersion extends Model
                     ->from('vendors')
                     ->whereColumn('vendors.id', 'worldwide_quote_assets.vendor_id')->limit(1)->toBase()
             ])
-                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
+                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn())
+                ->oldest('entity_order');
         });
     }
 
