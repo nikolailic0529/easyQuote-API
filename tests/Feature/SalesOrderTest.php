@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Address;
+use App\Models\Company;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Opportunity;
@@ -59,7 +60,16 @@ class SalesOrderTest extends TestCase
     {
         $this->authenticateApi();
 
-        factory(SalesOrder::class, 30)->create(['submitted_at' => null]);
+        /** @var SalesOrder[] $orders */
+        $orders = factory(SalesOrder::class, 10)->create(['submitted_at' => null, 'assets_count' => 3]);
+
+        $endUser = factory(Company::class)->create();
+        $accountMgr = factory(User::class)->create();
+
+        foreach ($orders as $order) {
+            $order->worldwideQuote->opportunity->endUser()->associate($endUser);
+            $order->worldwideQuote->opportunity->accountManager()->associate($accountMgr)->save();
+        }
 
         $this->getJson('api/sales-orders/drafted')
 //            ->dump()
@@ -74,6 +84,10 @@ class SalesOrderTest extends TestCase
                         'rfq_number',
                         'customer_name',
                         'company_name',
+                        'end_user_name',
+                        'account_manager_name',
+                        'account_manager_email',
+                        'assets_count',
 //                        'sequence_number',
                         'order_type',
                         'opportunity_name',
@@ -193,7 +207,16 @@ class SalesOrderTest extends TestCase
     {
         $this->authenticateApi();
 
-        factory(SalesOrder::class, 30)->create(['submitted_at' => now(), 'failure_reason' => $this->faker->text()]);
+        $endUser = factory(Company::class)->create();
+        $accountMgr = factory(User::class)->create();
+
+        /** @var SalesOrder[] $orders */
+        $orders = factory(SalesOrder::class, 10)->create(['assets_count' => 3, 'submitted_at' => now(), 'failure_reason' => $this->faker->text()]);
+
+        foreach ($orders as $order) {
+            $order->worldwideQuote->opportunity->endUser()->associate($endUser);
+            $order->worldwideQuote->opportunity->accountManager()->associate($accountMgr)->save();
+        }
 
         $this->getJson('api/sales-orders/submitted')
 //            ->dump()
@@ -210,6 +233,10 @@ class SalesOrderTest extends TestCase
                         'rfq_number',
                         'customer_name',
                         'company_name',
+                        'end_user_name',
+                        'account_manager_name',
+                        'account_manager_email',
+                        'assets_count',
 //                        'sequence_number',
                         'order_type',
                         'opportunity_name',

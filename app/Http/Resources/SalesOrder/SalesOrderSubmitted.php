@@ -32,6 +32,10 @@ class SalesOrderSubmitted extends JsonResource
             'company_name' => $this->company_name,
             'rfq_number' => $this->rfq_number,
             'order_type' => $this->order_type,
+            'end_user_name' => $this->end_user_name,
+            'account_manager_name' => $this->account_manager_name,
+            'account_manager_email' => $this->account_manager_email,
+            'assets_count' => $this->assets_count,
             'opportunity_name' => $this->opportunity_name,
             'permissions' => [
                 'view' => $request->user()->can('view', $this->resource),

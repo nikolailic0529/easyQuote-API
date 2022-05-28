@@ -89,23 +89,29 @@ class SalesOrderQueries
         $model = new SalesOrder();
 
         $query = $model->newQuery()
-            ->select(
-                'sales_orders.id',
-                'sales_orders.user_id',
-                'sales_orders.worldwide_quote_id',
+            ->select([
+                $model->getQualifiedKeyName(),
+                $model->user()->getQualifiedForeignKeyName(),
+                $model->worldwideQuote()->getQualifiedForeignKeyName(),
+                ...$model->qualifyColumns([
+                    'order_number',
+                    'assets_count',
+                    'status',
+                    'created_at',
+                    'activated_at',
+                ]),
                 'worldwide_quotes.contract_type_id',
                 'worldwide_quotes.opportunity_id',
-                'sales_orders.order_number',
+                'opportunities.project_name as opportunity_name',
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
                 'primary_account.name as customer_name',
+                'end_user.name as end_user_name',
+                'account_manager.user_fullname as account_manager_name',
+                'account_manager.email as account_manager_email',
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
-                'opportunities.project_name as opportunity_name',
-                'sales_orders.status',
-                'sales_orders.created_at',
-                'sales_orders.activated_at'
-            )
+            ])
             ->join('worldwide_quotes', function (JoinClause $join) {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');
             })
@@ -117,6 +123,12 @@ class SalesOrderQueries
             })
             ->join('companies as primary_account', function (JoinClause $join) {
                 $join->on('primary_account.id', 'opportunities.primary_account_id');
+            })
+            ->leftJoin('companies as end_user', function (JoinClause $join): void {
+                $join->on('end_user.id', 'opportunities.end_user_id');
+            })
+            ->leftJoin('users as account_manager', function (JoinClause $join): void {
+                $join->on('account_manager.id', 'opportunities.account_manager_id');
             })
             ->join('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'active_quote_version.company_id');
@@ -134,7 +146,7 @@ class SalesOrderQueries
             ->addCustomBuildQueryPipe(
                 new PerformElasticsearchSearch($this->elasticsearch)
             )
-            ->allowOrderFields(...[
+            ->allowOrderFields(
                 'created_at',
                 'updated_at',
                 'order_type',
@@ -143,7 +155,11 @@ class SalesOrderQueries
                 'customer_name',
                 'company_name',
                 'opportunity_name',
-            ])
+                'assets_count',
+                'end_user_name',
+                'account_manager_name',
+                'account_manager_email',
+            )
             ->qualifyOrderFields(
                 created_at: $model->getQualifiedCreatedAtColumn(),
                 updated_at: $model->getQualifiedUpdatedAtColumn(),
@@ -159,25 +175,31 @@ class SalesOrderQueries
         $model = new SalesOrder();
 
         $query = $model->newQuery()
-            ->select(
-                'sales_orders.id',
-                'sales_orders.user_id',
-                'sales_orders.worldwide_quote_id',
+            ->select([
+                $model->getQualifiedKeyName(),
+                $model->user()->getQualifiedForeignKeyName(),
+                $model->worldwideQuote()->getQualifiedForeignKeyName(),
+                ...$model->qualifyColumns([
+                    'order_number',
+                    'assets_count',
+                    'status',
+                    'failure_reason',
+                    'status_reason',
+                    'created_at',
+                    'activated_at',
+                ]),
                 'worldwide_quotes.contract_type_id',
                 'worldwide_quotes.opportunity_id',
-                'sales_orders.order_number',
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
                 'primary_account.name as customer_name',
+                'end_user.name as end_user_name',
+                'account_manager.user_fullname as account_manager_name',
+                'account_manager.email as account_manager_email',
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
                 'opportunities.project_name as opportunity_name',
-                'sales_orders.status',
-                'sales_orders.failure_reason',
-                'sales_orders.status_reason',
-                'sales_orders.created_at',
-                'sales_orders.activated_at'
-            )
+            ])
             ->join('worldwide_quotes', function (JoinClause $join) {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');
             })
@@ -189,6 +211,12 @@ class SalesOrderQueries
             })
             ->join('companies as primary_account', function (JoinClause $join) {
                 $join->on('primary_account.id', 'opportunities.primary_account_id');
+            })
+            ->leftJoin('companies as end_user', function (JoinClause $join): void {
+                $join->on('end_user.id', 'opportunities.end_user_id');
+            })
+            ->leftJoin('users as account_manager', function (JoinClause $join): void {
+                $join->on('account_manager.id', 'opportunities.account_manager_id');
             })
             ->join('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'active_quote_version.company_id');
@@ -214,6 +242,10 @@ class SalesOrderQueries
                 'status',
                 'customer_name',
                 'company_name',
+                'assets_count',
+                'end_user_name',
+                'account_manager_name',
+                'account_manager_email',
                 'opportunity_name',
             )
             ->qualifyOrderFields(

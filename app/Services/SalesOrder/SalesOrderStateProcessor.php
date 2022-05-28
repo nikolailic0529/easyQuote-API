@@ -82,6 +82,8 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
 
             $this->assignNewSalesOrderNumber($salesOrder);
 
+            $salesOrder->assets_count = SalesOrderAssetsCountResolver::of($salesOrder)();
+
             $this->connection->transaction(fn() => $salesOrder->save());
 
             // TODO: handle "so-created" event and index a new order
