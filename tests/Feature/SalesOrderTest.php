@@ -103,7 +103,7 @@ class SalesOrderTest extends TestCase
         $role->syncPermissions('view_own_sales_orders');
 
         /** @var User $user */
-        $user = User::factory()->create();
+        $user = factory(User::class)->create();
 
         $user->syncRoles($role);
 
@@ -150,7 +150,7 @@ class SalesOrderTest extends TestCase
         $role->syncPermissions('view_own_sales_orders');
 
         /** @var User $user */
-        $user = User::factory()->create();
+        $user = factory(User::class)->create();
 
         $user->syncRoles($role);
 
@@ -531,7 +531,7 @@ class SalesOrderTest extends TestCase
         $this->authenticateApi();
 
         /** @var Opportunity $opportunity */
-        $opportunity = Opportunity::factory()->create([
+        $opportunity = factory(Opportunity::class)->create([
             'contract_type_id' => CT_PACK,
         ]);
 
@@ -615,7 +615,7 @@ class SalesOrderTest extends TestCase
         $this->authenticateApi();
 
         /** @var Opportunity $opportunity */
-        $opportunity = Opportunity::factory()->create([
+        $opportunity = factory(Opportunity::class)->create([
             'contract_type_id' => CT_CONTRACT,
         ]);
 
