@@ -21,7 +21,7 @@ class AssetLookupResult extends JsonResource
                 'machine_address_string' => $this->whenLoaded('machineAddress', function () {
                     /** @var \App\Models\WorldwideQuoteAsset|\App\Http\Resources\WorldwideQuote\AssetLookupResult $this */
 
-                    return WorldwideQuoteDataMapper::formatMachineAddressToString($this->machineAddress);
+                    return WorldwideQuoteDataMapper::formatAddressToString($this->machineAddress);
                 }),
                 'buy_currency_code' => $this->whenLoaded('buyCurrency', function () {
                     /** @var \App\Models\WorldwideQuoteAsset|\App\Http\Resources\WorldwideQuote\AssetLookupResult $this */

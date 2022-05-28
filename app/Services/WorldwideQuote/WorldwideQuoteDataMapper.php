@@ -592,13 +592,13 @@ class WorldwideQuoteDataMapper
                 'payment_schedule_data' => $paymentScheduleData,
                 'has_payment_schedule_data' => !empty($paymentScheduleData),
 
-                'equipment_address' => self::formatMachineAddressToString($quoteHardwareAddress),
+                'equipment_address' => self::formatAddressToString($quoteHardwareAddress),
                 'hardware_phone' => $quoteHardwareContact->phone ?? ND_02,
                 'hardware_contact' => transform($quoteHardwareContact, function (Contact $contact) {
                         return implode(' ', [$contact->first_name, $contact->last_name]);
                     }) ?? ND_02,
 
-                'software_address' => self::formatMachineAddressToString($quoteSoftwareAddress),
+                'software_address' => self::formatAddressToString($quoteSoftwareAddress),
                 'software_phone' => $quoteSoftwareContact->phone ?? ND_02,
                 'software_contact' => transform($quoteSoftwareContact, function (Contact $contact) {
                         return implode(' ', [$contact->first_name, $contact->last_name]);
@@ -822,7 +822,7 @@ class WorldwideQuoteDataMapper
             $results = $results->sortBy(
                 callback: function (MappedRow $row) use ($distribution) {
                     if ($distribution->sort_rows_column === 'machine_address') {
-                        return self::formatMachineAddressToString($row->machineAddress);
+                        return self::formatAddressToString($row->machineAddress);
                     }
 
                     return $row->{$distribution->sort_rows_column};
@@ -873,7 +873,7 @@ class WorldwideQuoteDataMapper
                 'price_float' => (float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
                 'country_code' => $row->machineAddress?->country?->iso_3166_2 ?? '',
                 'state' => $row->machineAddress?->state ?? '',
-                'machine_address_string' => self::formatMachineAddressToString($row->machineAddress),
+                'machine_address_string' => self::formatAddressToString($row->machineAddress),
                 'pricing_document' => $row->pricing_document ?? '',
                 'system_handle' => $row->system_handle ?? '',
                 'searchable' => $row->searchable ?? '',
@@ -990,7 +990,7 @@ class WorldwideQuoteDataMapper
         }, $value);
     }
 
-    public static function formatMachineAddressToString(?Address $address): string
+    public static function formatAddressToString(?Address $address): string
     {
         if (is_null($address)) {
             return ND_02;
@@ -1113,7 +1113,7 @@ class WorldwideQuoteDataMapper
                 ->sortBy(
                     function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
                         if ($sortRowsColumn === 'machine_address') {
-                            return self::formatMachineAddressToString($asset->machineAddress);
+                            return self::formatAddressToString($asset->machineAddress);
                         }
 
                         return $asset->{$sortRowsColumn};
@@ -1290,7 +1290,7 @@ class WorldwideQuoteDataMapper
                     'price_float' => $assetFloatPrice,
                     'country_code' => $asset->machineAddress?->country?->iso_3166_2 ?? '',
                     'state' => $asset->machineAddress?->state ?? '',
-                    'machine_address_string' => self::formatMachineAddressToString($asset->machineAddress),
+                    'machine_address_string' => self::formatAddressToString($asset->machineAddress),
                     'pricing_document' => '',
                     'system_handle' => '',
                     'searchable' => '',
@@ -1463,14 +1463,6 @@ class WorldwideQuoteDataMapper
         $endUserHardwareContact = $defaultEndUserContacts
             ->first(fn(Contact $contact) => $contact->contact_type === ContactType::HARDWARE);
 
-        $addressStringFormatter = function (?Address $address): string {
-            if (is_null($address)) {
-                return ND_02;
-            }
-
-            return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
-        };
-
         $contactStringFormatter = function (?Contact $contact): string {
             if (is_null($contact)) {
                 return ND_02;
@@ -1528,10 +1520,10 @@ class WorldwideQuoteDataMapper
             'total_value_including_tax' => $this->formatter->format('number', $quotePriceData->final_total_price_value, prepend: $outputCurrency->symbol),
             'grand_total_value' => $this->formatter->format('number', $quotePriceData->final_total_price_value, prepend: $outputCurrency->symbol),
 
-            'equipment_address' => $addressStringFormatter($quoteHardwareAddress),
+            'equipment_address' => self::formatAddressToString($quoteHardwareAddress),
             'hardware_contact' => $contactStringFormatter($quoteHardwareContact),
             'hardware_phone' => $quoteHardwareContact?->phone ?? ND_02,
-            'software_address' => $addressStringFormatter($quoteSoftwareAddress),
+            'software_address' => self::formatAddressToString($quoteSoftwareAddress),
             'software_contact' => $contactStringFormatter($quoteSoftwareContact),
             'software_phone' => $quoteSoftwareContact?->phone ?? ND_02,
             'coverage_period' => $this->formatCoveragePeriod($opportunity),

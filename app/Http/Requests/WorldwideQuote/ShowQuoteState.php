@@ -338,7 +338,7 @@ class ShowQuoteState extends FormRequest
 
             foreach ($model->activeVersion->assets as $asset) {
                 if ($asset->relationLoaded('machineAddress')) {
-                    $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
+                    $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatAddressToString($asset->machineAddress));
                 }
 
                 $asset->setAttribute('buy_currency_code', transform($asset->buyCurrency, fn(Currency $currency) => $currency->code));
@@ -359,7 +359,7 @@ class ShowQuoteState extends FormRequest
                 foreach ($assetsGroup->assets as $asset) {
 
                     if ($asset->relationLoaded('machineAddress')) {
-                        $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
+                        $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatAddressToString($asset->machineAddress));
                     }
 
                     $asset->setAttribute('buy_currency_code', transform($asset->buyCurrency, fn(Currency $currency) => $currency->code));
@@ -379,7 +379,7 @@ class ShowQuoteState extends FormRequest
             $rows->each(function (MappedRow $row) {
 
                 if ($row->relationLoaded('machineAddress')) {
-                    $row->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($row->machineAddress));
+                    $row->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatAddressToString($row->machineAddress));
                 }
 
             });

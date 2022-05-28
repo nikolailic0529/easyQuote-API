@@ -86,7 +86,7 @@ class QuoteOpportunity extends JsonResource
                 }
 
                 $addresses->each(function (Address $address) {
-                    $address->setAttribute('address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($address));
+                    $address->setAttribute('address_string', WorldwideQuoteDataMapper::formatAddressToString($address));
                 });
 
                 return $addresses;

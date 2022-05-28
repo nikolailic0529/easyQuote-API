@@ -31,7 +31,7 @@ class ShowStateOfAssetsGroup extends FormRequest
             foreach ($group->assets as $asset) {
                 $asset->setAttribute('vendor_short_code', $asset->vendor?->short_code);
                 $asset->setAttribute('buy_currency_code', $asset->buyCurrency?->code);
-                $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
+                $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatAddressToString($asset->machineAddress));
             }
 
             /** @var WorldwideQuoteDataMapper $dataMapper */
