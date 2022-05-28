@@ -60,6 +60,7 @@ final class TemplateForm
                 ['id' => 'company_name', 'label' => 'Internal Company Name'],
                 ['id' => 'service_levels', 'label' => 'Service Level (s)'],
                 ['id' => 'quotation_number', 'label' => 'RFQ Number'],
+                ['id' => 'sales_order_number', 'label' => 'Sales Order Number'],
                 ['id' => 'valid_until', 'label' => 'Quotation Closing Date'],
                 ['id' => 'support_start', 'label' => 'Support Start Date'],
                 ['id' => 'support_end', 'label' => 'Support End Date'],

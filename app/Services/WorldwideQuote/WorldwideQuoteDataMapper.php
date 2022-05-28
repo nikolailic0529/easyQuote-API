@@ -1478,6 +1478,7 @@ class WorldwideQuoteDataMapper
             'customer_name' => $opportunity->primaryAccount->name,
             'quotation_number' => $worldwideQuote->quote_number,
             'export_file_name' => $worldwideQuote->quote_number,
+            'sales_order_number' => (string)$worldwideQuote->salesOrder?->order_number,
 
             'service_levels' => '',
             'invoicing_terms' => '',
