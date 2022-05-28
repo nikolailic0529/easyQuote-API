@@ -104,6 +104,14 @@ return [
             'permission' => 0777
         ],
 
+        'vendor-services-requests' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/vendor-services-requests.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
         'sales-orders' => [
             'driver' => 'daily',
             'path' => storage_path('/logs/sales-orders.log'),

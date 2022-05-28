@@ -20,6 +20,7 @@
     "daltcore/lara-pdf-merger": "^2.0",
     "devengine/dateparser": "^2.0",
     "devengine/monolog-colored-line-formatter": "^3.0",
+    "devengine/php-log-keeper": "^0.0.5",
     "devengine/phpword": "*",
     "devengine/request-query-builder": "^1.0.1",
     "doctrine/annotations": "^1.11",

@@ -16,7 +16,7 @@ use Illuminate\Http\Request;
 class SalesOrderQueries
 {
     public function __construct(protected Elasticsearch $elasticsearch,
-                                protected Gate $gate)
+                                protected Gate          $gate)
     {
     }
 
@@ -101,6 +101,7 @@ class SalesOrderQueries
                 'primary_account.name as customer_name',
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
+                'opportunities.project_name as opportunity_name',
                 'sales_orders.status',
                 'sales_orders.created_at',
                 'sales_orders.activated_at'
@@ -141,6 +142,7 @@ class SalesOrderQueries
                 'status',
                 'customer_name',
                 'company_name',
+                'opportunity_name',
             ])
             ->qualifyOrderFields(
                 created_at: $model->getQualifiedCreatedAtColumn(),
@@ -169,6 +171,7 @@ class SalesOrderQueries
                 'primary_account.name as customer_name',
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
+                'opportunities.project_name as opportunity_name',
                 'sales_orders.status',
                 'sales_orders.failure_reason',
                 'sales_orders.status_reason',
@@ -203,7 +206,7 @@ class SalesOrderQueries
             ->addCustomBuildQueryPipe(
                 new PerformElasticsearchSearch($this->elasticsearch)
             )
-            ->allowOrderFields(...[
+            ->allowOrderFields(
                 'created_at',
                 'updated_at',
                 'order_type',
@@ -211,7 +214,8 @@ class SalesOrderQueries
                 'status',
                 'customer_name',
                 'company_name',
-            ])
+                'opportunity_name',
+            )
             ->qualifyOrderFields(
                 created_at: $model->getQualifiedCreatedAtColumn(),
                 updated_at: $model->getQualifiedUpdatedAtColumn(),

@@ -133,6 +133,10 @@ return [
             'value' => 'Support Duration',
             'label' => 'Support Duration',
         ],
+        'support_dates_assumed' => [
+            'value' => 'The dates are based on assumption.',
+            'label' => 'Support Dates Assumed',
+        ],
         'canada_tax_text' => [
             'value' => 'Please note that tax will apply in Canada depending on the state. Therefore it is really important that the information stated above is reflecting the actual installation details since tax may vary on location.',
             'label' => 'Canada Tax Information',

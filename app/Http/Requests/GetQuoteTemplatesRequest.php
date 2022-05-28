@@ -30,18 +30,28 @@ class GetQuoteTemplatesRequest extends FormRequest
     public function getTemplatesQuery(): Builder
     {
         if ($this->input('type') === 'contract') {
-            return $this->container[ContractTemplateQueries::class]->filterRescueContractServiceContractTemplates(
-                $this->input('company_id'),
-                $this->input('vendor_id'),
-                $this->input('country_id'),
-                QuoteTemplate::query()->whereKey($this->input('quote_template_id'))->value('name')
+            /** @var ContractTemplateQueries $queries */
+            $queries = $this->container[ContractTemplateQueries::class];
+
+            $query = $queries->filterRescueContractServiceContractTemplates(
+                companyId: $this->input('company_id'),
+                vendorId: $this->input('vendor_id'),
+                countryId: $this->input('country_id'),
+                quoteTemplateName: QuoteTemplate::query()->whereKey($this->input('quote_template_id'))->value('name')
             );
+
+            return $query->select($query->qualifyColumns(['id', 'name']));
         }
 
-        return $this->container[QuoteTemplateQueries::class]->filterRescueQuoteTemplatesQuery(
-            $this->input('company_id'),
-            $this->input('vendor_id'),
-            $this->input('country_id'),
+        /** @var QuoteTemplateQueries $queries */
+        $queries = $this->container[QuoteTemplateQueries::class];
+
+        $query = $queries->filterRescueQuoteTemplatesQuery(
+            companyId: $this->input('company_id'),
+            vendorId: $this->input('vendor_id'),
+            countryId: $this->input('country_id'),
         );
+
+        return $query->select($query->qualifyColumns(['id', 'name']));
     }
 }

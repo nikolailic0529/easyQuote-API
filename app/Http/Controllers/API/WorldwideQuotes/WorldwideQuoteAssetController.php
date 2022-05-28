@@ -6,6 +6,8 @@ use App\Contracts\Services\ProcessesWorldwideQuoteAssetState;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorldwideQuote\AssetsLookup;
+use App\Http\Requests\WorldwideQuote\BatchDeleteQuoteAsset;
+use App\Http\Requests\WorldwideQuote\BatchInitializeQuoteAsset;
 use App\Http\Requests\WorldwideQuote\BatchWarrantyLookup;
 use App\Http\Requests\WorldwideQuote\ImportBatchAssetFile;
 use App\Http\Requests\WorldwideQuote\InitializeQuoteAsset;
@@ -63,6 +65,35 @@ class WorldwideQuoteAssetController extends Controller
 
         return response()->json(
             $asset,
+            Response::HTTP_CREATED
+        );
+    }
+
+    /**
+     * Batch initialize quote assets.
+     *
+     * @param BatchInitializeQuoteAsset $request
+     * @param WorldwideQuoteVersionGuard $versionGuard
+     * @param WorldwideQuote $worldwideQuote
+     * @return JsonResponse
+     * @throws AuthorizationException
+     * @throws \Throwable
+     */
+    public function batchInitializeQuoteAsset(BatchInitializeQuoteAsset       $request,
+                                              WorldwideQuoteVersionGuard $versionGuard,
+                                              WorldwideQuote             $worldwideQuote): JsonResponse
+    {
+        $this->authorize('update', $worldwideQuote);
+
+        $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
+
+        $collection = $this->processor->batchInitializeQuoteAsset(
+            $version,
+            $request->getInitializeAssetCollection()
+        );
+
+        return response()->json(
+            $collection,
             Response::HTTP_CREATED
         );
     }
@@ -200,6 +231,34 @@ class WorldwideQuoteAssetController extends Controller
             $version,
             $asset
         );
+
+        return response()->noContent();
+    }
+
+    /**
+     * Batch delete assets from quote.
+     *
+     * @param BatchDeleteQuoteAsset $request
+     * @param WorldwideQuoteVersionGuard $versionGuard
+     * @param WorldwideQuote $worldwideQuote
+     * @return Response
+     * @throws AuthorizationException
+     * @throws \Throwable
+     */
+    public function batchDestroyQuoteAsset(BatchDeleteQuoteAsset      $request,
+                                           WorldwideQuoteVersionGuard $versionGuard,
+                                           WorldwideQuote             $worldwideQuote): Response
+    {
+        $this->authorize('update', $worldwideQuote);
+
+        $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
+
+        foreach ($request->getAssetModels() as $asset) {
+            $this->processor->deleteQuoteAsset(
+                $version,
+                $asset
+            );
+        }
 
         return response()->noContent();
     }

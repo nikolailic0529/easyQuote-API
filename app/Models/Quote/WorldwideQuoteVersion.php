@@ -85,7 +85,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Collection<WorldwideDistribution>|WorldwideDistribution[] $worldwideDistributions
  * @property QuoteTemplate|null $quoteTemplate
  * @property Currency $quoteCurrency
- * @property Currency|null $buyCurrency
+ * @property Currency $buyCurrency
  * @property Currency $outputCurrency
  * @property Company|null $company
  * @property Collection<WorldwideQuoteAsset>|WorldwideQuoteAsset[] $assets
@@ -105,6 +105,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read WorldwideQuoteNote|null $draftNote
  * @property-read WorldwideQuoteNote|null $submitNote
  * @property-read Collection<WorldwideQuoteAssetsGroup>|WorldwideQuoteAssetsGroup[] $assetsGroups
+ * @property-read \DateTimeInterface|null $created_at
  */
 class WorldwideQuoteVersion extends Model
 {
@@ -125,7 +126,8 @@ class WorldwideQuoteVersion extends Model
                     ->from('vendors')
                     ->whereColumn('vendors.id', 'worldwide_quote_assets.vendor_id')->limit(1)->toBase()
             ])
-                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
+                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn())
+                ->oldest('entity_order');
         });
     }
 

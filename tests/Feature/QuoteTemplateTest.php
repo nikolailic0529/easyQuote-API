@@ -222,12 +222,22 @@ class QuoteTemplateTest extends TestCase
     {
         $this->authenticateApi();
 
-        $templates = factory(QuoteTemplate::class, 10)->create();
+        $templates = factory(QuoteTemplate::class, 10)->create([
+            'business_division_id' => BD_WORLDWIDE,
+            'contract_type_id' => CT_CONTRACT,
+        ]);
+
+        $vendors = Vendor::query()->where('is_system', true)->get();
+
+        $templates->each(function (QuoteTemplate $template) use ($vendors) {
+            $template->vendors()->sync($vendors);
+        });
 
         $this->postJson('api/templates/filter-ww/contract', [
-            'company_id' => $templates->random()->company_id,
-            'vendors' => [$templates->random()->vendor_id],
+            'company_id' => $templates->random()->company->getKey(),
+            'vendors' => $vendors->modelKeys(),
         ])
+//            ->dump()
             ->assertOk();
     }
 
@@ -244,7 +254,9 @@ class QuoteTemplateTest extends TestCase
 
         $this->postJson('api/quotes/step/1', [
             'company_id' => Company::value('id')
-        ])->assertOk();
+        ])
+//            ->dump()
+            ->assertOk();
     }
 
     /**

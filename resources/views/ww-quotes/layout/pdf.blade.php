@@ -21,6 +21,10 @@
             padding-right: {{ $grid_gutter_width / 2 }}px;
             padding-left: {{ $grid_gutter_width / 2 }}px;
         }
+
+        html, body {
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>

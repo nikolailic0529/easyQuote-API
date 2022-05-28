@@ -294,7 +294,7 @@
               "type": "p",
               "class": null,
               "label": "Paragraph",
-              "value": "United Kingdom <br/>\n67, Albian Street, Leeds LS15AA <br/>\n+44 (01) 113 887 8650<br/>",
+              "value": "67, Albian Street, Leeds LS15AA<br/>\nUnited Kingdom <br/>\n(+44) 01 113 887 8650<br/>",
               "is_field": true,
               "is_image": false,
               "droppable": false,

@@ -60,6 +60,7 @@ final class TemplateForm
                 ['id' => 'company_name', 'label' => 'Internal Company Name'],
                 ['id' => 'service_levels', 'label' => 'Service Level (s)'],
                 ['id' => 'quotation_number', 'label' => 'RFQ Number'],
+                ['id' => 'sales_order_number', 'label' => 'Sales Order Number'],
                 ['id' => 'valid_until', 'label' => 'Quotation Closing Date'],
                 ['id' => 'support_start', 'label' => 'Support Start Date'],
                 ['id' => 'support_end', 'label' => 'Support End Date'],
@@ -96,6 +97,9 @@ final class TemplateForm
                 ['id' => 'end_user_contact_country', 'label' => 'End Customer Contact Country'],
                 ['id' => 'end_user_contact_name', 'label' => 'End Customer Contact Name'],
                 ['id' => 'end_user_contact_email', 'label' => 'End Customer Contact Email'],
+                ['id' => 'end_user_company_email', 'label' => 'End User Email'],
+                ['id' => 'end_user_hw_post_code', 'label' => 'End User Hardware Post Code'],
+                ['id' => 'end_user_inv_post_code', 'label' => 'End User Invoice Post Code'],
 
                 # Account Manager
                 ['id' => 'account_manager_name', 'label' => 'Account Manager Name'],
@@ -113,6 +117,8 @@ final class TemplateForm
                 ['id' => 'coverage_period', 'label' => 'Coverage Period'],
                 ['id' => 'coverage_period_from', 'label' => 'Coverage Period From'],
                 ['id' => 'coverage_period_to', 'label' => 'Coverage Period To'],
+                ['id' => 'support_start_assumed_char', 'label' => 'Support Start Assumed (*)'],
+                ['id' => 'support_end_assumed_char', 'label' => 'Support End Assumed (*)'],
                 // Quotation Service Level
                 ['id' => 'service_levels', 'label' => 'Service Level (s)'],
 

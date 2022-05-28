@@ -1341,13 +1341,17 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $version->buy_price = $opportunity->purchase_price;
 
-            $version->quoteCurrency()->associate(
-                $quoteCurrency
-            );
+            if (!$version->quoteCurrency->exists) {
+                $version->quoteCurrency()->associate(
+                    $quoteCurrency
+                );
+            }
 
-            $version->buyCurrency()->associate(
-                $buyCurrency
-            );
+            if (!$version->buyCurrency->exists) {
+                $version->buyCurrency()->associate(
+                    $buyCurrency
+                );
+            }
 
         }
 

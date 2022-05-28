@@ -118,15 +118,11 @@ class WorldwideQuoteDataMapper
 
     public function mapWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
     {
-        if ($worldwideQuote->contract_type_id === CT_CONTRACT) {
-            return $this->mapContractWorldwideQuoteSalesOrderData($worldwideQuote);
-        }
-
-        if ($worldwideQuote->contract_type_id === CT_PACK) {
-            return $this->mapPackWorldwideQuoteSalesOrderData($worldwideQuote);
-        }
-
-        throw new \RuntimeException('Unsupported Quote Contract Type to map into Sales Order Data.');
+        return match ($worldwideQuote->contract_type_id) {
+            CT_CONTRACT => $this->mapContractWorldwideQuoteSalesOrderData($worldwideQuote),
+            CT_PACK => $this->mapPackWorldwideQuoteSalesOrderData($worldwideQuote),
+            default => throw new \RuntimeException('Unsupported Quote Contract Type to map into Sales Order Data.'),
+        };
     }
 
     private function mapContractWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
@@ -270,7 +266,7 @@ class WorldwideQuoteDataMapper
 
         $packAssets = $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency);
 
-        $packAssetNotes = implode("\n", $this->resolveNotesForAssets($packAssets, $worldwideQuote->activeVersion->quoteTemplate)->all());
+        $packAssetNotes = implode("\n", $this->resolveNotesForAssets($worldwideQuote, $packAssets)->all());
 
         return new WorldwideQuotePreviewData([
             'template_data' => $this->getTemplateData($worldwideQuote),
@@ -552,21 +548,6 @@ class WorldwideQuoteDataMapper
 
             $serviceLevels = implode(', ', $customer->service_levels ?? []); // TODO: add the service levels.
 
-            $opportunityStartDate = transform($opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
-            $opportunityEndDate = transform($opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
-
-            $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
-                if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
-                    return implode('&nbsp;', [
-                        $this->formatter->format('date', $opportunityStartDate),
-                        'to',
-                        $this->formatter->format('date', $opportunityEndDate),
-                    ]);
-                }
-
-                return '';
-            });
-
             /** @var Address|null $quoteHardwareAddress */
             $quoteHardwareAddress = $distribution->addresses
                 ->sortByDesc('pivot.is_default')
@@ -587,7 +568,7 @@ class WorldwideQuoteDataMapper
                 ->sortByDesc('pivot.is_default')
                 ->first(fn(Contact $contact) => $contact->contact_type === ContactType::SOFTWARE);
 
-            $assetNotes = implode("\n", $this->resolveNotesForAssets($assetsData, $worldwideQuote->activeVersion->quoteTemplate)->all());
+            $assetNotes = implode("\n", $this->resolveNotesForAssets($worldwideQuote, $assetsData)->all());
 
             $contractDuration = self::formatOpportunityContractDuration($opportunity);
 
@@ -611,20 +592,20 @@ class WorldwideQuoteDataMapper
                 'payment_schedule_data' => $paymentScheduleData,
                 'has_payment_schedule_data' => !empty($paymentScheduleData),
 
-                'equipment_address' => self::formatMachineAddressToString($quoteHardwareAddress),
+                'equipment_address' => self::formatAddressToString($quoteHardwareAddress),
                 'hardware_phone' => $quoteHardwareContact->phone ?? ND_02,
                 'hardware_contact' => transform($quoteHardwareContact, function (Contact $contact) {
                         return implode(' ', [$contact->first_name, $contact->last_name]);
                     }) ?? ND_02,
 
-                'software_address' => self::formatMachineAddressToString($quoteSoftwareAddress),
+                'software_address' => self::formatAddressToString($quoteSoftwareAddress),
                 'software_phone' => $quoteSoftwareContact->phone ?? ND_02,
                 'software_contact' => transform($quoteSoftwareContact, function (Contact $contact) {
                         return implode(' ', [$contact->first_name, $contact->last_name]);
                     }) ?? ND_02,
 
                 'service_levels' => $serviceLevels,
-                'coverage_period' => $coveragePeriod,
+                'coverage_period' => $this->formatCoveragePeriod($opportunity),
                 'coverage_period_from' => $this->formatter->format('date', $opportunity->opportunity_start_date),
                 'coverage_period_to' => $this->formatter->format('date', $opportunity->opportunity_end_date),
                 'contract_duration' => $contractDuration,
@@ -669,6 +650,22 @@ class WorldwideQuoteDataMapper
         }
 
         return CarbonInterval::months($opportunity->contract_duration_months)->cascade()->forHumans();
+    }
+
+    public function formatCoveragePeriod(Opportunity $opportunity): string
+    {
+        if (is_null($opportunity->opportunity_start_date) || is_null($opportunity->opportunity_end_date)) {
+            return '';
+        }
+
+        $startDateAssumedChar = $opportunity->is_opportunity_start_date_assumed ? '*' : '';
+        $endDateAssumedChar = $opportunity->is_opportunity_end_date_assumed ? '*' : '';
+
+        return implode('&nbsp;', [
+            $this->formatter->format('date', $opportunity->opportunity_start_date).$startDateAssumedChar,
+            'to',
+            $this->formatter->format('date', $opportunity->opportunity_end_date).$endDateAssumedChar,
+        ]);
     }
 
     /**
@@ -737,7 +734,7 @@ class WorldwideQuoteDataMapper
                 $builder->where('is_selected', true);
             }]);
 
-            $this->sortWorldwideDistributionRows($distribution);
+            $this->sortWorldwideDistributionRows($distribution, true);
 
             return tap($this->mappedRowsToArrayOfAssetData(
                 rows: $distribution->mappedRows,
@@ -751,14 +748,19 @@ class WorldwideQuoteDataMapper
                 $defaultInvoiceAddressOfEndUser = $distribution->worldwideQuote->worldwideQuote->opportunity->endUser?->addresses()->wherePivot('is_default', true)->first();
 
                 $vendorCode = $distribution->vendors->first()?->short_code ?? '';
+                $countryOfDistributorQuote = $distribution->country;
 
-                self::applyToAssetCollection(static function (AssetData $asset) use ($vendorCode, $contractDuration, $defaultInvoiceAddressOfEndUser) {
+                self::applyToAssetCollection(static function (AssetData $asset) use ($vendorCode, $contractDuration, $defaultInvoiceAddressOfEndUser, $countryOfDistributorQuote) {
                     $asset->contract_duration = $contractDuration;
 
                     $asset->end_user_invoice_country_code = $defaultInvoiceAddressOfEndUser?->country?->iso_3166_2 ?? '';
                     $asset->end_user_invoice_state = $defaultInvoiceAddressOfEndUser?->state ?? '';
 
                     $asset->vendor_short_code = $vendorCode;
+
+                    if (blank($asset->country_code)) {
+                        $asset->country_code = $countryOfDistributorQuote?->iso_3166_2 ?? '';
+                    }
                 }, ...$assetData);
             });
         }
@@ -767,7 +769,7 @@ class WorldwideQuoteDataMapper
             $builder->where('is_selected', true);
         }, 'rowsGroups.rows']);
 
-        $this->sortWorldwideDistributionRowsGroups($distribution);
+        $this->sortWorldwideDistributionRowsGroups($distribution, true);
 
         return $distribution->rowsGroups->map(function (DistributionRowsGroup $rowsGroup) use ($priceValueCoeff, $outputCurrency, $distribution) {
             $assets = tap($this->mappedRowsToArrayOfAssetData(
@@ -810,25 +812,30 @@ class WorldwideQuoteDataMapper
 
     /**
      * @param WorldwideDistribution $distribution
+     * @param bool $forPreview
      */
-    public function sortWorldwideDistributionRows(WorldwideDistribution $distribution): void
+    public function sortWorldwideDistributionRows(WorldwideDistribution $distribution, bool $forPreview = false): void
     {
-        if (is_null($distribution->sort_rows_column) || $distribution->sort_rows_column === '') {
-            return;
+        $results = $distribution->mappedRows;
+
+        if (filled($distribution->sort_rows_column)) {
+            $results = $results->sortBy(
+                callback: function (MappedRow $row) use ($distribution) {
+                    if ($distribution->sort_rows_column === 'machine_address') {
+                        return self::formatAddressToString($row->machineAddress);
+                    }
+
+                    return $row->{$distribution->sort_rows_column};
+                },
+                options: SORT_NATURAL,
+                descending: $distribution->sort_rows_direction === 'desc'
+            )
+                ->values();
         }
 
-        $results = $distribution->mappedRows->sortBy(
-            callback: function (MappedRow $row) use ($distribution) {
-                if ($distribution->sort_rows_column === 'machine_address') {
-                    return self::formatMachineAddressToString($row->machineAddress);
-                }
-
-                return $row->{$distribution->sort_rows_column};
-            },
-            options: SORT_NATURAL,
-            descending: $distribution->sort_rows_direction === 'desc'
-        )
-            ->values();
+        if ($forPreview) {
+            $results = Collection::make($results->groupBy('serial_no')->collapse()->all());
+        }
 
         $distribution->setRelation('mappedRows', $results);
     }
@@ -866,7 +873,7 @@ class WorldwideQuoteDataMapper
                 'price_float' => (float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
                 'country_code' => $row->machineAddress?->country?->iso_3166_2 ?? '',
                 'state' => $row->machineAddress?->state ?? '',
-                'machine_address_string' => self::formatMachineAddressToString($row->machineAddress),
+                'machine_address_string' => self::formatAddressToString($row->machineAddress),
                 'pricing_document' => $row->pricing_document ?? '',
                 'system_handle' => $row->system_handle ?? '',
                 'searchable' => $row->searchable ?? '',
@@ -877,18 +884,28 @@ class WorldwideQuoteDataMapper
 
     /**
      * @param WorldwideDistribution $distribution
+     * @param bool $forPreview
      */
-    public function sortWorldwideDistributionRowsGroups(WorldwideDistribution $distribution): void
+    public function sortWorldwideDistributionRowsGroups(WorldwideDistribution $distribution, bool $forPreview = false): void
     {
-        if (is_null($distribution->sort_rows_groups_column) || $distribution->sort_rows_groups_column === '') {
-            return;
-        }
+        $sortColumn = (string)$distribution->sort_rows_groups_column;
 
-        $results = $distribution->rowsGroups->sortBy(
-            $distribution->sort_rows_groups_column,
-            SORT_NATURAL,
-            $distribution->sort_rows_groups_direction === 'desc'
-        )
+        $results = $distribution->rowsGroups
+            ->when(filled($sortColumn), static function (Collection $groupsOfRows) use ($distribution): Collection {
+                return $groupsOfRows->sortBy(
+                    $distribution->sort_rows_groups_column,
+                    SORT_NATURAL,
+                    $distribution->sort_rows_groups_direction === 'desc'
+                );
+            })
+            ->when($forPreview, static function (Collection $groupsOfRows): Collection {
+                foreach ($groupsOfRows as $group) {
+                    /** @var DistributionRowsGroup $group */
+                    $group->setRelation('rows', Collection::make($group->rows->groupBy('serial_no')->collapse()->values()->all()));
+                }
+
+                return $groupsOfRows;
+            })
             ->values();
 
         $distribution->setRelation('rowsGroups', $results);
@@ -973,13 +990,13 @@ class WorldwideQuoteDataMapper
         }, $value);
     }
 
-    public static function formatMachineAddressToString(?Address $address): string
+    public static function formatAddressToString(?Address $address): string
     {
         if (is_null($address)) {
             return ND_02;
         }
 
-        return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
+        return implode(', ', array_filter([$address->address_1, $address->city, $address->country?->iso_3166_2, $address->post_code]));
     }
 
     public function getPackQuoteAssetsData(WorldwideQuote $quote, Currency $outputCurrency): array
@@ -998,7 +1015,7 @@ class WorldwideQuoteDataMapper
                 $builder->where('is_selected', true);
             }]);
 
-            $this->sortWorldwidePackQuoteAssets($quote);
+            $this->sortWorldwidePackQuoteAssets($quote, true);
 
             foreach ($activeVersionOfQuote->assets as $asset) {
                 $asset->setAttribute('date_to', $quote->opportunity->opportunity_end_date);
@@ -1027,7 +1044,7 @@ class WorldwideQuoteDataMapper
             $builder->where('is_selected', true);
         }, 'assetsGroups.assets', 'assetsGroups.assets.vendor:id,short_code']);
 
-        $this->sortGroupsOfPackAssets($quote);
+        $this->sortGroupsOfPackAssets($quote, true);
 
         return $quote->activeVersion->assetsGroups->map(function (WorldwideQuoteAssetsGroup $assetsGroup) use ($quote, $outputCurrency, $quotePriceData) {
 
@@ -1083,30 +1100,35 @@ class WorldwideQuoteDataMapper
         });
     }
 
-    public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote): void
+    public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote, bool $forPreview = false): void
     {
         $activeVersion = $quote->activeVersion;
 
         $sortRowsColumn = $activeVersion->sort_rows_column;
 
-        if (!is_string($sortRowsColumn) || $sortRowsColumn === '') {
-            return;
+        $results = $activeVersion->assets;
+
+        if (filled($sortRowsColumn)) {
+            $results = $activeVersion->assets
+                ->sortBy(
+                    function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
+                        if ($sortRowsColumn === 'machine_address') {
+                            return self::formatAddressToString($asset->machineAddress);
+                        }
+
+                        return $asset->{$sortRowsColumn};
+                    },
+                    SORT_NATURAL,
+                    $activeVersion->sort_rows_direction === 'desc'
+                )
+                ->values();
         }
 
-        $results = $activeVersion->assets->sortBy(
-            function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
-                if ($sortRowsColumn === 'machine_address') {
-                    return self::formatMachineAddressToString($asset->machineAddress);
-                }
+        if ($forPreview) {
+            $results = Collection::make($results->groupBy('serial_no')->collapse()->all());
+        }
 
-                return $asset->{$sortRowsColumn};
-            },
-            SORT_NATURAL,
-            $activeVersion->sort_rows_direction === 'desc'
-        )
-            ->values();
-
-        $quote->setRelation('assets', $results);
+        $activeVersion->setRelation('assets', $results);
     }
 
     public function markExclusivityOfWorldwidePackQuoteAssetsForCustomer(WorldwideQuote $quote, Collection|WorldwideQuoteAsset $assets): void
@@ -1122,11 +1144,11 @@ class WorldwideQuoteDataMapper
         }
 
         $hashGenericAssetKey = function (Asset $asset) {
-            return sprintf("%s.%s", $asset->serial_number, $asset->product_number);
+            return sprintf("%s.%s.%s", $asset->serial_number, $asset->product_number, $asset->service_description);
         };
 
         $hashAssetKey = function (WorldwideQuoteAsset $asset) {
-            return sprintf("%s.%s", $asset->serial_no, $asset->sku);
+            return sprintf("%s.%s.%s", $asset->serial_no, $asset->sku, $asset->service_level_description);
         };
 
         $sameGenericAssetDict = $this->assetQueries->sameGenericAssetsQuery($assets)
@@ -1167,11 +1189,11 @@ class WorldwideQuoteDataMapper
         }
 
         $hashMappedRowKey = function (MappedRow $mappedRow) {
-            return sprintf("%s.%s", $mappedRow->serial_no, $mappedRow->product_no);
+            return sprintf("%s.%s.%s", $mappedRow->serial_no, $mappedRow->product_no, $mappedRow->service_level_description);
         };
 
         $hashGenericAssetKey = function (Asset $asset) {
-            return sprintf("%s.%s", $asset->serial_number, $asset->product_number);
+            return sprintf("%s.%s.%s", $asset->serial_number, $asset->product_number, $asset->service_description);
         };
 
         $sameGenericAssetDict = $this->mappedRowQueries->sameGenericAssetsQuery($rows)
@@ -1268,7 +1290,7 @@ class WorldwideQuoteDataMapper
                     'price_float' => $assetFloatPrice,
                     'country_code' => $asset->machineAddress?->country?->iso_3166_2 ?? '',
                     'state' => $asset->machineAddress?->state ?? '',
-                    'machine_address_string' => self::formatMachineAddressToString($asset->machineAddress),
+                    'machine_address_string' => self::formatAddressToString($asset->machineAddress),
                     'pricing_document' => '',
                     'system_handle' => '',
                     'searchable' => '',
@@ -1327,31 +1349,55 @@ class WorldwideQuoteDataMapper
         return null;
     }
 
-    private function resolveNotesForAssets(array $assets, QuoteTemplate $quoteTemplate): MessageBag
+    private function resolveNotesForAssets(WorldwideQuote $quote, array $assets): MessageBag
     {
+        $quoteTemplate = $quote->activeVersion->quoteTemplate;
+
         $notes = (new MessageBag())->setFormat(':key :message');
 
         $assetFlags = (new AssetFlagResolver(...$assets))();
 
-        if ($assetFlags & AssetFlagResolver::GENERATED_SERIAL) {
-            $autoGeneratedSerialNote = self::resolveTemplateDataHeader('auto_generated_serial_number_text', $quoteTemplate) ?? "Serial numbers are user's generated";
+        $resolveMessageKey = static function (\Countable $bag): string {
+            return str_repeat('*', $bag->count() + 1);
+        };
 
-            $notes->add('**', $autoGeneratedSerialNote);
+        $supportDatesAssumed = $quote->opportunity->is_opportunity_start_date_assumed || $quote->opportunity->is_opportunity_end_date_assumed;
+
+        if ($supportDatesAssumed) {
+            $datesAssumedNote = self::resolveTemplateDataHeader('support_dates_assumed', $quoteTemplate) ?? '';
+
+            $notes->add($resolveMessageKey($notes), $datesAssumedNote);
         }
 
-        if ($assetFlags & AssetFlagResolver::CANADA_LOCATION) {
-            $autoGeneratedSerialNote = self::resolveTemplateDataHeader('canada_tax_text', $quoteTemplate) ?? '';
+        if ($assetFlags & AssetFlagResolver::GEN_SN) {
+            $autoGeneratedSerialNote = self::resolveTemplateDataHeader('auto_generated_serial_number_text', $quoteTemplate) ?? '';
 
-            $notes->add('***', $autoGeneratedSerialNote);
+            $notes->add($resolveMessageKey($notes), $autoGeneratedSerialNote);
         }
 
-        if ($assetFlags & AssetFlagResolver::SPECIFIC_STATES) {
-            $autoGeneratedSerialNote = self::resolveTemplateDataHeader('ca_ct_hi_md_ma_nv_pr_ri_tn_states_tax_text', $quoteTemplate) ?? '';
+        if ($assetFlags & AssetFlagResolver::CA_LOC) {
+            $canadaTaxNote = self::resolveTemplateDataHeader('canada_tax_text', $quoteTemplate) ?? '';
 
-            $notes->add('****', $autoGeneratedSerialNote);
+            $notes->add($resolveMessageKey($notes), $canadaTaxNote);
+        }
+
+        if ($assetFlags & AssetFlagResolver::US_LOC) {
+            $usStatesNote = self::resolveTemplateDataHeader('ca_ct_hi_md_ma_nv_pr_ri_tn_states_tax_text', $quoteTemplate) ?? '';
+
+            $notes->add($resolveMessageKey($notes), $usStatesNote);
         }
 
         return $notes;
+    }
+
+    private function isTaxAppliedToQuote(WorldwideQuote $quote): bool
+    {
+        return match ($quote->contract_type_id) {
+            CT_PACK => $quote->activeVersion->tax_value > 0,
+            CT_CONTRACT => $quote->activeVersion->worldwideDistributions->contains(static function (WorldwideDistribution $distributorQuote) {
+                return $distributorQuote->tax_value > 0;
+            }),
+        };
     }
 
     public function getQuoteSummary(WorldwideQuote $worldwideQuote, Currency $outputCurrency): QuoteSummary
@@ -1417,14 +1463,6 @@ class WorldwideQuoteDataMapper
         $endUserHardwareContact = $defaultEndUserContacts
             ->first(fn(Contact $contact) => $contact->contact_type === ContactType::HARDWARE);
 
-        $addressStringFormatter = function (?Address $address): string {
-            if (is_null($address)) {
-                return ND_02;
-            }
-
-            return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
-        };
-
         $contactStringFormatter = function (?Contact $contact): string {
             if (is_null($contact)) {
                 return ND_02;
@@ -1433,29 +1471,14 @@ class WorldwideQuoteDataMapper
             return implode(' ', [$contact->first_name, $contact->last_name]);
         };
 
-        $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
-            if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
-                return implode('&nbsp;', [
-                    $this->formatter->format('date', $opportunityStartDate),
-                    'to',
-                    $this->formatter->format('date', $opportunityEndDate),
-                ]);
-            }
-
-            return '';
-        });
-
         $footerNotes = [];
-
-        if ($opportunity->is_opportunity_start_date_assumed || $opportunity->is_opportunity_end_date_assumed) {
-            $footerNotes[] = "* The dates are based on assumption";
-        }
 
         return new QuoteSummary([
             'company_name' => $activeVersion->company->name,
             'customer_name' => $opportunity->primaryAccount->name,
             'quotation_number' => $worldwideQuote->quote_number,
             'export_file_name' => $worldwideQuote->quote_number,
+            'sales_order_number' => (string)$worldwideQuote->salesOrder?->order_number,
 
             'service_levels' => '',
             'invoicing_terms' => '',
@@ -1482,9 +1505,12 @@ class WorldwideQuoteDataMapper
             'contact_country' => ($quoteInvoiceAddress ?? $quoteHardwareAddress)?->country?->iso_3166_2 ?? ND_02,
 
             'end_user_name' => $opportunity->endUser?->name ?? ND_02,
-            'end_user_contact_country' => $activeVersion->are_end_user_contacts_available ? collect($quoteDataAggregation)->map->country_code->unique()->implode(', ') : ND_02,
+            'end_user_contact_country' => collect($quoteDataAggregation)->map->country_code->unique()->implode(', '),
             'end_user_contact_name' => $activeVersion->are_end_user_contacts_available ? $contactStringFormatter($endUserHardwareContact) : ND_02,
             'end_user_contact_email' => $activeVersion->are_end_user_contacts_available ? ($endUserHardwareContact?->email ?? ND_02) : ND_02,
+            'end_user_company_email' => $opportunity->endUser?->email ?? ND_02,
+            'end_user_hw_post_code' => $endUserHardwareAddress?->post_code ?? ND_02,
+            'end_user_inv_post_code' => $endUserInvoiceAddress?->post_code ?? ND_02,
 
             'account_manager_name' => $opportunity->accountManager?->user_fullname ?? ND_02,
 
@@ -1495,13 +1521,13 @@ class WorldwideQuoteDataMapper
             'total_value_including_tax' => $this->formatter->format('number', $quotePriceData->final_total_price_value, prepend: $outputCurrency->symbol),
             'grand_total_value' => $this->formatter->format('number', $quotePriceData->final_total_price_value, prepend: $outputCurrency->symbol),
 
-            'equipment_address' => $addressStringFormatter($quoteHardwareAddress),
+            'equipment_address' => self::formatAddressToString($quoteHardwareAddress),
             'hardware_contact' => $contactStringFormatter($quoteHardwareContact),
             'hardware_phone' => $quoteHardwareContact?->phone ?? ND_02,
-            'software_address' => $addressStringFormatter($quoteSoftwareAddress),
+            'software_address' => self::formatAddressToString($quoteSoftwareAddress),
             'software_contact' => $contactStringFormatter($quoteSoftwareContact),
             'software_phone' => $quoteSoftwareContact?->phone ?? ND_02,
-            'coverage_period' => $coveragePeriod,
+            'coverage_period' => $this->formatCoveragePeriod($opportunity),
             'coverage_period_from' => $this->formatter->format('date', $opportunityStartDate),
             'coverage_period_to' => $this->formatter->format('date', $opportunityEndDate),
             'additional_details' => $activeVersion->additional_details ?? '',
@@ -1662,7 +1688,7 @@ class WorldwideQuoteDataMapper
 
         $packAssets = $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency);
 
-        $packAssetNotes = implode("\n", $this->resolveNotesForAssets($packAssets, $worldwideQuote->activeVersion->quoteTemplate)->all());
+        $packAssetNotes = implode("\n", $this->resolveNotesForAssets($worldwideQuote, $packAssets)->all());
 
         return new WorldwideQuotePreviewData([
             'template_data' => $this->getTemplateData($worldwideQuote, true),
@@ -1676,27 +1702,27 @@ class WorldwideQuoteDataMapper
         ]);
     }
 
-    public function sortGroupsOfPackAssets(WorldwideQuote $quote): void
+    public function sortGroupsOfPackAssets(WorldwideQuote $quote, bool $forPreview = false): void
     {
         $sortColumn = (string)$quote->activeVersion->sort_assets_groups_column;
 
-        if ($sortColumn === '') {
-            return;
-        }
-
-        /** @var string $sortColumn */
-        $sortColumn = with($sortColumn, function (string $sortColumn): string {
-
-            if ($sortColumn === 'assets_sum') {
-                return 'assets_sum_price';
-            }
-
-            return $sortColumn;
-
-        });
+        $sortColumn = match ($sortColumn) {
+            'assets_sum' => 'assets_sum_price',
+            default => $sortColumn,
+        };
 
         $results = $quote->activeVersion->assetsGroups
-            ->sortBy($sortColumn, SORT_NATURAL, $quote->activeVersion->sort_assets_groups_direction === 'desc')
+            ->when(filled($sortColumn), static function (Collection $groupsOfRows) use ($quote, $sortColumn): Collection {
+                return $groupsOfRows->sortBy($sortColumn, SORT_NATURAL, $quote->activeVersion->sort_assets_groups_direction === 'desc');
+            })
+            ->when($forPreview, static function (Collection $groupsOfRows): Collection {
+                foreach ($groupsOfRows as $group) {
+                    /** @var WorldwideQuoteAssetsGroup $group */
+                    $group->setRelation('assets', Collection::make($group->assets->groupBy('serial_no')->collapse()->values()->all()));
+                }
+
+                return $groupsOfRows;
+            })
             ->values();
 
         $quote->activeVersion->setRelation('assetsGroups', $results);

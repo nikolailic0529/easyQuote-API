@@ -12,7 +12,6 @@ use App\DTO\Company\UpdateCompanyData;
 use App\Events\Company\CompanyCreated;
 use App\Events\Company\CompanyDeleted;
 use App\Events\Company\CompanyUpdated;
-use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -170,40 +169,64 @@ class CompanyEntityService implements CauserAware
 
     public function partiallyUpdateCompany(Company $company, PartialUpdateCompanyData $companyData): Company
     {
-        return $this->updateCompany($company, new UpdateCompanyData([
-            'name' => $companyData->name,
-            'vat' => $company->vat,
-            'vat_type' => $company->vat_type,
-            'logo' => $companyData->logo,
-            'delete_logo' => $companyData->delete_logo,
-            'email' => $companyData->email,
-            'phone' => $companyData->phone,
-            'website' => $companyData->website,
-            'addresses' => $companyData->addresses ?? $company->addresses->map(function (Address $address) {
-                    return new AttachCompanyAddressData([
-                        'id' => $address->getKey(),
-                        'is_default' => (bool)$address->pivot?->is_default,
-                    ]);
-                })
-                    ->all(),
-            'contacts' => $companyData->contacts ?? $company->contacts->map(function (Contact $contact) {
-                    return new AttachCompanyContactData([
-                        'id' => $contact->getKey(),
-                        'is_default' => (bool)$contact->pivot?->is_default,
-                    ]);
-                })
-                    ->all(),
+        return tap($company, function (Company $company) use ($companyData) {
+            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+                $oldCompany->setRawAttributes($company->getRawOriginal());
+                $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            });
 
-            // Persisting of the existing attributes
-            'type' => $company->type,
-            'source' => $company->source,
-            'short_code' => $company->short_code,
-            'category' => $company->category,
-            'vendors' => $company->vendors()->get()->modelKeys(),
-            'default_vendor_id' => $company->default_vendor_id,
-            'default_template_id' => $company->default_template_id,
-            'default_country_id' => $company->default_country_id,
-        ]));
+            $company->name = $companyData->name;
+            $company->email = $companyData->email;
+            $company->phone = $companyData->phone;
+            $company->website = $companyData->website;
+
+            $addressesData = with($companyData->addresses, static function (?array $addresses): ?array {
+
+                if (is_null($addresses)) {
+                    return null;
+                }
+
+                return collect($addresses)
+                    ->mapWithKeys(static fn(AttachCompanyAddressData $data) => [$data->id => ['is_default' => $data->is_default]])
+                    ->all();
+
+            });
+
+            $contactsData = with($companyData->contacts, static function (?array $contacts): ?array {
+
+                if (is_null($contacts)) {
+                    return null;
+                }
+
+                return collect($contacts)
+                    ->mapWithKeys(static fn(AttachCompanyContactData $data) => [$data->id => ['is_default' => $data->is_default]])
+                    ->all();
+
+            });
+
+
+            $this->connection->transaction(function () use ($companyData, $company, $addressesData, $contactsData) {
+                $company->save();
+
+                if (!is_null($addressesData)) {
+                    $company->addresses()->sync($addressesData);
+                }
+
+                if (!is_null($contactsData)) {
+                    $company->contacts()->sync($contactsData);
+                }
+
+                ThumbHelper::createLogoThumbnails($company, $companyData->logo);
+
+                if ($companyData->delete_logo) {
+                    $company->image()->flushQueryCache()->delete();
+                }
+            });
+
+            $this->eventDispatcher->dispatch(
+                new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
+            );
+        });
     }
 
     public function markCompanyAsActive(Company $company): void

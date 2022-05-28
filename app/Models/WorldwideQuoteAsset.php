@@ -47,6 +47,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property bool|null $is_selected
  * @property bool|null $is_warranty_checked
  * @property bool|null $is_serial_number_generated
+ * @property int|null $entity_order
  *
  * @property BaseWorldwideQuote|null $worldwideQuote
  * @property Vendor|null $vendor

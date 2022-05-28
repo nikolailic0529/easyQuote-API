@@ -70,6 +70,7 @@ class SalesOrder extends Model implements SearchableEntity
         return [
             'company_name' => $this->worldwideQuote->activeVersion->company?->name,
             'customer_name' => $this->worldwideQuote->opportunity?->primaryAccount?->name,
+            'opportunity_name' => $this->worldwideQuote->opportunity?->project_name,
             'order_number' => $this->order_number,
             'contract_number' => $this->contract_number,
             'order_type' => $this->worldwideQuote->contractType->type_short_name,

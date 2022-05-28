@@ -38,8 +38,7 @@ class PartialUpdateCompany extends FormRequest
                 'string',
                 'max:191',
                 'min:2',
-                Rule::unique(Company::class)
-                    ->where('user_id', $this->company?->user_id)
+                Rule::unique(Company::class, 'name')
                     ->withoutTrashed()
                     ->ignore($this->company),
             ],

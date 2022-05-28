@@ -21,6 +21,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Spatie\PdfToText\Pdf as PdfToText;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use function with;
 
@@ -30,7 +31,8 @@ class WorldwideQuoteExporter
     public function __construct(protected PdfWrapper         $pdfWrapper,
                                 protected ViewFactory        $viewFactory,
                                 protected ValidatorInterface $validator,
-                                protected Dispatcher         $eventDispatcher)
+                                protected Dispatcher         $eventDispatcher,
+                                protected PdfToText          $pdfToText)
     {
     }
 
@@ -63,6 +65,7 @@ class WorldwideQuoteExporter
                     view: 'ww-quotes.pdf-page',
                     data: ['elements' => $locatedElements->bodyElements]
                 )
+                ->setPaper('letter', 'Portrait')
                 ->setOption('margin-bottom', '15')
                 ->setOption('footer-html', $this->viewFactory->make('ww-quotes.pdf-footer', ['elements' => $locatedElements->footerElements]))
                 ->save($pagePath, true);
@@ -71,7 +74,9 @@ class WorldwideQuoteExporter
         $merger = new Merger();
 
         foreach ($pagePaths as $path) {
-            $merger->addFile($path);
+            if (false === $this->isPdfBlank($path)) {
+                $merger->addFile($path);
+            }
         }
 
         $content = $merger->merge();
@@ -80,6 +85,11 @@ class WorldwideQuoteExporter
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="'."$rfqNumber.pdf".'"',
         ]);
+    }
+
+    private function isPdfBlank(string $filepath): bool
+    {
+        return blank($this->pdfToText->setPdf($filepath)->text());
     }
 
     private function iterateTemplateDataPages(TemplateData $templateData): \Generator

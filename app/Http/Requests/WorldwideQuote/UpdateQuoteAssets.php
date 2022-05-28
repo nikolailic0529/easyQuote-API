@@ -26,11 +26,28 @@ class UpdateQuoteAssets extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'assets' => [
-                'bail', 'required', 'array',
+                'bail', 'required', 'array', static function (string $attr, mixed $value, \Closure $fail): void {
+                    $duplicates = collect($value)->duplicates(static function (array $asset): string {
+                        return mb_strtolower(implode('::', [
+                            $asset['serial_no'] ?? '',
+                            $asset['sku'] ?? '',
+                            $asset['service_level_description'] ?? '',
+                        ]));
+                    });
+
+
+                    foreach ($duplicates as $key => $str) {
+
+                        $fail(
+                            sprintf("The combination of serial, sku, service level has a duplicate value (`%s`, `%s`, `%s`).",
+                                $value[$key]['serial_no'] ?? '', $value[$key]['sku'] ?? '', $value[$key]['service_level_description'] ?? '')
+                        );
+                    }
+                },
             ],
             'assets.*.id' => [
                 'bail', 'uuid',
@@ -53,7 +70,7 @@ class UpdateQuoteAssets extends FormRequest
                 'bail', 'nullable', 'string', 'size:2',
             ],
             'assets.*.serial_no' => [
-                'bail', 'nullable', 'string', 'max:191', 'distinct:ignore_case',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'assets.*.sku' => [
                 'bail', 'nullable', 'string', 'max:191',
@@ -92,7 +109,7 @@ class UpdateQuoteAssets extends FormRequest
                 'bail', 'nullable', 'boolean',
             ],
             'assets.*.is_serial_number_generated' => [
-              'bail', 'nullable', 'boolean'
+                'bail', 'nullable', 'boolean',
             ],
             'stage' => [
                 'bail', 'required', Rule::in(PackQuoteStage::getLabels()),

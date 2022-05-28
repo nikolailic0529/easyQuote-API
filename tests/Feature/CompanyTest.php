@@ -256,6 +256,27 @@ class CompanyTest extends TestCase
     }
 
     /**
+     * Test an ability to create a new company with non-unique name.
+     */
+    public function testCanNotCreateCompanyWithNonUniqueName(): void
+    {
+        $existingCompany = factory(Company::class)->create();
+
+        $attributes = factory(Company::class)->raw([
+            'name' => $existingCompany->name,
+        ]);
+        $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
+        $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
+        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
+
+
+        $this->postJson('api/companies', $attributes)
+//            ->dump()
+            ->assertUnprocessable()
+            ->assertInvalid(['name'], responseKey: 'Error.original');
+    }
+
+    /**
      * Test an ability to create a new company without vat attributes.
      *
      * @return void

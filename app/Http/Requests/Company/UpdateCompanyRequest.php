@@ -39,9 +39,8 @@ class UpdateCompanyRequest extends FormRequest
                 'string',
                 'max:191',
                 'min:2',
-                Rule::unique(Company::class)
-                    ->where('user_id', optional($this->company)->user_id)
-                    ->whereNull('deleted_at')
+                Rule::unique(Company::class, 'name')
+                    ->withoutTrashed()
                     ->ignore($this->company),
             ],
             'vat' => [

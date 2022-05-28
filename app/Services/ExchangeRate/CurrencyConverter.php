@@ -13,10 +13,13 @@ class CurrencyConverter
         $this->exchangeRateService = $exchangeRateService;
     }
 
-    public function convertCurrencies(string $fromCurrencyCode, string $toCurrencyCode, float $amount, ?\DateTimeInterface $dateTime = null): float
+    public function convertCurrencies(string $fromCode,
+                                      string $toCode,
+                                      float $amount,
+                                      ?\DateTimeInterface $dateTime = null): float
     {
-        $baseRateOfFromCurrencyCode = $this->exchangeRateService->getBaseRateByCurrencyCode($fromCurrencyCode, $dateTime);
-        $baseRateOfToCurrencyCode = $this->exchangeRateService->getBaseRateByCurrencyCode($toCurrencyCode, $dateTime);
+        $baseRateOfFromCurrencyCode = $this->exchangeRateService->getBaseRateByCurrencyCode($fromCode, $dateTime);
+        $baseRateOfToCurrencyCode = $this->exchangeRateService->getBaseRateByCurrencyCode($toCode, $dateTime);
 
         return ($amount * $baseRateOfFromCurrencyCode) / $baseRateOfToCurrencyCode;
     }

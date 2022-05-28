@@ -36,6 +36,7 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Webpatser\Uuid\Uuid;
 
@@ -1058,7 +1059,7 @@ class WorldwideContractQuoteTest extends TestCase
         $wwQuote->activeVersion->update(['quote_template_id' => $template->getKey(), 'quote_currency_id' => Currency::query()->where('code', 'USD')->value('id')]);
 
         $country = Country::query()->first();
-        $vendor = Vendor::query()->first();
+        $vendor = Vendor::query()->where('is_system', true)->first();
 
         $snDiscount = factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
         $promotionalDiscount = factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
@@ -1268,6 +1269,341 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertSame('$ 1,086.96', $response->json('quote_summary.final_price'));
         $this->assertSame('$ 24.15', $response->json('quote_summary.applicable_discounts'));
         $this->assertSame('$ 1,106.96', $response->json('quote_summary.total_value_including_tax'));
+    }
+
+    /**
+     * Test an ability to view grouped assets with the same serial no in preview data.
+     */
+    public function testCanViewGroupedAssetsWithSameSerialInPreviewData(): void
+    {
+        $this->authenticateApi();
+
+        $template = factory(QuoteTemplate::class)->create([
+            'form_data' => [
+                'first_page' => [
+                    [
+                        "id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                        "name" => "Two Column",
+                        "child" => [
+                            [
+                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                "class" => "col-lg-4",
+                                "controls" => [
+                                    [
+                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
+                                        "src" => null,
+                                        "name" => "l-1",
+                                        "show" => true,
+                                        "type" => "label",
+                                        "class" => "bold",
+                                        "label" => "Label",
+                                        "value" => "List Price:",
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => false,
+                                        "is_required" => false,
+                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                    ],
+                                ],
+                                "position" => 1,
+                            ],
+                            [
+                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                "class" => "col-lg-8",
+                                "controls" => [
+                                    [
+                                        "id" => "list_price",
+                                        "name" => "list_price",
+                                        "type" => "tag",
+                                        "class" => "s4-form-control text-nowrap",
+                                        "label" => "Total List Price",
+                                        "value" => null,
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => true,
+                                        "is_required" => false,
+                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                    ],
+                                ],
+                                "position" => 2,
+                            ],
+                        ],
+                        "class" => "two-column field-dragger",
+                        "order" => 3,
+                        "controls" => [],
+                        "is_field" => false,
+                        "droppable" => false,
+                        "decoration" => "1+3",
+                    ],
+                    [
+                        "id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                        "name" => "Two Column",
+                        "child" => [
+                            [
+                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                "class" => "col-lg-4",
+                                "controls" => [
+                                    [
+                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
+                                        "src" => null,
+                                        "name" => "l-1",
+                                        "show" => true,
+                                        "type" => "label",
+                                        "class" => "bold",
+                                        "label" => "Label",
+                                        "value" => "Applicable Discounts:",
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => false,
+                                        "is_required" => false,
+                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                    ],
+                                ],
+                                "position" => 1,
+                            ],
+                            [
+                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                "class" => "col-lg-8",
+                                "controls" => [
+                                    [
+                                        "id" => "applicable_discounts",
+                                        "name" => "applicable_discounts",
+                                        "type" => "tag",
+                                        "class" => "s4-form-control text-nowrap",
+                                        "label" => "Total Discounts",
+                                        "value" => null,
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => true,
+                                        "is_required" => false,
+                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                    ],
+                                ],
+                                "position" => 2,
+                            ],
+                        ],
+                        "class" => "two-column field-dragger",
+                        "order" => 3,
+                        "controls" => [],
+                        "is_field" => false,
+                        "droppable" => false,
+                        "decoration" => "1+3",
+                    ],
+                ],
+            ],
+        ]);
+
+        $template->vendors()->sync(Vendor::limit(2)->get());
+
+        $opportunity = factory(Opportunity::class)->create();
+
+        /** @var WorldwideQuote $wwQuote */
+        $wwQuote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey(), 'contract_type_id' => CT_CONTRACT]);
+
+        $wwQuote->activeVersion->update(['quote_template_id' => $template->getKey(), 'quote_currency_id' => Currency::query()->where('code', 'USD')->value('id')]);
+
+        $country = Country::query()->first();
+        $vendor = Vendor::query()->where('is_system', true)->first();
+
+        $snDiscount = factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        $promotionalDiscount = factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        $prePayDiscount = factory(PrePayDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        $multiYearDiscount = factory(MultiYearDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+
+        $templateFields = TemplateField::query()->where('is_system', true)
+//            ->whereNotIn('name', ['pricing_document', 'system_handle', 'searchable'])
+            ->pluck('id', 'name');
+        $importableColumns = ImportableColumn::query()->where('is_system', true)->pluck('id', 'name');
+
+        $mapping = [
+            $templateFields['product_no'] => ['importable_column_id' => $importableColumns['product_no']],
+            $templateFields['description'] => ['importable_column_id' => $importableColumns['description']],
+            $templateFields['serial_no'] => ['importable_column_id' => $importableColumns['serial_no']],
+            $templateFields['date_from'] => ['importable_column_id' => $importableColumns['date_from']],
+            $templateFields['date_to'] => ['importable_column_id' => $importableColumns['date_to']],
+            $templateFields['qty'] => ['importable_column_id' => $importableColumns['qty']],
+            $templateFields['price'] => ['importable_column_id' => $importableColumns['price']],
+            $templateFields['searchable'] => ['importable_column_id' => $importableColumns['searchable']],
+            $templateFields['service_level_description'] => ['importable_column_id' => factory(ImportableColumn::class)->create()->getKey()],
+        ];
+
+        $wwDistributions = factory(WorldwideDistribution::class, 2)->create(
+            [
+                'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
+                'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
+                'country_id' => $country->getKey(),
+                'sort_rows_column' => 'product_no',
+                'sort_rows_direction' => 'asc',
+                'sort_rows_groups_column' => 'group_name',
+                'sort_rows_groups_direction' => 'asc',
+                'margin_value' => 10,
+                'tax_value' => 10,
+                'custom_discount' => 2,
+                'buy_price' => 500,
+                'distribution_currency_id' => Currency::where('code', 'GBP')->value('id'),
+//                'multi_year_discount_id' => $multiYearDiscount->getKey(),
+            ]
+        );
+
+        $repeatedSerialNo = Str::random(40);
+
+        $wwDistributions->each(function (WorldwideDistribution $distribution) use ($mapping, $vendor, $opportunity, $repeatedSerialNo) {
+            $distribution->vendors()->sync($vendor);
+
+            $distributorFile = factory(QuoteFile::class)->create([
+                'file_type' => QFT_WWPL,
+            ]);
+
+            $distribution->update(['distributor_file_id' => $distributorFile->getKey()]);
+
+            $mappedRows = factory(MappedRow::class, 4)->create(['quote_file_id' => $distributorFile->getKey(), 'is_selected' => true, 'price' => 250]);
+
+            /** @var MappedRow[] $mappedRowsWithSameSerial */
+            $mappedRowsWithSameSerial = [
+                $mappedRows[0],
+                $mappedRows[count($mappedRows) - 1]
+            ];
+
+            $mappedRowsWithSameSerial[0]->serial_no = $repeatedSerialNo;
+            $mappedRowsWithSameSerial[1]->serial_no = $repeatedSerialNo;
+            $mappedRowsWithSameSerial[0]->save();
+            $mappedRowsWithSameSerial[1]->save();
+
+            $distribution->templateFields()->sync($mapping);
+
+            $distribution->addresses()->sync(factory(Address::class)->create(['address_type' => 'Machine']));
+
+            $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
+            $distribution->opportunitySupplier()->associate($opportunitySupplier);
+            $distribution->save();
+        });
+
+        $paymentScheduleFile = factory(QuoteFile::class)->create([
+            'file_type' => 'Payment Schedule',
+        ]);
+
+        factory(ScheduleData::class)->create([
+            'quote_file_id' => $paymentScheduleFile->getKey(),
+        ]);
+
+        $wwDistributions[0]->schedule_file_id = $paymentScheduleFile->getKey();
+        $wwDistributions[0]->save();
+
+
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/preview')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'template_data' => [
+                    'first_page_schema',
+                    'assets_page_schema',
+                    'payment_schedule_page_schema',
+                    'last_page_schema',
+                    'template_assets',
+                ],
+
+                'quote_summary' => [
+                    'company_name',
+                    'quotation_number',
+                    'customer_name',
+                    'service_levels',
+                    'invoicing_terms',
+                    'support_start',
+                    'support_end',
+                    'valid_until',
+                    'contract_duration',
+                    'is_contract_duration_checked',
+                    'contact_name',
+                    'contact_country',
+                    'contact_email',
+                    'contact_phone',
+                    'end_user_name',
+                    'end_user_contact_country',
+                    'end_user_contact_name',
+                    'end_user_contact_email',
+                    'list_price',
+                    'final_price',
+                    'applicable_discounts',
+                    'sub_total_value',
+                    'total_value_including_tax',
+                    'quote_price_value_coefficient',
+                    'equipment_address',
+                    'hardware_contact',
+                    'hardware_phone',
+                    'software_address',
+                    'software_contact',
+                    'software_phone',
+                    'coverage_period',
+                    'coverage_period_from',
+                    'coverage_period_to',
+                    'additional_details',
+                    'pricing_document',
+                    'service_agreement_id',
+                    'system_handle',
+                    'account_manager_name',
+                ],
+
+                'distributions' => [
+                    '*' => [
+                        'vendors', 'country', 'supplier',
+                        'asset_fields' => [
+                            '*' => ['field_name', 'field_header']
+                        ],
+                        'assets_data' => [
+                            '*' => [
+                                'serial_no'
+                            ]
+                        ],
+                    ],
+                ],
+            ]);
+
+        $assetDataFields = [
+            "buy_currency_code",
+            "vendor_short_code",
+            "product_no",
+            "service_sku",
+            "description",
+            "serial_no",
+            "is_serial_number_generated",
+            "date_from",
+            "date_to",
+            "contract_duration",
+            "qty",
+            "price",
+            "price_float",
+            "pricing_document",
+            "system_handle",
+            "searchable",
+            "service_level_description",
+            "machine_address_string",
+        ];
+
+        $assetFields = [
+            'product_no',
+            'description',
+            'serial_no',
+            'date_from',
+            'date_to',
+            'qty',
+            'price',
+            'service_level_description',
+            'machine_address_string'
+        ];
+
+        $keyOfFirstAssetWithSameSerial = collect($response->json('distributions.0.assets_data.*.serial_no'))->search($repeatedSerialNo);
+
+        $this->assertNotFalse($keyOfFirstAssetWithSameSerial);
+
+        $this->assertSame($repeatedSerialNo, $response->json('distributions.0.assets_data.'.($keyOfFirstAssetWithSameSerial+1).'.serial_no'));
     }
 
     /**
@@ -1498,7 +1834,7 @@ TEMPLATE;
         );
 
         $country = Country::query()->first();
-        $vendor = Vendor::query()->first();
+        $vendor = Vendor::query()->where('is_system', true)->first();
 
         factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
         factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
@@ -1618,7 +1954,7 @@ TEMPLATE;
         );
 
         $country = Country::query()->first();
-        $vendor = Vendor::query()->first();
+        $vendor = Vendor::query()->where('is_system', true)->first();
 
         factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
         factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
@@ -1654,7 +1990,7 @@ TEMPLATE;
 
             $distribution->opportunitySupplier()->associate($supplier)->save();
 
-            $distribution->vendors()->sync($vendor);
+            $distribution->vendors()->sync($vendor->getKey());
 
             $distributorFile = factory(QuoteFile::class)->create([
                 'file_type' => QFT_WWPL,
@@ -1683,7 +2019,7 @@ TEMPLATE;
 
         $expectedFileName = $wwQuote->quote_number.'.pdf';
 
-        $response = $this->get('api/ww-quotes/'.$wwQuote->getKey().'/export')
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/export')
 //            ->dump()
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf')

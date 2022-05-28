@@ -20,11 +20,6 @@ class UserActivityService
         return "user-activity::$id";
     }
 
-    protected function getActivityExpiresAtTime(): Carbon
-    {
-        return Carbon::now()->subMinutes($this->config->get('activity.expires_in', 60));
-    }
-
     public function getActivityTimeOfUser(User $user): Carbon
     {
         $activity = $this->cache->get(self::userActivityCacheKey($user->getKey()));
@@ -43,9 +38,14 @@ class UserActivityService
         $this->cache->put(self::userActivityCacheKey($user->getKey()), $time->toDateTimeString());
     }
 
+    protected function getActivityExpireInMinutes(): int
+    {
+        return $this->config->get('activity.expires_in', 60);
+    }
+
     public function userHasRecentActivity(User $user): bool
     {
-        return $this->getActivityExpiresAtTime()
-            ->lt($this->getActivityTimeOfUser($user));
+        return $this->getActivityTimeOfUser($user)
+                ->diffInMinutes(absolute: false) < $this->getActivityExpireInMinutes();
     }
 }

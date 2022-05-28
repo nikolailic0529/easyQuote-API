@@ -125,7 +125,7 @@ hr.blue {
 
 .group-logo {
     padding: 5px 20px;
-    min-height: 40px;
+    max-height: 60px;
 }
 
 .mt-1 {

@@ -501,6 +501,7 @@ class SalesOrderDataMapper
             $quotePreviewData->quote_summary->purchase_order_number = (string)$salesOrder->customer_po;
             $quotePreviewData->quote_summary->contract_number = (string)$salesOrder->contract_number;
             $quotePreviewData->quote_summary->export_file_name = (string)$salesOrder->order_number;
+            $quotePreviewData->quote_summary->sales_order_number = (string)$salesOrder->order_number;
         });
     }
 

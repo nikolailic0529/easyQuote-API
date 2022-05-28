@@ -21,6 +21,8 @@ final class QuoteSummary extends DataTransferObject
 
     public string $export_file_name;
 
+    public string $sales_order_number;
+
     /**
      * @Constraints\NotBlank
      */
@@ -66,6 +68,12 @@ final class QuoteSummary extends DataTransferObject
     public string $end_user_contact_name;
 
     public string $end_user_contact_email;
+
+    public string $end_user_company_email;
+
+    public string $end_user_hw_post_code;
+
+    public string $end_user_inv_post_code;
 
     public string $account_manager_name;
 

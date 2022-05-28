@@ -34,6 +34,7 @@ use App\Enum\Exceptions\InvalidEnumKeyException;
  * @method static UPDATE_OPPORTUNITY(string $id)
  * @method static DELETE_OPPORTUNITY(string $id)
  *
+ * @method static CREATE_WWASSET_FOR_QUOTE(string $id)
  * @method static UPDATE_WWASSET(string $id)
  * @method static DELETE_WWASSET(string $id)
  *
@@ -73,6 +74,7 @@ final class Lock extends Enum
         UPDATE_OPPORTUNITY = 'update-opportunity',
         DELETE_OPPORTUNITY = 'delete-opportunity',
 
+        CREATE_WWASSET_FOR_QUOTE = 'create-ww-asset-for-quote',
         UPDATE_WWASSET = 'update-ww-asset',
         DELETE_WWASSET = 'delete-ww-asset',
 

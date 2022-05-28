@@ -587,8 +587,10 @@ Route::group(['middleware' => 'auth:api'], function () {
      * Worldwide Pack Quote.
      */
     Route::post('ww-quotes/{worldwide_quote}/assets', [WorldwideQuoteAssetController::class, 'initializeQuoteAsset']);
+    Route::put('ww-quotes/{worldwide_quote}/assets', [WorldwideQuoteAssetController::class, 'batchInitializeQuoteAsset']);
     Route::patch('ww-quotes/{worldwide_quote}/assets', [WorldwideQuoteAssetController::class, 'batchUpdateQuoteAssets']);
     Route::delete('ww-quotes/{worldwide_quote}/assets/{asset:id}', [WorldwideQuoteAssetController::class, 'destroyQuoteAsset']);
+    Route::delete('ww-quotes/{worldwide_quote}/assets', [WorldwideQuoteAssetController::class, 'batchDestroyQuoteAsset']);
     Route::post('ww-quotes/{worldwide_quote}/assets/lookup', [WorldwideQuoteAssetController::class, 'batchWarrantyLookup']);
     Route::post('ww-quotes/{worldwide_quote}/assets/upload', [WorldwideQuoteAssetController::class, 'uploadBatchQuoteAssetsFile']);
     Route::post('ww-quotes/{worldwide_quote}/assets/import', [WorldwideQuoteAssetController::class, 'importBatchQuoteAssetsFile']);
