@@ -996,7 +996,7 @@ class WorldwideQuoteDataMapper
             return ND_02;
         }
 
-        return implode(', ', array_filter([$address->address_1, $address->city, $address->country?->iso_3166_2, $address->post_code]));
+        return implode(', ', array_filter([$address->address_1, $address->address_2, $address->city, $address->country?->iso_3166_2, $address->post_code]));
     }
 
     public function getPackQuoteAssetsData(WorldwideQuote $quote, Currency $outputCurrency): array
