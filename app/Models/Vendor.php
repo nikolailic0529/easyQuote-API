@@ -136,7 +136,7 @@ class Vendor extends Model implements HasImagesDirectory, WithLogo, ActivatableI
             $this->image,
             $this->thumbnailProperties(),
             Str::snake(class_basename(static::class)),
-            ThumbHelper::WITH_KEYS | ThumbHelper::ABS_PATH
+            ThumbHelper::MAP | ThumbHelper::ABS_PATH
         );
     }
 
@@ -146,7 +146,7 @@ class Vendor extends Model implements HasImagesDirectory, WithLogo, ActivatableI
             $this->image,
             $this->thumbnailProperties(),
             Str::snake(class_basename(static::class)),
-            ThumbHelper::WITH_KEYS
+            ThumbHelper::MAP
         );
     }
 

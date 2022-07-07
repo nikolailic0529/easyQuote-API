@@ -26,7 +26,7 @@ class WorldwideQuoteGenericTest extends TestCase
     public function testCanViewMergedAddressesOfWorldwideQuote(): void
     {
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         $opportunity->primaryAccount->addresses()->sync(factory(Address::class, 2)->create());
         $opportunity->endUser->addresses()->sync(factory(Address::class, 2)->create());
@@ -62,7 +62,7 @@ class WorldwideQuoteGenericTest extends TestCase
     public function testCanViewMergedContactsOfWorldwideQuote(): void
     {
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         $opportunity->primaryAccount->addresses()->sync(factory(Address::class, 2)->create());
         $opportunity->endUser->addresses()->sync(factory(Address::class, 2)->create());
@@ -104,7 +104,7 @@ class WorldwideQuoteGenericTest extends TestCase
         foreach (range(1, 10) as $time) {
             factory(WorldwideQuote::class)->create();
 
-            $opportunity = factory(Opportunity::class)->create();
+            $opportunity = Opportunity::factory()->create();
             $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
             $submittedQuote = factory(WorldwideQuote::class)->create(['submitted_at' => now(), 'opportunity_id' => $opportunity->getKey()]);
 
@@ -299,7 +299,7 @@ class WorldwideQuoteGenericTest extends TestCase
         $role->syncPermissions('view_own_ww_quotes');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -350,7 +350,7 @@ class WorldwideQuoteGenericTest extends TestCase
         $role->syncPermissions('view_own_ww_quotes');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 

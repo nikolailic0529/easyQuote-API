@@ -4,11 +4,16 @@ namespace App\Policies;
 
 use App\Models\Template\SalesOrderTemplate;
 use App\Models\User;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class SalesOrderTemplatePolicy
 {
     use HandlesAuthorization;
+
+    public function __construct(protected UserTeamGate $userTeamGate)
+    {
+    }
 
     /**
      * Determine whether the user can view any models.
@@ -71,12 +76,20 @@ class SalesOrderTemplatePolicy
      */
     public function update(User $user, SalesOrderTemplate $salesOrderTemplate)
     {
-        $hasPermissionToUpdate = value(function () use ($salesOrderTemplate, $user) {
+        $hasPermissionToUpdate = value(function () use ($salesOrderTemplate, $user): bool {
             if ($user->hasRole(R_SUPER)) {
                 return true;
             }
 
-            if ($user->can('update_own_sales_order_templates') && $salesOrderTemplate->user()->getParentKey() === $user->getKey()) {
+            if ($user->cannot('update_own_sales_order_templates')) {
+                return false;
+            }
+
+            if ($salesOrderTemplate->user()->is($user)) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($salesOrderTemplate->user()->getParentKey(), $user)) {
                 return true;
             }
 
@@ -108,7 +121,15 @@ class SalesOrderTemplatePolicy
                 return true;
             }
 
-            if ($user->can('delete_own_sales_order_templates') && $salesOrderTemplate->user()->getParentKey() === $user->getKey()) {
+            if ($user->cannot('delete_own_sales_order_templates')) {
+                return false;
+            }
+
+            if ($salesOrderTemplate->user()->is($user)) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($salesOrderTemplate->user()->getParentKey(), $user)) {
                 return true;
             }
 

@@ -2,23 +2,15 @@
 
 namespace App\Events;
 
-use App\Models\Quote\QuoteNote;
+use App\Models\Note\Note;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class QuoteNoteCreated
+final class QuoteNoteCreated
 {
     use Dispatchable, SerializesModels;
 
-    public QuoteNote $quoteNote;
-
-    /**
-     * Create a new event instance.
-     *
-     * @return void
-     */
-    public function __construct(QuoteNote $quoteNote)
+    public function __construct(public readonly Note $note)
     {
-        $this->quoteNote = $quoteNote;
     }
 }

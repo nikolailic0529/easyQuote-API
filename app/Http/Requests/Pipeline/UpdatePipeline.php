@@ -23,20 +23,23 @@ class UpdatePipeline extends FormRequest
         return [
             'space_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Space::class, 'id')
+                Rule::exists(Space::class, 'id'),
             ],
             'pipeline_name' => [
-                'bail', 'required', 'string', 'max:191'
+                'bail', 'required', 'string', 'max:191',
             ],
             'pipeline_stages' => [
-                'bail', 'present', 'array'
+                'bail', 'present', 'array',
             ],
             'pipeline_stages.*.id' => [
                 'bail', 'present', 'nullable', 'uuid',
-                Rule::exists(PipelineStage::class, 'id')->where('pipeline_id', $this->getPipelineModel()->getKey())
+                Rule::exists(PipelineStage::class, 'id')->where('pipeline_id', $this->getPipelineModel()->getKey()),
             ],
             'pipeline_stages.*.stage_name' => [
-                'bail', 'string', 'max:191'
+                'bail', 'string', 'max:191',
+            ],
+            'pipeline_stages.*.stage_percentage' => [
+                'bail', 'required', 'numeric', 'min:0', 'max:100',
             ],
         ];
     }
@@ -57,13 +60,14 @@ class UpdatePipeline extends FormRequest
                     'stage_id' => $stage['id'],
                     'stage_name' => $stage['stage_name'],
                     'stage_order' => $order++,
+                    'stage_percentage' => (float)$stage['stage_percentage'],
                 ];
             }, $this->input('pipeline_stages'));
 
             return new UpdatePipelineData([
                 'space_id' => $this->input('space_id'),
                 'pipeline_name' => $this->input('pipeline_name'),
-                'pipeline_stages' => $pipelineStages
+                'pipeline_stages' => $pipelineStages,
             ]);
         });
     }

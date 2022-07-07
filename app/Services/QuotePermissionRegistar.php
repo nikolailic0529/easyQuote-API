@@ -37,7 +37,7 @@ class QuotePermissionRegistar
                 ->subject($user)
                 ->url(ui_route('quotes.status', ['quote' => $quote]))
                 ->priority(2)
-                ->store(), fn () => $user->notify(new GrantedQuoteAccess($causer, $quote)))
+                ->push(), fn () => $user->notify(new GrantedQuoteAccess($causer, $quote)))
         );
 
         $revoked->each(
@@ -47,7 +47,7 @@ class QuotePermissionRegistar
                 ->message($revokedMessage)
                 ->subject($user)
                 ->priority(2)
-                ->store(), fn () => $user->notify(new RevokedQuoteAccess($causer, $quote)))
+                ->push(), fn () => $user->notify(new RevokedQuoteAccess($causer, $quote)))
         );
 
         return true;

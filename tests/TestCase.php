@@ -53,7 +53,7 @@ abstract class TestCase extends BaseTestCase
     protected function authenticateApi(?Authenticatable $user = null): static
     {
         return tap($this, function () use ($user) {
-            $user ??= factory(User::class)->create();
+            $user ??= User::factory()->create();
 
             $this->withoutMiddleware(\App\Http\Middleware\PerformUserActivity::class);
 

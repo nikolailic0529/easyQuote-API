@@ -16,9 +16,9 @@ class CompanyNoteTest extends TestCase
      *
      * @return void
      */
-    public function testCanCreateCompanyNote()
+    public function testCanCreateCompanyNote(): void
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $this->authenticateApi();
 
@@ -30,8 +30,7 @@ class CompanyNoteTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'user_id',
-                'company_id',
-                'text',
+                'note',
                 'created_at',
                 'updated_at',
             ]);
@@ -42,9 +41,9 @@ class CompanyNoteTest extends TestCase
      *
      * @return void
      */
-    public function testCanUpdateCompanyNote()
+    public function testCanUpdateCompanyNote(): void
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $this->authenticateApi();
 
@@ -56,8 +55,7 @@ class CompanyNoteTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'user_id',
-                'company_id',
-                'text',
+                'note',
                 'created_at',
                 'updated_at',
             ]);
@@ -68,28 +66,27 @@ class CompanyNoteTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'user_id',
-                'company_id',
-                'text',
+//                'user_id',
+                'note',
                 'created_at',
                 'updated_at',
             ])
             ->assertJsonFragment([
-                'text' => $newNoteText,
+                'note' => $newNoteText,
             ]);
 
         $this->getJson('api/companies/company-notes/'.$response->json('id'))
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
                 'user_id',
-                'company_id',
-                'text',
+                'note',
                 'created_at',
                 'updated_at',
             ])
             ->assertJsonFragment([
-                'text' => $newNoteText,
+                'note' => $newNoteText,
             ]);
     }
 
@@ -98,9 +95,9 @@ class CompanyNoteTest extends TestCase
      *
      * @return void
      */
-    public function testCanDeleteCompanyNote()
+    public function testCanDeleteCompanyNote(): void
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $this->authenticateApi();
 
@@ -112,8 +109,7 @@ class CompanyNoteTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'user_id',
-                'company_id',
-                'text',
+                'note',
                 'created_at',
                 'updated_at',
             ]);

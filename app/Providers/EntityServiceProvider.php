@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\AccessAttempt;
 use App\Models\Address;
 use App\Models\Addressable;
+use App\Models\Appointment\Appointment;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetTotal;
@@ -13,7 +14,6 @@ use App\Models\BusinessDivision;
 use App\Models\CancelSalesOrderReason;
 use App\Models\Collaboration\Invitation;
 use App\Models\Company;
-use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Contactable;
 use App\Models\ContractType;
@@ -34,6 +34,7 @@ use App\Models\InternalCompany;
 use App\Models\Location;
 use App\Models\ModelHasRoles;
 use App\Models\ModelNotification;
+use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\OpportunityForm\OpportunityForm;
 use App\Models\OpportunityForm\OpportunityFormSchema;
@@ -57,14 +58,12 @@ use App\Models\Quote\Margin\CountryMargin;
 use App\Models\Quote\Margin\Margin;
 use App\Models\Quote\Quote;
 use App\Models\Quote\QuoteLocationTotal;
-use App\Models\Quote\QuoteNote;
 use App\Models\Quote\QuoteTotal;
 use App\Models\Quote\QuoteVersion;
 use App\Models\Quote\QuoteVersionFieldColumn;
 use App\Models\Quote\QuoteVersionPivot;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DataSelectSeparator;
 use App\Models\QuoteFile\DistributionRowsGroup;
@@ -88,7 +87,7 @@ use App\Models\System\DocumentProcessorDriver;
 use App\Models\System\Notification;
 use App\Models\System\Period;
 use App\Models\System\SystemSetting;
-use App\Models\Task;
+use App\Models\Task\Task;
 use App\Models\Team;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\HpeContractTemplate;
@@ -126,7 +125,7 @@ class EntityServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Relation::morphMap([
+        Relation::enforceMorphMap([
             'fe2c0408-86de-47e2-9e12-67226ac330b1' => AccessAttempt::class,
             '5c322beb-f462-4b94-a94f-d8192637ee80' => Address::class,
             '9b4c200d-7c73-4fe3-98c7-a15aa060a55e' => Addressable::class,
@@ -203,6 +202,7 @@ class EntityServiceProvider extends ServiceProvider
             'fbe7ed33-c972-44ed-b81b-bb44bab8b6b3' => Period::class,
             '24e4b737-df4e-4ef1-bbb7-b3aeb0d80d1b' => SystemSetting::class,
             '8e71e7d1-4fcd-47e7-bc39-f52116f443df' => Task::class,
+            '0733629e-25d4-410a-9304-ee83bca777f6' => Appointment::class,
             '9f5e1437-d7ff-421d-9401-0984cc3bec83' => Team::class,
             '88c14ad7-aebc-488c-a1cb-bf4e2fe8af44' => ContractTemplate::class,
             '272620db-2f77-4efa-a68d-52f6c07beb52' => HpeContractTemplate::class,
@@ -226,10 +226,8 @@ class EntityServiceProvider extends ServiceProvider
             '8cc6c6ce-1a57-4d51-9557-3e87c285efa1' => Pipeline::class,
             'f904f1d8-3209-4f09-8e28-13d116555e1f' => OpportunityForm::class,
             'eda5b270-8bd8-4809-8ce0-cb6379fe1b01' => OpportunityFormSchema::class,
-            'e3dd73f0-0a09-49f8-9c5a-ed68e447ae45' => QuoteNote::class,
-            '37ab1118-a078-4f2d-b86a-826002f478b2' => WorldwideQuoteNote::class,
-            'bdfc1329-b064-476f-8d5d-fbccdc02b278' => CompanyNote::class,
             '5b2fe950-aa70-4c36-9b1f-1383daecbb18' => Company::class,
+            'bdf97f4a-b24c-4b73-be5b-659adc600694' => Note::class,
         ]);
     }
 }

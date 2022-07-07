@@ -20,6 +20,13 @@ final class UpdateOpportunityData extends DataTransferObject
      *
      * @var string|null
      */
+    public ?string $pipeline_stage_id;
+
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string|null
+     */
     public ?string $contract_type_id;
 
     /**
@@ -170,8 +177,6 @@ final class UpdateOpportunityData extends DataTransferObject
      * @Constraints\NotBlank(allowNull=true)
      */
     public ?string $personal_rating;
-
-    public ?float $ranking;
 
     public ?float $margin_value;
 

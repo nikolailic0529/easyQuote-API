@@ -8,7 +8,6 @@ use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
-use App\Services\Pipeline\PipelineEntityService;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,6 +47,7 @@ class OpportunityQueries
         $request ??= new Request();
 
         $model = new Opportunity();
+        $pipelineStageModel = new PipelineStage();
         $quoteModel = new WorldwideQuote();
 
         $query = $model->newQuery()
@@ -64,7 +64,7 @@ class OpportunityQueries
                 'opportunities.base_opportunity_amount as opportunity_amount',
                 'opportunities.opportunity_start_date',
                 'opportunities.opportunity_end_date',
-                'opportunities.sale_action_name',
+                "{$pipelineStageModel->qualifyColumn('stage_name')} as sale_action_name",
                 'opportunities.status',
                 'opportunities.status_reason',
                 'opportunities.created_at',
@@ -72,6 +72,7 @@ class OpportunityQueries
             ->leftJoin('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'opportunities.contract_type_id');
             })
+            ->leftJoin($pipelineStageModel->getTable(), $pipelineStageModel->getQualifiedKeyName(), $model->pipelineStage()->getQualifiedForeignKeyName())
             ->leftJoin('users', function (JoinClause $join) {
                 $join->on('users.id', 'opportunities.account_manager_id');
             })
@@ -129,46 +130,87 @@ class OpportunityQueries
             ->doesntHave('worldwideQuotes');
     }
 
-    public function opportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage): Builder
+    public function paginateOpportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage, ?Request $request = null): Builder
     {
+        $request ??= new Request();
+
         $opportunityModel = new Opportunity();
 
-        return $opportunityModel->newQuery()
-            ->where('pipeline_id', $pipelineStage->pipeline()->getParentKey())
-            ->where('sale_action_name', PipelineEntityService::qualifyPipelineStageName($pipelineStage))
+        $query = $this->opportunitiesOfPipelineStageQuery($pipelineStage)
             ->select([
                 $opportunityModel->getQualifiedKeyName(),
                 $opportunityModel->qualifyColumn('user_id'),
                 $opportunityModel->qualifyColumn('account_manager_id'),
-                'companies.id as primary_account.id',
-                'companies.name as primary_account.name',
-                'companies.phone as primary_account.phone',
-                'companies.email as primary_account.email',
+                $opportunityModel->qualifyColumn('primary_account_id'),
+                $opportunityModel->qualifyColumn('primary_account_contact_id'),
+                $opportunityModel->qualifyColumn('end_user_id'),
                 $opportunityModel->qualifyColumn('project_name'),
                 'users.user_fullname as account_manager_name',
                 $opportunityModel->qualifyColumn('opportunity_closing_date'),
                 $opportunityModel->qualifyColumn('base_opportunity_amount'),
                 $opportunityModel->qualifyColumn('opportunity_amount'),
                 $opportunityModel->qualifyColumn('opportunity_amount_currency_code'),
-                'primary_account_contact.first_name as primary_account_contact.first_name',
-                'primary_account_contact.last_name as primary_account_contact.last_name',
-                'primary_account_contact.phone as primary_account_contact.phone',
-                'primary_account_contact.email as primary_account_contact.email',
+
+                'primary_account.name as primary_account_name',
+                'primary_account.phone as primary_account_phone',
+                'primary_account.email as primary_account_email',
+
+                'primary_account_contact.first_name as primary_account_contact_first_name',
+                'primary_account_contact.last_name as primary_account_contact_last_name',
+                'primary_account_contact.phone as primary_account_contact_phone',
+                'primary_account_contact.email as primary_account_contact_email',
+
+                'end_user.name as end_user_name',
+                'end_user.phone as end_user_phone',
+                'end_user.email as end_user_email',
+
                 $opportunityModel->qualifyColumn('opportunity_start_date'),
                 $opportunityModel->qualifyColumn('opportunity_end_date'),
                 $opportunityModel->qualifyColumn('ranking'),
                 $opportunityModel->qualifyColumn('status'),
                 $opportunityModel->qualifyColumn('status_reason'),
                 $opportunityModel->qualifyColumn('created_at'),
+
+                new Expression("false as quotes_exist"),
+            ])
+            ->with([
+                'accountManager:id,email,user_fullname',
+                'primaryAccount:id,name,phone,email',
+                'primaryAccount.image',
+                'endUser:id,name,phone,email',
+                'endUser.image',
+                'primaryAccountContact:id,first_name,last_name,phone,email',
             ])
             ->leftJoin('users', function (JoinClause $join) {
                 $join->on('users.id', 'opportunities.account_manager_id');
             })
-            ->leftJoin('companies', function (JoinClause $join) {
-                $join->on('companies.id', 'opportunities.primary_account_id');
+            ->leftJoin('companies as primary_account', function (JoinClause $join) {
+                $join->on('primary_account.id', 'opportunities.primary_account_id');
+            })
+            ->leftJoin('companies as end_user', function (JoinClause $join) {
+                $join->on('end_user.id', 'opportunities.end_user_id');
             })
             ->leftJoin('contacts as primary_account_contact', function (JoinClause $join) {
                 $join->on('primary_account_contact.id', 'opportunities.primary_account_contact_id');
-            });
+            })
+            ->orderByRaw("isnull({$opportunityModel->qualifyColumn('order_in_pipeline_stage')}) asc")
+            ->orderBy($opportunityModel->qualifyColumn('order_in_pipeline_stage'))
+            ->orderByDesc($opportunityModel->getQualifiedCreatedAtColumn());
+
+        return RequestQueryBuilder::for($query, $request)
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->process();
+    }
+
+    public function opportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage): Builder
+    {
+        $opportunityModel = new Opportunity();
+
+        return $opportunityModel->newQuery()
+            ->whereBelongsTo($pipelineStage)
+            ->doesntHave('worldwideQuotes')
+            ->where($opportunityModel->qualifyColumn('status'), OpportunityStatus::NOT_LOST);
     }
 }

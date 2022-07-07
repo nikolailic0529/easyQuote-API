@@ -6,14 +6,12 @@ use App\Models\Address;
 use App\Models\Asset;
 use App\Models\Attachment;
 use App\Models\Company;
-use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
+use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
-use App\Models\Quote\QuoteNote;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\User;
@@ -126,7 +124,7 @@ class CompanyTest extends TestCase
         ];
 
         foreach ($categories as $category) {
-            factory(Company::class)->create([
+            Company::factory()->create([
                 'type' => 'External',
                 'category' => $category,
             ]);
@@ -243,11 +241,11 @@ class CompanyTest extends TestCase
      */
     public function testCanCreateCompany()
     {
-        $attributes = factory(Company::class)->raw();
+        $attributes = Company::factory()->raw();
 
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
         $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
-        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
+        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], Contact::factory()->count(2)->create()->modelKeys());
 
         $this->postJson('api/companies', $attributes)
 //            ->dump()
@@ -260,14 +258,14 @@ class CompanyTest extends TestCase
      */
     public function testCanNotCreateCompanyWithNonUniqueName(): void
     {
-        $existingCompany = factory(Company::class)->create();
+        $existingCompany = Company::factory()->create();
 
-        $attributes = factory(Company::class)->raw([
+        $attributes = Company::factory()->raw([
             'name' => $existingCompany->name,
         ]);
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
         $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
-        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
+        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], Contact::factory()->count(2)->create()->modelKeys());
 
 
         $this->postJson('api/companies', $attributes)
@@ -283,14 +281,14 @@ class CompanyTest extends TestCase
      */
     public function testCanCreateCompanyWithoutVatAttributes()
     {
-        $attributes = factory(Company::class)->raw();
+        $attributes = Company::factory()->raw();
 
         unset($attributes['vat']);
         unset($attributes['vat_type']);
 
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
         $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
-        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
+        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], Contact::factory()->count(2)->create()->modelKeys());
 
         $this->postJson('api/companies', $attributes)
 //            ->dump()
@@ -305,9 +303,9 @@ class CompanyTest extends TestCase
      */
     public function testCanNotCreateCompanyWithExistingVatCode()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
-        $attributes = factory(Company::class)->raw(['vat' => $company->vat]);
+        $attributes = Company::factory()->raw(['vat' => $company->vat]);
 
         $this->postJson('api/companies', $attributes)
             ->assertStatus(422)
@@ -323,15 +321,15 @@ class CompanyTest extends TestCase
      */
     public function testCanUpdateCompany()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
-        $newAttributes = factory(Company::class)->raw(['_method' => 'PATCH']);
+        $newAttributes = Company::factory()->raw(['_method' => 'PATCH']);
 
         $machineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
         $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
 
-        $contact1 = factory(Contact::class)->create();
-        $contact2 = factory(Contact::class)->create();
+        $contact1 = Contact::factory()->create();
+        $contact2 = Contact::factory()->create();
 
         $newAttributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
 
@@ -401,6 +399,40 @@ class CompanyTest extends TestCase
     }
 
     /**
+     * Test an ability to change source of the company with `FROZEN_SOURCE` flag set.
+     */
+    public function testCanNotChangeSourceOfCompanyWithFrozenSourceFlag(): void
+    {
+        /** @var Company $company */
+        $company = Company::factory()->create([
+            'flags' => Company::FROZEN_SOURCE,
+            'source' => 'Pipeliner',
+        ]);
+
+        $this->patchJson('api/companies/'.$company->getKey(), [
+            'name' => $company->name,
+            'type' => 'External',
+            'vat_type' => 'NO VAT',
+            'category' => 'Reseller',
+            'source' => 'EQ'
+        ])
+            ->assertInvalid([
+                'source' => 'Forbidden to change source of the company.'
+            ], responseKey: 'Error.original');
+
+        $this->patchJson('api/companies/'.$company->getKey(), [
+            'name' => $company->name,
+            'type' => 'Internal',
+            'vat_type' => 'NO VAT',
+            'category' => 'Reseller',
+            'source' => 'EQ'
+        ])
+            ->assertInvalid([
+                'source' => 'Forbidden to change source of the company.'
+            ], responseKey: 'Error.original');
+    }
+
+    /**
      * Test an ability to detach used in quotes addresses from an existing company.
      *
      * @return void
@@ -408,9 +440,9 @@ class CompanyTest extends TestCase
     public function testCanDetachUsedAddressesFromCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
-        $newAttributes = factory(Company::class)->raw(['_method' => 'PATCH']);
+        $newAttributes = Company::factory()->raw(['_method' => 'PATCH']);
 
         $usedMachineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
         $machineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
@@ -427,8 +459,8 @@ class CompanyTest extends TestCase
 
         $company->addresses()->syncWithoutDetaching($usedMachineAddress->getKey());
 
-        $contact1 = factory(Contact::class)->create();
-        $contact2 = factory(Contact::class)->create();
+        $contact1 = Contact::factory()->create();
+        $contact2 = Contact::factory()->create();
 
         $newAttributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
 
@@ -462,7 +494,7 @@ class CompanyTest extends TestCase
     public function testCanPartiallyUpdateCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $company->addresses()->attach(factory(Address::class)->create());
 
@@ -477,8 +509,8 @@ class CompanyTest extends TestCase
         $machineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
         $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
 
-        $contact1 = factory(Contact::class)->create();
-        $contact2 = factory(Contact::class)->create();
+        $contact1 = Contact::factory()->create();
+        $contact2 = Contact::factory()->create();
 
         $newAttributes['addresses'] = [
             ['id' => $machineAddress->getKey(), 'is_default' => "1"],
@@ -555,11 +587,11 @@ class CompanyTest extends TestCase
     public function testCanUpdateCompanyContact()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         /** @var Contact $contact */
 
-        $company->contacts()->sync($contact = factory(Contact::class)->create());
+        $company->contacts()->sync($contact = Contact::factory()->create());
 
         $contactData = [
             'first_name' => $this->faker->firstName,
@@ -625,7 +657,7 @@ class CompanyTest extends TestCase
      */
     public function testCanActivateCompany()
     {
-        $company = tap(factory(Company::class)->create(), function (Company $company) {
+        $company = tap(Company::factory()->create(), function (Company $company) {
 
             $company->activated_at = null;
 
@@ -667,7 +699,7 @@ class CompanyTest extends TestCase
      */
     public function testCanDeactivateCompany()
     {
-        $company = tap(factory(Company::class)->create(), function (Company $company) {
+        $company = tap(Company::factory()->create(), function (Company $company) {
 
             $company->activated_at = now();
 
@@ -709,7 +741,7 @@ class CompanyTest extends TestCase
      */
     public function testCanDeleteCompany()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $this->deleteJson("api/companies/".$company->getKey(), [])
             ->assertOk()
@@ -723,9 +755,9 @@ class CompanyTest extends TestCase
      */
     public function testCanNotDeleteCompanyAttachedToOpportunityAsPrimaryAccount()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'primary_account_id' => $company->getKey(),
         ]);
 
@@ -746,7 +778,7 @@ class CompanyTest extends TestCase
      */
     public function testCanNotDeleteSystemDefinedCompany()
     {
-        $systemCompany = factory(Company::class)->create(['is_system' => true]);
+        $systemCompany = Company::factory()->create(['flags' => Company::SYSTEM]);
 
         $this->deleteJson("api/companies/".$systemCompany->getKey(), [])
             ->assertForbidden()
@@ -762,10 +794,10 @@ class CompanyTest extends TestCase
      */
     public function testCanUpdateDefaultCompanyVendor()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
         $company->vendors()->sync($vendor = factory(Vendor::class)->create());
 
-        $attributes = factory(Company::class)->raw([
+        $attributes = Company::factory()->raw([
             'default_vendor_id' => $vendor->getKey(),
         ]);
 
@@ -783,7 +815,7 @@ class CompanyTest extends TestCase
      */
     public function testCanViewDefaultCompanyVendorOnFirstImportStep()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
         $company->vendors()->sync($vendor = factory(Vendor::class)->create());
 
         $company->update(['default_vendor_id' => $vendor->getKey()]);
@@ -803,7 +835,7 @@ class CompanyTest extends TestCase
     public function testCanViewPrioritizedCompanyOnFirstImportStep()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create([
+        $company = Company::factory()->create([
             'short_code' => Str::random(3),
         ]);
 
@@ -831,11 +863,11 @@ class CompanyTest extends TestCase
     {
         $vendor = factory(Vendor::class)->create();
 
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $country = $vendor->countries->random();
 
-        $attributes = factory(Company::class)->raw([
+        $attributes = Company::factory()->raw([
             'vendors' => [$vendor->getKey()],
             'default_vendor_id' => $vendor->getKey(),
             'default_country_id' => $country->getKey(),
@@ -861,11 +893,11 @@ class CompanyTest extends TestCase
     {
         $vendor = factory(Vendor::class)->create();
 
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $country = $vendor->countries->random();
 
-        $attributes = factory(Company::class)->raw([
+        $attributes = Company::factory()->raw([
             'vendors' => [$vendor->getKey()],
             'default_vendor_id' => $vendor->getKey(),
             'default_country_id' => $country->getKey(),
@@ -901,9 +933,9 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfOpportunitiesOfCompany()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
-        factory(Opportunity::class, 10)->create([
+        Opportunity::factory()->count(10)->create([
             'primary_account_id' => $company->getKey(),
         ]);
 
@@ -943,7 +975,7 @@ class CompanyTest extends TestCase
     public function testCanViewListOfQuotesOfCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         /** @var Customer $rescueCustomer */
         $rescueCustomer = factory(Customer::class)->create([
@@ -958,7 +990,7 @@ class CompanyTest extends TestCase
         // Rescue Quote entity of another Customer.
         factory(Quote::class)->create();
 
-        $worldwideOpportunity = factory(Opportunity::class)->create([
+        $worldwideOpportunity = Opportunity::factory()->create([
             'primary_account_id' => $company->getKey(),
         ]);
 
@@ -1029,14 +1061,14 @@ class CompanyTest extends TestCase
         );
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
         $this->actingAs($user, 'api');
 
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         /** @var Customer $rescueCustomer */
         $rescueCustomer = factory(Customer::class)->create([
@@ -1052,7 +1084,7 @@ class CompanyTest extends TestCase
         // Rescue Quote entity of another Customer.
         factory(Quote::class)->create();
 
-        $worldwideOpportunity = factory(Opportunity::class)->create([
+        $worldwideOpportunity = Opportunity::factory()->create([
             'primary_account_id' => $company->getKey(),
         ]);
 
@@ -1120,7 +1152,7 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfSalesOrdersOfCompany()
     {
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         /** @var SalesOrder $salesOrderOfCustomer */
         $salesOrderOfCustomer = factory(SalesOrder::class)->create();
@@ -1176,7 +1208,7 @@ class CompanyTest extends TestCase
     public function testCanViewListOfUnifiedNotesOfCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         /** @var Customer $rescueCustomer */
         $rescueCustomer = factory(Customer::class)->create([
@@ -1189,11 +1221,11 @@ class CompanyTest extends TestCase
             'customer_id' => $rescueCustomer->getKey(),
         ]);
 
-        $rescueQuoteNote = factory(QuoteNote::class)->create([
-            'quote_id' => $rescueQuote->getKey(),
-        ]);
+        $rescueQuoteNote = Note::factory()
+            ->hasAttached($rescueQuote, relationship: 'rescueQuotesHaveNote')
+            ->create();
 
-        $worldwideOpportunity = factory(Opportunity::class)->create([
+        $worldwideOpportunity = Opportunity::factory()->create([
             'primary_account_id' => $company->getKey(),
         ]);
 
@@ -1202,13 +1234,13 @@ class CompanyTest extends TestCase
             'opportunity_id' => $worldwideOpportunity->getKey(),
         ]);
 
-        $worldwideQuoteNote = factory(WorldwideQuoteNote::class)->create([
-            'worldwide_quote_id' => $worldwideQuote->getKey(),
-        ]);
+        $worldwideQuoteNote = Note::factory()
+            ->hasAttached($worldwideQuote, relationship: 'worldwideQuotesHaveNote')
+            ->create();
 
-        $companyNote = factory(CompanyNote::class)->create([
-            'company_id' => $company->getKey(),
-        ]);
+        $companyNote = Note::factory()
+            ->hasAttached($company, relationship: 'companiesHaveNote')
+            ->create();
 
         $response = $this->getJson('api/companies/'.$company->getKey().'/notes')
 //            ->dump()
@@ -1251,7 +1283,7 @@ class CompanyTest extends TestCase
     public function testCanViewListOfAssetsOfCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         /** @var Asset $companyAsset */
         $companyAsset = factory(Asset::class)->create();
@@ -1298,7 +1330,7 @@ class CompanyTest extends TestCase
     public function testCanViewListOfAttachmentsOfCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $companyAttachments = factory(Attachment::class, 2)->create();
 
@@ -1324,7 +1356,7 @@ class CompanyTest extends TestCase
         $anotherRescueQuote->attachments()->sync($anotherRescueQuoteAttachments);
 
 
-        $worldwideOpportunity = factory(Opportunity::class)->create([
+        $worldwideOpportunity = Opportunity::factory()->create([
             'primary_account_id' => $company->getKey(),
         ]);
 
@@ -1392,7 +1424,7 @@ class CompanyTest extends TestCase
     public function testCanCreateNewAttachmentForCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $file = UploadedFile::fake()->create(Str::random(40).'.txt', 1_000);
 
@@ -1441,7 +1473,7 @@ class CompanyTest extends TestCase
     public function testCanDeleteAttachmentOfCompany()
     {
         /** @var Company $company */
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
 
         $attachment = factory(Attachment::class)->create();
 

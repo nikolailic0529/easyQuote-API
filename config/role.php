@@ -534,5 +534,18 @@ return [
                 'create_discounts', 'update_discounts', 'delete_discounts',
             ],
         ],
+        'Renewals' => [
+            $R => [
+                'view_renewals',
+            ],
+            $CRU => [
+                'view_renewals',
+                'create_renewals', 'update_renewals',
+            ],
+            $CRUD => [
+                'view_renewals',
+                'create_renewals', 'update_renewals', 'delete_renewals',
+            ],
+        ],
     ],
 ];

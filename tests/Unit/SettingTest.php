@@ -2,15 +2,15 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
+use App\Facades\Setting;
 use App\Models\System\SystemSetting;
 use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use App\Facades\Setting;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
+use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
@@ -26,11 +26,11 @@ class SettingTest extends TestCase
         'is_read_only',
         'label',
         'field_title',
-        'field_type'
+        'field_type',
     ];
 
     protected static array $assertableSections = [
-        'global', 'exchange_rates', 'maintenance'
+        'global', 'exchange_rates', 'maintenance',
     ];
 
     /**
@@ -76,17 +76,23 @@ class SettingTest extends TestCase
     }
 
     /**
-     * Test Public Settings Listing.
-     *
-     * @return void
+     * Test an ability to view exposed settings.
      */
-    public function testPublicSettingsListing()
+    public function testCanViewExposedSettings(): void
     {
         $this->app->make('auth')->guard('web')->logout();
 
-        $response = $this->getJson('api/settings/public')->assertOk();
+        $response = $this
+            ->getJson('api/settings/public')
+//            ->dump()
+            ->assertJsonStructure([
+                '*' => [
+                    '*' => ['id', 'value', 'label', 'field_title', 'field_type'],
+                ],
+            ])
+            ->assertOk();
 
-        $ids = SystemSetting::whereIn('key', config('settings.public'))->pluck('id');
+        $ids = SystemSetting::query()->whereIn('key', config('settings.public'))->get()->modelKeys();
 
         $responseIds = $response->json('*.*.id');
 
@@ -108,7 +114,7 @@ class SettingTest extends TestCase
 
         $value = Collection::wrap($setting->possible_values)
             ->pluck('value')
-            ->reject(fn ($value) => $value === $setting->value)
+            ->reject(fn($value) => $value === $setting->value)
             ->random();
 
         $setting->update(compact('value'));
@@ -134,7 +140,7 @@ class SettingTest extends TestCase
             $this->authorizationHeader
         )
             ->assertJsonStructure([
-                'Error' => ['original' => ['quote_file']]
+                'Error' => ['original' => ['quote_file']],
             ]);
 
         /**

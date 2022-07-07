@@ -2,33 +2,32 @@
 
 namespace App\DTO\Tasks;
 
+use App\Enum\Priority;
+use App\Enum\TaskTypeEnum;
 use Carbon\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\Validator\Constraints;
 
 final class UpdateTaskData extends DataTransferObject
 {
-    /**
-     * @Constraints\NotBlank
-     */
+    public TaskTypeEnum $activity_type;
+
+    #[Constraints\NotBlank]
     public string $name;
 
     public array $content;
 
     public ?Carbon $expiry_date;
 
-    /**
-     * @Constraints\Choice({1,2,3})
-     */
-    public int $priority;
+    public Priority $priority;
 
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     */
+    public ?CreateTaskReminderData $reminder;
+
+    public ?CreateTaskRecurrenceData $recurrence;
+
+    #[Constraints\All([new Constraints\Uuid])]
     public array $users;
 
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     */
+    #[Constraints\All([new Constraints\Uuid])]
     public array $attachments;
 }

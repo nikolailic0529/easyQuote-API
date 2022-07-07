@@ -81,7 +81,7 @@ class InvitationTest extends TestCase
                 'role_name' => $invitation->role->name,
             ]);
 
-        $user = factory(User::class)->raw();
+        $user = User::factory()->raw();
 
         $attributes = array_merge($user, [
             'local_ip' => $user['ip_address'],

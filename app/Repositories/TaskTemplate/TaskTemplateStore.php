@@ -54,7 +54,7 @@ abstract class TaskTemplateStore extends ValueStore implements Jsonable, JsonSer
      *
      * @return array
      */
-    public function jsonSerialize()
+    public function jsonSerialize(): array
     {
         return $this->all();
     }

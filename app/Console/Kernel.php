@@ -2,7 +2,10 @@
 
 namespace App\Console;
 
+use App\Console\Commands\Routine\ProcessTaskRecurrences;
+use App\Console\Commands\Routine\ProcessTaskReminders;
 use App\Console\Commands\Routine\UpdateExchangeRates;
+use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -20,41 +23,61 @@ class Kernel extends ConsoleKernel
     /**
      * Define the application's command schedule.
      *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @param \Illuminate\Console\Scheduling\Schedule $schedule
      * @return void
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->job(new QueuedPipelinerDataSync())
+            ->when(config('pipeliner.sync.schedule.enabled'))
+            ->hourly()
+            ->between('8:00', '18:00')
+            ->weekdays()
+            ->runInBackground()
+            ->withoutOverlapping();
+
+        $schedule->command(ProcessTaskRecurrences::class)
+            ->when(config('task.recurrence.schedule.enabled'))
+            ->dailyAt('8:00')
+            ->runInBackground()
+            ->withoutOverlapping();
+
+        $schedule->command(ProcessTaskReminders::class)
+            ->when(config('task.reminder.schedule.enabled'))
+            ->everyMinute()
+            ->runInBackground()
+            ->withoutOverlapping();
+
         /**
          * Logout the users with expired activity.
          */
         $schedule->command('eq:logout-inactive-users')->runInBackground()->everyMinute();
 
-        /** 
+        /**
          * Update address locations.
          */
         $schedule->command('eq:update-address-locations')->runInBackground()->everyFifteenMinutes()
             /**
              * Migrate non-migrated customers to external companies.
              */
-            ->after(fn () => $this->call('eq:migrate-customers'))
+            ->after(fn() => $this->call('eq:migrate-customers'))
             /**
              * Migrate submitted quotes assets where assets are not migrated.
              * Mark quotes with migrated assets.
              */
-            ->after(fn () => $this->call('eq:migrate-assets'))
+            ->after(fn() => $this->call('eq:migrate-assets'))
             /**
              * Calculate quote totals.
              * Calculate customer totals for each location based on quote totals.
-             * 
+             *
              * @see \App\Console\Commands\Routine\CalculateStats
              */
-            ->after(fn () => $this->call('eq:calculate-stats'));
+            ->after(fn() => $this->call('eq:calculate-stats'));
 
         /**
          * Notify user tasks expiration.
          * Once user will be notified notification won't be sent again. [except case when task expiry_date is updated]
-         * 
+         *
          * @see \App\Console\Commands\Routine\Notifications\TaskExpiration
          */
         $schedule->command('eq:notify-tasks-expiration')->runInBackground()->everyMinute();
@@ -62,7 +85,7 @@ class Kernel extends ConsoleKernel
         /**
          * Notifiy user quotes expiration.
          * Once user will be notified notification won't be sent again.
-         * 
+         *
          * @see \App\Console\Commands\Routine\Notifications\QuotesExpiration
          */
         $schedule->command('eq:notify-quotes-expiration')->runInBackground()->everyMinute();
@@ -70,13 +93,15 @@ class Kernel extends ConsoleKernel
         /**
          * Notifiy user password expiration.
          * Notification is reiterating every day until user will change the password.
-         * 
+         *
          * @see \App\Console\Commands\Routine\Notifications\PasswordExpiration
          */
         $schedule->command('eq:notify-password-expiration')->runInBackground()->daily();
 
         /**
          * Update exchange rates from external service based on system setting schedule.
+         *
+         * @see \App\Console\Commands\Routine\UpdateExchangeRates
          */
         $schedule->command(UpdateExchangeRates::class)
             ->runInBackground()
@@ -91,7 +116,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }

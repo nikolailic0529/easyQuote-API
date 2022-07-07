@@ -15,7 +15,7 @@ $factory->define(ContractTemplate::class, function (Faker $faker) {
 
     $design = file_get_contents(database_path('seeders/models/contract_template_design.json'));
 
-    $attributes = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::WITH_KEYS);
+    $attributes = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::MAP);
 
     $form = TemplateForm::parseTemplateDesign($design, $attributes);
 

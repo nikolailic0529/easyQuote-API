@@ -2,76 +2,44 @@
 
 namespace App\DTO\WorldwideQuote;
 
+use App\Enum\DateFormatEnum;
 use Carbon\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\Validator\Constraints;
 
 final class DistributionImportStageData extends DataTransferObject
 {
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string
-     */
+    #[Constraints\Uuid]
     public string $distribution_id;
 
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     *
-     * @var array
-     */
+    #[Constraints\All(constraints: new Constraints\Uuid)]
     public array $vendors;
 
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     *
-     * @var array
-     */
+    #[Constraints\All(constraints: new Constraints\Uuid)]
     public array $address_ids;
 
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     *
-     * @var array
-     */
+    #[Constraints\All(constraints: new Constraints\Uuid)]
     public array $contact_ids;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string
-     */
+    #[Constraints\Uuid]
     public string $country_id;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string
-     */
+    #[Constraints\Uuid]
     public string $distribution_currency_id;
 
     public ?float $distribution_currency_quote_currency_exchange_rate_value;
 
     public ?float $distribution_currency_quote_currency_exchange_rate_margin;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string
-     */
+    #[Constraints\Uuid]
     public string $buy_currency_id;
 
-    /**
-     * @Constraints\PositiveOrZero
-     *
-     * @var float
-     */
+    #[Constraints\PositiveOrZero]
     public float $buy_price;
 
-    /**
-     * @var bool
-     */
     public bool $calculate_list_price;
 
     public Carbon $distribution_expiry_date;
+
+    public DateFormatEnum $file_date_format;
 }

@@ -2,17 +2,14 @@
 
 namespace Tests\Unit\Quote;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeQuote,
-    WithFakeUser
-};
-use App\Models\Quote\Quote;
-use App\Http\Resources\QuoteVersionResource;
+use App\Http\Resources\V1\QuoteVersionResource;
 use App\Models\Quote\Margin\CountryMargin;
+use App\Models\Quote\Quote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Tests\TestCase;
+use Tests\Unit\Traits\{WithFakeQuote, WithFakeUser};
 
 /**
  * @group build

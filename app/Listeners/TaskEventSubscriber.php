@@ -2,237 +2,185 @@
 
 namespace App\Listeners;
 
-use App\Contracts\Multitenantable;
-use App\Contracts\Repositories\UserRepositoryInterface as Users;
-use App\Events\Task\{
-    TaskCreated,
-    TaskDeleted,
-    TaskExpired,
-    TaskUpdated,
-};
+use App\Events\Task\{TaskCreated, TaskDeleted, TaskExpired, TaskUpdated,};
 use App\Models\User;
-use App\Notifications\Task\{
-    TaskCreated as CreatedNotification,
-    TaskAssigned as AssignedNotification,
-    TaskDeleted as DeletedNotification,
-    TaskRevoked as RevokedNotification,
-    TaskExpired as ExpiredNotification
-};
-use App\Services\TaskService;
-use Arr;
+use App\Notifications\Task\{InvitedToTaskNotification,
+    RevokedInvitationFromTaskNotification,
+    TaskCreatedNotification,
+    TaskDeletedNotification,
+    TaskExpiredNotification};
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Arr;
 
 class TaskEventSubscriber
 {
-    protected Users $users;
-
-    protected TaskService $service;
-
-    public function __construct(Users $users, TaskService $service)
+    public function __construct()
     {
-        $this->users = $users;
-        $this->service = $service;
     }
 
     /**
      * Register the listeners for the subscriber.
      *
-     * @param  \Illuminate\Events\Dispatcher  $events
+     * @param \Illuminate\Events\Dispatcher $events
      */
-    public function subscribe($events)
+    public function subscribe(Dispatcher $events): void
     {
-        $events->listen(TaskCreated::class, self::class . '@handleCreatedEvent');
-        $events->listen(TaskUpdated::class, self::class . '@handleUpdatedEvent');
-        $events->listen(TaskDeleted::class, self::class . '@handleDeletedEvent');
-        $events->listen(TaskExpired::class, self::class . '@handleExpiredEvent');
+        $events->listen(TaskCreated::class, [self::class, 'handleCreatedEvent']);
+        $events->listen(TaskUpdated::class, [self::class, 'handleUpdatedEvent']);
+        $events->listen(TaskDeleted::class, [self::class, 'handleDeletedEvent']);
+        $events->listen(TaskExpired::class, [self::class, 'handleExpiredEvent']);
     }
 
     public function handleCreatedEvent(TaskCreated $event)
     {
         $task = $event->task;
-        $taskable = $task->taskable;
-        $taskableRoute = $this->service->qualifyTaskableRoute($task);
-        $taskableName = $this->service->qualifyTaskableName($task);
 
-        /**
-         * Notify taskable owner that task has been created.
-         */
-        if ($taskable instanceof Multitenantable) {
-            $message = sprintf(
-                'The new task "%s" created by %s',
-                $task->name,
-                $taskableName
-            );
+        $message = sprintf(
+            'New task created: `%s`',
+            $task->name,
+        );
 
-            notification()
-                ->for($taskable->user)
-                ->message($message)
-                ->subject($taskable)
-                ->url($taskableRoute)
-                ->priority(1)
-                ->store();
+        notification()
+            ->for($task->user)
+            ->message($message)
+            ->subject($task)
+            ->priority(1)
+            ->push();
 
-            $taskable->user->notify(new CreatedNotification($task, $taskableName, $taskableRoute));
-        }
+        $task->user->notify(new TaskCreatedNotification($task));
 
         /**
          * Notify assigned users about the task.
          */
-        $task->users->each(function (User $user) use ($task, $taskableName, $taskableRoute) {
+        $task->users->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'User %s assigned you to the new task "%s" by %s',
-                $task->user->email,
+                'You have been invited to the task task: `%s`',
                 $task->name,
-                $taskableName
             );
 
             $notification = notification()
                 ->for($user)
                 ->message($message)
-                ->subject($task->taskable)
+                ->subject($task)
                 ->priority(2);
 
-            transform($taskableRoute, function (string $taskableRoute) use ($notification) {
-                $notification->url($taskableRoute);
-            });
+            $notification->push();
 
-            $notification->store();
-
-            $user->notify(new AssignedNotification($task, $taskableName, $taskableRoute));
+            $user->notify(new InvitedToTaskNotification($task));
         });
     }
 
     public function handleUpdatedEvent(TaskUpdated $event)
     {
         $task = $event->task;
-        $taskableRoute = $this->service->qualifyTaskableRoute($task);
-        $taskableName = $this->service->qualifyTaskableName($task);
 
         $syncedUsers = $event->usersSyncResult;
 
-        $attachedUsers = $this->users->findMany(Arr::get($syncedUsers, 'attached', []));
-        $detachedUsers = $this->users->findMany(Arr::get($syncedUsers, 'detached', []));
+        $attachedUsers = User::query()->whereKey(Arr::get($syncedUsers, 'attached', []));
+        $detachedUsers = User::query()->whereKey(Arr::get($syncedUsers, 'detached', []));
 
         /**
          * Notify task assigned users about the quote task.
          */
-        $attachedUsers->each(function (User $user) use ($task, $taskableName, $taskableRoute) {
+        $attachedUsers->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'User %s assigned you to the task "%s" by %s',
-                $task->user->email,
+                'You have been invited to the task task: `%s`',
                 $task->name,
-                $taskableName
             );
 
             $notification = notification()
                 ->for($user)
                 ->message($message)
-                ->subject($task->taskable)
+                ->subject($task)
                 ->priority(2);
 
-            transform($taskableRoute, function (string $taskableRoute) use ($notification) {
-                $notification->url($taskableRoute);
-            });
+            $notification->push();
 
-            $notification->store();
-
-            $user->notify(new AssignedNotification($task, $taskableName, $taskableRoute));
+            $user->notify(new InvitedToTaskNotification($task));
         });
 
-        $detachedUsers->each(function (User $user) use ($task, $taskableName) {
+        $detachedUsers->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'User %s revoked you from the task "%s" by %s',
-                $task->user->email,
+                'Your invitation has been revoked from task: `%s`',
                 $task->name,
-                $taskableName
             );
 
             notification()
                 ->for($user)
                 ->message($message)
-                ->subject($task->taskable)
+                ->subject($task)
                 ->priority(2)
-                ->store();
+                ->push();
 
-            $user->notify(new RevokedNotification($task, $taskableName));
+            $user->notify(new RevokedInvitationFromTaskNotification($task));
         });
     }
 
     public function handleDeletedEvent(TaskDeleted $event)
     {
         $task = $event->task;
-        $taskable = $task->taskable;
-        $taskableRoute = $this->service->qualifyTaskableRoute($task);
-        $taskableName = $this->service->qualifyTaskableName($task);
 
-        /**
-         * Notify taskable owner that task has been deleted.
-         */
-        if ($taskable instanceof Multitenantable) {
-            $message = sprintf(
-                'The task "%s" by %s has been deleted',
-                $task->name,
-                $taskableName
-            );
+        $message = sprintf(
+            'Task has been deleted: `%s`',
+            $task->name,
+        );
 
-            notification()
-                ->for($taskable->user)
-                ->message($message)
-                ->subject($taskable)
-                ->url($taskableRoute)
-                ->priority(1)
-                ->store();
+        notification()
+            ->for($task->user)
+            ->message($message)
+            ->subject($task)
+            ->priority(1)
+            ->push();
 
-            $taskable->user->notify(new DeletedNotification($task, $taskableName));
-        }
+        $task->user->notify(new TaskDeletedNotification($task));
 
         /**
          * Notify task assigned users that task deleted.
          */
-        $task->users->each(function (User $user) use ($task, $taskableName) {
+        $task->users->each(function (User $user) use ($task) {
             $message = sprintf(
-                'The task "%s" you were assigned by %s has been deleted',
+                'Task you were assigned to has been deleted: `%s`',
                 $task->name,
-                $taskableName
             );
 
             notification()
                 ->for($user)
                 ->message($message)
-                ->subject($task->taskable)
+                ->subject($task)
                 ->priority(2)
-                ->store();
+                ->push();
 
-            $user->notify(new DeletedNotification($task, $taskableName));
+            $user->notify(new TaskDeletedNotification($task));
         });
     }
 
     public function handleExpiredEvent(TaskExpired $event)
     {
         $task = $event->task;
-        $taskableRoute = $this->service->qualifyTaskableRoute($task);
-        $taskableName = $this->service->qualifyTaskableName($task);
 
         /**
-         * Notifiy task creator and task assigned users.
+         * Notify task creator and task assigned users.
          */
-        $users = (clone $task->users)->push($task->user);
+        $users = $task->users;
 
-        $users->each(function (User $user) use ($task, $taskableName, $taskableRoute) {
+        if (null !== $task->user) {
+            $users = $users->merge([$task->user]);
+        }
+
+        $users->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'Task "%s" by %s has been expired.',
+                'Task has been expired: `%s`',
                 $task->name,
-                $taskableName
             );
 
             notification()
                 ->for($user)
                 ->message($message)
-                ->url($taskableRoute)
-                ->subject($task->taskable)
+                ->subject($task)
                 ->priority(3)
-                ->store();
+                ->push();
 
-            $user->notify(new ExpiredNotification($task, $taskableName, $taskableRoute));
+            $user->notify(new TaskExpiredNotification($task));
         });
     }
 }

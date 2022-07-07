@@ -4,8 +4,6 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\Quote\QuoteNoteRepositoryInterface;
-use App\Repositories\Quote\QuoteNoteRepository;
 
 class NoteServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -16,13 +14,11 @@ class NoteServiceProvider extends ServiceProvider implements DeferrableProvider
      */
     public function register()
     {
-        $this->app->singleton(QuoteNoteRepositoryInterface::class, QuoteNoteRepository::class);
     }
 
     public function provides()
     {
         return [
-            QuoteNoteRepositoryInterface::class,
         ];
     }
 }

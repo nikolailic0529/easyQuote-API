@@ -99,7 +99,7 @@ class CustomerTest extends TestCase
     {
         $this->authenticateApi();
 
-        $internalCompany = factory(Company::class)->create([
+        $internalCompany = Company::factory()->create([
             'type' => CompanyType::INTERNAL,
         ]);
 
@@ -118,7 +118,7 @@ class CustomerTest extends TestCase
                 factory(Address::class)->create()->getKey(),
             ],
             'contacts' => [
-                factory(Contact::class)->create()->getKey(),
+                Contact::factory()->create()->getKey(),
             ],
             'customer_name' => $this->faker->company,
             'email' => $this->faker->companyEmail,
@@ -174,7 +174,7 @@ class CustomerTest extends TestCase
                 factory(Address::class)->create()->getKey(),
             ],
             'contacts' => [
-                factory(Contact::class)->create()->getKey(),
+                Contact::factory()->create()->getKey(),
             ],
             'customer_name' => $this->faker->company,
             'email' => $this->faker->companyEmail,

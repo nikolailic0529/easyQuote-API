@@ -18,7 +18,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
     {
         /** @var \App\Models\Company $epdCompanyModel */
         $epdCompanyModel = Company::query()->where('short_code', 'EPD')->sole();
-        $templateAssets = ThumbHelper::retrieveLogoFromModels([$epdCompanyModel], ThumbHelper::WITH_KEYS);
+        $templateAssets = ThumbHelper::retrieveLogoFromModels([$epdCompanyModel], ThumbHelper::MAP);
 
         $oldWwContractQuoteTemplateUuid = '4f8bc11b-6109-41db-87f9-962c37dd8c7f';
         $oldWwContractQuoteTemplateSchema = file_get_contents(database_path('seeders/models/ww_contract_epd_master_quote_template_schema_old.json'));

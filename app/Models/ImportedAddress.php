@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Contracts\HasOwner;
 use App\Models\Data\Country;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @property string|null $pl_reference
+ * @property string|null $contact_id
  * @property string|null $country_id
  * @property mixed|string $address_type
  * @property mixed|null $address_1
@@ -17,11 +20,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property mixed|null $state
  * @property mixed|null $state_code
  */
-class ImportedAddress extends Model
+class ImportedAddress extends Model implements HasOwner
 {
     use Uuid;
 
     protected $guarded = [];
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class);
+    }
 
     public function country(): BelongsTo
     {

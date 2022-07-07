@@ -13,10 +13,11 @@ use App\Events\RescueQuote\RescueQuoteUnravelled;
 use App\Events\RescueQuote\RescueQuoteUpdated;
 use App\Http\Requests\{Quote\StoreQuoteStateRequest,};
 use App\Http\Requests\Quote\TryDiscountsRequest;
-use App\Http\Resources\QuoteReviewResource;
+use App\Http\Resources\V1\QuoteReviewResource;
 use App\Jobs\MigrateQuoteAssets;
 use App\Jobs\RetrievePriceAttributes;
-use App\Models\{Quote\BaseQuote,
+use App\Models\{Note\Note,
+    Quote\BaseQuote,
     Quote\Discount as MorphDiscount,
     Quote\DistributionFieldColumn,
     Quote\FieldColumn,
@@ -26,7 +27,6 @@ use App\Models\{Quote\BaseQuote,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
     User};
-use App\Models\Quote\QuoteNote;
 use App\Models\Quote\QuoteVersion;
 use App\Queries\QuoteQueries;
 use App\Repositories\Concerns\{ManagesGroupDescription,
@@ -719,14 +719,17 @@ class QuoteStateProcessor implements QuoteState
             // Unravel the replicated quote.
             $replicatedQuote->forceFill(['submitted_at' => null])->save();
 
-            if (false === is_null($version->note)) {
+            if (null !== $version->note) {
 
-                tap($version->note->replicate(), function (QuoteNote $note) use ($replicatedQuote) {
+                tap($version->note->replicate(), function (Note $note) use ($replicatedQuote) {
                     $note->{$note->getKeyName()} = (string)Uuid::generate(4);
-                    $note->quote()->associate($replicatedQuote);
-                    $note->user()->associate($replicatedQuote->user_id);
+                    $note->owner()->associate($replicatedQuote->user_id);
 
-                    $note->save();
+                    $this->connection->transaction(static function () use ($note, $replicatedQuote): void {
+                        $note->save();
+
+                        $replicatedQuote->notes()->attach($note);
+                    });
                 });
 
             }
@@ -784,26 +787,32 @@ class QuoteStateProcessor implements QuoteState
 
             $pass = $replicatedVersion->save();
 
-            if (false === is_null($version->note)) {
+            if (null !== $version->note) {
 
-                tap($version->note->replicate(), function (QuoteNote $note) use ($user, $replicatedVersion) {
+                tap($version->note->replicate(), function (Note $note) use ($user, $replicatedVersion) {
                     $note->{$note->getKeyName()} = (string)Uuid::generate(4);
-                    $note->quoteVersion()->associate($replicatedVersion);
-                    $note->user()->associate($user);
+                    $note->owner()->associate($user);
 
-                    $note->save();
+                    $this->connection->transaction(static function () use ($note, $replicatedVersion): void {
+                        $note->save();
+
+                        $replicatedVersion->notes()->attach($note);
+                    });
                 });
 
             } elseif (trim(strip_tags((string)$replicatedVersion->additional_notes)) !== '') {
 
-                tap(new QuoteNote(), function (QuoteNote $note) use ($parent, $user, $replicatedVersion) {
+                tap(new Note(), function (Note $note) use ($parent, $user, $replicatedVersion) {
                     $note->{$note->getKeyName()} = (string)Uuid::generate(4);
-                    $note->quote()->associate($parent);
-                    $note->quoteVersion()->associate($replicatedVersion);
-                    $note->user()->associate($user);
-                    $note->text = $replicatedVersion->additional_notes;
+                    $note->owner()->associate($user);
+                    $note->note = $replicatedVersion->additional_notes;
 
-                    $note->save();
+                    $this->connection->transaction(static function () use ($note, $parent, $replicatedVersion): void {
+                        $note->save();
+
+                        $parent->notes()->attach($note);
+                        $replicatedVersion->notes()->attach($note);
+                    });
                 });
 
             }
@@ -964,29 +973,35 @@ class QuoteStateProcessor implements QuoteState
             return;
         }
 
-        /** @var QuoteNote $quoteNote */
+        /** @var Note $note */
+        $note = tap($version->notes()
+            ->where('flags', '&', Note::FROM_ENTITY_WIZARD)
+            ->firstOrNew([]), function (Note $note) use ($quote, $version) {
 
-        $quoteNote = tap($version->note()->firstOrNew(), function (QuoteNote $note) use ($quote, $version) {
             if (false === $note->exists) {
                 $note->{$note->getKeyName()} = (string)Uuid::generate(4);
             }
-            $note->user()->associate($version->user_id);
-            $note->quote()->associate($quote);
 
-            if ($version instanceof QuoteVersion) {
-                $note->quoteVersion()->associate($version);
+            $note->owner()->associate($version->user()->getParentKey());
+
+            $note->note = $version->additional_notes;
+
+            if (false === $note->from_entity_wizard) {
+                $note->flags |= Note::FROM_ENTITY_WIZARD;
             }
-
-            $note->text = $version->additional_notes;
-            $note->is_from_quote = true;
         });
 
-        $quoteNoteIsEmpty = trim(strip_tags((string)$quoteNote->text)) === '';
+        $quoteNoteIsEmpty = trim(strip_tags((string)$note->text)) === '';
 
         if ($quoteNoteIsEmpty) {
-            $quoteNote->delete();
+            $note->delete();
         } else {
-            $quoteNote->save();
+            $this->connection->transaction(static function () use ($quote, $note, $version) {
+                $note->save();
+
+                $quote->notes()->syncWithoutDetaching($note);
+                $version->notes()->syncWithoutDetaching($note);
+            });
         }
 
     }

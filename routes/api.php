@@ -1,76 +1,82 @@
 <?php
 
-use App\Http\Controllers\API\AddressController;
-use App\Http\Controllers\API\AssetController;
-use App\Http\Controllers\API\AttachmentController;
-use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\API\BusinessDivisionController;
-use App\Http\Controllers\API\Company\CompanyController;
-use App\Http\Controllers\API\Company\CompanyNoteController;
-use App\Http\Controllers\API\ContactController;
-use App\Http\Controllers\API\Contracts\ContractDraftedController;
-use App\Http\Controllers\API\Contracts\ContractStateController;
-use App\Http\Controllers\API\Contracts\ContractSubmittedController;
-use App\Http\Controllers\API\Contracts\UnifiedContractController;
-use App\Http\Controllers\API\ContractTypeController;
-use App\Http\Controllers\API\Data\CountryController;
-use App\Http\Controllers\API\Data\CurrencyController;
-use App\Http\Controllers\API\Data\ExchangeRateController;
-use App\Http\Controllers\API\Data\FileFormatsController;
-use App\Http\Controllers\API\Data\LanguagesController;
-use App\Http\Controllers\API\Data\TimezonesController;
-use App\Http\Controllers\API\Discounts\MultiYearDiscountController;
-use App\Http\Controllers\API\Discounts\PrePayDiscountController;
-use App\Http\Controllers\API\Discounts\PromotionalDiscountController;
-use App\Http\Controllers\API\Discounts\SNDcontroller;
-use App\Http\Controllers\API\DocumentEngine\DocumentEngineDataController;
-use App\Http\Controllers\API\DocumentEngine\DocumentEngineEventController;
-use App\Http\Controllers\API\HpeContractController;
-use App\Http\Controllers\API\HpeContractFileController;
-use App\Http\Controllers\API\InvitationController;
-use App\Http\Controllers\API\Margins\CountryMarginController;
-use App\Http\Controllers\API\OpportunityController;
-use App\Http\Controllers\API\PermissionController;
-use App\Http\Controllers\API\Pipeline\PipelineController;
-use App\Http\Controllers\API\Quotes\CustomerController;
-use App\Http\Controllers\API\Quotes\RescueQuoteAttachmentController;
-use App\Http\Controllers\API\Quotes\QuoteController;
-use App\Http\Controllers\API\Quotes\QuoteDraftedController;
-use App\Http\Controllers\API\Quotes\QuoteFileController;
-use App\Http\Controllers\API\Quotes\QuoteNoteController;
-use App\Http\Controllers\API\Quotes\QuoteSubmittedController;
-use App\Http\Controllers\API\Quotes\QuoteTaskController;
-use App\Http\Controllers\API\RoleController;
-use App\Http\Controllers\API\S4QuoteController;
-use App\Http\Controllers\API\SalesOrders\SalesOrderController;
-use App\Http\Controllers\API\SalesOrders\SalesOrderDraftedController;
-use App\Http\Controllers\API\SalesOrders\SalesOrderSubmittedController;
-use App\Http\Controllers\API\ServiceController;
-use App\Http\Controllers\API\Space\SpaceController;
-use App\Http\Controllers\API\StatsController;
-use App\Http\Controllers\API\System\ActivityController;
-use App\Http\Controllers\API\System\CustomFieldController;
-use App\Http\Controllers\API\System\ImportableColumnController;
-use App\Http\Controllers\API\System\MaintenanceController;
-use App\Http\Controllers\API\System\NotificationController;
-use App\Http\Controllers\API\System\SystemSettingController;
-use App\Http\Controllers\API\TeamController;
-use App\Http\Controllers\API\Templates\ContractTemplateController;
-use App\Http\Controllers\API\Templates\HpeContractTemplateController;
-use App\Http\Controllers\API\Templates\OpportunityFormController;
-use App\Http\Controllers\API\Templates\QuoteTemplateController;
-use App\Http\Controllers\API\Templates\SalesOrderTemplateController;
-use App\Http\Controllers\API\UnifiedQuoteController;
-use App\Http\Controllers\API\UserController;
-use App\Http\Controllers\API\VendorController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideCustomerController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideDistributionController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteAssetController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteAttachmentController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteDraftedController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteNoteController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteSubmittedController;
+use App\Http\Controllers\API\V1\AddressController;
+use App\Http\Controllers\API\V1\AppointmentController;
+use App\Http\Controllers\API\V1\AssetController;
+use App\Http\Controllers\API\V1\AttachmentController;
+use App\Http\Controllers\API\V1\AuthController;
+use App\Http\Controllers\API\V1\BusinessDivisionController;
+use App\Http\Controllers\API\V1\Company\CompanyController;
+use App\Http\Controllers\API\V1\Company\CompanyNoteController;
+use App\Http\Controllers\API\V1\ContactController;
+use App\Http\Controllers\API\V1\Contracts\ContractDraftedController;
+use App\Http\Controllers\API\V1\Contracts\ContractStateController;
+use App\Http\Controllers\API\V1\Contracts\ContractSubmittedController;
+use App\Http\Controllers\API\V1\Contracts\UnifiedContractController;
+use App\Http\Controllers\API\V1\ContractTypeController;
+use App\Http\Controllers\API\V1\Data\CountryController;
+use App\Http\Controllers\API\V1\Data\CurrencyController;
+use App\Http\Controllers\API\V1\Data\DateFormatController;
+use App\Http\Controllers\API\V1\Data\ExchangeRateController;
+use App\Http\Controllers\API\V1\Data\FileFormatsController;
+use App\Http\Controllers\API\V1\Data\LanguagesController;
+use App\Http\Controllers\API\V1\Data\TimezonesController;
+use App\Http\Controllers\API\V1\Discounts\MultiYearDiscountController;
+use App\Http\Controllers\API\V1\Discounts\PrePayDiscountController;
+use App\Http\Controllers\API\V1\Discounts\PromotionalDiscountController;
+use App\Http\Controllers\API\V1\Discounts\SNDcontroller;
+use App\Http\Controllers\API\V1\DocumentEngine\DocumentEngineDataController;
+use App\Http\Controllers\API\V1\DocumentEngine\DocumentEngineEventController;
+use App\Http\Controllers\API\V1\HpeContractController;
+use App\Http\Controllers\API\V1\HpeContractFileController;
+use App\Http\Controllers\API\V1\InvitationController;
+use App\Http\Controllers\API\V1\Margins\CountryMarginController;
+use App\Http\Controllers\API\V1\OpportunityController;
+use App\Http\Controllers\API\V1\OpportunityNoteController;
+use App\Http\Controllers\API\V1\PermissionController;
+use App\Http\Controllers\API\V1\Pipeline\PipelineController;
+use App\Http\Controllers\API\V1\PipelinerController;
+use App\Http\Controllers\API\V1\Quotes\CustomerController;
+use App\Http\Controllers\API\V1\Quotes\QuoteController;
+use App\Http\Controllers\API\V1\Quotes\QuoteDraftedController;
+use App\Http\Controllers\API\V1\Quotes\QuoteFileController;
+use App\Http\Controllers\API\V1\Quotes\QuoteNoteController;
+use App\Http\Controllers\API\V1\Quotes\QuoteSubmittedController;
+use App\Http\Controllers\API\V1\Quotes\QuoteTaskController;
+use App\Http\Controllers\API\V1\Quotes\RescueQuoteAttachmentController;
+use App\Http\Controllers\API\V1\RoleController;
+use App\Http\Controllers\API\V1\S4QuoteController;
+use App\Http\Controllers\API\V1\SalesOrders\SalesOrderController;
+use App\Http\Controllers\API\V1\SalesOrders\SalesOrderDraftedController;
+use App\Http\Controllers\API\V1\SalesOrders\SalesOrderSubmittedController;
+use App\Http\Controllers\API\V1\ServiceController;
+use App\Http\Controllers\API\V1\Space\SpaceController;
+use App\Http\Controllers\API\V1\StatsController;
+use App\Http\Controllers\API\V1\System\ActivityController;
+use App\Http\Controllers\API\V1\System\CustomFieldController;
+use App\Http\Controllers\API\V1\System\ImportableColumnController;
+use App\Http\Controllers\API\V1\System\MaintenanceController;
+use App\Http\Controllers\API\V1\System\NotificationController;
+use App\Http\Controllers\API\V1\System\SystemSettingController;
+use App\Http\Controllers\API\V1\TaskController;
+use App\Http\Controllers\API\V1\TeamController;
+use App\Http\Controllers\API\V1\Templates\ContractTemplateController;
+use App\Http\Controllers\API\V1\Templates\HpeContractTemplateController;
+use App\Http\Controllers\API\V1\Templates\OpportunityFormController;
+use App\Http\Controllers\API\V1\Templates\QuoteTemplateController;
+use App\Http\Controllers\API\V1\Templates\SalesOrderTemplateController;
+use App\Http\Controllers\API\V1\UnifiedQuoteController;
+use App\Http\Controllers\API\V1\UserController;
+use App\Http\Controllers\API\V1\VendorController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideCustomerController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideDistributionController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteAssetController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteAttachmentController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteDraftedController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteNoteController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteSubmittedController;
+use App\Http\Controllers\V1\Pipeliner\PipelinerWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('settings/public', [SystemSettingController::class, 'showPublicSettings']);
@@ -108,6 +114,7 @@ Route::group(['prefix' => 'data'], function () {
         Route::get('currencies', CurrencyController::class);
         Route::get('currencies/xr', [CurrencyController::class, 'showAllHavingExrate']);
         Route::get('fileformats', FileFormatsController::class);
+        Route::get('dateformats', DateFormatController::class);
     });
 
     Route::get('countries', CountryController::class);
@@ -169,6 +176,8 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::apiResource('contacts', ContactController::class);
         Route::put('contacts/activate/{contact}', [ContactController::class, 'activate']);
         Route::put('contacts/deactivate/{contact}', [ContactController::class, 'deactivate']);
+
+        Route::get('contacts/{contact}/appointments', [ContactController::class, 'showAppointmentsOfContact']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -196,8 +205,8 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::put('importable-columns/deactivate/{importable_column}', [ImportableColumnController::class, 'deactivate']);
 
         Route::get('custom-fields', [CustomFieldController::class, 'showListOfCustomFields']);
-        Route::get('custom-field-values/{custom_field_name}', [CustomFieldController::class, 'showValuesOfCustomFieldByFieldName']);
-        Route::put('custom-field-values/{custom_field_name}', [CustomFieldController::class, 'updateValuesOfCustomField']);
+        Route::get('custom-field-values/{custom_field:field_name}', [CustomFieldController::class, 'showValuesOfCustomFieldByFieldName']);
+        Route::put('custom-field-values/{custom_field:field_name}', [CustomFieldController::class, 'updateValuesOfCustomField']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -303,9 +312,9 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('companies/{company}/notes', [CompanyController::class, 'showUnifiedNotesOfCompany']);
 
         Route::post('companies/{company}/company-notes', [CompanyNoteController::class, 'storeCompanyNote']);
-        Route::get('companies/company-notes/{company_note}', [CompanyNoteController::class, 'showCompanyNote']);
-        Route::patch('companies/company-notes/{company_note}', [CompanyNoteController::class, 'updateCompanyNote']);
-        Route::delete('companies/company-notes/{company_note}', [CompanyNoteController::class, 'deleteCompanyNote']);
+        Route::get('companies/company-notes/{note}', [CompanyNoteController::class, 'showCompanyNote']);
+        Route::patch('companies/company-notes/{note}', [CompanyNoteController::class, 'updateCompanyNote']);
+        Route::delete('companies/company-notes/{note}', [CompanyNoteController::class, 'deleteCompanyNote']);
 
         Route::post('companies', [CompanyController::class, 'storeCompany']);
         Route::patch('companies/{company}', [CompanyController::class, 'updateCompany']);
@@ -320,6 +329,8 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('companies/{company}/attachments', [CompanyController::class, 'showAttachmentsOfCompany']);
         Route::post('companies/{company}/attachments', [CompanyController::class, 'storeAttachmentForCompany']);
         Route::delete('companies/{company}/attachments/{attachment:id}', [CompanyController::class, 'deleteAttachmentOfCompany']);
+
+        Route::get('companies/{company}/appointments', [CompanyController::class, 'showAppointmentsOfCompany']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -369,7 +380,6 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('hpe-contracts/{hpe_contract}/deactivate', [HpeContractController::class, 'deactivateHpeContract']);
     Route::get('hpe-contracts/{hpe_contract}/export', [HpeContractController::class, 'exportHpeContract']);
     Route::apiResource('hpe-contracts', HpeContractController::class);
-
 
     Route::group(['prefix' => 'contracts', 'as' => 'contracts.'], function () {
         Route::get('drafted/users', [UnifiedContractController::class, 'showUserNamesOfDraftedContracts']);
@@ -425,10 +435,10 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::put('permissions/{quote}', [QuoteController::class, 'givePermissionToQuote']);
 
         Route::get('notes/{quote}', [QuoteNoteController::class, 'index']);
-        Route::get('notes/{quote}/{quote_note}', [QuoteNoteController::class, 'show']);
+        Route::get('notes/{quote}/{note}', [QuoteNoteController::class, 'show']);
         Route::post('notes/{quote}', [QuoteNoteController::class, 'store']);
-        Route::patch('notes/{quote}/{quote_note}', [QuoteNoteController::class, 'update']);
-        Route::delete('notes/{quote}/{quote_note}', [QuoteNoteController::class, 'destroy']);
+        Route::patch('notes/{quote}/{note}', [QuoteNoteController::class, 'update']);
+        Route::delete('notes/{quote}/{note}', [QuoteNoteController::class, 'destroy']);
 
         Route::get('tasks/create', [QuoteTaskController::class, 'showTemplate']);
         Route::put('tasks/template', [QuoteTaskController::class, 'updateTemplate']);
@@ -438,6 +448,8 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('tasks/{quote}', [QuoteTaskController::class, 'storeRescueQuoteTask']);
         Route::patch('tasks/{quote}/{task}', [QuoteTaskController::class, 'updateRescueQuoteTask']);
         Route::delete('tasks/{quote}/{task}', [QuoteTaskController::class, 'destroyRescueQuoteTask']);
+
+        Route::get('{quote}/appointments', [QuoteController::class, 'showAppointmentsOfQuote']);
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('/discounts/{quote}', [QuoteController::class, 'discounts']);
@@ -496,16 +508,31 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     Route::apiResource('ww-customers', WorldwideCustomerController::class, ['only' => ROUTE_R]);
 
+    Route::get('pipeliner/pipeliner-sync-status', [PipelinerController::class, 'showPipelinerSyncStatus']);
+    Route::patch('pipeliner/queue-pipeliner-sync', [PipelinerController::class, 'queuePipelinerSync']);
+    Route::patch('pipeliner/sync-model', [PipelinerController::class, 'syncModel']);
+
     Route::get('opportunities', [OpportunityController::class, 'paginateOpportunities']);
     Route::get('opportunities/lost', [OpportunityController::class, 'paginateLostOpportunities']);
     Route::post('opportunities/upload', [OpportunityController::class, 'batchUploadOpportunities']);
     Route::patch('opportunities/save', [OpportunityController::class, 'batchSaveOpportunities']);
+    Route::get('opportunities/pipeliner-sync-status', [PipelinerController::class, 'showPipelinerSyncStatus']);
+    Route::patch('opportunities/queue-pipeliner-sync', [PipelinerController::class, 'queuePipelinerSync']);
     Route::get('opportunities/{opportunity}', [OpportunityController::class, 'showOpportunity']);
     Route::post('opportunities', [OpportunityController::class, 'storeOpportunity']);
     Route::patch('opportunities/{opportunity}', [OpportunityController::class, 'updateOpportunity']);
     Route::delete('opportunities/{opportunity}', [OpportunityController::class, 'destroyOpportunity']);
+    Route::patch('opportunities/{opportunity}/stage', [OpportunityController::class, 'setStageOfOpportunity']);
     Route::patch('opportunities/{opportunity}/lost', [OpportunityController::class, 'markOpportunityAsLost']);
     Route::patch('opportunities/{opportunity}/restore-from-lost', [OpportunityController::class, 'markOpportunityAsNotLost']);
+
+    Route::get('opportunities/{opportunity}/appointments', [OpportunityController::class, 'showAppointmentsOfOpportunity']);
+
+    Route::get('opportunities/{opportunity}/notes', [OpportunityNoteController::class, 'paginateOpportunityNotes']);
+    Route::post('opportunities/{opportunity}/notes', [OpportunityNoteController::class, 'storeOpportunityNote']);
+    Route::get('opportunity-notes/{note}', [OpportunityNoteController::class, 'showOpportunityNote']);
+    Route::patch('opportunity-notes/{note}', [OpportunityNoteController::class, 'updateOpportunityNote']);
+    Route::delete('opportunity-notes/{note}', [OpportunityNoteController::class, 'deleteOpportunityNote']);
 
     Route::get('opportunity-forms', [OpportunityFormController::class, 'paginateOpportunityForms']);
     Route::get('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'showOpportunityForm']);
@@ -513,6 +540,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'updateOpportunityForm']);
     Route::patch('opportunity-forms/{opportunity_form}/schema', [OpportunityFormController::class, 'updateSchemaOfOpportunityForm']);
     Route::delete('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'deleteOpportunityForm']);
+
 
     /**
      * Sales Orders.
@@ -563,16 +591,18 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('ww-quotes/{worldwide_quote}/files/schedule-files', [WorldwideQuoteController::class, 'downloadQuoteScheduleFiles']);
 
     Route::get('ww-quotes/{worldwide_quote}/notes', [WorldwideQuoteNoteController::class, 'paginateQuoteNotes']);
-    Route::get('ww-quotes/{worldwide_quote}/notes/{worldwide_quote_note:id}', [WorldwideQuoteNoteController::class, 'showQuoteNote']);
+    Route::get('ww-quotes/{worldwide_quote}/notes/{note:id}', [WorldwideQuoteNoteController::class, 'showQuoteNote']);
     Route::post('ww-quotes/{worldwide_quote}/notes', [WorldwideQuoteNoteController::class, 'storeQuoteNote']);
-    Route::patch('ww-quotes/{worldwide_quote}/notes/{worldwide_quote_note:id}', [WorldwideQuoteNoteController::class, 'updateQuoteNote']);
-    Route::delete('ww-quotes/{worldwide_quote}/notes/{worldwide_quote_note:id}', [WorldwideQuoteNoteController::class, 'destroyQuoteNote']);
+    Route::patch('ww-quotes/{worldwide_quote}/notes/{note:id}', [WorldwideQuoteNoteController::class, 'updateQuoteNote']);
+    Route::delete('ww-quotes/{worldwide_quote}/notes/{note:id}', [WorldwideQuoteNoteController::class, 'destroyQuoteNote']);
 
     Route::get('ww-quotes/{worldwide_quote}/tasks', [QuoteTaskController::class, 'paginateWorldwideQuoteTasks']);
     Route::get('ww-quotes/{worldwide_quote}/tasks/{task:id}', [QuoteTaskController::class, 'showWorldwideQuoteTask']);
     Route::post('ww-quotes/{worldwide_quote}/tasks', [QuoteTaskController::class, 'storeWorldwideQuoteTask']);
     Route::patch('ww-quotes/{worldwide_quote}/tasks/{task:id}', [QuoteTaskController::class, 'updateWorldwideQuoteTask']);
     Route::delete('ww-quotes/{worldwide_quote}/tasks/{task:id}', [QuoteTaskController::class, 'destroyWorldwideQuoteTask']);
+
+    Route::get('ww-quotes/{worldwide_quote}/appointments', [WorldwideQuoteController::class, 'showAppointmentsOfQuote']);
 
     Route::get('ww-quotes/{worldwide_quote}/sales-order-data', [WorldwideQuoteController::class, 'showSalesOrderDataOfWorldwideQuote']);
 
@@ -679,5 +709,18 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('pipelines/{pipeline}', [PipelineController::class, 'updatePipeline']);
     Route::patch('pipelines/{pipeline}/default', [PipelineController::class, 'markPipelineAsDefault']);
     Route::delete('pipelines/{pipeline}', [PipelineController::class, 'deletePipeline']);
+    Route::get('pipeline-stages/{stage}/opportunities', [OpportunityController::class, 'paginateOpportunitiesOfPipelineStage']);
+
+    Route::get('tasks/taskable/{taskable}', [TaskController::class, 'listTasksOfTaskable'])->whereUuid('taskable');
+    Route::post('tasks', [TaskController::class, 'createTask']);
+    Route::get('tasks/{task}', [TaskController::class, 'showTask']);
+    Route::patch('tasks/{task}', [TaskController::class, 'updateTask']);
+    Route::delete('tasks/{task}', [TaskController::class, 'deleteTask']);
+
+    Route::post('appointments', [AppointmentController::class, 'storeAppointment']);
+    Route::get('appointments/{appointment}', [AppointmentController::class, 'showAppointment']);
+    Route::patch('appointments/{appointment}', [AppointmentController::class, 'updateAppointment']);
+    Route::delete('appointments/{appointment}', [AppointmentController::class, 'deleteAppointment']);
 });
 
+Route::post('pipeliner/webhook', [PipelinerWebhookController::class, 'handleWebhookEvent'])->name('pipeliner.webhook');

@@ -192,13 +192,13 @@ class SalesOrderQueries
                 'worldwide_quotes.opportunity_id',
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
+                'opportunities.project_name as opportunity_name',
                 'primary_account.name as customer_name',
                 'end_user.name as end_user_name',
                 'account_manager.user_fullname as account_manager_name',
                 'account_manager.email as account_manager_email',
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
-                'opportunities.project_name as opportunity_name',
             ])
             ->join('worldwide_quotes', function (JoinClause $join) {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');

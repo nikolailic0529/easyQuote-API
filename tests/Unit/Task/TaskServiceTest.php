@@ -6,10 +6,9 @@ use App\Console\Commands\Routine\Notifications\TaskExpiration;
 use App\DTO\Tasks\UpdateTaskData;
 use App\Events\Task\TaskExpired;
 use App\Listeners\TaskEventSubscriber;
-use App\Models\{Task,};
-use App\Services\TaskService;
+use App\Models\{Company, Task\Task};
+use App\Services\Task\TaskEntityService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -23,14 +22,14 @@ class TaskServiceTest extends TestCase
      *
      * @return void
      */
-    public function testTaskExpiryNotification()
+    public function testTaskExpiryNotification(): void
     {
         Event::fake(TaskExpired::class);
         Event::hasListeners(TaskEventSubscriber::class);
 
-        $taskable = factory(Arr::random(Task::TASKABLES))->create();
-
-        $task = tap(factory(Task::class)->state('expired')->make(), fn(Task $task) => $task->taskable()->associate($taskable)->save());
+        $task = Task::factory()->expired()
+            ->has(Company::factory(), 'companies')
+            ->create();
 
         Artisan::call(TaskExpiration::class);
 
@@ -56,24 +55,24 @@ class TaskServiceTest extends TestCase
      *
      * @return void
      */
-    public function testTaskExpiryNotificationAfterUpdate()
+    public function testTaskExpiryNotificationAfterUpdate(): void
     {
         Event::fake(TaskExpired::class);
         Event::hasListeners(TaskEventSubscriber::class);
 
-        $taskable = factory(Arr::random(Task::TASKABLES))->create();
-
-        $task = tap(factory(Task::class)->state('expired')->make(), fn(Task $task) => $task->taskable()->associate($taskable)->save());
+        /** @var Task $task */
+        $task = Task::factory()
+            ->expired()
+            ->has(Company::factory(), 'companies')
+            ->create();
 
         Artisan::call(TaskExpiration::class);
 
-        $notificationKey = 'expired';
-
-        $this->assertEquals(1, $task->notifications()->where(['notification_key' => $notificationKey])->count());
+        $this->assertEquals(1, $task->notifications()->where(['notification_key' => TaskExpiration::NOTIFICATION_KEY])->count());
 
         Event::assertDispatched(TaskExpired::class, fn(TaskExpired $event) => $event->task->getKey() === $task->getKey());
 
-        $this->app[TaskService::class]->updateTask($task, new UpdateTaskData([
+        $this->app[TaskEntityService::class]->updateTask($task, new UpdateTaskData([
             'name' => $task->name,
             'content' => $task->content,
             'expiry_date' => $task->expiry_date->subDay(),
@@ -82,7 +81,7 @@ class TaskServiceTest extends TestCase
             'attachments' => $task->attachments->all(),
         ]));
 
-        $this->assertEquals(0, $task->notifications()->where(['notification_key' => $notificationKey])->count());
+        $this->assertEquals(0, $task->notifications()->where(['notification_key' => TaskExpiration::NOTIFICATION_KEY])->count());
 
         Event::fake(TaskExpired::class);
 

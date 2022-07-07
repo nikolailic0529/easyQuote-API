@@ -39,7 +39,7 @@ class NotifyNoteCreatedOnWorldwideQuote
             ->message($message)
             ->subject($quote)
             ->priority(1)
-            ->store();
+            ->push();
 
         $quote->user->notify(new NoteCreated(
             $quote->quote_number, $note->text

@@ -13,10 +13,8 @@ use Symfony\Component\HttpFoundation\File\File;
 
 class ThumbHelper
 {
-    const WITH_KEYS = 1;
-
+    const MAP = 1;
     const ABS_PATH = 2;
-
     const PREFER_SVG = 4;
 
     public static function createLogoThumbnails(Model $model, $file, $fake = false): Model
@@ -28,7 +26,6 @@ class ThumbHelper
         $modelImagesDir = $model->imagesDirectory();
 
         $originalFileName = with($file, function () use ($model, $modelImagesDir, $file, $fake): string {
-
             if ($fake) {
                 $extension = pathinfo($file, PATHINFO_EXTENSION);
                 $fileName = sprintf('%s/%s.%s', $modelImagesDir, $model->getKey(), $extension);
@@ -43,18 +40,16 @@ class ThumbHelper
             $file->storeAs($modelImagesDir, $fileName, ['disk' => 'public']);
 
             return sprintf('%s/%s', $modelImagesDir, $fileName);
-
         });
 
         $thumbnails = collect($model->thumbnailProperties())->mapWithKeys(function ($size, $key) use ($model, $originalFileName, $modelImagesDir) {
             if (!isset($size['width']) || !isset($size['height'])) {
-                return true;
+                throw new \InvalidArgumentException("Thumbnail properties must have width & height set.");
             }
 
             $image = ImageIntervention::make(Storage::path("public/$originalFileName"));
-            $image
-//                ->trim()
-                ->resize($size['width'], $size['height'], function (Constraint $constraint) {
+
+            $image->resize((int)$size['width'], (int)$size['height'], static function (Constraint $constraint): void {
                 $constraint->aspectRatio();
                 $constraint->upsize();
             });
@@ -71,12 +66,12 @@ class ThumbHelper
 
         $model->image()->delete();
         $model->image()->flushQueryCache();
-        $model->image()->create(compact('originalFileName', 'thumbnails'));
+        $model->image()->create(['original' => $originalFileName, 'thumbnails' => $thumbnails]);
 
         return $model->load('image');
     }
 
-    public static function getImageThumbnails(?Image $image, array $properties): array
+    public static function getImageThumbnails(?Image $image, array $properties, int $flags = 0): array
     {
         if (is_null($image) || !is_array($image->thumbnails)) {
             return [];
@@ -86,7 +81,13 @@ class ThumbHelper
             throw new \InvalidArgumentException("The properties must be an associative array.");
         }
 
-        return Arr::only($image->thumbnails, array_keys($properties));
+        $absPath = (bool)($flags & ThumbHelper::ABS_PATH);
+
+        return collect($image->thumbnails)->only(array_keys($properties))
+            ->map(static function (string $src) use ($absPath): string {
+                return $absPath ? ThumbHelper::parseAbsolutePath($src) : ThumbHelper::parseUrl($src);
+            })
+            ->all();
     }
 
     public static function getLogoDimensionsFromImage(
@@ -101,7 +102,7 @@ class ThumbHelper
             return [];
         }
 
-        $withKeys = (bool)($flags & ThumbHelper::WITH_KEYS);
+        $withKeys = (bool)($flags & ThumbHelper::MAP);
         $absPath = (bool)($flags & ThumbHelper::ABS_PATH);
         $preferSvg = (bool)($flags & ThumbHelper::PREFER_SVG);
 
@@ -126,7 +127,7 @@ class ThumbHelper
             return $filtered->mapWithKeys(function ($src, $key) use ($keyPrefix, $absPath, $thumbnailProperties) {
                 $id = $keyPrefix.str_replace('svg_', '', $key);
 
-                $src = $absPath ? ThumbHelper::parseAbsPath($src) : $src;
+                $src = $absPath ? ThumbHelper::parseAbsolutePath($src) : ThumbHelper::parseUrl($src);
 
                 return [$id => $src];
             })
@@ -136,7 +137,7 @@ class ThumbHelper
         return $filtered->map(function ($src, $key) use ($keyPrefix, $absPath, $thumbnailProperties) {
             $id = $keyPrefix.str_replace('svg_', '', $key);
 
-            $src = $absPath ? ThumbHelper::parseAbsPath($src) : $src;
+            $src = $absPath ? ThumbHelper::parseAbsolutePath($src) : ThumbHelper::parseUrl($src);
 
             $width = Arr::get($thumbnailProperties, "{$key}.width");
             $height = Arr::get($thumbnailProperties, "{$key}.height");
@@ -212,12 +213,17 @@ class ThumbHelper
         return $collection->filter(fn($value, $key) => Str::startsWith($key, $startingWith));
     }
 
-    protected static function parseAbsPath(string $src)
+    protected static function parseUrl(string $src): string
+    {
+        return Str::contains($src, ['svg+xml', 'http']) ? $src : asset("storage/".Str::after($src, 'storage/app/public/'));
+    }
+
+    protected static function parseAbsolutePath(string $src): string
     {
         if (str_contains($src, 'svg+xml')) {
             return $src;
         }
 
-        return storage_path('app/public/'.Str::after($src, 'storage/'));
+        return storage_path('app/public/'.Str::after($src, 'storage/app/public/'));
     }
 }

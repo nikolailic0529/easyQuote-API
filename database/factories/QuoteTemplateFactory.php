@@ -15,7 +15,7 @@ $factory->define(QuoteTemplate::class, function (Faker $faker) {
 
     $design = file_get_contents(database_path('seeders/models/template_designs.json'));
 
-    $attributes = ThumbHelper::retrieveLogoFromModels(array_filter([$company, $vendor]), ThumbHelper::WITH_KEYS);
+    $attributes = ThumbHelper::retrieveLogoFromModels(array_filter([$company, $vendor]), ThumbHelper::MAP);
 
     $form = TemplateForm::parseTemplateDesign($design, $attributes);
 

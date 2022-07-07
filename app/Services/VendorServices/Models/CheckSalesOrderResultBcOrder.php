@@ -6,6 +6,8 @@ use Spatie\DataTransferObject\DataTransferObject;
 
 final class CheckSalesOrderResultBcOrder extends DataTransferObject
 {
+    protected bool $ignoreMissing = true;
+
     public string $id;
 
     public ?string $company_id;

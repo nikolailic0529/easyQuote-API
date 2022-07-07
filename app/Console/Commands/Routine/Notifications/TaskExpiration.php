@@ -3,14 +3,14 @@
 namespace App\Console\Commands\Routine\Notifications;
 
 use App\Events\Task\TaskExpired;
-use App\Models\Task;
+use App\Models\Task\Task;
 use App\Queries\TaskQueries;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 
 class TaskExpiration extends Command
 {
-    public const NOTIFICATION_KEY = 'expired';
+    const NOTIFICATION_KEY = 'expired';
 
     /**
      * The name and signature of the console command.
@@ -40,22 +40,24 @@ class TaskExpiration extends Command
      * Execute the console command.
      *
      * @param TaskQueries $queries
-     * @return mixed
+     * @return int
      */
-    public function handle(TaskQueries $queries)
+    public function handle(TaskQueries $queries): int
     {
         $tasks = $queries->expiredTasksQuery()
-            ->whereHasMorph('taskable', Task::TASKABLES)
-            ->whereDoesntHave(
-                'notifications',
-                fn (Builder $query) => $query->where('notification_key', static::NOTIFICATION_KEY)
-            )
-            ->get();
+            ->whereDoesntHave('notifications', static function (Builder $query): void {
+                $query->where('notification_key', static::NOTIFICATION_KEY);
+            })
+            ->lazyById(100);
 
-        $tasks->each(fn (Task $task) => $this->handleTask($task));
+        foreach ($tasks as $task) {
+            $this->handleTask($task);
+        }
+
+        return self::SUCCESS;
     }
 
-    protected function handleTask(Task $task)
+    private function handleTask(Task $task): void
     {
         event(new TaskExpired($task));
 

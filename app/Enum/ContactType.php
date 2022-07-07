@@ -6,5 +6,6 @@ final class ContactType extends Enum
 {
     const
         HARDWARE = 'Hardware',
-        SOFTWARE = 'Software';
+        SOFTWARE = 'Software',
+        INVOICE = 'Invoice';
 }

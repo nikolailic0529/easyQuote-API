@@ -2,9 +2,8 @@
 
 namespace App\Enum;
 
-final class OpportunityStatus extends Enum
+enum OpportunityStatus: int
 {
-    const
-        LOST = 0,
-        NOT_LOST = 1;
+    case LOST = 0;
+    case NOT_LOST = 1;
 }

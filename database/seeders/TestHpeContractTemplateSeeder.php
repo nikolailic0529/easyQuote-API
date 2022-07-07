@@ -38,11 +38,11 @@ class TestHpeContractTemplateSeeder extends Seeder
 
     protected function createTemplate(array $template): void
     {
-        $company = Company::query()->system()->whereShortCode('THG')->first();
-        $vendor = Vendor::query()->whereShortCode('HPE')->first();
+        $company = Company::query()->where('flags', '&', Company::SYSTEM)->where('short_code', 'THG')->first();
+        $vendor = Vendor::query()->where('short_code', 'HPE')->first();
         $countries = Country::query()->whereIn('iso_3166_2', ['DE', 'CH'])->pluck('id', 'iso_3166_2');
 
-        $images = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::WITH_KEYS);
+        $images = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::MAP);
 
         $formData = $this->parseDesign(json_encode($template), $images);
 

@@ -2,19 +2,32 @@
 
 namespace Tests\Feature;
 
+use App\Events\Pipeliner\QueuedPipelinerSyncFailed;
+use App\Events\Pipeliner\QueuedPipelinerSyncProcessed;
+use App\Events\Pipeliner\QueuedPipelinerSyncProgress;
+use App\Events\Pipeliner\QueuedPipelinerSyncStarting;
+use App\Integrations\Pipeliner\GraphQl\PipelinerDataIntegration;
+use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
+use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
+use App\Models\Pipeline\Pipeline;
+use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Role;
+use App\Models\System\CustomField;
+use App\Models\System\CustomFieldValue;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -35,7 +48,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        factory(Opportunity::class, 30)
+        Opportunity::factory()->count(30)
             ->create([
                 'user_id' => $this->app['auth.driver']->id(),
             ]);
@@ -77,6 +90,79 @@ class OpportunityTest extends TestCase
     }
 
     /**
+     * Test an ability to paginate opportunities of pipeline stage.
+     */
+    public function testCanViewPaginatedOpportunitiesOfPipelineStage(): void
+    {
+        $stage = PipelineStage::query()->first();
+
+        Opportunity::factory()->count(10)->create([
+            'pipeline_stage_id' => $stage->getKey(),
+        ]);
+
+        $this->authenticateApi();
+
+        $this->getJson('api/pipeline-stages/'.$stage->getKey().'/opportunities?per_page=1')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'account_manager_id',
+                        'primary_account_id',
+                        'primary_account_contact_id',
+                        'end_user_id',
+                        'project_name',
+                        'account_manager_name',
+                        'opportunity_closing_date',
+                        'base_opportunity_amount',
+                        'opportunity_amount',
+                        'opportunity_amount_currency_code',
+                        'primary_account_name',
+                        'primary_account_phone',
+                        'primary_account_contact_first_name',
+                        'primary_account_contact_last_name',
+                        'primary_account_contact_phone',
+                        'primary_account_contact_email',
+                        'end_user_name',
+                        'end_user_phone',
+                        'end_user_email',
+                        'opportunity_start_date',
+                        'opportunity_end_date',
+                        'ranking',
+                        'status',
+                        'status_reason',
+                        'created_at',
+                        'quotes_exist',
+                        'account_manager',
+                        'primary_account',
+                        'end_user',
+                        'primary_account_contact',
+                        'permissions',
+                    ],
+                ],
+                'links' => ['first', 'last', 'prev', 'next'],
+                'meta' => [
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'links' => [
+                        '*' => ['url', 'label', 'active'],
+                    ],
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                    'valid',
+                    'invalid',
+                    'base_amount',
+                ],
+            ]);
+    }
+
+    /**
      * Test an ability to view own opportunity entities.
      *
      * @return void
@@ -89,15 +175,15 @@ class OpportunityTest extends TestCase
         $role->syncPermissions('view_opportunities');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'user_id' => $user->getKey(),
         ]);
 
-        factory(Opportunity::class)->create();
+        Opportunity::factory()->create();
 
         $this->actingAs($user, 'api');
 
@@ -129,16 +215,16 @@ class OpportunityTest extends TestCase
         $role->syncPermissions('view_opportunities');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'user_id' => $user->getKey(),
             'status' => 0 // lost
         ]);
 
-        factory(Opportunity::class)->create([
+        Opportunity::factory()->create([
             'status' => 0,
         ]);
 
@@ -168,7 +254,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        factory(Opportunity::class, 30)
+        Opportunity::factory()->count(30)
             ->create([
                 'user_id' => $this->app['auth.driver']->id(),
                 'status' => 0, // 'LOST',
@@ -223,12 +309,12 @@ class OpportunityTest extends TestCase
     public function testCanViewOpportunity()
     {
         /** @var Company $primaryAccount */
-        $primaryAccount = factory(Company::class)->create();
+        $primaryAccount = Company::factory()->create();
 
         $primaryAccount->vendors()->sync(Vendor::query()->limit(2)->get());
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'primary_account_id' => $primaryAccount->getKey(),
         ]);
 
@@ -341,7 +427,7 @@ class OpportunityTest extends TestCase
 
             $company->save();
 
-            $contact = factory(Contact::class)->create();
+            $contact = Contact::factory()->create();
 
             $company->contacts()->sync($contact);
 
@@ -350,7 +436,7 @@ class OpportunityTest extends TestCase
             $company->addresses()->sync($address);
         });
 
-        $endUser = factory(Company::class)->create();
+        $endUser = Company::factory()->create();
 
         $response = $this->getJson('api/external-companies')
 //            ->dump()
@@ -389,16 +475,32 @@ class OpportunityTest extends TestCase
 
         $primaryAccountContactID = $response->json('contacts.0.id');
 
-        $data = factory(Opportunity::class)->raw([
+        $data = Opportunity::factory()->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
             'end_user_id' => $endUser->getKey(),
             'is_contract_duration_checked' => false,
             'are_end_user_addresses_available' => true,
             'are_end_user_contacts_available' => true,
+            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
-        $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
+//        unset($data['pipeline_stage_id']);
+
+        $data['suppliers_grid'] = collect()->times(5, function (int $n) {
+            /** @var CustomField $field */
+            $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
+
+            /** @var CustomFieldValue $value */
+            $value = $field->values()->whereHas('allowedBy')->first();
+
+            return [
+                'supplier_name' => $value->field_value,
+                'country_name' => $value->allowedBy->random()->field_value,
+                'contact_name' => $this->faker->firstName(),
+                'contact_email' => $this->faker->companyEmail(),
+            ];
+        })->all();
 
         $response = $this->postJson('api/opportunities', $data)
 //            ->dump()
@@ -408,6 +510,8 @@ class OpportunityTest extends TestCase
                 "user_id",
                 "pipeline_id",
                 "pipeline",
+                "pipeline_stage_id",
+                "pipeline_stage",
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",
@@ -543,7 +647,7 @@ class OpportunityTest extends TestCase
 
             $company->save();
 
-            $contact = factory(Contact::class)->create();
+            $contact = Contact::factory()->create();
 
             $company->contacts()->sync($contact);
 
@@ -589,7 +693,7 @@ class OpportunityTest extends TestCase
 
         $primaryAccountContactID = $response->json('contacts.0.id');
 
-        $data = factory(Opportunity::class)->raw([
+        $data = Opportunity::factory()->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
@@ -711,7 +815,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
@@ -725,7 +829,7 @@ class OpportunityTest extends TestCase
 
             $company->save();
 
-            $contact = factory(Contact::class)->create();
+            $contact = Contact::factory()->create();
 
             $company->contacts()->sync($contact);
 
@@ -734,7 +838,7 @@ class OpportunityTest extends TestCase
             $company->addresses()->sync($address);
         });
 
-        $endUser = factory(Company::class)->create();
+        $endUser = Company::factory()->create();
 
         $response = $this->getJson('api/external-companies')
             ->assertJsonStructure([
@@ -771,16 +875,32 @@ class OpportunityTest extends TestCase
 
         $primaryAccountContactID = $response->json('contacts.0.id');
 
-        $data = factory(Opportunity::class)->raw([
+        $data = Opportunity::factory()->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
             'end_user_id' => $endUser->getKey(),
             'is_contract_duration_checked' => false,
             'are_end_user_addresses_available' => true,
             'are_end_user_contacts_available' => true,
+            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
-        $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
+//        unset($data['pipeline_stage_id']);
+
+        $data['suppliers_grid'] = collect()->times(5, function (int $n) {
+            /** @var CustomField $field */
+            $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
+
+            /** @var CustomFieldValue $value */
+            $value = $field->values()->whereHas('allowedBy')->first();
+
+            return [
+                'supplier_name' => $value->field_value,
+                'country_name' => $value->allowedBy->random()->field_value,
+                'contact_name' => $this->faker->firstName(),
+                'contact_email' => $this->faker->companyEmail(),
+            ];
+        })->all();
 
         $response = $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data)
 //            ->dump()
@@ -790,6 +910,8 @@ class OpportunityTest extends TestCase
                 "user_id",
                 "pipeline_id",
                 "pipeline",
+                "pipeline_stage_id",
+                "pipeline_stage",
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",
@@ -867,11 +989,14 @@ class OpportunityTest extends TestCase
 
         // Test the primary account contact is detached from opportunity,
         // once it's detached from the corresponding primary account.
-        $newContactOfPrimaryAccount = factory(Contact::class)->create();
+        $newContactOfPrimaryAccount = Contact::factory()->create();
 
         $this->patchJson('api/companies/'.$primaryAccountID, [
             'name' => $account->name,
             'vat_type' => 'NO VAT',
+            'type' => 'External',
+            'source' => 'Pipeliner',
+            'category' => 'Reseller',
             'contacts' => [
                 ['id' => $newContactOfPrimaryAccount->getKey()],
             ],
@@ -908,7 +1033,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
@@ -922,7 +1047,7 @@ class OpportunityTest extends TestCase
 
             $company->save();
 
-            $contact = factory(Contact::class)->create();
+            $contact = Contact::factory()->create();
 
             $company->contacts()->sync($contact);
 
@@ -966,7 +1091,7 @@ class OpportunityTest extends TestCase
 
         $primaryAccountContactID = $response->json('contacts.0.id');
 
-        $data = factory(Opportunity::class)->raw([
+        $data = Opportunity::factory()->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
@@ -1056,11 +1181,14 @@ class OpportunityTest extends TestCase
 
         // Test the primary account contact is detached from opportunity,
         // once it's detached from the corresponding primary account.
-        $newContactOfPrimaryAccount = factory(Contact::class)->create();
+        $newContactOfPrimaryAccount = Contact::factory()->create();
 
         $this->patchJson('api/companies/'.$primaryAccountID, [
             'name' => $account->name,
             'vat_type' => 'NO VAT',
+            'type' => 'External',
+            'source' => 'Pipeliner',
+            'category' => 'Reseller',
             'contacts' => [
                 ['id' => $newContactOfPrimaryAccount->getKey()],
             ],
@@ -1094,7 +1222,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
@@ -1180,6 +1308,11 @@ class OpportunityTest extends TestCase
      */
     public function testCanUploadOpportunitiesBy20220121(): void
     {
+        $this->app['db.connection']
+            ->table('companies')
+            ->where('name', 'Foster and Partners')
+            ->delete();
+
         $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-21012022.xlsx')));
 
         $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-21012022.xlsx')));
@@ -1249,18 +1382,23 @@ class OpportunityTest extends TestCase
         $this->assertContains('LEN', $response->json('primary_account.vendors.*.short_code'));
         $this->assertContains('IBM', $response->json('primary_account.vendors.*.short_code'));
 
-        $addressesFromResponse = collect($response->json('primary_account.addresses'))
-            ->map(static fn(array $a): array => [
+        $this->assertSame('Invoice', $response->json('primary_account.addresses.0.address_type'));
+
+        $groupedAddresses = collect($response->json('primary_account.addresses'))
+            ->map(static fn(array $a) => [
                 'address_type' => $a['address_type'],
                 'address_1' => $a['address_1'],
                 'address_2' => $a['address_2'],
                 'city' => $a['city'],
                 'state' => $a['state'],
-                'state_code' => $a['state_code'],
                 'post_code' => $a['post_code'],
                 'country_code' => Arr::get($a, 'country.iso_3166_2'),
             ])
-            ->all();
+            ->groupBy('address_type')
+            ->toArray();
+
+        $this->assertArrayHasKey('Invoice', $groupedAddresses);
+        $this->assertCount(2, $groupedAddresses['Invoice']);
 
         $expectedAddresses = [
             [
@@ -1269,7 +1407,6 @@ class OpportunityTest extends TestCase
                 "address_2" => null,
                 "city" => "Székesfehérvár,",
                 "state" => null,
-                "state_code" => null,
                 "post_code" => "8000",
                 "country_code" => "HU",
             ],
@@ -1279,14 +1416,13 @@ class OpportunityTest extends TestCase
                 "address_2" => null,
                 "city" => "London",
                 "state" => "London",
-                "state_code" => null,
                 "post_code" => "SW11 4AN",
                 "country_code" => "GB",
             ],
         ];
 
         foreach ($expectedAddresses as $expectedAddress) {
-            $this->assertContainsEquals($expectedAddress, $addressesFromResponse);
+            $this->assertContainsEquals($expectedAddress, $groupedAddresses['Invoice']);
         }
     }
 
@@ -1297,6 +1433,11 @@ class OpportunityTest extends TestCase
      */
     public function testCanUploadOpportunitiesBy20220323(): void
     {
+        $this->app['db.connection']
+            ->table('companies')
+            ->where('name', 'Foster and Partners')
+            ->delete();
+
         $accountsDataFile = UploadedFile::fake()->createWithContent('accounts.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-23032022.xlsx')));
 
         $accountContactsFile = UploadedFile::fake()->createWithContent('contacts.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-23032022.xlsx')));
@@ -1369,9 +1510,11 @@ class OpportunityTest extends TestCase
 
         $addressOfPrimaryAccountByType = collect($response->json('primary_account.addresses'))->groupBy('address_type')->all();
 
+        $this->assertArrayHasKey('Invoice', $addressOfPrimaryAccountByType);
         $this->assertArrayHasKey('Hardware', $addressOfPrimaryAccountByType);
 
         $hardwareAddress = $addressOfPrimaryAccountByType['Hardware'][0];
+        $invoiceAddress = $addressOfPrimaryAccountByType['Invoice'][0];
 
         $this->assertSame('Hardware', $hardwareAddress['address_type']);
         $this->assertSame('Unit 5, Mole Business Park', $hardwareAddress['address_1']);
@@ -1380,15 +1523,16 @@ class OpportunityTest extends TestCase
         $this->assertNull($hardwareAddress['state_code']);
         $this->assertSame('KT22 7BA', $hardwareAddress['post_code']);
         $this->assertSame('Randalls Road', $hardwareAddress['address_2']);
-        $this->assertSame('CH', $hardwareAddress['country']['iso_3166_2']);
+        $this->assertSame('GB', $hardwareAddress['country']['iso_3166_2']);
 
-        $groupedContacts = collect($response->json('primary_account.contacts'))->groupBy('contact_type')->all();
-
-        $this->assertArrayHasKey('Hardware', $groupedContacts);
-        $this->assertArrayHasKey('Software', $groupedContacts);
-
-        $this->assertCount(2, $groupedContacts['Hardware']);
-        $this->assertCount(1, $groupedContacts['Software']);
+        $this->assertSame('Invoice', $invoiceAddress['address_type']);
+        $this->assertSame('b5cohmuDjaXXQLAB', $invoiceAddress['address_1']);
+        $this->assertSame('q7MP5mllTHffSyGZ', $invoiceAddress['address_2']);
+        $this->assertSame('9lGBq3bflmjwClUz', $invoiceAddress['city']);
+        $this->assertSame('sNhUs3kLbEMYZVvZ', $invoiceAddress['post_code']);
+        $this->assertSame('5rne8e6cCnsF834v', $invoiceAddress['state_code']);
+        $this->assertSame('wFohxABSHPIWQyC3', $invoiceAddress['state']);
+        $this->assertSame('GB', $invoiceAddress['country']['iso_3166_2']);
     }
 
     /**
@@ -1421,7 +1565,12 @@ class OpportunityTest extends TestCase
      */
     public function testCanUploadOpportunitiesBy20220125(): void
     {
-        $existingCompany = factory(Company::class)->create([
+        $this->app['db.connection']
+            ->table('companies')
+            ->where('name', 'AT Company 5')
+            ->delete();
+
+        $existingCompany = Company::factory()->create([
             'name' => 'AT Company 5',
             'type' => 'External',
         ]);
@@ -1527,7 +1676,7 @@ class OpportunityTest extends TestCase
     public function testCanBatchSaveOpportunities()
     {
         $this->app['db.connection']->table('opportunities')->update(['deleted_at' => now()]);
-        $this->app['db.connection']->table('companies')->where('is_system', false)->update(['deleted_at' => now()]);
+        $this->app['db.connection']->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->update(['deleted_at' => now()]);
 
         $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
 
@@ -1546,7 +1695,7 @@ class OpportunityTest extends TestCase
         ]);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $this->authenticateApi($user);
 
@@ -1662,7 +1811,7 @@ class OpportunityTest extends TestCase
     public function testCanSeeMatchedOwnPrimaryAccountInImportedOpportunity(): void
     {
         $this->app['db.connection']->table('opportunities')->delete();
-        $this->app['db.connection']->table('companies')->where('is_system', false)->delete();
+        $this->app['db.connection']->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->delete();
 
         $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/ops-17012022.xlsx')));
 
@@ -1670,15 +1819,15 @@ class OpportunityTest extends TestCase
 
         $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-17012022.xlsx')));
 
-        $otherUserCompany = factory(Company::class)->create([
-            'user_id' => factory(User::class)->create()->getKey(),
+        $otherUserCompany = Company::factory()->create([
+            'user_id' => User::factory()->create()->getKey(),
             'name' => 'ASA Computer',
             'type' => 'External',
         ]);
 
         $this->authenticateApi();
 
-        $ownCompany = factory(Company::class)->create([
+        $ownCompany = Company::factory()->create([
             'user_id' => $this->app['auth.driver']->id(),
             'name' => 'ASA Computer',
             'type' => 'External',
@@ -1743,7 +1892,7 @@ class OpportunityTest extends TestCase
      */
     public function testCanMarkOpportunityAsLost()
     {
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'status' => 1,
             'status_reason' => null,
         ]);
@@ -1772,7 +1921,7 @@ class OpportunityTest extends TestCase
      */
     public function testCanRestoreOpportunity()
     {
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'status' => 1,
             'status_reason' => null,
         ]);
@@ -1812,7 +1961,7 @@ class OpportunityTest extends TestCase
      */
     public function testCanNotDeleteOpportunityWithAttachedQuote()
     {
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         $quote = factory(WorldwideQuote::class)->create([
             'opportunity_id' => $opportunity->getKey(),
@@ -1828,13 +1977,57 @@ class OpportunityTest extends TestCase
     /**
      * Test an ability to view opportunity entities grouped by pipeline stages.
      *
-     * @return void
      */
-    public function testCanViewOpportunitiesGroupedByPipelineStages()
+    public function testCanViewOpportunitiesGroupedByPipelineStages(): void
     {
         $this->authenticateApi();
 
-        $this->getJson('api/pipelines/default/stage-opportunity')
+        $this->app['db.connection']->table('opportunities')->delete();
+
+        $pipelineStagesResp = $this->getJson('api/pipelines/default')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'space_id',
+                'space_name',
+                'pipeline_name',
+                'pipeline_stages' => [
+                    '*' => [
+                        'id',
+                        'stage_name',
+                        'stage_order',
+                        'stage_percentage',
+                        'qualified_stage_name',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($pipelineStagesResp->json('pipeline_stages'));
+
+        $oppsWithQuote = [];
+
+        foreach ($pipelineStagesResp->json('pipeline_stages') as $stage) {
+            Opportunity::factory()->count(2)->create([
+                'pipeline_id' => $pipelineStagesResp->json('id'),
+                'pipeline_stage_id' => $stage['id'],
+                'sale_action_name' => $stage['qualified_stage_name'],
+//                'primary_account_id' => Company::factory()->create()->getKey(),
+//                'primary_account_contact_id' => Contact::factory()->create()->getKey(),
+            ]);
+
+            $oppsWithQuote[] = $oppWithQuote = Opportunity::factory()->create([
+                'pipeline_id' => $pipelineStagesResp->json('id'),
+                'pipeline_stage_id' => $stage['id'],
+                'sale_action_name' => $stage['qualified_stage_name'],
+            ]);
+
+            factory(WorldwideQuote::class)->create([
+                'opportunity_id' => $oppWithQuote->getKey(),
+            ]);
+        }
+
+        $response = $this->getJson('api/pipelines/default/stage-opportunity')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -1842,34 +2035,213 @@ class OpportunityTest extends TestCase
                     'stage_id',
                     'stage_name',
                     'stage_order',
+                    'stage_percentage',
+                    'summary' => [
+                        'total',
+                        'valid',
+                        'invalid',
+                        'base_amount',
+                    ],
+                    'meta' => [
+                        'current_page',
+                        'last_page',
+                    ],
                     'opportunities' => [
                         '*' => [
                             'id',
                             'user_id',
                             'account_manager_id',
-                            'primary_account.id',
-                            'primary_account.name',
-                            'primary_account.phone',
-                            'primary_account.email',
                             'project_name',
-                            'account_manager_name',
                             'opportunity_closing_date',
                             'opportunity_amount',
                             'base_opportunity_amount',
                             'opportunity_amount_currency_code',
-                            'primary_account_contact.first_name',
-                            'primary_account_contact.last_name',
-                            'primary_account_contact.phone',
-                            'primary_account_contact.email',
+
+                            'account_manager' => [
+                                'id', 'email', 'user_fullname',
+                            ],
+
+                            'primary_account' => [
+                                'id', 'name', 'phone', 'email', 'logo',
+                            ],
+
+                            'end_user' => [
+                                'id', 'name', 'phone', 'email', 'logo',
+                            ],
+
+                            'primary_account_contact' => [
+                                'id', 'first_name', 'last_name', 'phone', 'email',
+                            ],
+
                             'opportunity_start_date',
                             'opportunity_end_date',
                             'ranking',
                             'status',
                             'status_reason',
                             'created_at',
+
+                            'permissions' => [
+                                'view',
+                                'update',
+                                'delete',
+                            ],
                         ],
                     ],
                 ],
             ]);
+
+        foreach ($response->json() as $stage) {
+            $this->assertNotEmpty($stage['opportunities']);
+        }
+
+
+        // Assert pipeline view does not contain opportunities with quotes.
+        $opportunityKeys = $response->json('*.opportunities.*.id');
+
+        foreach ($oppsWithQuote as $opp) {
+            $this->assertNotContains($opp->getKey(), $opportunityKeys);
+        }
+    }
+
+    /**
+     * Test an ability to move opportunity between pipeline stages.
+     */
+    public function testCanMoveOpportunityBetweenStages(): void
+    {
+        $this->authenticateApi();
+
+        Opportunity::query()->delete();
+
+        $pipelineStagesResp = $this->getJson('api/pipelines/default')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'space_id',
+                'space_name',
+                'pipeline_name',
+                'pipeline_stages' => [
+                    '*' => [
+                        'id',
+                        'stage_name',
+                        'stage_order',
+                        'stage_percentage',
+                        'qualified_stage_name',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($pipelineStagesResp->json('pipeline_stages'));
+        $this->assertTrue(count($pipelineStagesResp->json('pipeline_stages')) > 1);
+
+        $opp = Opportunity::factory()->create([
+            'order_in_pipeline_stage' => 0,
+            'pipeline_id' => $pipelineStagesResp->json('id'),
+            'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.0.id'),
+            'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.0.qualified_stage_name'),
+        ]);
+
+        $opp2 = Opportunity::factory()->create([
+            'order_in_pipeline_stage' => 0,
+            'pipeline_id' => $pipelineStagesResp->json('id'),
+            'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
+            'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),
+        ]);
+
+        $opp3 = Opportunity::factory()->create([
+            'order_in_pipeline_stage' => 3,
+            'pipeline_id' => $pipelineStagesResp->json('id'),
+            'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
+            'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),
+        ]);
+
+        $opp4 = Opportunity::factory()->create([
+            'order_in_pipeline_stage' => 6,
+            'pipeline_id' => $pipelineStagesResp->json('id'),
+            'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
+            'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),
+        ]);
+
+        $pipelineResp = $this->getJson('api/pipelines/default/stage-opportunity')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'stage_id',
+                    'stage_name',
+                    'stage_order',
+                    'stage_percentage',
+                    'meta' => [
+                        'current_page',
+                        'last_page',
+                        'per_page',
+                    ],
+                    'summary' => [
+                        'total',
+                        'valid',
+                        'invalid',
+                        'base_amount',
+                    ],
+                    'opportunities' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($pipelineResp->json('0.opportunities'));
+        $this->assertSame($opp->getKey(), $pipelineResp->json('0.opportunities.0.id'));
+
+        $this->patchJson("api/opportunities/{$opp->getKey()}/stage", [
+            'order_in_stage' => 1,
+            'stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
+        ])
+//            ->dump()
+            ->assertNoContent();
+
+        $this->getJson("api/opportunities/{$opp->getKey()}")
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'sale_action_name',
+                'order_in_pipeline_stage',
+            ])
+            ->assertJson([
+                'order_in_pipeline_stage' => 1,
+                'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),
+            ]);
+
+        $pipelineResp = $this->getJson('api/pipelines/default/stage-opportunity')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'stage_id',
+                    'stage_name',
+                    'stage_order',
+                    'stage_percentage',
+                    'meta' => [
+                        'current_page',
+                        'last_page',
+                        'per_page',
+                    ],
+                    'summary' => [
+                        'total',
+                        'valid',
+                        'invalid',
+                        'base_amount',
+                    ],
+                    'opportunities' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($pipelineResp->json('1.opportunities'));
+        $this->assertSame($opp->getKey(), $pipelineResp->json('1.opportunities.1.id'));
     }
 }

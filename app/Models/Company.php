@@ -2,9 +2,23 @@
 
 namespace App\Models;
 
-use App\Contracts\{ActivatableInterface, HasImagesDirectory, HasOrderedScope, SearchableEntity, WithLogo};
-use App\Models\{Data\Country,
+use App\Contracts\{ActivatableInterface,
+    HasImagesDirectory,
+    HasOrderedScope,
+    HasOwnAppointments,
+    HasOwner,
+    HasOwnNotes,
+    LinkedToAppointments,
+    LinkedToTasks,
+    SearchableEntity,
+    WithLogo};
+use App\Models\{Appointment\Appointment,
+    Appointment\ModelHasAppointments,
+    Data\Country,
+    Note\ModelHasNotes,
+    Note\Note,
     Quote\WorldwideQuote,
+    Task\Task,
     Template\ContractTemplate,
     Template\HpeContractTemplate,
     Template\QuoteTemplate,
@@ -17,12 +31,15 @@ use App\Traits\{Activatable,
     BelongsToContacts,
     BelongsToUser,
     BelongsToVendors,
+    HasTimestamps,
     Quote\HasQuotes,
     Search\Searchable,
-    Systemable,
     Uuid};
+use Illuminate\Support\Carbon;
+use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
 use Illuminate\Database\Eloquent\{Collection,
+    Factories\HasFactory,
     Relations\BelongsTo,
     Relations\BelongsToMany,
     Relations\HasManyThrough,
@@ -35,6 +52,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
 /**
  * Class Company
  *
+ * @property string|null $pl_reference
  * @property string|null $user_id
  * @property string|null $default_country_id
  * @property string|null $default_vendor_id
@@ -51,18 +69,19 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property string|null $phone
  * @property string|null $website
  * @property string|null $activated_at
+ * @property int|null $flags
  *
  * @property Image|null $image
  * @property Collection<Address>|Address[] $addresses
  * @property Collection<Contact>|Contact[] $contacts
  * @property-read Collection<Opportunity>|Opportunity[] $opportunities
  * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
- * @property-read Collection<CompanyNote>|CompanyNote[] $companyNotes
+ * @property-read Collection<Note>|Note[] $notes
  * @property-read Collection<Vendor>|Vendor[] $vendors
  * @property-read Collection<Country>|Country[] $countries
  * @property-read User|null $user
  */
-class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity
+class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes
 {
     use Uuid,
         Multitenantable,
@@ -72,14 +91,28 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
         BelongsToContacts,
         Activatable,
         Searchable,
-        Systemable,
         HasQuotes,
         SoftDeletes,
-        HasRelationships;
+        HasRelationships,
+        HasFactory,
+        HasTimestamps;
+
+    const SYSTEM = 1 << 0;
+    const FROZEN_SOURCE = 1 << 1;
 
     protected $fillable = [
         'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id',
     ];
+
+    protected static function newFactory(): CompanyFactory
+    {
+        return CompanyFactory::new();
+    }
+
+    public function getFlag(int $flag): bool
+    {
+        return ($this->flags & $flag) === $flag;
+    }
 
     public function vendors(): BelongsToMany
     {
@@ -191,7 +224,7 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
             'type' => $this->type,
             'email' => $this->email,
             'phone' => $this->phone,
-            'created_at' => $this->created_at,
+            'created_at' => transform($this->{$this->getCreatedAtColumn()}, static fn (\DateTimeInterface|string $dateTime) => Carbon::parse($dateTime)),
         ];
     }
 
@@ -251,7 +284,7 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
             $this->image,
             $this->thumbnailProperties(),
             Str::snake(class_basename(static::class)),
-            ThumbHelper::WITH_KEYS | ThumbHelper::ABS_PATH
+            ThumbHelper::MAP | ThumbHelper::ABS_PATH
         );
     }
 
@@ -261,7 +294,7 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
             $this->image,
             $this->thumbnailProperties(),
             Str::snake(class_basename(static::class)),
-            ThumbHelper::WITH_KEYS
+            ThumbHelper::MAP
         );
     }
 
@@ -275,6 +308,11 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
         return $this->hasMany(Opportunity::class, 'primary_account_id');
     }
 
+    public function opportunitiesWhereEndUser(): HasMany
+    {
+        return $this->hasMany(Opportunity::class, 'end_user_id');
+    }
+
     public function worldwideQuotes(): HasManyThrough
     {
         return $this->hasManyThrough(WorldwideQuote::class, Opportunity::class, firstKey: 'primary_account_id');
@@ -286,11 +324,6 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
             $this->worldwideQuotes(),
             (new WorldwideQuote())->versions()
         );
-    }
-
-    public function companyNotes(): HasMany
-    {
-        return $this->hasMany(CompanyNote::class);
     }
 
     public function assets(): BelongsToMany
@@ -321,5 +354,35 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     public function salesOrderTemplates(): HasMany
     {
         return $this->hasMany(SalesOrderTemplate::class);
+    }
+
+    public function appointments(): BelongsToMany
+    {
+        return $this->belongsToMany(Appointment::class);
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function tasks(): MorphToMany
+    {
+        return $this->morphToMany(Task::class, name: 'model', table: (new ModelHasTasks())->getTable());
+    }
+
+    public function ownAppointments(): MorphToMany
+    {
+        return $this->morphToMany(Appointment::class, name: 'model', table: (new ModelHasAppointments())->getTable());
+    }
+
+    public function notes(): MorphToMany
+    {
+        return $this->morphToMany(
+            related: Note::class,
+            name: 'model',
+            table: (new ModelHasNotes())->getTable(),
+            relatedPivotKey: 'note_id',
+        )->using(ModelHasNotes::class);
     }
 }

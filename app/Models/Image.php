@@ -2,15 +2,9 @@
 
 namespace App\Models;
 
-use App\Casts\Thumbnails;
 use App\Traits\Uuid;
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-    Relations\MorphTo,
-};
+use Illuminate\Database\Eloquent\{Casts\AsArrayObject, Model, SoftDeletes, Relations\MorphTo};
 use Rennokki\QueryCache\Traits\QueryCacheable;
-use Illuminate\Support\Str;
 
 /**
  * Class Image
@@ -26,7 +20,7 @@ class Image extends Model
     ];
 
     protected $casts = [
-        'thumbnails' => Thumbnails::class
+        'thumbnails' => 'array',
     ];
 
     public function imageable(): MorphTo

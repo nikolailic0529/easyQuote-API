@@ -4,11 +4,16 @@ namespace App\Policies;
 
 use App\Models\Template\ContractTemplate;
 use App\Models\User;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ContractTemplatePolicy
 {
     use HandlesAuthorization;
+
+    public function __construct(protected UserTeamGate $userTeamGate)
+    {
+    }
 
     /**
      * Determine whether the user can view any contract templates.
@@ -79,10 +84,15 @@ class ContractTemplatePolicy
             return true;
         }
 
-        if (
-            $user->can('update_own_contract_templates') &&
-            $user->getKey() === $contractTemplate->{$contractTemplate->user()->getForeignKeyName()}
-        ) {
+        if ($user->cannot('update_own_contract_templates')) {
+            return false;
+        }
+
+        if ($contractTemplate->user()->is($user)) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($contractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -104,10 +114,15 @@ class ContractTemplatePolicy
             return true;
         }
 
-        if (
-            $user->can('delete_own_contract_templates') &&
-            $user->getKey() === $contractTemplate->{$contractTemplate->user()->getForeignKeyName()}
-        ) {
+        if ($user->cannot('delete_own_contract_templates')) {
+            return false;
+        }
+
+        if ($contractTemplate->user()->is($user)) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($contractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }

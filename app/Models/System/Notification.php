@@ -12,6 +12,11 @@ use Illuminate\Database\Eloquent\{
     Relations\MorphTo,
 };
 
+/**
+ * @property int|null $priority
+ * @property string|null $url
+ * @property string|null $message
+ */
 class Notification extends Model
 {
     use Uuid, BelongsToUser, SoftDeletes;

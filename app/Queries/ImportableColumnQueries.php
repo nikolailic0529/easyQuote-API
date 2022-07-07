@@ -66,10 +66,7 @@ class ImportableColumnQueries
                 $importableColumnModel->getQualifiedCreatedAtColumn(),
                 $countryModel->qualifyColumn('name'),
             ])
-            ->enforceOrderBy(
-                columnName: $importableColumnModel->getQualifiedCreatedAtColumn(),
-                orderDirection: 'desc'
-            )
+            ->enforceOrderBy($importableColumnModel->getQualifiedCreatedAtColumn(), 'desc')
             ->process();
     }
 

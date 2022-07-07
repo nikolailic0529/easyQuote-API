@@ -1,18 +1,27 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
+use App\Enum\GenderEnum;
 use App\Models\Contact;
-use Faker\Generator as Faker;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-$factory->define(Contact::class, function (Faker $faker) {
-    return [
-        'contact_type' => $faker->randomElement(['Hardware', 'Software']),
-        'contact_name' => $faker->name,
-        'first_name' => $faker->firstName,
-        'last_name' => $faker->lastName,
-        'mobile' => $faker->e164PhoneNumber,
-        'phone' => $faker->e164PhoneNumber,
-        'email' => $faker->companyEmail,
-    ];
-});
+class ContactFactory extends Factory
+{
+    protected $model = Contact::class;
+
+    public function definition(): array
+    {
+        return [
+            'contact_type' => $this->faker->randomElement(['Hardware', 'Software']),
+            'gender' => $this->faker->randomElement(GenderEnum::cases()),
+            'contact_name' => $this->faker->name,
+            'first_name' => $this->faker->firstName,
+            'last_name' => $this->faker->lastName,
+            'mobile' => $this->faker->e164PhoneNumber,
+            'phone' => $this->faker->e164PhoneNumber,
+            'email' => $this->faker->companyEmail,
+        ];
+    }
+}
+

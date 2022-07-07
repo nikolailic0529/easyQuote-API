@@ -4,20 +4,10 @@ namespace App\Repositories\System;
 
 use App\Contracts\Repositories\System\NotificationRepositoryInterface;
 use App\Events\NotificationDeletedAll;
-use App\Http\Resources\NotificationCollection;
-use App\Models\{
-    User,
-    System\Notification
-};
-use App\Repositories\{
-    SearchableRepository,
-    Concerns\ResolvesImplicitModel
-};
-use Illuminate\Database\Eloquent\{
-    Builder,
-    Collection,
-    Model
-};
+use App\Http\Resources\V1\NotificationCollection;
+use App\Models\{System\Notification, User};
+use App\Repositories\{Concerns\ResolvesImplicitModel, SearchableRepository};
+use Illuminate\Database\Eloquent\{Builder, Collection, Model};
 
 class NotificationRepository extends SearchableRepository implements NotificationRepositoryInterface
 {

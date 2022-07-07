@@ -55,13 +55,13 @@ class ModulePermissionListener
         $granted->each(function (User $user) use ($provider, $module, $prettifiedLevel, $grantedMessage) {
             $user->notify(new GrantedNotification($provider, $module, $prettifiedLevel));
 
-            notification()->for($user)->message($grantedMessage)->priority(1)->store();
+            notification()->for($user)->message($grantedMessage)->priority(1)->push();
         });
 
         $revoked->each(function (User $user) use ($provider, $module, $prettifiedLevel, $revokedMessage) {
             $user->notify(new RevokedNotification($provider, $module, $prettifiedLevel));
 
-            notification()->for($user)->message($revokedMessage)->priority(1)->store();
+            notification()->for($user)->message($revokedMessage)->priority(1)->push();
         });
     }
 

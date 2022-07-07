@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Support\DeferrableProvider;
 use App\Contracts\Repositories\System\NotificationRepositoryInterface;
-use App\Contracts\Services\NotificationInterface;
+use App\Contracts\Services\NotificationFactory;
 use App\Repositories\System\NotificationRepository;
-use App\Services\NotificationDispatcher;
+use App\Services\Notification\DefaultNotificationFactory;
+use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\ServiceProvider;
 
 class NotificationServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -20,11 +20,11 @@ class NotificationServiceProvider extends ServiceProvider implements DeferrableP
     {
         $this->app->singleton(NotificationRepositoryInterface::class, NotificationRepository::class);
 
-        $this->app->bind(NotificationInterface::class, NotificationDispatcher::class);
-
         $this->app->alias(NotificationRepositoryInterface::class, 'notification.repository');
 
-        $this->app->alias(NotificationInterface::class, 'notification.dispatcher');
+        $this->app->bind(NotificationFactory::class, DefaultNotificationFactory::class);
+
+        $this->app->alias(NotificationFactory::class, 'notification.factory');
     }
 
     public function provides()
@@ -32,8 +32,8 @@ class NotificationServiceProvider extends ServiceProvider implements DeferrableP
         return [
             NotificationRepositoryInterface::class,
             'notification.repository',
-            NotificationInterface::class,
-            'notification.dispatcher',
+            NotificationFactory::class,
+            'notification.factory',
         ];
     }
 }

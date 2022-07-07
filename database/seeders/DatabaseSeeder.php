@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\ContractType;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -16,98 +15,101 @@ class DatabaseSeeder extends Seeder
     {
         activity()->disableLogging();
 
-        $this->call(TeamSeeder::class);
-        $this->command->info('Seeded the system defined Teams!');
+        $this->call(DateDaySeeder::class);
+        $this->command->info('Seeded the date days');
+
+        $this->call(DateWeekSeeder::class);
+        $this->command->info('Seeded the date weeks');
+
+        $this->call(DateMonthSeeder::class);
+        $this->command->info('Seeded the date months');
+
+        $this->call(RecurrenceTypeSeeder::class);
+        $this->command->info('Seeded the recurrence types');
 
         $this->call(AssetCategorySeeder::class);
-        $this->command->info('Seeded the Asset Categories!');
+        $this->command->info('Seeded the asset categories');
 
         $this->call(BusinessDivisionSeeder::class);
-        $this->command->info('Seeded the Business Divisions!');
+        $this->command->info('Seeded the business divisions');
+
+        $this->call(TeamSeeder::class);
+        $this->command->info('Seeded the default teams');
 
         $this->call(ContractTypeSeeder::class);
-        $this->command->info('Seeded the Contract Types!');
+        $this->command->info('Seeded the contract types');
 
         $this->call(SystemSettingSeeder::class);
-        $this->command->info('Seeded the default system settings!');
+        $this->command->info('Seeded the default settings');
 
         $this->call(CountrySeeder::class);
-        $this->command->info('Seeded the countries!');
+        $this->command->info('Seeded the countries');
 
         $this->call(TimezoneSeeder::class);
-        $this->command->info('Seeded the timezones!');
+        $this->command->info('Seeded the timezones');
 
         $this->call(LanguagesSeeder::class);
-        $this->command->info('Seeded the languages!');
+        $this->command->info('Seeded the languages');
 
         $this->call(CurrencySeeder::class);
-        $this->command->info('Seeded the currencies!');
+        $this->command->info('Seeded the currencies');
 
         $this->call(QuoteFileFormatsSeeder::class);
-        $this->command->info('Seeded the file formats!');
+        $this->command->info('Seeded the file formats');
 
         $this->call(ImportableColumnSeeder::class);
-        $this->command->info('Seeded the file importable columns!');
+        $this->command->info('Seeded the default importable columns');
 
         $this->call(MySQLSeeder::class);
-        $this->command->info('Seeded the stored MySQL functions!');
+        $this->command->info('Seeded the stored MySQL functions');
 
         $this->call(VendorSeeder::class);
-        $this->command->info('Seeded the vendors!');
+        $this->command->info('Seeded the default vendors');
 
         $this->call(CompanySeeder::class);
-        $this->command->info('Seeded the companies!');
+        $this->command->info('Seeded the default companies');
 
         $this->call(PermissionSeeder::class);
-        $this->command->info('Seeded the permissions!');
+        $this->command->info('Seeded the default permissions');
 
         $this->call(RoleSeeder::class);
-        $this->command->info('Seeded the roles!');
+        $this->command->info('Seeded the default roles');
 
         $this->call(UsersSeeder::class);
-        $this->command->info('Seeded the users!');
+        $this->command->info('Seeded the default users');
 
         $this->call(DataSelectSeparatorsSeeder::class);
-        $this->command->info('Seeded the data select separators for csv files!');
+        $this->command->info('Seeded the data select separators');
 
         $this->call(TemplateFieldTypeSeeder::class);
-        $this->command->info('Seeded the template field types!');
+        $this->command->info('Seeded the default template field types');
 
         $this->call(TemplateFieldsSeeder::class);
-        $this->command->info('Seeded the system defined template fields!');
+        $this->command->info('Seeded the default template fields');
 
         $this->call(QuoteTemplatesSeeder::class);
-        $this->command->info('Seeded the system defined quote templates!');
+        $this->command->info('Seeded the default quote templates');
 
         $this->call(ContractTemplatesSeeder::class);
-        $this->command->info('Seeded the system defined contract templates!');
+        $this->command->info('Seeded the default contract templates');
 
         $this->call(HpeContractTemplatesSeeder::class);
-        $this->command->info('Seeded the system defined hpe contract templates!');
+        $this->command->info('Seeded the default hpe contract templates');
 
         $this->call(WorldwideQuoteTemplateSeeder::class);
-        $this->command->info('Seeded the system defined worldwide quote templates!');
+        $this->command->info('Seeded the default worldwide quote templates');
 
         $this->call(WorldwideSalesOrderTemplateSeeder::class);
-        $this->command->info('Seeded the system defined worldwide contract templates!');
-//
-//        $this->call(CustomersSeeder::class);
-//        $this->command->info('Seeded the S4 customers!');
-//
-//        $this->call(CustomersAddressesSeeder::class);
-//        $this->command->info('Seeded the S4 customers addresses!');
-//
-//        $this->call(CustomersContactsSeeder::class);
-//        $this->command->info('Seeded the S4 customers contacts!');
+        $this->command->info('Seeded the default worldwide contract templates');
 
         $this->call(CountryMarginsSeeder::class);
-        $this->command->info('Seeded the country margins!');
+        $this->command->info('Seeded the default country margins');
 
         $this->call(SpaceSeeder::class);
-        $this->command->info('Seeded the spaces!');
+        $this->command->info('Seeded the default spaces');
 
         $this->call(PipelineSeeder::class);
-        $this->command->info('Seeded the pipelines!');
+        $this->command->info('Seeded the default pipelines');
 
         activity()->enableLogging();
     }

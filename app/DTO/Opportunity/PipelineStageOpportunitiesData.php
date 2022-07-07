@@ -2,7 +2,6 @@
 
 namespace App\DTO\Opportunity;
 
-use App\Models\Opportunity;
 use Spatie\DataTransferObject\DataTransferObject;
 
 final class PipelineStageOpportunitiesData extends DataTransferObject
@@ -13,8 +12,14 @@ final class PipelineStageOpportunitiesData extends DataTransferObject
 
     public int $stage_order;
 
+    public float $stage_percentage;
+
+    public PipelineStageSummaryData $summary;
+
+    public array $meta = [];
+
     /**
-     * @var App\Models\Opportunity[]
+     * @var \App\Models\Opportunity[]
      */
     public array $opportunities;
 }

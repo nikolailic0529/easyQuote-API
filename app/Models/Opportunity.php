@@ -2,15 +2,34 @@
 
 namespace App\Models;
 
+use App\Contracts\HasOwnAppointments;
+use App\Contracts\HasOwner;
+use App\Contracts\HasOwnNotes;
+use App\Contracts\LinkedToAppointments;
+use App\Contracts\LinkedToTasks;
 use App\Contracts\SearchableEntity;
+use App\Enum\OpportunityStatus;
+use App\Models\Appointment\Appointment;
+use App\Models\Appointment\ModelHasAppointments;
+use App\Models\Note\ModelHasNotes;
+use App\Models\Note\Note;
 use App\Models\Pipeline\Pipeline;
+use App\Models\Pipeline\PipelineStage;
+use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Task\Task;
+use App\Traits\HasTimestamps;
 use App\Traits\Uuid;
+use Database\Factories\OpportunityFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
@@ -19,8 +38,10 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 /**
  * Class Opportunity
  *
+ * @property string|null $pl_reference
  * @property string|null $user_id
  * @property string|null $pipeline_id
+ * @property string|null $pipeline_stage_id
  * @property string|null $contract_type_id
  * @property string|null $primary_account_id
  * @property string|null $end_user_id
@@ -80,20 +101,22 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property bool|null $has_service_credits
  *
  * @property string|null $remarks
- * @property string|null $notes
+ * @property string|null $notes // Description
  * @property string|null $personal_rating
  * @property int|null $ranking
  * @property string|null $campaign_name
  *
+ * @property int|null $order_in_pipeline_stage
  * @property string|null $sale_action_name // {"Preparation", "Special Bid Required", "Quote Ready", "Customer Contact", "Customer Order OK", "PO Placed", "Processed on BC", "Closed"}
  *
- * @property int|null $status
+ * @property OpportunityStatus|null $status
  * @property string|null $status_reason
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
  * @property-read \App\Models\Pipeline\Pipeline|null $pipeline
+ * @property-read PipelineStage|null $pipelineStage
  * @property-read ContractType|null $contractType
  * @property-read Company|null $primaryAccount
  * @property-read Company|null $endUser
@@ -103,13 +126,23 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read User|null $accountManager
  * @property-read Collection<OpportunitySupplier>|OpportunitySupplier[] $opportunitySuppliers
  * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
+ * @property-read Collection<int, Task>|Task[] $tasks
  * @property-read bool|null $quotes_exist
  */
-class Opportunity extends Model implements SearchableEntity
+class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes
 {
-    use Uuid, SoftDeletes, HasRelationships;
+    use Uuid, SoftDeletes, HasRelationships, HasFactory, HasTimestamps;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'status' => OpportunityStatus::class,
+    ];
+
+    protected static function newFactory(): OpportunityFactory
+    {
+        return OpportunityFactory::new();
+    }
 
     public function user(): BelongsTo
     {
@@ -119,6 +152,11 @@ class Opportunity extends Model implements SearchableEntity
     public function pipeline(): BelongsTo
     {
         return $this->belongsTo(Pipeline::class);
+    }
+
+    public function pipelineStage(): BelongsTo
+    {
+        return $this->belongsTo(PipelineStage::class);
     }
 
     public function contractType(): BelongsTo
@@ -158,7 +196,7 @@ class Opportunity extends Model implements SearchableEntity
 
     public function opportunitySuppliers(): HasMany
     {
-        return $this->hasMany(OpportunitySupplier::class);
+        return $this->hasMany(OpportunitySupplier::class)->oldest();
     }
 
 //    public function worldwideQuote(): HasOne
@@ -174,6 +212,31 @@ class Opportunity extends Model implements SearchableEntity
     public function countries(): HasManyDeep
     {
         return $this->hasManyDeepFromRelations($this->primaryAccount(), (new Company())->addresses(), (new Address())->country());
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function appointments(): BelongsToMany
+    {
+        return $this->belongsToMany(Appointment::class);
+    }
+
+    public function notes(): MorphToMany
+    {
+        return $this->morphToMany(
+            related: Note::class,
+            name: 'model',
+            table: (new ModelHasNotes())->getTable(),
+            relatedPivotKey: 'note_id',
+        )->using(ModelHasNotes::class);
+    }
+
+    public function tasks(): MorphToMany
+    {
+        return $this->morphToMany(Task::class, name: 'model', table: (new ModelHasTasks())->getTable());
     }
 
     public function toSearchArray(): array
@@ -192,6 +255,21 @@ class Opportunity extends Model implements SearchableEntity
     public function getSearchIndex(): string
     {
         return $this->getTable();
+    }
+
+    public function ownAppointments(): MorphToMany
+    {
+        return $this->morphToMany(Appointment::class, name: 'model', table: (new ModelHasAppointments())->getTable());
+    }
+
+    public function pipelinerSyncLogs(): MorphMany
+    {
+        return $this->morphMany(related: PipelinerSyncStrategyLog::class, name: 'model');
+    }
+
+    public function latestPipelinerSyncLog(): MorphOne
+    {
+        return $this->morphOne(related: PipelinerSyncStrategyLog::class, name: 'model')->latestOfMany('updated_at');
     }
 }
 

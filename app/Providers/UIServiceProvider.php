@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Services\UIServiceInterface;
-use App\Services\UIService;
+use App\Contracts\Services\RouteResolver;
+use App\Services\UiRouteResolver;
 
 class UIServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -16,16 +16,16 @@ class UIServiceProvider extends ServiceProvider implements DeferrableProvider
      */
     public function register()
     {
-        $this->app->singleton(UIServiceInterface::class, UIService::class);
+        $this->app->singleton(RouteResolver::class, UiRouteResolver::class);
 
-        $this->app->alias(UIServiceInterface::class, 'ui.service');
+        $this->app->alias(RouteResolver::class, 'ui.route');
     }
 
     public function provides()
     {
         return [
-            UIServiceInterface::class,
-            'ui.service',
+            RouteResolver::class,
+            'ui.route',
         ];
     }
 }

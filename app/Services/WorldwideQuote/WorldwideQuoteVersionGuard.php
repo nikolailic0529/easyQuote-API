@@ -2,12 +2,11 @@
 
 namespace App\Services\WorldwideQuote;
 
-use App\Models\{Address,
-    Contact,
+use App\Events\WorldwideQuote\NewVersionOfWorldwideQuoteCreated;
+use App\Models\{Note\Note,
     Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
-    Quote\WorldwideQuoteNote,
     Quote\WorldwideQuoteVersion,
     QuoteFile\DistributionRowsGroup,
     QuoteFile\ImportedRow,
@@ -17,7 +16,6 @@ use App\Models\{Address,
     User,
     WorldwideQuoteAsset,
     WorldwideQuoteAssetsGroup};
-use App\Events\WorldwideQuote\NewVersionOfWorldwideQuoteCreated;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
@@ -93,9 +91,8 @@ class WorldwideQuoteVersionGuard
             $version->user_version_sequence_number = $this->resolveNewVersionNumberForActingUser($worldwideQuote, $actingUser);
         });
 
-        transform($replicatedVersionData->getReplicatedQuoteNote(), function (WorldwideQuoteNote $note) use ($actingUser, $worldwideQuote) {
-           $note->worldwideQuote()->associate($worldwideQuote);
-           $note->user()->associate($actingUser);
+        transform($replicatedVersionData->getReplicatedQuoteNote(), function (Note $note) use ($actingUser, $worldwideQuote) {
+            $note->owner()->associate($actingUser);
         });
 
         return tap($replicatedVersion, function (WorldwideQuoteVersion $replicatedVersion) use ($quoteVersion, $actingUser, $worldwideQuote, $replicatedVersionData) {
@@ -151,7 +148,7 @@ class WorldwideQuoteVersionGuard
         $rowOfGroupBatch = [];
         $mappedRowBatch = [];
         $packAssetBatch = array_map(fn(WorldwideQuoteAsset $asset) => $asset->getAttributes(), $replicatedPackAssets);
-        $packAssetsGroupBatch = array_map(fn (WorldwideQuoteAssetsGroup $assetsGroup) => $assetsGroup->getAttributes(), $replicatedPackAssetsGroups);
+        $packAssetsGroupBatch = array_map(fn(WorldwideQuoteAssetsGroup $assetsGroup) => $assetsGroup->getAttributes(), $replicatedPackAssetsGroups);
 
         foreach ($replicatedDistributorQuotes as $distributorQuoteData) {
             $distributorQuoteBatch[] = $distributorQuoteData->getDistributorQuote()->getAttributes();
@@ -218,6 +215,9 @@ class WorldwideQuoteVersionGuard
 
             if (!is_null($quoteNote)) {
                 $quoteNote->save();
+
+                $quoteNote->worldwideQuotesHaveNote()->attach($version->worldwideQuote);
+                $quoteNote->worldwideQuoteVersionsHaveNote()->attach($version);
             }
 
             if (!empty($versionAddressPivots)) {

@@ -67,7 +67,7 @@ class TeamTest extends TestCase
         $this->authenticateApi();
 
         /** @var Collection $teamLeaders */
-        $teamLeaders = factory(User::class, 2)->create();
+        $teamLeaders = User::factory()->count(2)->create();
 
         $response = $this->postJson('api/teams', [
             'team_name' => $teamName = $this->faker->text(191),
@@ -121,7 +121,7 @@ class TeamTest extends TestCase
         $team = factory(Team::class)->create();
 
         /** @var Collection $teamLeaders */
-        $teamLeaders = factory(User::class, 2)->create();
+        $teamLeaders = User::factory()->count(2)->create();
 
         $this->patchJson('api/teams/'.$team->getKey(), [
             'team_name' => $teamName = $this->faker->text(191),

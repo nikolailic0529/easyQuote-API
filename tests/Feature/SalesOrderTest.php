@@ -63,8 +63,8 @@ class SalesOrderTest extends TestCase
         /** @var SalesOrder[] $orders */
         $orders = factory(SalesOrder::class, 10)->create(['submitted_at' => null, 'assets_count' => 3]);
 
-        $endUser = factory(Company::class)->create();
-        $accountMgr = factory(User::class)->create();
+        $endUser = Company::factory()->create();
+        $accountMgr = User::factory()->create();
 
         foreach ($orders as $order) {
             $order->worldwideQuote->opportunity->endUser()->associate($endUser);
@@ -117,7 +117,7 @@ class SalesOrderTest extends TestCase
         $role->syncPermissions('view_own_sales_orders');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -164,7 +164,7 @@ class SalesOrderTest extends TestCase
         $role->syncPermissions('view_own_sales_orders');
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -207,8 +207,8 @@ class SalesOrderTest extends TestCase
     {
         $this->authenticateApi();
 
-        $endUser = factory(Company::class)->create();
-        $accountMgr = factory(User::class)->create();
+        $endUser = Company::factory()->create();
+        $accountMgr = User::factory()->create();
 
         /** @var SalesOrder[] $orders */
         $orders = factory(SalesOrder::class, 10)->create(['assets_count' => 3, 'submitted_at' => now(), 'failure_reason' => $this->faker->text()]);
@@ -558,7 +558,7 @@ class SalesOrderTest extends TestCase
         $this->authenticateApi();
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_PACK,
         ]);
 
@@ -642,7 +642,7 @@ class SalesOrderTest extends TestCase
         $this->authenticateApi();
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_CONTRACT,
         ]);
 

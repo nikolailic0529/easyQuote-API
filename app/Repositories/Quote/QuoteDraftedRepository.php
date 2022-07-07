@@ -3,7 +3,7 @@
 namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
-use App\Http\Resources\QuoteRepository\DraftedCollection;
+use App\Http\Resources\V1\QuoteRepository\DraftedCollection;
 use App\Models\{Company, Quote\Quote, Quote\QuoteVersion, User};
 use App\Models\QuoteFile\QuoteFile;
 use App\Repositories\SearchableRepository;

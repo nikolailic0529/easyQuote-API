@@ -17,16 +17,20 @@ class CustomFieldSeeder extends Seeder
 
         $customFieldSeeds = [];
         $customFieldValueSeeds = [];
+        $allowedBySeeds = [];
 
         foreach ($seeds as $customField) {
             $customFieldSeeds[] = [
                 'id' => $customField['id'],
+                'pl_reference' => $customField['pl_reference'] ?? null,
                 'field_name' => $customField['field_name'],
+                'parent_field_id' => $customField['parent_field_id'] ?? null,
             ];
 
             foreach ($customField['field_values'] as $key => $fieldValue) {
                 $customFieldValueSeeds[] = [
                     'id' => $fieldValue['id'],
+                    'pl_reference' => $fieldValue['pl_reference'] ?? null,
                     'custom_field_id' => $customField['id'],
                     'field_value' => $fieldValue['field_value'],
                     'is_default' => $fieldValue['is_default'],
@@ -34,12 +38,19 @@ class CustomFieldSeeder extends Seeder
                     'created_at' => now()->toDateTimeString(),
                     'updated_at' => now()->toDateTimeString()
                 ];
+
+                foreach ($fieldValue['allowed_by'] ?? [] as $allowedById) {
+                    $allowedBySeeds[] = [
+                        'field_value_id' => $fieldValue['id'],
+                        'allowed_by_id' => $allowedById
+                    ];
+                }
             }
         }
 
         $connection = $this->container['db.connection'];
 
-        $connection->transaction(function () use ($customFieldValueSeeds, $customFieldSeeds, $connection) {
+        $connection->transaction(function () use ($customFieldValueSeeds, $customFieldSeeds, $allowedBySeeds, $connection) {
             foreach ($customFieldSeeds as $seed) {
                 $connection->table('custom_fields')
                     ->insertOrIgnore($seed);
@@ -47,6 +58,11 @@ class CustomFieldSeeder extends Seeder
 
             foreach ($customFieldValueSeeds as $seed) {
                 $connection->table('custom_field_values')
+                    ->insertOrIgnore($seed);
+            }
+
+            foreach ($allowedBySeeds as $seed) {
+                $connection->table('custom_field_value_allowed_by')
                     ->insertOrIgnore($seed);
             }
         });

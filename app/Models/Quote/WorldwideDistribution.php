@@ -2,6 +2,7 @@
 
 namespace App\Models\Quote;
 
+use App\Enum\DateFormatEnum;
 use App\Models\Address;
 use App\Models\Contact;
 use App\Models\Data\Country;
@@ -60,6 +61,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $sort_rows_direction
  * @property string|null $sort_rows_groups_column
  * @property string|null $sort_rows_groups_direction
+ * @property DateFormatEnum|null $file_date_format
  * @property string $pricing_document
  * @property string $service_agreement_id
  * @property string $system_handle
@@ -114,6 +116,7 @@ class WorldwideDistribution extends Model
     protected $casts = [
         'checkbox_status' => 'array',
         'margin_value' => 'decimal:2',
+        'file_date_format' => DateFormatEnum::class,
     ];
 
 //    protected $hidden = [

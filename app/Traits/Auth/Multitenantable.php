@@ -9,7 +9,7 @@ trait Multitenantable
     protected static function bootMultitenantable()
     {
         static::creating(function (Model $model) {
-            if (auth()->check()) {
+            if (is_null($model->user_id) && auth()->check()) {
                 $model->user_id = auth()->id();
             }
         });

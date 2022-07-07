@@ -2,15 +2,18 @@
 
 namespace App\Models\Quote;
 
+use App\Contracts\HasOwnNotes;
+use App\Models\Note\ModelHasNotes;
+use App\Models\Note\Note;
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\Template\TemplateField;
-use App\Models\Quote\QuoteNote;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-class QuoteVersion extends BaseQuote
+class QuoteVersion extends BaseQuote implements HasOwnNotes
 {
     protected $table = 'quote_versions';
 
@@ -52,8 +55,13 @@ class QuoteVersion extends BaseQuote
             ->orderByRaw("field(`discounts`.`discountable_type`, {$this->discountsOrderToString()}) desc");
     }
 
-    public function note(): HasOne
+    public function notes(): MorphToMany
     {
-        return $this->hasOne(QuoteNote::class, 'quote_version_id');
+        return $this->morphToMany(
+            related: Note::class,
+            name: 'model',
+            table: (new ModelHasNotes())->getTable(),
+            relatedPivotKey: 'note_id',
+        )->using(ModelHasNotes::class);
     }
 }

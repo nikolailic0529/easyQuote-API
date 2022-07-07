@@ -29,7 +29,7 @@ class UserServiceTest extends TestCase
         $interval = ENF_PWD_CHANGE_DAYS - setting('password_expiry_notification');
 
         $user = tap(
-            factory(User::class)->create(),
+            User::factory()->create(),
             fn (User $user) => $user->forceFill(['password_changed_at' => now()->subDays($interval)])->save()
         );
 

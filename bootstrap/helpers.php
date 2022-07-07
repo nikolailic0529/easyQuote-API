@@ -1,8 +1,9 @@
 <?php
 
 use App\Contracts\Services\HttpInterface;
-use Illuminate\Support\Facades\Storage;
+use App\Contracts\Services\NotificationFactory;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 if (!function_exists('to_array_recursive')) {
     function to_array_recursive(iterable $iterable)
@@ -14,7 +15,7 @@ if (!function_exists('to_array_recursive')) {
 if (!function_exists('carbon_format')) {
     function carbon_format($time, $format)
     {
-        return transform($time, fn ($time) => Carbon::parse($time)->format($format));
+        return transform($time, fn($time) => Carbon::parse($time)->format($format));
     }
 }
 
@@ -38,12 +39,11 @@ if (!function_exists('notification')) {
     /**
      * Begin Pending Notification instance.
      *
-     * @param array $attributes
-     * @return \App\Contracts\Services\NotificationInterface
+     * @return NotificationFactory
      */
-    function notification(array $attributes = [])
+    function notification(): NotificationFactory
     {
-        return app('notification.dispatcher')->setAttributes($attributes);
+        return app('notification.factory');
     }
 }
 
@@ -144,9 +144,24 @@ if (!function_exists('assetExternal')) {
 }
 
 if (!function_exists('ui_route')) {
-    function ui_route(string $route, ?array $context = null)
+    function ui_route(string $route, ?array $context = null): string
     {
-        return app('ui.service')->route($route, $context);
+        return app('ui.route')->route($route, $context);
+    }
+}
+
+if (!function_exists('format')) {
+    /**
+     * Format the given value using the standard formatter.
+     *
+     * @param string $formatter
+     * @param mixed $value
+     * @param mixed ...$parameters
+     * @return mixed
+     */
+    function format(string $formatter, mixed $value, mixed ...$parameters): mixed
+    {
+        return app('formatter')->format($formatter, $value, ...$parameters);
     }
 }
 
@@ -171,5 +186,21 @@ if (!function_exists('coalesce_blank')) {
         }
 
         return $value;
+    }
+}
+
+if (!function_exists('blank_html')) {
+
+    /**
+     * Determine if the given value is "blank" html.
+     *
+     */
+    function blank_html(mixed $value): bool
+    {
+        if (is_string($value)) {
+            $value = strip_tags($value);
+        }
+
+        return blank($value);
     }
 }

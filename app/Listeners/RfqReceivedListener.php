@@ -4,8 +4,8 @@ namespace App\Listeners;
 
 use App\Events\RfqReceived;
 use App\Facades\CustomerFlow;
+use App\Http\Resources\V1\CustomerResponseResource;
 use App\Models\Customer\Customer;
-use App\Http\Resources\CustomerResponseResource;
 
 class RfqReceivedListener
 {

@@ -4,10 +4,15 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Data\Country;
+use App\Models\Role;
+use App\Models\Team;
 use App\Models\Template\SalesOrderTemplate;
+use App\Models\User;
 use App\Models\Vendor;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SalesOrderTemplateTest extends TestCase
@@ -38,15 +43,15 @@ class SalesOrderTemplateTest extends TestCase
                         'company_name',
                         'vendor_name',
                         'country_names',
-                        'created_at'
-                    ]
+                        'created_at',
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
-                    'current_page', 'from', 'last_page', 'links', 'path', 'per_page', 'to', 'total'
-                ]
+                    'current_page', 'from', 'last_page', 'links', 'path', 'per_page', 'to', 'total',
+                ],
             ]);
     }
 
@@ -67,19 +72,19 @@ class SalesOrderTemplateTest extends TestCase
             ->assertJsonStructure([
                 'first_page' => [
                     '*' => [
-                        'id', 'label', 'is_image'
-                    ]
+                        'id', 'label', 'is_image',
+                    ],
                 ],
                 'data_pages' => [
                     '*' => [
-                        'id', 'label', 'is_image'
-                    ]
+                        'id', 'label', 'is_image',
+                    ],
                 ],
                 'payment_schedule' => [
                     '*' => [
-                        'id', 'label', 'is_image'
-                    ]
-                ]
+                        'id', 'label', 'is_image',
+                    ],
+                ],
             ]);
     }
 
@@ -96,7 +101,7 @@ class SalesOrderTemplateTest extends TestCase
             'name' => $this->faker->text(191),
             'business_division_id' => BD_WORLDWIDE,
             'contract_type_id' => CT_CONTRACT,
-            'company_id' => Company::query()->where('is_system', true)->value('id'),
+            'company_id' => Company::query()->where('flags', '&', Company::SYSTEM)->value('id'),
             'vendor_id' => Vendor::query()->where('is_system', true)->value('id'),
             'countries' => Country::query()->limit(2)->pluck('id'),
         ])
@@ -108,7 +113,7 @@ class SalesOrderTemplateTest extends TestCase
                 'business_division_id',
                 'contract_type_id',
                 'company_id',
-                'vendor_id'
+                'vendor_id',
             ]);
     }
 
@@ -127,7 +132,7 @@ class SalesOrderTemplateTest extends TestCase
             'name' => $this->faker->text(191),
             'business_division_id' => BD_WORLDWIDE,
             'contract_type_id' => CT_CONTRACT,
-            'company_id' => Company::query()->where('is_system', true)->value('id'),
+            'company_id' => Company::query()->where('flags', '&', Company::SYSTEM)->value('id'),
             'vendor_id' => Vendor::query()->where('is_system', true)->value('id'),
             'countries' => Country::query()->limit(2)->pluck('id'),
         ])
@@ -143,7 +148,7 @@ class SalesOrderTemplateTest extends TestCase
                 'countries',
                 'form_data',
                 'data_headers',
-                'data_headers_keyed'
+                'data_headers_keyed',
             ]);
 
         $this->getJson('api/sales-order-templates/'.$template->getKey())
@@ -158,7 +163,7 @@ class SalesOrderTemplateTest extends TestCase
                 'countries',
                 'form_data',
                 'data_headers',
-                'data_headers_keyed'
+                'data_headers_keyed',
             ]);
     }
 
@@ -189,7 +194,7 @@ class SalesOrderTemplateTest extends TestCase
                 'countries',
                 'form_data',
                 'data_headers',
-                'data_headers_keyed'
+                'data_headers_keyed',
             ]);
     }
 
@@ -216,7 +221,7 @@ class SalesOrderTemplateTest extends TestCase
                 'countries',
                 'form_data',
                 'data_headers',
-                'data_headers_keyed'
+                'data_headers_keyed',
             ]);
 
         $response = $this->getJson('api/sales-order-templates/'.$response->json('id'))
@@ -231,7 +236,7 @@ class SalesOrderTemplateTest extends TestCase
                 'countries',
                 'form_data',
                 'data_headers',
-                'data_headers_keyed'
+                'data_headers_keyed',
             ]);
 
         $this->assertStringContainsString('[copy]', $response->json('name'));
@@ -249,6 +254,111 @@ class SalesOrderTemplateTest extends TestCase
         $this->authenticateApi();
 
         $this->deleteJson('api/sales-order-templates/'.$template->getKey())
+            ->assertNoContent();
+
+        $this->getJson('api/sales-order-templates/'.$template->getKey())
+            ->assertNotFound();
+    }
+
+    /**
+     * Test an ability to update an existing sales order template when the actor is the team leader of the template owner.
+     */
+    public function testCanUpdateHpeContractTemplateOwnedByLedTeamUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_sales_order_templates', 'create_sales_order_templates', 'update_own_sales_order_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+
+        /** @var SalesOrderTemplate $template */
+        $template = factory(SalesOrderTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $data = [
+            'business_division_id' => $template->businessDivision()->getParentKey(),
+            'contract_type_id' => $template->contractType()->getParentKey(),
+            'company_id' => $template->company()->getParentKey(),
+            'vendor_id' => $template->vendor()->getParentKey(),
+            'countries' => Country::query()->limit(2)->get()->modelKeys(),
+            'name' => Str::random(40),
+        ];
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/sales-order-templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/sales-order-templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/sales-order-templates/'.$template->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'name',
+            ]);
+
+        $this->assertSame($data['name'], $response->json('name'));
+    }
+
+    /**
+     * Test an ability to delete an existing sales order template owned when the actor is the team leader of the template owner.
+     */
+    public function testCanDeleteHpeContractTemplateOwnedByLedTeamUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_sales_order_templates', 'create_sales_order_templates', 'update_own_sales_order_templates', 'delete_own_sales_order_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+
+        /** @var SalesOrderTemplate $template */
+        $template = factory(SalesOrderTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/sales-order-templates/'.$template->getKey())
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/sales-order-templates/'.$template->getKey())
+//            ->dump()
             ->assertNoContent();
 
         $this->getJson('api/sales-order-templates/'.$template->getKey())

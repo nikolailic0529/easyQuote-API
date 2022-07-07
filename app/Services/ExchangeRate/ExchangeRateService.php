@@ -2,6 +2,7 @@
 
 namespace App\Services\ExchangeRate;
 
+use App\Contracts\LoggerAware;
 use App\Contracts\Services\ManagesExchangeRates;
 use App\DTO\ExchangeRate\ExchangeRateCollection;
 use App\DTO\ExchangeRate\ExchangeRateData;
@@ -13,25 +14,22 @@ use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
-use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\File;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use RuntimeException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-abstract class ExchangeRateService implements ManagesExchangeRates
+abstract class ExchangeRateService implements ManagesExchangeRates, LoggerAware
 {
-    protected ConnectionInterface $connection;
 
-    protected Dispatcher $eventsDispatcher;
-
-    protected ValidatorInterface $validator;
-
-    public function __construct(ConnectionInterface $connection, Dispatcher $eventsDispatcher, ValidatorInterface $validator)
+    public function __construct(protected ConnectionResolverInterface $connection,
+                                protected Dispatcher                  $eventsDispatcher,
+                                protected ValidatorInterface          $validator,
+                                protected LoggerInterface             $logger = new NullLogger())
     {
-        $this->connection = $connection;
-        $this->eventsDispatcher = $eventsDispatcher;
-        $this->validator = $validator;
     }
 
     /**
@@ -187,15 +185,13 @@ abstract class ExchangeRateService implements ManagesExchangeRates
             $exchangeRate->country_id = $data->country_id;
             $exchangeRate->currency_id = $data->currency_id;
 
-            $this->connection->transaction(fn() => $exchangeRate->save());
+            $this->connection->connection()->transaction(fn() => $exchangeRate->save());
         });
     }
 
     protected static function parseDates(array $dates): array
     {
-        return array_map(function ($date) {
-            return Carbon::parse($date);
-        }, $dates);
+        return array_map(Carbon::parse(...), $dates);
     }
 
     /**
@@ -217,5 +213,10 @@ abstract class ExchangeRateService implements ManagesExchangeRates
     protected static function fetchDateError(string $filepath)
     {
         throw new RuntimeException(sprintf("%s Filepath: '%s'.", ER_DT_ERR_01, $filepath));
+    }
+
+    public function setLogger(LoggerInterface $logger): static
+    {
+        return tap($this, fn() => $this->logger = $logger);
     }
 }

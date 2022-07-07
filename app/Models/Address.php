@@ -6,11 +6,12 @@ use App\Contracts\SearchableEntity;
 use App\Traits\{Activatable, BelongsToCountry, BelongsToLocation, Search\Searchable, Uuid};
 use App\Models\Data\Country;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDeletes};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, Relations\BelongsToMany, SoftDeletes};
 
 /**
  * Class Address
  *
+ * @property string|null $pl_reference
  * @property string|null $location_id
  * @property string|null $address_type
  * @property string|null $address_1
@@ -25,15 +26,15 @@ use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDelet
  * @property string|null $country_id
  * @property bool|null $is_default
  *
+ * @property Contact|null $contact
  * @property Country|null $country
  * @property Location $location
+ * @property-read User|null $user
  * @property-read string $address_representation
  */
 class Address extends Model implements SearchableEntity
 {
     use Uuid, SoftDeletes, Activatable, Searchable, EloquentJoin;
-
-    public const TYPES = ['Invoice', 'Client', 'Machine', 'Equipment', 'Hardware', 'Software'];
 
     protected $fillable = [
         'address_type',
@@ -53,24 +54,14 @@ class Address extends Model implements SearchableEntity
         'addressable_id', 'addressable_type', 'deleted_at', 'pivot',
     ];
 
+    public function contact(): BelongsTo
+    {
+        return $this->belongsTo(Contact::class);
+    }
+
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
-    }
-
-    public function getCountryCodeAttribute()
-    {
-        return $this->country->code;
-    }
-
-    public function scopeType(Builder $query, string $type): Builder
-    {
-        return $query->where('address_type', $type);
-    }
-
-    public function scopeCommonTypes(Builder $query): Builder
-    {
-        return $query->whereIn('address_type', __('address.types'));
     }
 
     public function location(): BelongsTo
@@ -81,6 +72,21 @@ class Address extends Model implements SearchableEntity
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function companies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class);
+    }
+
+    public function scopeType(Builder $query, string $type): Builder
+    {
+        return $query->where('address_type', $type);
+    }
+
+    public function scopeCommonTypes(Builder $query): Builder
+    {
+        return $query->whereIn('address_type', __('address.types'));
     }
 
     public function toSearchArray(): array
@@ -112,5 +118,23 @@ class Address extends Model implements SearchableEntity
             $this->contact_name ?? '',
             $this->contact_email ?? '',
         );
+    }
+
+    public function getCountryCodeAttribute()
+    {
+        return $this->country->code;
+    }
+
+    public function isEmpty(): bool
+    {
+        $attributes = ['address_1', 'address_2', 'city', 'state', 'post_code', 'country.iso_3166_2'];
+
+        foreach ($attributes as $attribute) {
+            if (filled(data_get($this, $attribute))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

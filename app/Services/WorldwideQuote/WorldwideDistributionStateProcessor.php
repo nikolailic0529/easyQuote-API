@@ -110,8 +110,15 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             $distribution->opportunitySupplier()->associate($supplier);
 
             if (!is_null($supplier)) {
+                $countryMap = config('pipeliner.custom_fields.country_option_iso_3166_2', []);
+
+                /** @var Country|null $countryModel */
+                $countryModel = isset($countryMap[$supplier->country_name])
+                    ? Country::query()->where('iso_3166_2', $countryMap[$supplier->country_name])->first()
+                    : Country::query()->where('name', $supplier->country_name)->first();
+
                 $distribution->country()->associate(
-                    Country::query()->where('name', $supplier->country_name)->first()
+                    $countryModel
                 );
             }
 
@@ -137,7 +144,14 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $opportunity = $supplier->opportunity;
 
-        $distributorQuote->country()->associate($supplier->country);
+        $countryMap = config('pipeliner.custom_fields.country_option_iso_3166_2', []);
+
+        /** @var Country|null $countryModel */
+        $countryModel = isset($countryMap[$supplier->country_name])
+            ? Country::query()->where('iso_3166_2', $countryMap[$supplier->country_name])->first()
+            : Country::query()->where('name', $supplier->country_name)->first();
+
+        $distributorQuote->country()->associate($countryModel);
 
 //        $newAddressModelsOfDistributorQuote = [];
 //        $newContactModelsOfDistributorQuote = [];
@@ -452,6 +466,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                     $model->buy_price = $distribution->buy_price;
                     $model->calculate_list_price = $distribution->calculate_list_price;
                     $model->distribution_expiry_date = $distribution->distribution_expiry_date;
+                    $model->file_date_format = $distribution->file_date_format;
 
                     $model->save();
 
@@ -719,7 +734,15 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                 $builder->whereKey($modelKeys);
             })
             ->with('worldwideQuote')
-            ->get(['id', 'replicated_distributor_quote_id', 'worldwide_quote_id', 'worldwide_quote_type', 'distributor_file_id', 'distribution_currency_id', 'created_at', 'updated_at']);
+            ->get(['id',
+                'replicated_distributor_quote_id',
+                'worldwide_quote_id',
+                'worldwide_quote_type',
+                'distributor_file_id',
+                'distribution_currency_id',
+                'file_date_format',
+                'created_at',
+                'updated_at']);
 
         $actualDistributorQuoteModelKeys = value(function () use ($distributions, $newVersionResolved): array {
             if ($newVersionResolved) {
@@ -795,11 +818,11 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                         return;
                     }
 
-                    $mappedRowDefaults = $this->getMappingConfig($model);
+                    $mappingConfig = $this->getMappingConfig($model);
 
                     $rowMapping = $this->transitDistributionMappingToRowMapping(new DistributionMappingCollection($distributionMapping->all()));
 
-                    $this->documentProcessor->transitImportedRowsToMappedRows($model->distributorFile, $rowMapping, $mappedRowDefaults);
+                    $this->documentProcessor->transitImportedRowsToMappedRows($model->distributorFile, $rowMapping, $mappingConfig);
                 });
 
                 $this->connection->commit();
@@ -872,6 +895,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             'default_qty' => 1,
             'calculate_list_price' => (bool)$worldwideDistribution->calculate_list_price,
             'exchange_rate_value' => $exchangeRateValue,
+            'file_date_format' => $worldwideDistribution->file_date_format,
         ]);
     }
 

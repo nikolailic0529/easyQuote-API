@@ -2,6 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
+use App\Enum\AttachmentType;
 use App\Models\Attachment;
 use Faker\Generator as Faker;
 use Illuminate\Http\UploadedFile;
@@ -12,7 +13,7 @@ $factory->define(Attachment::class, function (Faker $faker) {
     $filename = implode('.', [Str::random(), $ext]);
 
     return [
-        'type' => $faker->randomElement(Attachment::TYPES),
+        'type' => $faker->randomElement(AttachmentType::cases())->value,
         'filename' => $filename,
         'filepath' => implode(DIRECTORY_SEPARATOR, ['attachments', $filename]),
         'size' => mt_rand(1000, 2000),

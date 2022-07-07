@@ -42,13 +42,13 @@ class HpeContractTemplatesSeeder extends Seeder
 
     protected function createTemplate(array $attributes, $templateSchema): void
     {
-        $company = Company::query()->system()->whereShortCode($attributes['company'])->first();
-        $vendor = Vendor::query()->whereShortCode($attributes['vendor'])->first();
+        $company = Company::query()->where('flags', '&', Company::SYSTEM)->where('short_code', $attributes['company'])->first();
+        $vendor = Vendor::query()->where('short_code', $attributes['vendor'])->first();
         $countries = Country::query()->whereIn('iso_3166_2', $attributes['countries'])->pluck('id');
 
         $template = HpeContractTemplate::query()->withoutGlobalScopes()->firstOrNew(['id' => $attributes['id']]);
 
-        $images = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::WITH_KEYS);
+        $images = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::MAP);
 
         $formData = $this->parseTemplateSchema($templateSchema, $images);
 

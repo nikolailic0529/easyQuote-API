@@ -2,7 +2,7 @@
 
 namespace App\Events\Task;
 
-use App\Models\Task;
+use App\Models\Task\Task;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -15,7 +15,7 @@ class TaskDeleted
     /**
      * Create a new event instance.
      *
-     * @param Task $task
+     * @param \App\Models\Task\Task $task
      * @return void
      */
     public function __construct(Task $task)

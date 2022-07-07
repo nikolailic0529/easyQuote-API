@@ -6,11 +6,11 @@ use App\Models\Address;
 use App\Models\Asset;
 use App\Models\Collaboration\Invitation;
 use App\Models\Company;
-use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
 use App\Models\Data\Country;
 use App\Models\HpeContract;
+use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\Quote\Contract;
 use App\Models\Quote\Discount\MultiYearDiscount;
@@ -19,10 +19,8 @@ use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\Margin\Margin;
 use App\Models\Quote\Quote;
-use App\Models\Quote\QuoteNote;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\Role;
@@ -30,7 +28,7 @@ use App\Models\SalesOrder;
 use App\Models\System\Activity;
 use App\Models\System\Notification;
 use App\Models\System\SystemSetting;
-use App\Models\Task;
+use App\Models\Task\Task;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\HpeContractTemplate;
 use App\Models\Template\QuoteTemplate;
@@ -40,7 +38,6 @@ use App\Models\Vendor;
 use App\Policies\ActivityPolicy;
 use App\Policies\AddressPolicy;
 use App\Policies\AssetPolicy;
-use App\Policies\CompanyNotePolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\ContactPolicy;
 use App\Policies\ContractPolicy;
@@ -53,12 +50,12 @@ use App\Policies\ImportableColumnPolicy;
 use App\Policies\InvitationPolicy;
 use App\Policies\MarginPolicy;
 use App\Policies\MultiYearDiscountPolicy;
+use App\Policies\NotePolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\OpportunityPolicy;
 use App\Policies\PrePayDiscountPolicy;
 use App\Policies\PromotionalDiscountPolicy;
 use App\Policies\QuoteFilePolicy;
-use App\Policies\QuoteNotePolicy;
 use App\Policies\QuotePolicy;
 use App\Policies\QuoteTaskTemplatePolicy;
 use App\Policies\QuoteTemplatePolicy;
@@ -72,7 +69,6 @@ use App\Policies\UnifiedQuotePolicy;
 use App\Policies\UserPolicy;
 use App\Policies\VendorPolicy;
 use App\Policies\WorldwideDistributionPolicy;
-use App\Policies\WorldwideQuoteNotePolicy;
 use App\Policies\WorldwideQuotePolicy;
 use App\Services\Auth\UserTeamGate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -91,7 +87,6 @@ class AuthServiceProvider extends ServiceProvider
         Quote::class                    => QuotePolicy::class,
         Contract::class                 => ContractPolicy::class,
         QuoteFile::class                => QuoteFilePolicy::class,
-        QuoteNote::class                => QuoteNotePolicy::class,
         Task::class                     => TaskPolicy::class,
 
         QuoteTemplate::class            => QuoteTemplatePolicy::class,
@@ -100,7 +95,6 @@ class AuthServiceProvider extends ServiceProvider
         SalesOrderTemplate::class       => SalesOrderTemplatePolicy::class,
 
         Company::class                  => CompanyPolicy::class,
-        CompanyNote::class              => CompanyNotePolicy::class,
         Vendor::class                   => VendorPolicy::class,
 
         SND::class                      => SNDPolicy::class,
@@ -125,11 +119,12 @@ class AuthServiceProvider extends ServiceProvider
 
         WorldwideQuote::class           => WorldwideQuotePolicy::class,
         WorldwideDistribution::class    => WorldwideDistributionPolicy::class,
-        WorldwideQuoteNote::class       => WorldwideQuoteNotePolicy::class,
 
         Opportunity::class              => OpportunityPolicy::class,
 
         SalesOrder::class               => SalesOrderPolicy::class,
+
+        Note::class                     => NotePolicy::class,
     ];
 
     public function register()

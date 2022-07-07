@@ -19,9 +19,9 @@ class UserTeamGate
         return isset($ledTeamUserDictionary[$ledUserKey]);
     }
 
-    public function getLedTeamUserDictionary(User $user): array
+    private function getLedTeamUserDictionary(User $user): array
     {
-        return $this->ledTeamUserCache[$user->getKey()] ??= value(function () use ($user) {
+        return $this->ledTeamUserCache[$user->getKey()] ??= value(static function () use ($user): array {
             $userKeys = $user->ledTeamUsers()->pluck($user->ledTeamUsers()->getQualifiedForeignKeyName())->all();
 
             return array_fill_keys($userKeys, true);

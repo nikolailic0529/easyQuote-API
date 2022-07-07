@@ -5,11 +5,11 @@ namespace Tests\Unit;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
 use App\Models\Address;
 use App\Models\Contact;
+use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
@@ -34,10 +34,10 @@ class WorldwideQuoteVersionGuardTest extends TestCase
      */
     public function testResolvesNewVersionForActingUser()
     {
-        $quoteOwner = factory(User::class)->create();
+        $quoteOwner = User::factory()->create();
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var OpportunitySupplier $supplier */
         $supplier = factory(OpportunitySupplier::class)->create([
@@ -68,13 +68,10 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         $groupOfPackAssets->assets()->sync($packAssets);
 
-        $quoteNote = tap(new WorldwideQuoteNote, function (WorldwideQuoteNote $note) use ($quote) {
-            $note->worldwideQuote()->associate($quote);
-            $note->worldwideQuoteVersion()->associate($quote->activeVersion);
-            $note->text = Str::random(40);
-
-            $note->save();
-        });
+        Note::factory()
+            ->hasAttached($quote, relationship: 'worldwideQuotesHaveNote')
+            ->hasAttached($quote->activeVersion, relationship: 'worldwideQuoteVersionsHaveNote')
+            ->create();
 
         $distributorFile = factory(QuoteFile::class)->create();
 
@@ -115,7 +112,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $rowsGroup->rows()->attach($mappedRows);
 
         $distributorQuoteAddresses = factory(Address::class, 2)->create();
-        $distributorQuoteContacts = factory(Contact::class, 2)->create();
+        $distributorQuoteContacts = Contact::factory()->count(2)->create();
 
         $distributorQuoteAddressDictionary = $distributorQuoteAddresses->getDictionary();
         $distributorQuoteContactDictionary = $distributorQuoteContacts->getDictionary();
@@ -124,7 +121,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $distributorQuote->contacts()->sync($distributorQuoteContacts);
 
         /** @var User $actingUser */
-        $actingUser = factory(User::class)->create();
+        $actingUser = User::factory()->create();
 
         /** @var WorldwideQuoteVersion $newVersion */
         $newVersion = $this->app->make(WorldwideQuoteVersionGuard::class)->resolveModelForActingUser($quote, $actingUser);
@@ -197,10 +194,10 @@ class WorldwideQuoteVersionGuardTest extends TestCase
      */
     public function testReplicatesWorldwideQuoteEntity()
     {
-        $quoteOwner = factory(User::class)->create();
+        $quoteOwner = User::factory()->create();
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var OpportunitySupplier $supplier */
         $supplier = factory(OpportunitySupplier::class)->create([
@@ -252,7 +249,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $rowsGroup->rows()->attach($mappedRows);
 
         $distributorQuoteAddresses = factory(Address::class, 2)->create();
-        $distributorQuoteContacts = factory(Contact::class, 2)->create();
+        $distributorQuoteContacts = Contact::factory()->count(2)->create();
 
         $distributorQuoteAddressDictionary = $distributorQuoteAddresses->getDictionary();
         $distributorQuoteContactDictionary = $distributorQuoteContacts->getDictionary();
@@ -261,7 +258,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $distributorQuote->contacts()->sync($distributorQuoteContacts);
 
         /** @var User $actingUser */
-        $actingUser = factory(User::class)->create();
+        $actingUser = User::factory()->create();
 
         /** @var WorldwideQuote $newQuote */
         $newQuote = $this->app[ProcessesWorldwideQuoteState::class]->processQuoteReplication($quote, $actingUser);

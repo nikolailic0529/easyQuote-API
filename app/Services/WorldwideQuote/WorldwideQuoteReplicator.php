@@ -2,9 +2,9 @@
 
 namespace App\Services\WorldwideQuote;
 
+use App\Models\Note\Note;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
-use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\ImportedRow;
@@ -122,18 +122,18 @@ class WorldwideQuoteReplicator
         });
     }
 
-    protected function replicateQuoteNote(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): ?WorldwideQuoteNote
+    protected function replicateQuoteNote(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): ?Note
     {
         if (is_null($activeVersion->note)) {
             return null;
         }
 
-        return tap(new WorldwideQuoteNote(), function (WorldwideQuoteNote $note) use ($activeVersion, $replicatedVersion) {
+        return tap(new Note(), function (Note $note) use ($activeVersion, $replicatedVersion) {
             $note->{$note->getKeyName()} = (string)Uuid::generate(4);
 //            $note->user()->associate($replicatedVersion->user_id);
-            $note->worldwideQuote()->associate($replicatedVersion->worldwide_quote_id);
-            $note->worldwideQuoteVersion()->associate($replicatedVersion->getKey());
-            $note->text = $activeVersion->note->text;
+
+            $note->note = $activeVersion->note->note;
+
             $note->{$note->getCreatedAtColumn()} = $note->freshTimestampString();
             $note->{$note->getUpdatedAtColumn()} = $note->freshTimestampString();
         });

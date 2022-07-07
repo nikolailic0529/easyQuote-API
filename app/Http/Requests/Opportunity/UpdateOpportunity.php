@@ -8,14 +8,21 @@ use App\Models\Contact;
 use App\Models\ContractType;
 use App\Models\OpportunitySupplier;
 use App\Models\Pipeline\Pipeline;
+use App\Models\Pipeline\PipelineStage;
 use App\Models\User;
 use App\Queries\PipelineQueries;
+use App\Rules\Opportunity\SaleActionName;
+use App\Rules\Opportunity\ValidSupplierData;
+use App\Services\Opportunity\OpportunityDataMapper;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class UpdateOpportunity extends FormRequest
 {
+    protected readonly ?Pipeline $defaultPipeline;
+
     protected ?UpdateOpportunityData $updateOpportunityData = null;
 
     /**
@@ -29,6 +36,15 @@ class UpdateOpportunity extends FormRequest
             'pipeline_id' => [
                 'bail', 'uuid',
                 Rule::exists(Pipeline::class, 'id')->withoutTrashed(),
+            ],
+            'pipeline_stage_id' => [
+                'bail', 'required_without:sale_action_name', 'uuid',
+                Rule::exists(PipelineStage::class, 'id')->withoutTrashed()->where(function (Builder $builder): void {
+                    $builder->where('pipeline_id', $this->input('pipeline_id', $this->getDefaultPipeline()->getKey()));
+                }),
+            ],
+            'sale_action_name' => [
+                'bail', 'required_without:pipeline_stage_id', 'string', new SaleActionName,
             ],
             'contract_type_id' => [
                 'bail', 'required', 'uuid',
@@ -81,22 +97,22 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'opportunity_start_date' => [
-                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_start_date_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_end_date' => [
-                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_end_end_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_closing_date' => [
-                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'contract_duration_months' => [
-                'bail', Rule::requiredIf(fn () => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
+                'bail', Rule::requiredIf(fn() => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
             ],
             'is_contract_duration_checked' => [
                 'bail', 'boolean',
@@ -150,13 +166,13 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'nullable', 'numeric',
             ],
             'service_level_agreement_id' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'sale_unit_name' => [
                 'bail', 'string', 'max:191',
             ],
             'competition_name' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'drop_in' => [
                 'bail', 'string', 'max:191',
@@ -174,40 +190,46 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'boolean',
             ],
             'remarks' => [
-                'bail', 'string', 'max:10000',
+                'bail', 'nullable', 'string', 'max:10000',
             ],
             'notes' => [
-                'bail', 'string', 'max:10000',
-            ],
-            'sale_action_name' => [
-                'bail', 'string',
-            ],
-            'ranking' => [
-                'bail', 'nullable', 'numeric', 'min:0', 'max:1',
+                'bail', 'nullable', 'string', 'max:10000',
             ],
             'campaign_name' => [
                 'bail', 'nullable', 'string', 'max:191',
             ],
             'suppliers_grid' => [
-                'bail', 'nullable', 'array',
+                'bail', 'nullable', 'array', 'max:5',
+            ],
+            'suppliers_grid.*' => [
+                'bail', 'array', (new ValidSupplierData()),
             ],
             'suppliers_grid.*.id' => [
                 'bail', 'nullable', 'uuid',
                 Rule::exists(OpportunitySupplier::class, 'id')->where('opportunity_id', $this->route('opportunity')->getKey()),
             ],
             'suppliers_grid.*.supplier_name' => [
-                'bail', 'nullable', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:100',
             ],
             'suppliers_grid.*.country_name' => [
-                'bail', 'nullable', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:100',
             ],
             'suppliers_grid.*.contact_name' => [
-                'bail', 'nullable', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:100',
             ],
             'suppliers_grid.*.contact_email' => [
-                'bail', 'nullable', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:100',
             ],
         ];
+    }
+
+    protected function getDefaultPipeline(): Pipeline
+    {
+        /** @var PipelineQueries $pipelineQueries */
+        $pipelineQueries = $this->container[PipelineQueries::class];
+
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return $this->defaultPipeline ??= $pipelineQueries->explicitlyDefaultPipelinesQuery()->sole();
     }
 
     public function getOpportunityData(): UpdateOpportunityData
@@ -236,11 +258,20 @@ class UpdateOpportunity extends FormRequest
             }
 
             return new UpdateOpportunityData([
-                'pipeline_id' => $this->input('pipeline_id', function () {
-                    /** @var PipelineQueries $pipelineQueries */
-                    $pipelineQueries = $this->container[PipelineQueries::class];
+                'pipeline_id' => $this->input('pipeline_id', function (): string {
+                    return $this->getDefaultPipeline()->getKey();
+                }),
 
-                    return $pipelineQueries->explicitlyDefaultPipelinesQuery()->sole()->getKey();
+                'pipeline_stage_id' => $this->input('pipeline_stage_id', function (): ?string {
+
+                    if ($this->missing('sale_action_name')) {
+                        return null;
+                    }
+
+                    $stageName = OpportunityDataMapper::resolveStageNameFromSaleAction($this->input('sale_action_name'));
+
+                    return $this->getDefaultPipeline()->pipelineStages()->where('stage_name', $stageName)->first()?->getKey();
+
                 }),
                 'contract_type_id' => $this->input('contract_type_id'),
                 'account_manager_id' => $this->input('account_manager_id'),
@@ -264,7 +295,7 @@ class UpdateOpportunity extends FormRequest
                 'opportunity_closing_date' => transform($this->input('opportunity_closing_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
 
                 'is_contract_duration_checked' => $this->boolean('is_contract_duration_checked'),
-                'contract_duration_months' => transform($this->input('contract_duration_months'), fn (mixed $months) => (int)$months),
+                'contract_duration_months' => transform($this->input('contract_duration_months'), fn(mixed $months) => (int)$months),
 
                 'expected_order_date' => transform($this->input('expected_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                 'customer_order_date' => transform($this->input('customer_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
@@ -281,7 +312,6 @@ class UpdateOpportunity extends FormRequest
                 'estimated_upsell_amount' => transform($this->input('estimated_upsell_amount'), fn($value) => (float)$value),
                 'estimated_upsell_amount_currency_code' => $this->input('estimated_upsell_amount_currency_code'),
                 'personal_rating' => $this->input('personal_rating'),
-                'ranking' => transform($this->input('ranking'), fn($value) => (float)$value),
                 'margin_value' => transform($this->input('margin_value'), fn($value) => (float)$value),
                 'service_level_agreement_id' => $this->input('service_level_agreement_id'),
                 'sale_unit_name' => $this->input('sale_unit_name'),

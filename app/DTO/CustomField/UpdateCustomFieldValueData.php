@@ -7,20 +7,14 @@ use Symfony\Component\Validator\Constraints;
 
 final class UpdateCustomFieldValueData extends DataTransferObject
 {
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
-     */
+    #[Constraints\Uuid]
     public ?string $entity_id;
 
-    /**
-     * @var string
-     */
+    #[Constraints\NotBlank]
     public string $field_value;
 
-    /**
-     * @var bool
-     */
     public bool $is_default;
+
+    #[Constraints\All(new Constraints\Uuid)]
+    public array $allowed_by = [];
 }

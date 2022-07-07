@@ -58,7 +58,11 @@ class PipelineSeeder extends Seeder
                         'updated_at' => now(),
                     ]);
 
-                foreach ($pipelineSeed['pipeline_stages'] as $stageSeed) {
+                $stageCount = count($pipelineSeed['pipeline_stages']);
+
+                foreach ($pipelineSeed['pipeline_stages'] as $i => $stageSeed) {
+
+                    $percentage = ($stageCount - ($stageCount - $i - 1)) / $stageCount * 100;
 
                     $connection->table('pipeline_stages')
                         ->insertOrIgnore([
@@ -66,6 +70,7 @@ class PipelineSeeder extends Seeder
                             'pipeline_id' => $pipelineSeed['id'],
                             'stage_name' => $stageSeed['stage_name'],
                             'stage_order' => $stageSeed['stage_order'],
+                            'stage_percentage' => $percentage,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);

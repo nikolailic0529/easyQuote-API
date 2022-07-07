@@ -11,7 +11,7 @@ final class CreateOpportunityData extends DataTransferObject
     /**
      * @Constraints\Uuid
      */
-    public string $user_id;
+    public ?string $user_id = null;
 
     /**
      * @Constraints\Uuid
@@ -19,6 +19,13 @@ final class CreateOpportunityData extends DataTransferObject
      * @var string
      */
     public string $pipeline_id;
+
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string|null
+     */
+    public ?string $pipeline_stage_id;
 
     /**
      * @Constraints\Uuid
@@ -42,9 +49,9 @@ final class CreateOpportunityData extends DataTransferObject
      */
     public ?string $end_user_id;
 
-    public bool $are_end_user_addresses_available;
+    public bool $are_end_user_addresses_available = false;
 
-    public bool $are_end_user_contacts_available;
+    public bool $are_end_user_contacts_available = false;
 
     /**
      * @Constraints\Uuid
@@ -181,8 +188,6 @@ final class CreateOpportunityData extends DataTransferObject
      * @Constraints\NotBlank(allowNull=true)
      */
     public ?string $personal_rating;
-
-    public ?float $ranking;
 
     public ?float $margin_value;
 

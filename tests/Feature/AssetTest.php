@@ -107,7 +107,7 @@ class AssetTest extends TestCase
         $role->syncPermissions('view_assets');
 
         /** @var User $user */
-        $user = factory(User::class)->create([
+        $user = User::factory()->create([
             'team_id' => $team->getKey(),
         ]);
 
@@ -328,9 +328,9 @@ class AssetTest extends TestCase
         /** @var Asset $asset */
         $asset = factory(Asset::class)->create();
         /** @var Company $companyOfAsset */
-        $companyOfAsset = factory(Company::class)->create();
+        $companyOfAsset = Company::factory()->create();
         /** @var Company $anotherCompany */
-        $anotherCompany = factory(Company::class)->create();
+        $anotherCompany = Company::factory()->create();
 
         $companyOfAsset->assets()->sync($asset);
 

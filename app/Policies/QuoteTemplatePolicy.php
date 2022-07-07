@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Services\Auth\UserTeamGate;
 use App\Models\{
     User,
     Template\QuoteTemplate
@@ -11,6 +12,10 @@ use Illuminate\Auth\Access\HandlesAuthorization;
 class QuoteTemplatePolicy
 {
     use HandlesAuthorization;
+
+    public function __construct(protected UserTeamGate $userTeamGate)
+    {
+    }
 
     /**
      * Determine whether the user can view any quote templates.
@@ -81,10 +86,15 @@ class QuoteTemplatePolicy
             return true;
         }
 
-        if (
-            $user->can('update_own_quote_templates') &&
-            $user->getKey() === $quoteTemplate->{$quoteTemplate->user()->getForeignKeyName()}
-        ) {
+        if ($user->cannot('update_own_quote_templates')) {
+            return false;
+        }
+
+        if ($quoteTemplate->user()->is($user)) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quoteTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -105,11 +115,16 @@ class QuoteTemplatePolicy
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
+        
+        if ($user->cannot('delete_own_quote_templates')) {
+            return false;
+        }
 
-        if (
-            $user->can('delete_own_quote_templates') &&
-            $user->getKey() === $quoteTemplate->{$quoteTemplate->user()->getForeignKeyName()}
-        ) {
+        if ($quoteTemplate->user()->is($user)) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quoteTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }

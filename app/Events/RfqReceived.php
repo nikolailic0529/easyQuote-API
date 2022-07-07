@@ -2,12 +2,9 @@
 
 namespace App\Events;
 
-use App\Http\Resources\CustomerBroadcastResource;
+use App\Http\Resources\V1\CustomerBroadcastResource;
 use App\Models\Customer\Customer;
-use Illuminate\Broadcasting\{
-    InteractsWithSockets,
-    PrivateChannel
-};
+use Illuminate\Broadcasting\{InteractsWithSockets, PrivateChannel};
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Events\Dispatchable;

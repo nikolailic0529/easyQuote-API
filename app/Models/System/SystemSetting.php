@@ -7,6 +7,9 @@ use App\Traits\{Activity\LogsActivity, Uuid};
 use Illuminate\Database\Eloquent\{Collection, Model,};
 use Illuminate\Support\Str;
 
+/**
+ * @property string|null $key
+ */
 class SystemSetting extends Model
 {
     use Uuid, LogsActivity;

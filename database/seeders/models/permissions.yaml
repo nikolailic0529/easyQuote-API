@@ -169,4 +169,8 @@
 - create_importable_columns
 - update_importable_columns
 - delete_importable_columns
+- view_renewals
+- create_renewals
+- update_renewals
+- delete_renewals
 

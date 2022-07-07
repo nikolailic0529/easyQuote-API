@@ -27,7 +27,7 @@ class AuthTest extends TestCase
      */
     public function testAuthExistingUser()
     {
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $attributes = [
             'email' => $user->email,
@@ -51,7 +51,7 @@ class AuthTest extends TestCase
      */
     public function testFailingAuthExistingUser()
     {
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $attributes = [
             'email' => $user->email,
@@ -70,7 +70,7 @@ class AuthTest extends TestCase
      */
     public function testAuthDeactivatedUser()
     {
-        $user = tap(factory(User::class)->create())->deactivate();
+        $user = tap(User::factory()->create())->deactivate();
 
         $credentials = ['email' => $user->email, 'password' => 'password', 'local_ip' => '192.168.99.99', 'g_recaptcha' => Str::random()];
 
@@ -88,7 +88,7 @@ class AuthTest extends TestCase
     {
         $this->markTestSkipped('Skipped since IP detection has been disabled');
 
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $attributes = [
             'email' => $user->email,

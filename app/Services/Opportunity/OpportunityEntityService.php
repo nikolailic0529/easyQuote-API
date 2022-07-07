@@ -10,10 +10,10 @@ use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\CreateSupplierData,
     Opportunity\ImportedOpportunityData,
     Opportunity\MarkOpportunityAsLostData,
+    Opportunity\SetStageOfOpportunityData,
     Opportunity\UpdateOpportunityData,
     Opportunity\UpdateSupplierData,
-    Opportunity\UploadOpportunityData
-};
+    Opportunity\UploadOpportunityData};
 use App\Enum\CompanySource;
 use App\Enum\CompanyType;
 use App\Enum\Lock;
@@ -24,8 +24,7 @@ use App\Events\{Opportunity\OpportunityBatchFilesImported,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
-    Opportunity\OpportunityUpdated
-};
+    Opportunity\OpportunityUpdated};
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -34,16 +33,18 @@ use App\Models\ImportedCompany;
 use App\Models\ImportedContact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
+use App\Models\Pipeline\PipelineStage;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Queries\PipelineQueries;
+use App\Services\Company\ImportedCompanyToPrimaryAccountProjector;
 use App\Services\Exceptions\ValidationException;
 use App\Services\ExchangeRate\CurrencyConverter;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
-use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
@@ -58,15 +59,18 @@ class OpportunityEntityService implements CauserAware
 
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface   $connection,
-                                protected LockProvider          $lockProvider,
-                                protected ValidatorInterface    $validator,
-                                protected EventDispatcher       $eventDispatcher,
-                                protected ValidatorFactory      $validatorFactory,
-                                protected CurrencyConverter     $currencyConverter,
-                                protected PipelineQueries       $pipelineQueries,
-                                protected PermissionBroker      $permissionBroker,
-                                protected OpportunityDataMapper $dataMapper)
+    public function __construct(protected ConnectionInterface                      $connection,
+                                protected LockProvider                             $lockProvider,
+                                protected ValidatorInterface                       $validator,
+                                protected EventDispatcher                          $eventDispatcher,
+                                protected ValidatorFactory                         $validatorFactory,
+                                protected CurrencyConverter                        $currencyConverter,
+                                protected PipelineQueries                          $pipelineQueries,
+                                protected PermissionBroker                         $permissionBroker,
+                                protected OpportunityDataMapper                    $dataMapper,
+                                protected AccountOwnerResolver                     $accountOwnerResolver,
+                                protected ContractTypeResolver                     $contractTypeResolver,
+                                protected ImportedCompanyToPrimaryAccountProjector $accountProjector)
     {
     }
 
@@ -85,33 +89,10 @@ class OpportunityEntityService implements CauserAware
 
     public function finishSavingOfImportedOpportunity(Opportunity $opportunity): void
     {
-        if (false === is_null($opportunity->importedPrimaryAccount)) {
-            $primaryAccount = $this->projectImportedCompanyToPrimaryAccount($opportunity->importedPrimaryAccount);
+        if (null !== $opportunity->importedPrimaryAccount) {
+            $primaryAccount = $this->associateOpportunityWithImportedPrimaryAccount($opportunity);
 
-            if ((!$opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)
-                && !$opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_END_USER))
-                || $opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)
-            ) {
-                $opportunity->primaryAccount()->associate($primaryAccount);
-            }
-
-            if ($opportunity->importedPrimaryAccount->flags === 0 || $opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)) {
-                $opportunity->primaryAccount()->associate($primaryAccount);
-            }
-
-            if ($opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_END_USER)) {
-                $opportunity->endUser()->associate($primaryAccount);
-            }
-
-            if (false === is_null($opportunity->importedPrimaryAccountContact)) {
-                $primaryContact = $primaryAccount
-                    ->contacts()
-                    ->where('first_name', $opportunity->importedPrimaryAccountContact->first_name)
-                    ->where('last_name', $opportunity->importedPrimaryAccountContact->last_name)
-                    ->first();
-
-                $opportunity->primaryAccountContact()->associate($primaryContact);
-            }
+            $this->associateOpportunityWithImportedPrimaryAccountContact($opportunity, $primaryAccount);
         }
 
         $this->connection->transaction(static fn() => $opportunity->restore());
@@ -121,181 +102,39 @@ class OpportunityEntityService implements CauserAware
         );
     }
 
-    private function projectImportedCompanyToPrimaryAccount(ImportedCompany $importedCompany): Company
+    public function associateOpportunityWithImportedPrimaryAccount(Opportunity $opportunity): Company
     {
-        $matchedCompanies = Company::query()
-            ->where('name', trim($importedCompany->company_name))
-            ->where('type', CompanyType::EXTERNAL)
-            ->with('user:id,email')
-            ->get()
-            ->sortByDesc(function (Company $company): int {
-                if ($company->user?->is($this->causer)) {
-                    return 1;
-                }
+        $primaryAccount = ($this->accountProjector)($opportunity->importedPrimaryAccount);
 
-                if ($this->causer instanceof User && $this->causer->checkPermissionTo("companies.*.{$company->getKey()}")) {
-                    return 1;
-                }
-
-                return 0;
-            });
-
-        $company = $matchedCompanies->first();
-
-        /** @var Company $company */
-        $company ??= tap(new Company(), function (Company $company) use ($importedCompany) {
-            $company->name = $importedCompany->company_name;
-            $company->type = CompanyType::EXTERNAL;
-            $company->category = $importedCompany->company_category;
-            $company->source = CompanySource::PL;
-            $company->vat = $importedCompany->vat;
-            $company->vat_type = $importedCompany->vat_type ?? VAT::NO_VAT;
-
-            $this->connection->transaction(static fn() => $company->save());
-
-            // once the company has been created by the current authenticated user,
-            // we grant super permissions to him on the newly created company.
-
-            if ($this->causer instanceof User) {
-                $company->user()->associate($this->causer);
-
-                $this->permissionBroker->givePermissionToUser(
-                    user: $this->causer,
-                    name: "companies.*.{$company->getKey()}"
-                );
-            }
-        });
-
-
-        // when the email, phone, or website fields are blank in the company entity,
-        // we'll populate their values from the imported company.
-        with($company, function (Company $company) use ($importedCompany) {
-
-            if (is_null($company->vat_type)) {
-                $company->vat_type = $importedCompany->vat_type ?? VAT::NO_VAT;
-            }
-
-            if (VAT::VAT_NUMBER === $company->vat) {
-                $company->vat = coalesce_blank($company->vat, $importedCompany->vat);
-            }
-
-            $company->email = coalesce_blank($company->email, $importedCompany->email);
-            $company->phone = coalesce_blank($company->phone, $company->phone, $importedCompany->phone);
-            $company->website = coalesce_blank($company->website, $company->website, $importedCompany->website);
-        });
-
-        $vendorNames = Str::of($importedCompany->vendors_cs)
-            ->explode(',')
-            ->map(static fn(string $v) => trim($v))
-            ->filter(static fn(string $v) => filled($v))
-            ->values()
-            ->all();
-
-        $vendors = Vendor::query()
-            ->whereIn('name', $vendorNames)
-            ->get();
-
-        $this->connection->transaction(static function () use ($vendors, $company): void {
-            $company->save();
-
-            $company->vendors()->syncWithoutDetaching($vendors);
-        });
-
-        $addressToHash = static function (Address|ImportedAddress $address): string {
-            return md5(implode('~', [
-                $address->address_type,
-                $address->address_1,
-                $address->address_2,
-                $address->city,
-                $address->post_code,
-                $address->state,
-                $address->country_id,
-            ]));
-        };
-
-        $contactToHash = static function (Contact|ImportedContact $contact): string {
-            return md5(implode('~', [
-                $contact->contact_type,
-                $contact->first_name,
-                $contact->last_name,
-                $contact->email,
-                $contact->phone,
-                $contact->job_title,
-            ]));
-        };
-
-        $projectImportedAddressToAddress = function (ImportedAddress $importedAddress): Address {
-            return tap(new Address(), function (Address $address) use ($importedAddress): void {
-                $address->{$address->getKeyName()} = (string)Uuid::generate(4);
-                $address->user()->associate($this->causer);
-                $address->address_type = $importedAddress->address_type;
-                $address->address_1 = $importedAddress->address_1;
-                $address->address_2 = $importedAddress->address_2;
-                $address->city = $importedAddress->city;
-                $address->post_code = $importedAddress->post_code;
-                $address->state = $importedAddress->state;
-                $address->state_code = $importedAddress->state_code;
-                $address->country()->associate($importedAddress->country_id);
-
-                $address->updateTimestamps();
-            });
-        };
-
-        $projectImportedContactToContact = function (ImportedContact $importedContact): Contact {
-            return tap(new Contact(), function (Contact $contact) use ($importedContact): void {
-                $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
-                $contact->user()->associate($this->causer);
-                $contact->contact_type = $importedContact->contact_type;
-                $contact->first_name = $importedContact->first_name;
-                $contact->last_name = $importedContact->last_name;
-                $contact->email = $importedContact->email;
-                $contact->phone = $importedContact->phone;
-                $contact->job_title = $importedContact->job_title;
-                $contact->contact_name = $importedContact->contact_name;
-
-                $contact->updateTimestamps();
-            });
-        };
-
-
-        $existingAddressHashes = $company->addresses->keyBy($addressToHash);
-        $existingContactHashes = $company->contacts->keyBy($contactToHash);
-
-        $importedAddressHashes = $importedCompany->addresses->keyBy($addressToHash);
-        $importedContactHashes = $importedCompany->contacts->keyBy($contactToHash);
-
-        $newImportedAddresses = $importedAddressHashes->diffKeys($existingAddressHashes);
-        $newImportedContacts = $importedContactHashes->diffKeys($existingContactHashes);
-
-        $newAddresses = $newImportedAddresses->map($projectImportedAddressToAddress)->values();
-        $newContacts = $newImportedContacts->map($projectImportedContactToContact)->values();
-
-        if ($newAddresses->isNotEmpty()) {
-
-            $addressValues = $newAddresses->map->getAttributes()->all();
-
-            $this->connection->transaction(static function () use ($newAddresses, $company, $addressValues): void {
-                Address::query()->insert($addressValues);
-
-                $company->addresses()->syncWithoutDetaching($newAddresses);
-            });
+        if ((!$opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)
+                && !$opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_END_USER))
+            || $opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)
+        ) {
+            $opportunity->primaryAccount()->associate($primaryAccount);
         }
 
-        if ($newContacts->isNotEmpty()) {
-
-            $contactValues = $newContacts->map->getAttributes()->all();
-
-            $this->connection->transaction(static function () use ($newContacts, $company, $contactValues): void {
-
-                Contact::query()->insert($contactValues);
-
-                $company->contacts()->syncWithoutDetaching($newContacts);
-
-            });
-
+        if ($opportunity->importedPrimaryAccount->flags === 0 || $opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)) {
+            $opportunity->primaryAccount()->associate($primaryAccount);
         }
 
-        return $company;
+        if ($opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_END_USER)) {
+            $opportunity->endUser()->associate($primaryAccount);
+        }
+
+        return $primaryAccount;
+    }
+
+    public function associateOpportunityWithImportedPrimaryAccountContact(Opportunity $opportunity, Company $primaryAccount): void
+    {
+        if (false === is_null($opportunity->importedPrimaryAccountContact)) {
+            $primaryContact = $primaryAccount
+                ->contacts()
+                ->where('first_name', $opportunity->importedPrimaryAccountContact->first_name)
+                ->where('last_name', $opportunity->importedPrimaryAccountContact->last_name)
+                ->first();
+
+            $opportunity->primaryAccountContact()->associate($primaryContact);
+        }
     }
 
     /**
@@ -352,7 +191,7 @@ class OpportunityEntityService implements CauserAware
         $importedOpportunities = [];
 
         foreach ($opportunitiesDataFileReader->getRows() as $i => $row) {
-            $rowFailures = (new OpportunityDataValidator($this->validatorFactory))(
+            $rowFailures = (new ImportedOpportunityDataValidator($this->validatorFactory))(
                 row: $row,
                 accountsDataDictionary: $accountsDataDictionary,
                 accountContactsDataDictionary: $accountContactsDictionary
@@ -404,6 +243,7 @@ class OpportunityEntityService implements CauserAware
 
         return tap(new Opportunity(), function (Opportunity $opportunity) use ($data) {
             $opportunity->pipeline()->associate($data->pipeline_id);
+            $opportunity->pipelineStage()->associate($data->pipeline_stage_id);
             $opportunity->user()->associate($data->user_id);
             $opportunity->contractType()->associate($data->contract_type_id);
             $opportunity->project_name = $data->project_name;
@@ -513,6 +353,7 @@ class OpportunityEntityService implements CauserAware
             $opportunity->endUser()->associate($data->end_user_id);
             $opportunity->primaryAccountContact()->associate($data->primary_account_contact_id);
             $opportunity->accountManager()->associate($data->account_manager_id);
+            $opportunity->pipelineStage()->associate($data->pipeline_stage_id);
             $opportunity->are_end_user_addresses_available = $data->are_end_user_addresses_available;
             $opportunity->are_end_user_contacts_available = $data->are_end_user_contacts_available;
             $opportunity->nature_of_service = $data->nature_of_service;
@@ -584,7 +425,7 @@ class OpportunityEntityService implements CauserAware
             $opportunity->has_service_credits = $data->has_service_credits;
             $opportunity->remarks = $data->remarks;
             $opportunity->sale_action_name = $data->sale_action_name;
-            $opportunity->ranking = $data->ranking;
+            $opportunity->campaign_name = $data->campaign_name;
             $opportunity->competition_name = $data->competition_name;
             $opportunity->notes = $data->notes;
 
@@ -661,6 +502,7 @@ class OpportunityEntityService implements CauserAware
                 $opportunity->endUser()->associate($data->end_user_id);
                 $opportunity->primaryAccountContact()->associate($data->primary_account_contact_id);
                 $opportunity->accountManager()->associate($data->account_manager_id);
+                $opportunity->pipelineStage()->associate($data->pipeline_stage_id);
                 $opportunity->are_end_user_addresses_available = $data->are_end_user_addresses_available;
                 $opportunity->are_end_user_contacts_available = $data->are_end_user_contacts_available;
                 $opportunity->nature_of_service = $data->nature_of_service;
@@ -732,7 +574,6 @@ class OpportunityEntityService implements CauserAware
                 $opportunity->has_service_credits = $data->has_service_credits;
                 $opportunity->remarks = $data->remarks;
                 $opportunity->sale_action_name = $data->sale_action_name;
-                $opportunity->ranking = $data->ranking;
                 $opportunity->campaign_name = $data->campaign_name;
                 $opportunity->competition_name = $data->competition_name;
                 $opportunity->notes = $data->notes;
@@ -778,6 +619,73 @@ class OpportunityEntityService implements CauserAware
                 new OpportunityUpdated($opportunity, $oldOpportunity, $this->causer),
             );
         });
+    }
+
+    /**
+     * @param Opportunity $opportunity
+     * @param SetStageOfOpportunityData $data
+     * @return Opportunity
+     * @throws ValidationException|\Throwable
+     */
+    public function setStageOfOpportunity(Opportunity $opportunity, SetStageOfOpportunityData $data): Opportunity
+    {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationException($violations);
+        }
+
+        return tap($opportunity, function (Opportunity $opportunity) use ($data): void {
+
+            /** @var PipelineStage $stage */
+            $stage = PipelineStage::query()->findOrFail($data->stage_id);
+
+            $oppsOfStage = Opportunity::query()
+                ->whereBelongsTo($stage->pipeline)
+                ->whereBelongsTo($stage)
+                ->whereKeyNot($opportunity)
+                ->orderByRaw("isnull(order_in_pipeline_stage) asc")
+                ->orderBy('order_in_pipeline_stage')
+                ->latest()
+                ->select([
+                    $opportunity->getQualifiedKeyName(),
+                    $opportunity->pipeline()->getQualifiedForeignKeyName(),
+                    $opportunity->pipelineStage()->getQualifiedForeignKeyName(),
+                    $opportunity->qualifyColumn('order_in_pipeline_stage'),
+                    $opportunity->qualifyColumn('sale_action_name'),
+                    $opportunity->getQualifiedCreatedAtColumn(),
+                    $opportunity->getQualifiedUpdatedAtColumn(),
+                ])
+                ->get();
+
+            $opportunity->pipelineStage()->associate($stage);
+            $opportunity->order_in_pipeline_stage = $data->order_in_stage;
+            $opportunity->sale_action_name = $stage->qualified_stage_name;
+
+            $oppsOfStage->splice($data->order_in_stage, 0, [$opportunity]);
+
+            $oppsOfStage->values()->each(static function (Opportunity $opp, int $i): void {
+                $opp->order_in_pipeline_stage = $i;
+            });
+
+            foreach ($oppsOfStage as $opp) {
+
+                $this->lockProvider->lock(
+                    Lock::UPDATE_OPPORTUNITY($opp->getKey()),
+                    10
+                )
+                    ->block(30, function () use ($opp) {
+
+                        $this->connection->transaction(static fn() => $opp->save());
+
+                    });
+
+            }
+
+
+        });
+
+
     }
 
     /**
@@ -875,6 +783,7 @@ class OpportunityEntityService implements CauserAware
     {
         return tap($this, function () use ($causer) {
             $this->causer = $causer;
+            $this->accountProjector->setCauser($causer);
         });
     }
 }

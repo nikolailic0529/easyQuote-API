@@ -2,9 +2,6 @@
 
 namespace App\Services\UnifiedNote;
 
-use App\Models\CompanyNote;
-use App\Models\Quote\QuoteNote;
-use App\Models\Quote\WorldwideQuoteNote;
 use http\Exception\RuntimeException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;

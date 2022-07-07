@@ -95,7 +95,7 @@ class ImportableColumnEntityService implements CauserAware
             }
 
             $column->header = $data->header;
-            $column->name = $data->name ?? Str::slug($data->header, '_');
+            $column->name = $data->name ?? $column->name;
             $column->type = $data->type;
             $column->country()->associate($data->country_id);
             $column->order = $data->order;

@@ -13,10 +13,14 @@ use Database\Seeders\{AssetCategorySeeder,
     CountrySeeder,
     CurrencySeeder,
     CustomFieldSeeder,
+    DateDaySeeder,
+    DateMonthSeeder,
+    DateWeekSeeder,
     DocumentProcessorDriverSeeder,
     HpeContractTemplatesSeeder,
     MySQLSeeder,
     PipelineSeeder,
+    RecurrenceTypeSeeder,
     SpaceSeeder,
     SystemSettingSeeder,
     TeamSeeder,
@@ -74,6 +78,26 @@ class UpdateApplication extends Command
         $this->call(SeedCommand::class, [
            '--class' => DocumentProcessorDriverSeeder::class,
            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => DateDaySeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => DateWeekSeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => DateMonthSeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => RecurrenceTypeSeeder::class,
+            '--force' => true
         ]);
 
         $this->call(SeedCommand::class, [

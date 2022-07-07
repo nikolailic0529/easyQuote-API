@@ -4,16 +4,21 @@ namespace App\Policies;
 
 use App\Models\Template\HpeContractTemplate;
 use App\Models\User;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class HpeContractTemplatePolicy
 {
     use HandlesAuthorization;
 
+    public function __construct(protected UserTeamGate $userTeamGate)
+    {
+    }
+
     /**
      * Determine whether the user can view any contract templates.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function viewAny(User $user)
@@ -30,8 +35,8 @@ class HpeContractTemplatePolicy
     /**
      * Determine whether the user can view the contract template.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
+     * @param \App\Models\User $user
+     * @param \App\Models\Template\HpeContractTemplate $hpeContractTemplate
      * @return mixed
      */
     public function view(User $user, HpeContractTemplate $hpeContractTemplate)
@@ -48,7 +53,7 @@ class HpeContractTemplatePolicy
     /**
      * Determine whether the user can create contract templates.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function create(User $user)
@@ -65,8 +70,8 @@ class HpeContractTemplatePolicy
     /**
      * Determine whether the user can update the contract template.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
+     * @param \App\Models\User $user
+     * @param \App\Models\Template\HpeContractTemplate $hpeContractTemplate
      * @return mixed
      */
     public function update(User $user, HpeContractTemplate $hpeContractTemplate)
@@ -79,10 +84,15 @@ class HpeContractTemplatePolicy
             return true;
         }
 
-        if (
-            $user->can('update_own_hpe_contract_templates') &&
-            $user->getKey() === $hpeContractTemplate->{$hpeContractTemplate->user()->getForeignKeyName()}
-        ) {
+        if ($user->cannot('update_own_hpe_contract_templates')) {
+            return false;
+        }
+
+        if ($hpeContractTemplate->user()->is($user)) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($hpeContractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -90,8 +100,8 @@ class HpeContractTemplatePolicy
     /**
      * Determine whether the user can delete the contract template.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
+     * @param \App\Models\User $user
+     * @param \App\Models\Template\HpeContractTemplate $hpeContractTemplate
      * @return mixed
      */
     public function delete(User $user, HpeContractTemplate $hpeContractTemplate)
@@ -104,10 +114,15 @@ class HpeContractTemplatePolicy
             return true;
         }
 
-        if (
-            $user->can('delete_own_hpe_contract_templates') &&
-            $user->getKey() === $hpeContractTemplate->{$hpeContractTemplate->user()->getForeignKeyName()}
-        ) {
+        if ($user->cannot('delete_own_hpe_contract_templates')) {
+            return false;
+        }
+
+        if ($hpeContractTemplate->user()->is($user)) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($hpeContractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }

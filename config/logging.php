@@ -120,6 +120,30 @@ return [
             'permission' => 0777
         ],
 
+        'pipeliner' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/pipeliner.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'pipeliner-requests' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/pipeliner-requests.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'tasks' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/tasks.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

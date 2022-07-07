@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\QuoteNote;
 
+use App\DTO\Note\UpdateNoteData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateQuoteNoteRequest extends FormRequest
@@ -16,5 +17,12 @@ class UpdateQuoteNoteRequest extends FormRequest
         return [
             'text' => ['required', 'string', 'max:20000']
         ];
+    }
+
+    public function getUpdateNoteData(): UpdateNoteData
+    {
+        return new UpdateNoteData([
+            'note' => $this->input('text'),
+        ]);
     }
 }

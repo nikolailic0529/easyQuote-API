@@ -101,7 +101,7 @@ class CompanyPolicy
      */
     public function delete(User $user, Company $company)
     {
-        if ($company->isSystem()) {
+        if ($company->getFlag(Company::SYSTEM)) {
             return $this->deny(CPSD_01);
         }
 

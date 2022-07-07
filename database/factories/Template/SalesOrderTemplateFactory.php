@@ -21,7 +21,7 @@ $factory->define(SalesOrderTemplate::class, function (Faker $faker) {
         'name' => $faker->text(100),
         'business_division_id' => BD_WORLDWIDE,
         'contract_type_id' => CT_CONTRACT,
-        'company_id' => Company::query()->where('is_system', true)->value('id'),
+        'company_id' => Company::query()->where('flags', '&', Company::SYSTEM)->value('id'),
         'vendor_id' => Vendor::query()->where('is_system', true)->value('id'),
     ];
 });

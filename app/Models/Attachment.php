@@ -2,27 +2,30 @@
 
 namespace App\Models;
 
+use App\Enum\AttachmentType;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property string|null $pl_reference
  * @property string|null $filepath
  * @property string|null $filename
  * @property string|null $extension
  * @property int|null $size
- * @property string|null $type
+ * @property AttachmentType|null $type
  */
 class Attachment extends Model
 {
-    use Uuid;
-
-    public const TYPES = [
-        'Maintenance Contract', 'Distribution Quotation', 'Email', 'Proof of delivery', 'Customer Purchase Order', 'Image'
-    ];
+    use Uuid, SoftDeletes;
 
     protected $fillable = [
-        'type', 'filepath', 'filename', 'extension', 'size'
+        'type', 'filepath', 'filename', 'extension', 'size',
+    ];
+
+    protected $casts = [
+        'type' => AttachmentType::class,
     ];
 
     public function attachables(): HasMany

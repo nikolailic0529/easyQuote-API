@@ -31,7 +31,7 @@ class OpportunityImportTest extends TestCase
             'account_contacts_file' => UploadedFile::fake()->createWithContent('PPS Contact.xlsx', file_get_contents(base_path('tests/Unit/Data/opportunity/PPS Contact.xlsx'))),
         ]);
 
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $result = $entityService->batchImportOpportunities($data, $user);
 

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\WorldwideQuote;
 
-use App\Http\Resources\RowsGroup\RowsGroup;
+use App\Http\Resources\V1\RowsGroup\RowsGroup;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Illuminate\Foundation\Http\FormRequest;

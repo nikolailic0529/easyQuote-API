@@ -7,7 +7,8 @@ use App\Events\Task\TaskDeleted;
 use App\Events\Task\TaskUpdated;
 use App\Listeners\TaskEventSubscriber;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Task;
+use App\Models\Task\Task;
+use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -29,12 +30,12 @@ class WorldwideQuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create();
 
-        $wwQuoteTasks = factory(Task::class, 30)->create([
-            'taskable_id' => $wwQuote->getKey(),
-            'taskable_type' => WorldwideQuote::class
-        ]);
+        $wwQuoteTasks = Task::factory()->count(30)->create();
+
+        $wwQuote->tasks()->attach($wwQuoteTasks);
 
         $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/tasks')
             ->assertOk()
@@ -46,7 +47,6 @@ class WorldwideQuoteTaskTest extends TestCase
                         'user' => [
                             'id', 'email', 'first_name', 'middle_name', 'last_name'
                         ],
-                        'taskable_id',
                         'name',
                         'content',
                         'expiry_date',
@@ -93,11 +93,13 @@ class WorldwideQuoteTaskTest extends TestCase
 
         Event::hasListeners(TaskEventSubscriber::class);
 
-        $attributes = factory(Task::class)->state('users')->raw();
+        $attributes = Task::factory()
+            ->has(User::factory()->count(2), 'users')
+            ->raw();
 
         $response = $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/tasks', $attributes)
             ->assertCreated()
-            ->assertJsonStructure(['id', 'name', 'content', 'taskable_id', 'user_id']);
+            ->assertJsonStructure(['id', 'name', 'content', 'user_id']);
 
         $id = $response->json('id');
 
@@ -113,22 +115,22 @@ class WorldwideQuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create();
 
         Event::fake(TaskUpdated::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
 
-        $task = factory(Task::class)->create([
-            'taskable_id' => $wwQuote->getKey(),
-            'taskable_type' => $wwQuote->getMorphClass()
-        ]);
+        $task = Task::factory()->create();
 
-        $attributes = factory(Task::class)->state('users')->raw();
+        $wwQuote->tasks()->attach($task);
+
+        $attributes = Task::factory()->has(User::factory()->count(2), 'users')->raw();
 
         $this->patchJson('api/ww-quotes/'.$wwQuote->getKey().'/tasks/'.$task->getKey(), $attributes)
             ->assertOk()
-            ->assertJsonStructure(['id', 'name', 'content', 'taskable_id', 'user_id'])
+            ->assertJsonStructure(['id', 'name', 'content', 'user_id'])
             ->assertJsonFragment(['content' => $attributes['content']]);
 
         Event::assertDispatched(TaskUpdated::class, fn(TaskUpdated $event) => $event->task->getKey() === $task->getKey());
@@ -143,16 +145,16 @@ class WorldwideQuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create();
 
         Event::fake(TaskDeleted::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
 
-        $task = factory(Task::class)->create([
-            'taskable_id' => $wwQuote->getKey(),
-            'taskable_type' => $wwQuote->getMorphClass()
-        ]);
+        $task = Task::factory()->create();
+
+        $wwQuote->tasks()->attach($task);
 
         $this->deleteJson('api/ww-quotes/'.$wwQuote->getKey().'/tasks/'.$task->getKey())
             ->assertOk()

@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Http\Resources\V1\RequestQueryFilter;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Http\Resources\RequestQueryFilter;
+use Illuminate\Support\ServiceProvider;
 
 class ResourceServiceProvider extends ServiceProvider implements DeferrableProvider
 {

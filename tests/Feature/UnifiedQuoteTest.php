@@ -134,7 +134,7 @@ class UnifiedQuoteTest extends TestCase
             'delete_own_hpe_contracts']);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -210,14 +210,14 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         /** @var User $teamLeader */
-        $teamLeader = factory(User::class)->create();
+        $teamLeader = User::factory()->create();
 
         /** @var Team $team */
         $team = factory(Team::class)->create();
 
         $team->teamLeaders()->attach($teamLeader);
 
-        $ledUser = factory(User::class)->create([
+        $ledUser = User::factory()->create([
             'team_id' => $team->getKey()
         ]);
 
@@ -429,7 +429,7 @@ class UnifiedQuoteTest extends TestCase
             'delete_own_hpe_contracts']);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -511,14 +511,14 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         /** @var User $teamLeader */
-        $teamLeader = factory(User::class)->create();
+        $teamLeader = User::factory()->create();
 
         /** @var Team $team */
         $team = factory(Team::class)->create();
 
         $team->teamLeaders()->attach($teamLeader);
 
-        $ledUser = factory(User::class)->create([
+        $ledUser = User::factory()->create([
             'team_id' => $team->getKey()
         ]);
 
@@ -733,7 +733,7 @@ class UnifiedQuoteTest extends TestCase
             'delete_own_hpe_contracts']);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -815,14 +815,14 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         /** @var User $teamLeader */
-        $teamLeader = factory(User::class)->create();
+        $teamLeader = User::factory()->create();
 
         /** @var Team $team */
         $team = factory(Team::class)->create();
 
         $team->teamLeaders()->attach($teamLeader);
 
-        $ledUser = factory(User::class)->create([
+        $ledUser = User::factory()->create([
             'team_id' => $team->getKey()
         ]);
 

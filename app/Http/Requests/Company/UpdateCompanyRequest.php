@@ -10,8 +10,10 @@ use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Vendor;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
 
 /**
@@ -31,27 +33,31 @@ class UpdateCompanyRequest extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'name' => [
-                'required',
-                'string',
-                'max:191',
-                'min:2',
+                'bail', 'required', 'string', 'max:191', 'min:2',
                 Rule::unique(Company::class, 'name')
                     ->withoutTrashed()
                     ->ignore($this->company),
             ],
             'vat' => [
-                'nullable',
-                Rule::requiredIf($this->input('vat_type') === VAT::VAT_NUMBER),
-                'string',
-                'max:191',
-                Rule::unique(Company::class)
-                    ->where('user_id', optional($this->company)->user_id)
-                    ->whereNull('deleted_at')
-                    ->ignore($this->company),
+                'bail',
+                Rule::when(static function (Fluent $data): bool {
+                    return VAT::VAT_NUMBER === $data->get('vat_type');
+                }, [
+                    'required',
+                    'string',
+                    'max:100',
+                    Rule::unique(Company::class)
+                        ->where('user_id', $this->company?->user_id)
+                        ->withoutTrashed()
+                        ->ignore($this->company),
+                ], [
+                    'nullable',
+                    'exclude',
+                ]),
             ],
             'vat_type' => [
                 'required',
@@ -59,11 +65,19 @@ class UpdateCompanyRequest extends FormRequest
                 Rule::in(VAT::getValues()),
             ],
             'type' => [
+                'bail',
+                'required',
                 'string',
                 Rule::in(CompanyType::getValues()),
             ],
             'source' => [
+                'bail',
                 'nullable',
+                function (string $attr, mixed $value, \Closure $fail): void {
+                    if ($this->company->getFlag(Company::FROZEN_SOURCE) && $value !== $this->company->source) {
+                        $fail("Forbidden to change source of the company.");
+                    }
+                },
                 Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
                 Rule::in(CompanySource::getValues()),
@@ -73,8 +87,8 @@ class UpdateCompanyRequest extends FormRequest
                 'string',
                 'size:3',
                 Rule::unique(Company::class)
-                    ->where('user_id', optional($this->company)->user_id)
-                    ->whereNull('deleted_at')
+                    ->where('user_id', $this->company?->user_id)
+                    ->withoutTrashed()
                     ->ignore($this->company),
             ],
             'logo' => [
@@ -90,48 +104,46 @@ class UpdateCompanyRequest extends FormRequest
                 Rule::in(CompanyCategory::getValues()),
             ],
             'email' => 'email',
-            'phone' => 'nullable|string|min:4|phone',
-            'website' => 'nullable|string',
-            'vendors' => 'array',
-            'vendors.*' => 'required|uuid|exists:vendors,id',
+            'phone' => ['nullable', 'string', 'min:4', 'phone'],
+            'website' => ['nullable', 'string'],
+            'vendors' => ['array'],
+            'vendors.*' => ['required', 'uuid', Rule::exists(Vendor::class, 'id')->withoutTrashed()],
             'default_vendor_id' => [
                 'nullable',
                 'uuid',
-                Rule::in($this->vendors ?? $this->company->vendors->pluck('id')->toArray()),
+                Rule::in($this->input('vendors', $this->company->vendors->modelKeys())),
             ],
             'default_country_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id ?? $this->company->default_vendor_id),
+                Rule::exists('country_vendor', 'country_id')
+                    ->where('vendor_id', $this->input('default_vendor_id', fn() => $this->company->default_vendor_id)),
             ],
             'default_template_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id ?? $this->company->default_country_id),
+                Rule::exists('country_quote_template', 'quote_template_id')
+                    ->where('country_id', $this->input('default_country_id', fn() => $this->company->default_country_id)),
             ],
             'addresses' => ['nullable', 'array'],
             'addresses.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(Address::class, 'id')->withoutTrashed(),
             ],
-            'addresses.*.is_default' => [
-                'bail', 'required', 'boolean',
-            ],
+            'addresses.*.is_default' => ['bail', 'required', 'boolean',],
 
             'contacts' => ['nullable', 'array'],
             'contacts.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(Contact::class, 'id')->withoutTrashed(),
             ],
-            'contacts.*.is_default' => [
-                'bail', 'required', 'boolean',
-            ],
+            'contacts.*.is_default' => ['bail', 'required', 'boolean',],
         ];
     }
 
-    public function messages()
+    public function messages(): array
     {
         return [
             'name.exists' => CPE_01,
@@ -147,7 +159,7 @@ class UpdateCompanyRequest extends FormRequest
                 'vat' => $this->input('vat'),
                 'vat_type' => $this->input('vat_type') ?? VAT::NO_VAT,
                 'type' => $this->input('type'),
-                'source' => $this->input('source'),
+                'source' => $this->input('source') ?? $this->company->source,
                 'short_code' => $this->input('short_code'),
                 'logo' => $this->file('logo'),
                 'delete_logo' => $this->boolean('delete_logo'),
@@ -167,31 +179,24 @@ class UpdateCompanyRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $nullableFields = array_map(function ($value) {
-            if ($value === 'null') {
-                return null;
-            }
-
-            return $value;
-        }, $this->only(['phone', 'website', 'vat', 'default_vendor_id', 'default_country_id', 'default_template_id']));
+        $nullableFields = $this->collect(['phone', 'website', 'vat', 'default_vendor_id', 'default_country_id', 'default_template_id'])
+            ->map(static fn(mixed $value): mixed => match ($value) {
+                'null' => null,
+                default => $value
+            })
+            ->all();
 
         $this->merge($nullableFields);
 
-        $addresses = array_map(
-            function (array $addressData) {
-                return ['is_default' => filter_var($addressData['is_default'] ?? false, FILTER_VALIDATE_BOOL)] +
-                    $addressData;
-            },
-            $this->input('addresses') ?? []
-        );
+        $addresses = $this->collect('addresses')
+            ->map(static fn(array $item): array => ['is_default' => filter_var($item['is_default'] ?? false, FILTER_VALIDATE_BOOL)] +
+                $item)
+            ->all();
 
-        $contacts = array_map(
-            function (array $contactData) {
-                return ['is_default' => filter_var($contactData['is_default'] ?? false, FILTER_VALIDATE_BOOL)] +
-                    $contactData;
-            },
-            $this->input('contacts') ?? []
-        );
+        $contacts = $this->collect('contacts')
+            ->map(static fn(array $item): array => ['is_default' => filter_var($item['is_default'] ?? false, FILTER_VALIDATE_BOOL)] +
+                $item)
+            ->all();
 
         $this->merge([
             'addresses' => $addresses,

@@ -3,36 +3,33 @@
 namespace App\Models\Quote;
 
 use App\Models\Address;
-use App\Models\Addressable;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\ContractType;
 use App\Models\Data\Currency;
-use App\Models\Opportunity;
+use App\Models\Note\ModelHasNotes;
+use App\Models\Note\Note;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
-use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\Template\QuoteTemplate;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Traits\Uuid;
+use Database\Factories\WorldwideQuoteVersionFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Query\JoinClause;
-use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
-use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * Class WorldwideQuoteVersion
@@ -99,19 +96,25 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Collection|null $applicableMultiYearDiscounts
  * @property WorldwideQuote|null $worldwideQuote
  *
- * @property-read Collection<Address>|Address[] $addresses
- * @property-read Collection<Contact>|Contact[] $contacts
- * @property-read WorldwideQuoteNote|null $note
- * @property-read WorldwideQuoteNote|null $draftNote
- * @property-read WorldwideQuoteNote|null $submitNote
+ * @property-read Collection<int, Address>|Address[] $addresses
+ * @property-read Collection<int, Contact>|Contact[] $contacts
+ * @property-read Collection<int, Note>|Note[] $notes
+ * @property-read Note|null $note
+ * @property-read Note|null $draftNote
+ * @property-read Note|null $submitNote
  * @property-read Collection<WorldwideQuoteAssetsGroup>|WorldwideQuoteAssetsGroup[] $assetsGroups
  * @property-read \DateTimeInterface|null $created_at
  */
 class WorldwideQuoteVersion extends Model
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): WorldwideQuoteVersionFactory
+    {
+        return WorldwideQuoteVersionFactory::new();
+    }
 
     public function worldwideQuote(): BelongsTo
     {
@@ -124,7 +127,7 @@ class WorldwideQuoteVersion extends Model
             $relation->addSelect([
                 'vendor_short_code' => Vendor::query()->select('short_code')
                     ->from('vendors')
-                    ->whereColumn('vendors.id', 'worldwide_quote_assets.vendor_id')->limit(1)->toBase()
+                    ->whereColumn('vendors.id', 'worldwide_quote_assets.vendor_id')->limit(1)->toBase(),
             ])
                 ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn())
                 ->oldest('entity_order');
@@ -209,23 +212,36 @@ class WorldwideQuoteVersion extends Model
         return $this->belongsToMany(Contact::class);
     }
 
-    public function note(): HasOne
+    public function notes(): MorphToMany
     {
-        return $this->hasOne(WorldwideQuoteNote::class)
-            ->latest();
+        return $this->morphToMany(
+            related: Note::class,
+            name: 'model',
+            table: (new ModelHasNotes())->getTable(),
+            relatedPivotKey: 'note_id',
+        )->using(ModelHasNotes::class);
     }
 
-    public function draftNote(): HasOne
+    protected function note(): Attribute
     {
-        return $this->hasOne(WorldwideQuoteNote::class)
-            ->where('is_for_submitted_quote', false)
-            ->latest();
+        return Attribute::get(function () {
+            return $this->notes->first();
+        });
     }
 
-    public function submitNote(): HasOne
+    protected function draftNote(): Attribute
     {
-        return $this->hasOne(WorldwideQuoteNote::class)
-            ->where('is_for_submitted_quote', true)
-            ->latest();
+        return Attribute::get(function () {
+            return $this->notes
+                ->first(static fn(Note $note): bool => $note->getFlag(Note::FROM_ENTITY_WIZARD_DRAFT));
+        });
+    }
+
+    protected function submitNote(): Attribute
+    {
+        return Attribute::get(function () {
+            return $this->notes
+                ->first(static fn(Note $note): bool => $note->getFlag(Note::FROM_ENTITY_WIZARD_SUBMIT));
+        });
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Requests\WorldwideQuote;
 use App\DTO\DistributionExpiryDateCollection;
 use App\DTO\QuoteStages\ImportStage;
 use App\Enum\ContractQuoteStage;
+use App\Enum\DateFormatEnum;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -18,6 +19,7 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateQuoteImport extends FormRequest
 {
@@ -132,6 +134,9 @@ class UpdateQuoteImport extends FormRequest
             'worldwide_distributions.*.distribution_expiry_date' => [
                 'bail', 'required', 'date_format:Y-m-d',
             ],
+            'worldwide_distributions.*.file_date_format' => [
+                'bail', 'nullable', new Enum(DateFormatEnum::class),
+            ],
 
             'payment_terms' => [
                 'bail', 'required', 'string', 'max:500',
@@ -171,6 +176,7 @@ class UpdateQuoteImport extends FormRequest
                 'distribution_expiry_date' => Carbon::createFromFormat('Y-m-d', $distributionData['distribution_expiry_date']),
                 'address_ids' => $distributionData['addresses'],
                 'contact_ids' => $distributionData['contacts'],
+                'file_date_format' => DateFormatEnum::from($distributionData['file_date_format'] ?? 'Auto'),
             ], $this->input('worldwide_distributions')),
             'payment_terms' => $this->input('payment_terms'),
             'are_end_user_addresses_available' => $this->boolean('are_end_user_addresses_available'),

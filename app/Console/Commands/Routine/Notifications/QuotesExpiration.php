@@ -71,7 +71,7 @@ class QuotesExpiration extends Command
                     ->subject($quote)
                     ->url(ui_route('quotes.status', compact('quote')))
                     ->priority(2)
-                    ->store();
+                    ->push();
 
                 $quote->notifications()->create(['notification_key' => static::NOTIFICATION_KEY]);
             });

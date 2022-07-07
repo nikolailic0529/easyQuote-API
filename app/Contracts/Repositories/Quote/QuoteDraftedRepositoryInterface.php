@@ -2,16 +2,14 @@
 
 namespace App\Contracts\Repositories\Quote;
 
-use App\Http\Resources\QuoteRepository\DraftedCollection;
+use App\Http\Resources\V1\QuoteRepository\DraftedCollection;
 use App\Models\Quote\Quote;
 use App\Models\Quote\QuoteVersion;
-use Carbon\Carbon;
 use Carbon\CarbonInterval;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\LazyCollection;
-use Closure;
 
 interface QuoteDraftedRepositoryInterface
 {
@@ -133,7 +131,7 @@ interface QuoteDraftedRepositoryInterface
      * Map Resource into QuoteRepositoryCollection.
      *
      * @param mixed $resource
-     * @return \App\Http\Resources\QuoteRepository\DraftedCollection
+     * @return \App\Http\Resources\V1\QuoteRepository\DraftedCollection
      */
     public function toCollection($resource): DraftedCollection;
 

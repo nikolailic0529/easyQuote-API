@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Events\{Company\CompanyUpdated,
+    CustomField\CustomFieldValuesUpdated,
     ExchangeRatesUpdated,
     Opportunity\OpportunityUpdated,
     Permission\GrantedModulePermission,
@@ -14,16 +15,19 @@ use App\Listeners\{AddressEventAuditor,
     CompanyEventAuditor,
     CompanyNoteAuditor,
     ContactEventAuditor,
+    SyncCustomFieldValuesInPipeliner,
     DocumentMappingSyncSubscriber,
     ExchangeRatesListener,
     ImportableColumnEventAuditor,
     LogSentMessage,
     MigrateWorldwideQuoteAssets,
     ModulePermissionListener,
+    NoteEventAuditor,
     NotifyNoteCreatedOnWorldwideQuote,
     OpportunityEventAuditor,
     OpportunityFormEventAuditor,
     PipelineEventAuditor,
+    PipelinerSyncEventSubscriber,
     RescueQuoteEventAuditor,
     RfqReceivedListener,
     SalesOrderEventAuditor,
@@ -67,10 +71,6 @@ class EventServiceProvider extends ServiceProvider
             ModulePermissionListener::class,
         ],
 
-        WorldwideQuoteNoteCreated::class => [
-            NotifyNoteCreatedOnWorldwideQuote::class,
-        ],
-
         OpportunityUpdated::class => [
             SyncWorldwideContractQuoteWithOpportunityData::class,
         ],
@@ -81,7 +81,11 @@ class EventServiceProvider extends ServiceProvider
 
         WorldwideQuoteSubmitted::class => [
             MigrateWorldwideQuoteAssets::class,
-        ]
+        ],
+
+        CustomFieldValuesUpdated::class => [
+            SyncCustomFieldValuesInPipeliner::class,
+        ],
     ];
 
     /**
@@ -122,6 +126,10 @@ class EventServiceProvider extends ServiceProvider
         ContactEventAuditor::class,
 
         CompanyEventAuditor::class,
+
+        PipelinerSyncEventSubscriber::class,
+
+        NoteEventAuditor::class,
 
     ];
 

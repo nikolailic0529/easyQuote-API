@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Collections\MappedRows;
 use App\Contracts\Services\QuoteView;
 use App\Events\RescueQuote\RescueQuoteExported;
-use App\Http\Resources\QuoteResource;
+use App\Http\Resources\V1\QuoteResource;
 use App\Models\{Company,
     Quote\BaseQuote,
     Quote\Discount,
@@ -378,7 +378,7 @@ class QuoteViewService implements QuoteView
                 $company->image,
                 $company->thumbnailProperties(),
                 Str::snake(class_basename($company)),
-                ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
+                ThumbHelper::ABS_PATH | ThumbHelper::MAP
             );
         });
 
@@ -393,7 +393,7 @@ class QuoteViewService implements QuoteView
                     $template->vendor->image,
                     $template->vendor->thumbnailProperties(),
                     Str::snake(class_basename($template->vendor)),
-                    ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
+                    ThumbHelper::ABS_PATH | ThumbHelper::MAP
                 );
             }
 
@@ -406,7 +406,7 @@ class QuoteViewService implements QuoteView
                     $vendor->image,
                     $vendor->thumbnailProperties(),
                     Str::snake(class_basename($vendor)).'_'.++$key,
-                    ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
+                    ThumbHelper::ABS_PATH | ThumbHelper::MAP
                 );
             })->collapse()->all();
 
@@ -415,7 +415,7 @@ class QuoteViewService implements QuoteView
                     $vendor->image,
                     $vendor->thumbnailProperties(),
                     Str::snake(class_basename($vendor)),
-                    ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
+                    ThumbHelper::ABS_PATH | ThumbHelper::MAP
                 );
             }, []);
 

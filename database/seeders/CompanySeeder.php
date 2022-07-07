@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
 use Illuminate\Database\Seeder;
 
 class CompanySeeder extends Seeder
@@ -50,7 +51,7 @@ class CompanySeeder extends Seeder
                         'email' => $company['email'],
                         'phone' => $company['phone'],
                         'website' => $company['website'],
-                        'is_system' => true,
+                        'flags' => Company::SYSTEM,
                         'created_at' => now(),
                         'updated_at' => now(),
                         'activated_at' => now(),

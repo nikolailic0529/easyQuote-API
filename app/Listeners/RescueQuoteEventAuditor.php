@@ -6,7 +6,6 @@ use App\Contracts\WithRescueQuoteEntity;
 use App\Events\RescueQuote\RescueQuoteDeleted;
 use App\Events\RescueQuote\RescueQuoteExported;
 use App\Events\RescueQuote\RescueQuoteFileExported;
-use App\Events\RescueQuote\RescueQuoteNoteCreated;
 use App\Events\RescueQuote\RescueQuoteSubmitted;
 use App\Events\RescueQuote\RescueQuoteUnravelled;
 use App\Models\Quote\QuoteVersion;
@@ -33,7 +32,6 @@ class RescueQuoteEventAuditor implements ShouldQueue
         $events->listen(RescueQuoteSubmitted::class, [$this, 'handleSubmittedEvent']);
         $events->listen(RescueQuoteDeleted::class, [$this, 'handleDeletedEvent']);
         $events->listen(RescueQuoteFileExported::class, [$this, 'handleFileExportEvent']);
-        $events->listen(RescueQuoteNoteCreated::class, [$this, 'handleNoteCreatedEvent']);
         $events->listen(RescueQuoteExported::class, [$this, 'handleQuoteExportedEvent']);
     }
 
@@ -141,21 +139,5 @@ class RescueQuoteEventAuditor implements ShouldQueue
                 ],
             ])
             ->log('exported');
-    }
-
-    public function handleNoteCreatedEvent(RescueQuoteNoteCreated $event)
-    {
-        $quoteNote = $event->getQuoteNote();
-
-        $this->activityLogger
-            ->on($quoteNote->quote)
-            ->by($quoteNote->user ?? $quoteNote->quote->user)
-            ->withProperties([
-                ChangesDetector::OLD_ATTRS_KEY => [],
-                ChangesDetector::NEW_ATTRS_KEY => [
-                    'new_notes' => $quoteNote->text,
-                ],
-            ])
-            ->log('updated');
     }
 }

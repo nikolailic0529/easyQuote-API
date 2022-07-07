@@ -2,6 +2,7 @@
 
 namespace App\DTO;
 
+use App\Enum\DateFormatEnum;
 use Carbon\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\Validator\Constraints;
@@ -88,4 +89,6 @@ class ProcessableDistribution extends DataTransferObject
     public ?string $schedule_file_id = null;
 
     public ?int $schedule_file_page = null;
+
+    public DateFormatEnum $file_date_format;
 }

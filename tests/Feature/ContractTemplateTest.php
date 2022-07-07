@@ -4,8 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Data\Country;
+use App\Models\Role;
+use App\Models\Team;
 use App\Models\Template\ContractTemplate;
+use App\Models\Template\QuoteTemplate;
+use App\Models\User;
 use App\Models\Vendor;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Str};
 use Tests\TestCase;
@@ -86,7 +91,7 @@ class ContractTemplateTest extends TestCase
     {
         $this->authenticateApi();
 
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
         $vendor = factory(Vendor::class)->create();
         $country = Country::query()->where('iso_3166_2', 'GB')->first();
 
@@ -95,7 +100,7 @@ class ContractTemplateTest extends TestCase
             'company_id' => $company->getKey(),
             'vendor_id' => $vendor->getKey(),
             'business_division_id' => BD_WORLDWIDE,
-            'contract_type_id' => CT_CONTRACT
+            'contract_type_id' => CT_CONTRACT,
         ]);
 
         $contactTemplate->countries()->sync($country);
@@ -103,14 +108,14 @@ class ContractTemplateTest extends TestCase
         $response = $this->postJson('api/contract-templates/filter-ww/contract', [
             'company_id' => $company->getKey(),
             'vendor_id' => $vendor->getKey(),
-            'country_id' => $country->getKey()
+            'country_id' => $country->getKey(),
         ])
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'name'
-                ]
+                    'id', 'name',
+                ],
             ]);
 
         $this->assertNotEmpty($response->json());
@@ -125,7 +130,7 @@ class ContractTemplateTest extends TestCase
     {
         $this->authenticateApi();
 
-        $company = factory(Company::class)->create();
+        $company = Company::factory()->create();
         $vendor = factory(Vendor::class)->create();
         $country = Country::query()->where('iso_3166_2', 'GB')->first();
 
@@ -134,7 +139,7 @@ class ContractTemplateTest extends TestCase
             'company_id' => $company->getKey(),
             'vendor_id' => $vendor->getKey(),
             'business_division_id' => BD_WORLDWIDE,
-            'contract_type_id' => CT_PACK
+            'contract_type_id' => CT_PACK,
         ]);
 
         $contactTemplate->countries()->sync($country);
@@ -142,14 +147,14 @@ class ContractTemplateTest extends TestCase
         $response = $this->postJson('api/contract-templates/filter-ww/pack', [
             'company_id' => $company->getKey(),
             'vendor_id' => $vendor->getKey(),
-            'country_id' => $country->getKey()
+            'country_id' => $country->getKey(),
         ])
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'name'
-                ]
+                    'id', 'name',
+                ],
             ]);
 
         $this->assertNotEmpty($response->json());
@@ -176,20 +181,20 @@ class ContractTemplateTest extends TestCase
                 'business_division_id',
                 'contract_type_id',
                 'company' => [
-                    'id', 'name'
+                    'id', 'name',
                 ],
                 'vendor' => [
-                    'id', 'name'
+                    'id', 'name',
                 ],
                 'currency',
                 'form_data',
                 'data_headers',
                 'data_headers_keyed',
                 'countries' => [
-                    '*' => ['id', 'name']
+                    '*' => ['id', 'name'],
                 ],
                 'created_at',
-                'activated_at'
+                'activated_at',
             ]);
     }
 
@@ -354,7 +359,7 @@ class ContractTemplateTest extends TestCase
 
         $this->postJson('api/quotes/step/1', [
             'company_id' => Company::value('id'),
-            'type' => 'contract'
+            'type' => 'contract',
         ])
 //            ->dump()
             ->assertOk();
@@ -378,5 +383,105 @@ class ContractTemplateTest extends TestCase
                 'last_page',
                 'payment_schedule',
             ]);
+    }
+
+    /**
+     * Test an ability to update an existing contract template when the actor is the team leader of the template owner.
+     */
+    public function testCanUpdateContractTemplateOwnedByLedTeamUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_contract_templates', 'create_contract_templates', 'update_own_contract_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+
+        /** @var QuoteTemplate $template */
+        $template = factory(ContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $data = [
+            'name' => Str::random(40),
+        ];
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/contract-templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/contract-templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/contract-templates/'.$template->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'name',
+            ]);
+
+        $this->assertSame($data['name'], $response->json('name'));
+    }
+
+    /**
+     * Test an ability to delete an existing contract template owned when the actor is the team leader of the template owner.
+     */
+    public function testCanDeleteContractTemplateOwnedByLedTeamUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_contract_templates', 'create_contract_templates', 'update_own_contract_templates', 'delete_own_contract_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+
+        /** @var ContractTemplate $template */
+        $template = factory(ContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/contract-templates/'.$template->getKey())
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/contract-templates/'.$template->getKey())
+//            ->dump()
+            ->assertOk();
+
+        $this->getJson('api/contract-templates/'.$template->getKey())
+            ->assertNotFound();
     }
 }

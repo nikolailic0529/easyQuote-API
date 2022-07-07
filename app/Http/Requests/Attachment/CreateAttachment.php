@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Attachment;
 
+use App\Enum\AttachmentType;
 use App\Models\Attachment;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class CreateAttachment extends FormRequest
 {
@@ -17,7 +19,7 @@ class CreateAttachment extends FormRequest
     public function rules()
     {
         return [
-            'type' => ['required', 'filled', 'string', Rule::in(Attachment::TYPES)],
+            'type' => ['required', 'filled', 'string', new Enum(AttachmentType::class)],
             'file' => ['required', 'file', 'mimes:txt,csv,pdf,xlsx,docx,jpeg,jpg,png,gif,svg,webp', 'max:'.setting('file_upload_size_kb')],
         ];
     }
@@ -27,8 +29,8 @@ class CreateAttachment extends FormRequest
         return $this->file('file');
     }
 
-    public function getAttachmentType(): string
+    public function getAttachmentType(): AttachmentType
     {
-        return $this->input('type');
+        return AttachmentType::from($this->input('type'));
     }
 }

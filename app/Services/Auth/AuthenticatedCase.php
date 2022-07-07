@@ -58,7 +58,7 @@ class AuthenticatedCase
             ->message(__(AT_01, compact('ip_address')))
             ->subject($this->user)
             ->priority(3)
-            ->store();
+            ->push();
     }
 
     public function abort(string $message, string $code, array $headers = []): void

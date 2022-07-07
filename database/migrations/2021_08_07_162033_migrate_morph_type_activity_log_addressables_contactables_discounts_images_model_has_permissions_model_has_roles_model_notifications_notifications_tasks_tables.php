@@ -11,7 +11,6 @@ use App\Models\BusinessDivision;
 use App\Models\CancelSalesOrderReason;
 use App\Models\Collaboration\Invitation;
 use App\Models\Company;
-use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Contactable;
 use App\Models\ContractType;
@@ -55,14 +54,12 @@ use App\Models\Quote\Margin\CountryMargin;
 use App\Models\Quote\Margin\Margin;
 use App\Models\Quote\Quote;
 use App\Models\Quote\QuoteLocationTotal;
-use App\Models\Quote\QuoteNote;
 use App\Models\Quote\QuoteTotal;
 use App\Models\Quote\QuoteVersion;
 use App\Models\Quote\QuoteVersionFieldColumn;
 use App\Models\Quote\QuoteVersionPivot;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DataSelectSeparator;
 use App\Models\QuoteFile\DistributionRowsGroup;
@@ -86,7 +83,7 @@ use App\Models\System\DocumentProcessorDriver;
 use App\Models\System\Notification;
 use App\Models\System\Period;
 use App\Models\System\SystemSetting;
-use App\Models\Task;
+use App\Models\Task\Task;
 use App\Models\Team;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\HpeContractTemplate;
@@ -205,9 +202,8 @@ class MigrateMorphTypeActivityLogAddressablesContactablesDiscountsImagesModelHas
         '8cc6c6ce-1a57-4d51-9557-3e87c285efa1' => Pipeline::class,
         'f904f1d8-3209-4f09-8e28-13d116555e1f' => OpportunityForm::class,
         'eda5b270-8bd8-4809-8ce0-cb6379fe1b01' => OpportunityFormSchema::class,
-        'e3dd73f0-0a09-49f8-9c5a-ed68e447ae45' => QuoteNote::class,
-        '37ab1118-a078-4f2d-b86a-826002f478b2' => WorldwideQuoteNote::class,
-        'bdfc1329-b064-476f-8d5d-fbccdc02b278' => CompanyNote::class,
+        '37ab1118-a078-4f2d-b86a-826002f478b2' => 'App\Models\Note\WorldwideQuoteNote',
+        'bdfc1329-b064-476f-8d5d-fbccdc02b278' => 'App\Models\Note\CompanyNote',
         '5b2fe950-aa70-4c36-9b1f-1383daecbb18' => Company::class,
     ];
     protected array $tableMorphColumn = [

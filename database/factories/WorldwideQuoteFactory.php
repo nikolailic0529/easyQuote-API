@@ -1,36 +1,39 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
-use App\Models\Company;
-use App\Models\Customer\WorldwideCustomer;
-use App\Models\Data\Currency;
 use App\Models\Opportunity;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
-use Faker\Generator as Faker;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\DB;
 
-$factory->define(WorldwideQuote::class, function (Faker $faker) {
-    $user = factory(User::class)->create();
-    $opportunity = factory(Opportunity::class)->create();
+class WorldwideQuoteFactory extends Factory
+{
+    protected $model = WorldwideQuote::class;
 
-    $sequenceNumber = \Illuminate\Support\Facades\DB::table('worldwide_quotes')->max('sequence_number');
-    $newNumber = $sequenceNumber + 1;
+    public function configure(): WorldwideQuoteFactory
+    {
+        return $this->afterCreating(function (WorldwideQuote $quote) {
+            $quote->activeVersion->worldwideQuote()->associate($quote);
+            $quote->activeVersion->save();
+        });
+    }
 
-    $activeVersion = factory(WorldwideQuoteVersion::class)->create();
+    public function definition(): array
+    {
+        $sequenceNumber = DB::table('worldwide_quotes')->max('sequence_number');
+        $newNumber = $sequenceNumber + 1;
 
-    return [
-        'active_version_id' => $activeVersion->getKey(),
-        'contract_type_id' => CT_CONTRACT,
-        'user_id' => $user->getKey(),
-        'opportunity_id' => $opportunity->getKey(),
-        'sequence_number' => $newNumber,
-        'quote_number' => sprintf("EPD-WW-DP-%'.07d", $newNumber)
-    ];
-});
+        return [
+            'active_version_id' => WorldwideQuoteVersion::factory(),
+            'contract_type_id' => CT_CONTRACT,
+            'user_id' => User::factory(),
+            'opportunity_id' => Opportunity::factory(),
+            'sequence_number' => $newNumber,
+            'quote_number' => sprintf("EPD-WW-DP-%'.07d", $newNumber),
+        ];
+    }
+}
 
-$factory->afterCreating(WorldwideQuote::class, function (WorldwideQuote $worldwideQuote) {
-    $worldwideQuote->activeVersion->worldwideQuote()->associate($worldwideQuote);
-    $worldwideQuote->activeVersion->save();
-});

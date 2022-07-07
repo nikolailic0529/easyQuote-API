@@ -560,7 +560,7 @@ class SalesOrderDataMapper
 
         $company = $quote->activeVersion->company;
 
-        $flags = ThumbHelper::WITH_KEYS;
+        $flags = ThumbHelper::MAP;
 
         if ($useLocalAssets) {
             $flags |= ThumbHelper::ABS_PATH;

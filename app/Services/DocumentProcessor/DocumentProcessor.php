@@ -8,7 +8,9 @@ use App\Contracts\Services\ProcessesQuoteFile;
 use App\DTO\MappedRowData;
 use App\DTO\MappingConfig;
 use App\DTO\RowMapping;
+use App\Enum\DateFormatEnum;
 use App\Enum\Lock;
+use Carbon\Exceptions\InvalidFormatException;
 use App\Models\{DocumentProcessLog, QuoteFile\QuoteFile};
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\MappedRow;
@@ -159,7 +161,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
                         continue;
                     }
 
-                    array_push($mappedRows, $mappedRow);
+                    $mappedRows[] = $mappedRow;
                 }
             });
 
@@ -217,7 +219,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             }
         }
 
-        $parseDate = function (?string $date) {
+        $parseDate = function (?string $date) use ($mappingConfig) {
             if (blank($date)) {
                 return null;
             }
@@ -226,7 +228,15 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
                 return Carbon::instance(ExcelDate::excelToDateTimeObject($date));
             }
 
-            return (new DateParser($date))->parseSilent();
+            if (DateFormatEnum::Auto === $mappingConfig->file_date_format) {
+                return (new DateParser($date))->parseSilent();
+            }
+
+            try {
+                return Carbon::createFromIsoFormat($mappingConfig->file_date_format->value, $date);
+            } catch (InvalidFormatException) {
+                return null;
+            }
         };
 
         $dateFrom = $mappedRowData['date_from'] = $parseDate($mappedRowData['date_from']) ?? $mappingConfig->default_date_from;

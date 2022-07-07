@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\WorldwideQuote;
 
-use App\Http\Resources\WorldwideQuote\AssetsGroup;
+use App\Http\Resources\V1\WorldwideQuote\AssetsGroup;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\WorldwideQuoteAssetsGroup;
 use Illuminate\Foundation\Http\FormRequest;
@@ -66,7 +66,7 @@ class MoveAssetsBetweenGroupsOfAssets extends FormRequest
 
         return [
             'output_assets_group' => AssetsGroup::make($outputGroup),
-            'input_assets_group' => AssetsGroup::make($inputGroup)
+            'input_assets_group' => \App\Http\Resources\V1\WorldwideQuote\AssetsGroup::make($inputGroup)
         ];
     }
 

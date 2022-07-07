@@ -4,9 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\Company;
 use App\Models\Data\Country;
-use App\Models\Quote\Quote;
+use App\Models\Role;
+use App\Models\Team;
+use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
+use App\Models\User;
 use App\Models\Vendor;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
@@ -202,14 +206,14 @@ class QuoteTemplateTest extends TestCase
         ]);
 
         $this->postJson('api/templates/filter-ww/pack', [
-            'company_id' => $templates->random()->company_id
+            'company_id' => $templates->random()->company_id,
         ])
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'name'
-                ]
+                    'id', 'name',
+                ],
             ]);
     }
 
@@ -253,7 +257,7 @@ class QuoteTemplateTest extends TestCase
         $templates = factory(QuoteTemplate::class, 10)->create();
 
         $this->postJson('api/quotes/step/1', [
-            'company_id' => Company::value('id')
+            'company_id' => Company::value('id'),
         ])
 //            ->dump()
             ->assertOk();
@@ -416,7 +420,7 @@ class QuoteTemplateTest extends TestCase
     public function testCanViewTemplateSchema()
     {
         $template = factory(QuoteTemplate::class)->create([
-            'business_division_id' => BD_WORLDWIDE
+            'business_division_id' => BD_WORLDWIDE,
         ]);
 
         $template->vendors()->sync(Vendor::limit(2)->get());
@@ -429,5 +433,105 @@ class QuoteTemplateTest extends TestCase
                 'last_page',
                 'payment_schedule',
             ]);
+    }
+
+    /**
+     * Test an ability to update an existing quote template when the actor is the team leader of the template owner.
+     */
+    public function testCanUpdateQuoteTemplateOwnedByLedTeamUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_quote_templates', 'update_own_quote_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+
+        /** @var QuoteTemplate $template */
+        $template = factory(QuoteTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $data = [
+            'name' => Str::random(40),
+        ];
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/templates/'.$template->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'name',
+            ]);
+
+        $this->assertSame($data['name'], $response->json('name'));
+    }
+
+    /**
+     * Test an ability to delete an existing quote template owned when the actor is the team leader of the template owner.
+     */
+    public function testCanDeleteQuoteTemplateOwnedByLedTeamUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_quote_templates', 'create_quote_templates', 'update_own_quote_templates', 'delete_own_quote_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+
+        /** @var QuoteTemplate $template */
+        $template = factory(QuoteTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/templates/'.$template->getKey())
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/templates/'.$template->getKey())
+//            ->dump()
+            ->assertNoContent();
+
+        $this->getJson('api/templates/'.$template->getKey())
+            ->assertNotFound();
     }
 }

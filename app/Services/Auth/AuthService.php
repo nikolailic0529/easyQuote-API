@@ -86,8 +86,8 @@ class AuthService implements AuthServiceInterface
             return;
         }
 
-        $this->users->deactivate($user->getKey());
         $user->notify(new AttemptsExceeded);
+        $this->users->deactivate($user->getKey());
     }
 
     protected function handleSuccessfulAttempt(): void

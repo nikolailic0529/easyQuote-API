@@ -12,6 +12,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 class HMRCRates extends ExchangeRateService
 {
@@ -26,11 +27,21 @@ class HMRCRates extends ExchangeRateService
      */
     public function getRatesData(\DateTimeInterface $dateTime): ExchangeRateCollection
     {
+        $this->logger->info(sprintf('Fetching rates for: %s', $dateTime->format('M Y')));
+
         $url = $this->buildRequestUrl($dateTime);
 
-        $xml = Http::get($url)->throw()->body();
+        $response = Http::get($url);
 
-        return $this->parseRatesData($xml, $dateTime);
+        if ($response->status() === Response::HTTP_NOT_FOUND) {
+            $this->logger->warning("No data found.");
+
+            return new ExchangeRateCollection([]);
+        }
+
+        $response->throw();
+
+        return $this->parseRatesData($response->body(), $dateTime);
     }
 
     /**

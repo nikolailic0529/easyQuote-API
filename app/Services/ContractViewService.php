@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Contracts\Services\ContractView;
-use App\Models\Quote\Contract;
 use App\Collections\MappedRows;
-use App\Http\Resources\QuoteResource;
+use App\Contracts\Services\ContractView;
+use App\Http\Resources\V1\QuoteResource;
+use App\Models\Quote\Contract;
 use App\Queries\ContractQueries;
-use Illuminate\Database\Query\Builder;
 use App\Repositories\Concerns\FetchesGroupDescription;
+use Illuminate\Database\Query\Builder;
 
 class ContractViewService implements ContractView
 {

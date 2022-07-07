@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
+use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Quote\Discount\MultiYearDiscount;
@@ -16,19 +17,16 @@ use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\ScheduleData;
-use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Template\TemplateField;
-use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -57,7 +55,7 @@ class WorldwideContractQuoteTest extends TestCase
     {
         $this->authenticateApi();
 
-        $opportunities = factory(Opportunity::class, 10)->create();
+        $opportunities = Opportunity::factory()->count(10)->create();
 
         foreach ($opportunities as $opportunity) {
             factory(OpportunitySupplier::class)->create([
@@ -124,7 +122,7 @@ class WorldwideContractQuoteTest extends TestCase
      */
     public function testOpportunitySuppliersSynchronizeWithWorldwideQuoteDistributions()
     {
-        $opportunity = factory(Opportunity::class)->create(['contract_type_id' => CT_CONTRACT]);
+        $opportunity = Opportunity::factory()->create(['contract_type_id' => CT_CONTRACT]);
 
         $suppliers = factory(OpportunitySupplier::class, 2)->create(['opportunity_id' => $opportunity->getKey()]);
 
@@ -230,7 +228,7 @@ class WorldwideContractQuoteTest extends TestCase
             ]
         );
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         $wwDistributions->each(function (WorldwideDistribution $distribution) use ($opportunity) {
             $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -252,9 +250,158 @@ class WorldwideContractQuoteTest extends TestCase
             'calculate_list_price' => $this->faker->boolean,
             'distribution_expiry_date' => $this->faker->dateTimeBetween('+30 days', '+60 days')->format('Y-m-d'),
             'addresses' => [factory(Address::class)->create()->getKey()],
-            'contacts' => [factory(Contact::class)->create()->getKey()],
+            'contacts' => [Contact::factory()->create()->getKey()],
             'distribution_currency_quote_currency_exchange_rate_value' => 1,
             'distribution_currency_quote_currency_exchange_rate_margin' => 7,
+        ])->all();
+
+        $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/import', $importStageData = [
+            'company_id' => Company::query()->where('type', 'Internal')->value('id'),
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'output_currency_id' => Currency::query()->value('id'),
+            'quote_template_id' => $template->getKey(),
+            'quote_expiry_date' => $quoteExpiryDate->toDateString(),
+            'exchange_rate_margin' => 7,
+            'worldwide_distributions' => $distributionsData,
+            'payment_terms' => '30 Days',
+            'are_end_user_addresses_available' => false,
+            'are_end_user_contacts_available' => false,
+            'stage' => 'Import',
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?'.Arr::query([
+                'include' => [
+                    'worldwide_distributions.contacts',
+                    'worldwide_distributions.addresses',
+                ],
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id',
+                        'addresses' => [
+                            '*' => ['id', 'is_default'],
+                        ],
+                        'contacts' => [
+                            '*' => ['id', 'is_default'],
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertCount(1, $response->json('worldwide_distributions.0.addresses'));
+//        $this->assertEquals(1, $response->json('worldwide_distributions.0.addresses.0.is_default'));
+        $this->assertCount(1, $response->json('worldwide_distributions.1.addresses'));
+//        $this->assertEquals(1, $response->json('worldwide_distributions.1.addresses.0.is_default'));
+
+        $this->assertCount(1, $response->json('worldwide_distributions.0.contacts'));
+//        $this->assertEquals(1, $response->json('worldwide_distributions.0.contacts.0.is_default'));
+        $this->assertCount(1, $response->json('worldwide_distributions.1.contacts'));
+//        $this->assertEquals(1, $response->json('worldwide_distributions.0.contacts.0.is_default'));
+
+
+        $this->assertSame($importStageData['are_end_user_addresses_available'], $response->json('are_end_user_addresses_available'));
+        $this->assertSame($importStageData['are_end_user_contacts_available'], $response->json('are_end_user_contacts_available'));
+
+        $this->assertSame($distributionsData[0]['distribution_currency_quote_currency_exchange_rate_value'], $response->json('worldwide_distributions.0.distribution_currency_quote_currency_exchange_rate_value'));
+        $this->assertSame($distributionsData[1]['distribution_currency_quote_currency_exchange_rate_value'], $response->json('worldwide_distributions.1.distribution_currency_quote_currency_exchange_rate_value'));
+
+        $this->assertSame($distributionsData[0]['distribution_currency_quote_currency_exchange_rate_margin'], $response->json('worldwide_distributions.0.distribution_currency_quote_currency_exchange_rate_margin'));
+        $this->assertSame($distributionsData[1]['distribution_currency_quote_currency_exchange_rate_margin'], $response->json('worldwide_distributions.1.distribution_currency_quote_currency_exchange_rate_margin'));
+
+
+        $distributionsData[0]['id'] = $response->json('worldwide_distributions.0.id');
+        $distributionsData[1]['id'] = $response->json('worldwide_distributions.1.id');
+
+        $distributionsData[0]['addresses'][0] = $response->json('worldwide_distributions.0.addresses.0.id');
+        $distributionsData[1]['addresses'][0] = $response->json('worldwide_distributions.1.addresses.0.id');
+
+        $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/import', $importStageData = [
+            'company_id' => Company::query()->where('type', 'Internal')->value('id'),
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'output_currency_id' => Currency::query()->value('id'),
+            'quote_template_id' => $template->getKey(),
+            'quote_expiry_date' => $quoteExpiryDate->toDateString(),
+            'exchange_rate_margin' => 7,
+            'worldwide_distributions' => $distributionsData,
+            'payment_terms' => '30 Days',
+            'stage' => 'Import',
+        ])
+//            ->dump()
+            ->assertOk();
+
+//        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.addresses')
+////            ->dump()
+//            ->assertOk()
+//            ->assertJsonStructure([
+//                'id',
+//                'worldwide_distributions' => [
+//                    '*' => [
+//                        'id', 'addresses' => [
+//                            '*' => ['id', 'is_default']
+//                        ]
+//                    ]
+//                ]
+//            ]);
+//
+//        $this->assertCount(1, $response->json('worldwide_distributions.0.addresses'));
+//        $this->assertCount(1, $response->json('worldwide_distributions.1.addresses'));
+//
+//        $this->assertEquals($distributionsData[0]['addresses'][0]['id'], $response->json('worldwide_distributions.0.addresses.0.id'));
+//        $this->assertEquals($distributionsData[1]['addresses'][0]['id'], $response->json('worldwide_distributions.1.addresses.0.id'));
+    }
+
+    /**
+     * Test an ability to process worldwide quote import step.
+     *
+     * @return void
+     */
+    public function testCanProcessImportStepOfWorldwideContractQuoteWithCustomFileDateFormat()
+    {
+        $this->authenticateApi();
+
+        /** @var WorldwideQuote $wwQuote */
+        $wwQuote = factory(WorldwideQuote::class)->create();
+
+        $wwDistributions = factory(WorldwideDistribution::class, 2)->create(
+            [
+                'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
+                'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
+                'distribution_currency_id' => Currency::query()->value('id'),
+            ]
+        );
+
+        $opportunity = Opportunity::factory()->create();
+
+        $wwDistributions->each(function (WorldwideDistribution $distribution) use ($opportunity) {
+            $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
+            $distribution->opportunitySupplier()->associate($supplier);
+            $distribution->save();
+        });
+
+        $template = factory(QuoteTemplate::class)->create();
+
+        $quoteExpiryDate = now()->addMonth();
+
+        $distributionsData = $wwDistributions->map(fn(WorldwideDistribution $distribution) => [
+            'id' => $distribution->getKey(),
+            'vendors' => Vendor::query()->limit(2)->pluck('id')->all(),
+            'country_id' => Country::query()->value('id'),
+            'distribution_currency_id' => Currency::query()->value('id'),
+            'buy_currency_id' => Currency::query()->value('id'),
+            'buy_price' => $this->faker->randomFloat(2, 1000, 10000),
+            'calculate_list_price' => $this->faker->boolean,
+            'distribution_expiry_date' => $this->faker->dateTimeBetween('+30 days', '+60 days')->format('Y-m-d'),
+            'addresses' => [factory(Address::class)->create()->getKey()],
+            'contacts' => [Contact::factory()->create()->getKey()],
+            'distribution_currency_quote_currency_exchange_rate_value' => 1,
+            'distribution_currency_quote_currency_exchange_rate_margin' => 7,
+            'file_date_format' => 'DD-MM-YYYY',
         ])->all();
 
         $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/import', $importStageData = [
@@ -369,7 +516,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $template = factory(QuoteTemplate::class)->create();
 
-        $opportunity = factory(Opportunity::class)->create(['contract_type_id' => CT_CONTRACT]);
+        $opportunity = Opportunity::factory()->create(['contract_type_id' => CT_CONTRACT]);
 
         $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
@@ -440,7 +587,7 @@ class WorldwideContractQuoteTest extends TestCase
             'product_number' => $distributorQuotes[0]->mappedRows[0]->product_no,
         ]);
 
-        $sameAsset->companies()->sync(factory(Company::class)->create());
+        $sameAsset->companies()->sync(Company::factory()->create());
 
         $query = Arr::query(['include' => [
             'worldwide_customer',
@@ -564,7 +711,7 @@ class WorldwideContractQuoteTest extends TestCase
                                 'is_preview_visible',
                                 'is_mapping_visible',
                                 'is_required',
-                            ]
+                            ],
                         ],
                         'mapping_row',
                         'mapped_rows' => [
@@ -706,7 +853,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $template = factory(QuoteTemplate::class)->create();
 
-        $opportunity = factory(Opportunity::class)->create(['contract_type_id' => CT_CONTRACT]);
+        $opportunity = Opportunity::factory()->create(['contract_type_id' => CT_CONTRACT]);
 
         $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
@@ -1051,7 +1198,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $template->vendors()->sync(Vendor::limit(2)->get());
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey(), 'contract_type_id' => CT_CONTRACT]);
@@ -1203,7 +1350,7 @@ class WorldwideContractQuoteTest extends TestCase
                     '*' => [
                         'vendors', 'country', 'supplier',
                         'asset_fields' => [
-                            '*' => ['field_name', 'field_header']
+                            '*' => ['field_name', 'field_header'],
                         ]
 //                        'assets_data' => [
 //                            '*' => [
@@ -1244,7 +1391,7 @@ class WorldwideContractQuoteTest extends TestCase
             'qty',
             'price',
             'service_level_description',
-            'machine_address_string'
+            'machine_address_string',
         ];
 
         foreach ($response->json('distributions') as $distributorQuote) {
@@ -1625,11 +1772,36 @@ class WorldwideContractQuoteTest extends TestCase
         $wwQuote->activeVersion->user()->associate($this->app['auth.driver']->user());
         $wwQuote->activeVersion->save();
 
-        $noteForDraftedQuote = factory(WorldwideQuoteNote::class)->create([
-            'worldwide_quote_id' => $wwQuote->getKey(),
-            'worldwide_quote_version_id' => $wwQuote->activeVersion->getKey(),
-            'text' => 'Note for drafted quote',
-        ]);
+        $noteForDraftedQuote = Note::factory()
+            ->hasAttached($wwQuote, relationship: 'worldwideQuotesHaveNote')
+            ->hasAttached($wwQuote->activeVersion, relationship: 'worldwideQuoteVersionsHaveNote')
+            ->create([
+                'note' => 'Note for drafted quote'
+            ]);
+
+        $notesResponse = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'created_at',
+                        'updated_at',
+                        'user',
+                    ],
+                ],
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+                'to',
+                'total',
+            ]);
+
+        $this->assertSame(1, $notesResponse->json('total'));
 
         $supplier = factory(OpportunitySupplier::class)->create([
             'opportunity_id' => $wwQuote->opportunity->getKey(),
@@ -1690,14 +1862,13 @@ class WorldwideContractQuoteTest extends TestCase
 
 
         // Assert a separated note created on quote submission.
-
         $notesResponse = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes')
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
                         'id',
-                        'worldwide_quote_id',
                         'user_id',
                         'created_at',
                         'updated_at',
@@ -2025,9 +2196,9 @@ TEMPLATE;
             ->assertHeader('content-type', 'application/pdf')
             ->assertHeader('content-disposition', "attachment; filename=\"$expectedFileName\"");
 
-        @mkdir("storage/framework/testing/ww-quotes/", recursive: true);
-
-        file_put_contents("storage/framework/testing/ww-quotes/$expectedFileName", $response->content());
+//        @mkdir("storage/framework/testing/ww-quotes/", recursive: true);
+//
+//        file_put_contents("storage/framework/testing/ww-quotes/$expectedFileName", $response->content());
     }
 
     /**
@@ -2104,7 +2275,7 @@ TEMPLATE;
 
         $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_CONTRACT]);
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         factory(OpportunitySupplier::class, 3)->create([
             'opportunity_id' => $opportunity->getKey(),
@@ -2214,7 +2385,7 @@ TEMPLATE;
 
         $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_CONTRACT]);
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         factory(OpportunitySupplier::class, 3)->create([
             'opportunity_id' => $opportunity->getKey(),
@@ -2329,7 +2500,7 @@ TEMPLATE;
             ]
         );
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
@@ -2478,7 +2649,7 @@ TEMPLATE;
             ]
         );
 
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
@@ -2961,12 +3132,12 @@ TEMPLATE;
     public function testCanUpdateOpportunityOfWorldwideQuoteAndSeeNewlyPopulatedDistributorQuotes()
     {
         /** @var Company $primaryAccount */
-        $primaryAccount = factory(Company::class)->create([
+        $primaryAccount = Company::factory()->create([
             'category' => 'External',
         ]);
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create([
+        $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_CONTRACT,
             'primary_account_id' => $primaryAccount->getKey(),
         ]);
@@ -3060,12 +3231,15 @@ TEMPLATE;
         $vendors = factory(Vendor::class, 2)->create();
 
         $address = factory(Address::class)->create();
-        $contact = factory(Contact::class)->create();
+        $contact = Contact::factory()->create();
 
         // Creating new addresses & contacts for primary account.
         $this->patchJson('api/companies/'.$primaryAccount->getKey(), [
             'name' => $primaryAccount->name,
+            'type' => 'External',
+            'category' => 'End User',
             'vat_type' => 'NO VAT',
+            'source' => 'Pipeliner',
             'email' => $this->faker->email,
             'vendors' => $vendors->modelKeys(),
             'addresses' => [
@@ -3230,15 +3404,16 @@ TEMPLATE;
      */
     public function testCanReplicateContractWorldwideQuote()
     {
+        /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_CONTRACT,
             'submitted_at' => now(),
         ]);
 
-        $quoteNote = factory(WorldwideQuoteNote::class)->create([
-            'worldwide_quote_id' => $quote->getKey(),
-            'worldwide_quote_version_id' => $quote->activeVersion->getKey(),
-        ]);
+        $note = Note::factory()
+            ->hasAttached($quote, relationship: 'worldwideQuotesHaveNote')
+            ->hasAttached($quote->activeVersion, relationship: 'worldwideQuoteVersionsHaveNote')
+            ->create();
 
         $this->authenticateApi();
 
@@ -3403,7 +3578,7 @@ TEMPLATE;
         $this->authenticateApi();
 
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
@@ -3431,7 +3606,7 @@ TEMPLATE;
         ]);
 
         $addresses = factory(Address::class, 2)->create();
-        $contacts = factory(Contact::class, 2)->create();
+        $contacts = Contact::factory()->count(2)->create();
 
         $mappedRows = factory(MappedRow::class, 2)->create(['quote_file_id' => $quoteFile->getKey(), 'original_price' => 1_000, 'price' => 1_000]);
 

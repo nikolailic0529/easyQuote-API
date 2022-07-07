@@ -4,18 +4,16 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enum\Lock;
-use App\Http\Requests\{
-    PasswordResetRequest as AppPasswordResetRequest,
+use App\Http\Requests\{PasswordResetRequest as AppPasswordResetRequest,
     StoreResetPasswordRequest,
-    UpdateProfileRequest
-};
-use App\Http\Resources\{UserRepositoryCollection};
-use App\Models\{User, Role, Collaboration\Invitation, PasswordReset, Permission};
+    UpdateProfileRequest};
+use App\Http\Resources\{V1\UserRepositoryCollection};
+use App\Models\{Collaboration\Invitation, PasswordReset, Permission, Role, User};
 use App\Notifications\{PasswordResetRequest, PasswordResetSuccess};
-use Illuminate\Database\Eloquent\{Model, Builder, Collection};
-use Illuminate\Support\{Arr, Facades\DB, Facades\Hash, Facades\Cache, LazyCollection};
-use Illuminate\Contracts\Cache\Lock as LockContract;
 use Closure;
+use Illuminate\Contracts\Cache\Lock as LockContract;
+use Illuminate\Database\Eloquent\{Builder, Collection, Model};
+use Illuminate\Support\{Arr, Facades\Cache, Facades\DB, Facades\Hash, LazyCollection};
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {

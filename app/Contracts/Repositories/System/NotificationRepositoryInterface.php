@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Repositories\System;
 
-use App\Http\Resources\NotificationCollection;
+use App\Http\Resources\V1\NotificationCollection;
 use App\Models\System\Notification;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -114,7 +114,7 @@ interface NotificationRepositoryInterface
      * Transforms resource to Collection.
      *
      * @param mixed $resource
-     * @return NotificationCollection
+     * @return \App\Http\Resources\V1\NotificationCollection
      */
     public function toCollection($resource): NotificationCollection;
 }

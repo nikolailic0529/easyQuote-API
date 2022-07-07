@@ -53,7 +53,7 @@ trait WithFakeUser
 
     protected function createUser(): User
     {
-        return factory(User::class)->create();
+        return User::factory()->create();
     }
 
     protected function createAccessToken(?User $user = null): string

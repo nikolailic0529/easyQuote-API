@@ -2,6 +2,7 @@
 
 namespace App\DTO;
 
+use App\Enum\DateFormatEnum;
 use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
@@ -21,4 +22,6 @@ class MappingConfig extends DataTransferObject
     public bool $calculate_list_price = false;
 
     public float $exchange_rate_value = 1;
+
+    public DateFormatEnum $file_date_format = DateFormatEnum::Auto;
 }

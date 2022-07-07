@@ -4,6 +4,7 @@ namespace App\Http\Requests\WorldwideQuote;
 
 use App\DTO\ProcessableDistribution;
 use App\DTO\ProcessableDistributionCollection;
+use App\Enum\DateFormatEnum;
 use App\Models\Address;
 use App\Models\Contact;
 use App\Models\Data\Country;
@@ -13,14 +14,12 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\Vendor;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class ProcessDistributions extends FormRequest
 {
@@ -67,19 +66,19 @@ class ProcessDistributions extends FormRequest
             ],
 
             'worldwide_distributions.*.addresses' => [
-                'bail', 'required', 'array'
+                'bail', 'required', 'array',
             ],
             'worldwide_distributions.*.addresses.*' => [
                 'bail', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Address::class, 'id')->whereNull('deleted_at'),
             ],
 
             'worldwide_distributions.*.contacts' => [
-                'bail', 'required', 'array'
+                'bail', 'required', 'array',
             ],
             'worldwide_distributions.*.contacts.*' => [
                 'bail', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
             ],
 
             'worldwide_distributions.*.buy_price' => [
@@ -106,6 +105,9 @@ class ProcessDistributions extends FormRequest
             ],
             'worldwide_distributions.*.schedule_file_page' => [
                 'bail', 'nullable', 'int', 'min:1', 'max:999',
+            ],
+            'worldwide_distributions.*.file_date_format' => [
+                'bail', 'nullable', new Enum(DateFormatEnum::class),
             ],
         ];
     }
@@ -150,7 +152,8 @@ class ProcessDistributions extends FormRequest
                     'distributor_file_id' => $distribution['distributor_file_id'],
                     'distributor_file_page' => (int)($distribution['distributor_file_page'] ?? null),
                     'schedule_file_id' => $distribution['schedule_file_id'] ?? null,
-                    'schedule_file_page' => transform($distribution['schedule_file_page'] ?? null, fn (string $value) => (int)$value),
+                    'schedule_file_page' => transform($distribution['schedule_file_page'] ?? null, fn(string $value) => (int)$value),
+                    'file_date_format' => DateFormatEnum::from($distribution['file_date_format'] ?? 'Auto'),
                 ]);
             }, $distributions);
 

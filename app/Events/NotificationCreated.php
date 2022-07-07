@@ -2,12 +2,9 @@
 
 namespace App\Events;
 
-use App\Http\Resources\NotificationResource;
+use App\Http\Resources\V1\NotificationResource;
 use App\Models\System\Notification;
-use Illuminate\Broadcasting\{
-    InteractsWithSockets,
-    PrivateChannel
-};
+use Illuminate\Broadcasting\{InteractsWithSockets, PrivateChannel};
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;

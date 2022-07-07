@@ -11,7 +11,7 @@ final class ImportedOpportunityData extends DataTransferObject
     /**
      * @Constraints\Uuid
      */
-    public string $user_id;
+    public ?string $user_id = null;
 
     /**
      * @Constraints\Uuid
@@ -19,6 +19,13 @@ final class ImportedOpportunityData extends DataTransferObject
      * @var string
      */
     public string $pipeline_id;
+
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string|null
+     */
+    public ?string $pipeline_stage_id;
 
     /**
      * @Constraints\Uuid

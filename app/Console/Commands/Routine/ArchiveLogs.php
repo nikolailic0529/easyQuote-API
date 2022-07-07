@@ -5,6 +5,7 @@ namespace App\Console\Commands\Routine;
 use Devengine\LogKeeper\Exceptions\LogUtilException;
 use Devengine\LogKeeper\Services\LogKeeperService;
 use Illuminate\Console\Command;
+use Illuminate\Log\LogManager;
 
 class ArchiveLogs extends Command
 {
@@ -39,8 +40,9 @@ class ArchiveLogs extends Command
      * @return int
      * @throws LogUtilException
      */
-    public function handle(LogKeeperService $service): int
+    public function handle(LogKeeperService $service, LogManager $logManager): int
     {
+        $service->setLogger($logManager->channel('stdout'));
         $service->work();
 
         return self::SUCCESS;

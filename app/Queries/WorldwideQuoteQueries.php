@@ -15,6 +15,7 @@ use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\JoinClause;
@@ -23,7 +24,7 @@ use Illuminate\Support\Facades\DB;
 
 class WorldwideQuoteQueries
 {
-    public function __construct(protected ConnectionInterface $connection,
+    public function __construct(protected ConnectionResolverInterface $connection,
                                 protected Elasticsearch $elasticsearch)
     {
     }
@@ -176,9 +177,9 @@ class WorldwideQuoteQueries
         return $this->listingQuery($request)
             ->addSelect([
 
-                'has_distributor_files' => $this->connection->query()
+                'has_distributor_files' => $this->connection->connection()->query()
                     ->selectRaw('exists ('.$distributorFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
-                'has_schedule_files' => $this->connection->query()
+                'has_schedule_files' => $this->connection->connection()->query()
                     ->selectRaw('exists ('.$scheduleFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
             ])
             ->whereNotNull('worldwide_quotes.submitted_at');

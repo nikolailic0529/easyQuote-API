@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Address;
+use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Role;
 use App\Models\User;
@@ -84,7 +85,7 @@ class AddressTest extends TestCase
         ]);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -150,6 +151,7 @@ class AddressTest extends TestCase
             'state' => Str::random(10),
             'state_code' => Str::random(10),
             'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
         ];
 
         $response = $this->postJson('api/addresses', $data)
@@ -157,6 +159,7 @@ class AddressTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
+                'contact_id',
                 'location_id',
                 'address_type',
                 'address_1',
@@ -199,6 +202,7 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'location_id',
+                'contact_id',
                 'address_type',
                 'address_1',
                 'city',
@@ -236,6 +240,7 @@ class AddressTest extends TestCase
             'state' => Str::random(10),
             'state_code' => Str::random(10),
             'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
         ];
 
         $this->patchJson('api/addresses/'.$addressID, $data)

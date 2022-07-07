@@ -64,7 +64,7 @@ class PasswordExpiration extends Command
             ->subject($user)
             ->url(ui_route('users.profile'))
             ->priority(3)
-            ->store();
+            ->push();
 
         $user->notify(new PasswordExpirationNotification($expirationDate));
     }

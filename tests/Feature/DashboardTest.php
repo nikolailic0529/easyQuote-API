@@ -111,7 +111,7 @@ class DashboardTest extends TestCase
         /** @var Role $role */
         $role = factory(Role::class)->create();
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -240,7 +240,7 @@ class DashboardTest extends TestCase
             'delete_own_hpe_contracts']);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 

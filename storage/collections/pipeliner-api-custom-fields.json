@@ -1,0 +1,1498 @@
+[
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Not Required",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Required",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "Finalised",
+                "calcValue": 3
+            }
+        ],
+        "defaultValue": null,
+        "name": "(Drop In)",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "1",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "2",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "3",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "4",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "5",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "6",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "7",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "8",
+                "calcValue": 8
+            },
+            {
+                "id": null,
+                "optionName": "9",
+                "calcValue": 9
+            },
+            {
+                "id": null,
+                "optionName": "10",
+                "calcValue": 10
+            },
+            {
+                "id": null,
+                "optionName": "11",
+                "calcValue": 11
+            },
+            {
+                "id": null,
+                "optionName": "12",
+                "calcValue": 12
+            },
+            {
+                "id": null,
+                "optionName": "13",
+                "calcValue": 13
+            },
+            {
+                "id": null,
+                "optionName": "14",
+                "calcValue": 14
+            },
+            {
+                "id": null,
+                "optionName": "15",
+                "calcValue": 15
+            },
+            {
+                "id": null,
+                "optionName": "16",
+                "calcValue": 16
+            },
+            {
+                "id": null,
+                "optionName": "17",
+                "calcValue": 17
+            },
+            {
+                "id": null,
+                "optionName": "18",
+                "calcValue": 18
+            },
+            {
+                "id": null,
+                "optionName": "19",
+                "calcValue": 19
+            },
+            {
+                "id": null,
+                "optionName": "20",
+                "calcValue": 20
+            },
+            {
+                "id": null,
+                "optionName": "21",
+                "calcValue": 21
+            },
+            {
+                "id": null,
+                "optionName": "22",
+                "calcValue": 22
+            },
+            {
+                "id": null,
+                "optionName": "23",
+                "calcValue": 23
+            },
+            {
+                "id": null,
+                "optionName": "24",
+                "calcValue": 24
+            },
+            {
+                "id": null,
+                "optionName": "25",
+                "calcValue": 25
+            },
+            {
+                "id": null,
+                "optionName": "26",
+                "calcValue": 26
+            },
+            {
+                "id": null,
+                "optionName": "27",
+                "calcValue": 27
+            },
+            {
+                "id": null,
+                "optionName": "28",
+                "calcValue": 28
+            },
+            {
+                "id": null,
+                "optionName": "29",
+                "calcValue": 29
+            },
+            {
+                "id": null,
+                "optionName": "30",
+                "calcValue": 30
+            },
+            {
+                "id": null,
+                "optionName": "31",
+                "calcValue": 31
+            },
+            {
+                "id": null,
+                "optionName": "32",
+                "calcValue": 32
+            },
+            {
+                "id": null,
+                "optionName": "33",
+                "calcValue": 33
+            },
+            {
+                "id": null,
+                "optionName": "34",
+                "calcValue": 34
+            },
+            {
+                "id": null,
+                "optionName": "35",
+                "calcValue": 35
+            },
+            {
+                "id": null,
+                "optionName": "36",
+                "calcValue": 36
+            },
+            {
+                "id": null,
+                "optionName": "37",
+                "calcValue": 37
+            },
+            {
+                "id": null,
+                "optionName": "38",
+                "calcValue": 38
+            },
+            {
+                "id": null,
+                "optionName": "39",
+                "calcValue": 39
+            },
+            {
+                "id": null,
+                "optionName": "40",
+                "calcValue": 40
+            },
+            {
+                "id": null,
+                "optionName": "41",
+                "calcValue": 41
+            },
+            {
+                "id": null,
+                "optionName": "42",
+                "calcValue": 42
+            },
+            {
+                "id": null,
+                "optionName": "43",
+                "calcValue": 43
+            },
+            {
+                "id": null,
+                "optionName": "44",
+                "calcValue": 44
+            },
+            {
+                "id": null,
+                "optionName": "45",
+                "calcValue": 45
+            },
+            {
+                "id": null,
+                "optionName": "46",
+                "calcValue": 46
+            },
+            {
+                "id": null,
+                "optionName": "47",
+                "calcValue": 47
+            },
+            {
+                "id": null,
+                "optionName": "48",
+                "calcValue": 48
+            },
+            {
+                "id": null,
+                "optionName": "49",
+                "calcValue": 49
+            },
+            {
+                "id": null,
+                "optionName": "50",
+                "calcValue": 50
+            },
+            {
+                "id": null,
+                "optionName": "51",
+                "calcValue": 51
+            },
+            {
+                "id": null,
+                "optionName": "52",
+                "calcValue": 52
+            },
+            {
+                "id": null,
+                "optionName": "53",
+                "calcValue": 53
+            },
+            {
+                "id": null,
+                "optionName": "54",
+                "calcValue": 54
+            },
+            {
+                "id": null,
+                "optionName": "55",
+                "calcValue": 55
+            },
+            {
+                "id": null,
+                "optionName": "56",
+                "calcValue": 56
+            },
+            {
+                "id": null,
+                "optionName": "57",
+                "calcValue": 57
+            },
+            {
+                "id": null,
+                "optionName": "58",
+                "calcValue": 58
+            },
+            {
+                "id": null,
+                "optionName": "59",
+                "calcValue": 59
+            },
+            {
+                "id": null,
+                "optionName": "60",
+                "calcValue": 60
+            }
+        ],
+        "defaultValue": null,
+        "name": "Support Duration Months",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "01_Jan",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "02_Feb",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "03_Mar",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "04_Apr",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "05_May",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "06_Jun",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "07_Jul",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "08_Aug",
+                "calcValue": 8
+            },
+            {
+                "id": null,
+                "optionName": "09_Sep",
+                "calcValue": 9
+            },
+            {
+                "id": null,
+                "optionName": "10_Oct",
+                "calcValue": 10
+            },
+            {
+                "id": null,
+                "optionName": "11_Nov",
+                "calcValue": 11
+            },
+            {
+                "id": null,
+                "optionName": "12_Dec",
+                "calcValue": 12
+            },
+            {
+                "id": null,
+                "optionName": "TBC_Pack",
+                "calcValue": 13
+            },
+            {
+                "id": null,
+                "optionName": "TBC_NH",
+                "calcValue": 14
+            }
+        ],
+        "defaultValue": null,
+        "name": "Ren_Month",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Start Date",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "date",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "Support Duration",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "Service credits",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "End Date",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "date",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "SLA",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Lenovo Part Numbers",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo SSU",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo Installation Service",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo Professional Service",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo Mix",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "IBM SSU",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "IBM - Multivendor",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "IBM Installation Service",
+                "calcValue": 8
+            },
+            {
+                "id": null,
+                "optionName": "IBM Professional Service",
+                "calcValue": 9
+            },
+            {
+                "id": null,
+                "optionName": "IBM Mix",
+                "calcValue": 10
+            },
+            {
+                "id": null,
+                "optionName": "IBM & Lenovo Mix",
+                "calcValue": 11
+            },
+            {
+                "id": null,
+                "optionName": "TPM",
+                "calcValue": 12
+            },
+            {
+                "id": null,
+                "optionName": "Dell Service",
+                "calcValue": 13
+            },
+            {
+                "id": null,
+                "optionName": "Cisco Service",
+                "calcValue": 14
+            },
+            {
+                "id": null,
+                "optionName": "HP Service",
+                "calcValue": 15
+            },
+            {
+                "id": null,
+                "optionName": "Huawei Service",
+                "calcValue": 16
+            },
+            {
+                "id": null,
+                "optionName": "Vmware",
+                "calcValue": 17
+            },
+            {
+                "id": null,
+                "optionName": "Veeam",
+                "calcValue": 18
+            },
+            {
+                "id": null,
+                "optionName": "Veritas",
+                "calcValue": 19
+            },
+            {
+                "id": null,
+                "optionName": "Symantec",
+                "calcValue": 20
+            },
+            {
+                "id": null,
+                "optionName": "Citrix",
+                "calcValue": 21
+            },
+            {
+                "id": null,
+                "optionName": "Microsoft",
+                "calcValue": 22
+            },
+            {
+                "id": null,
+                "optionName": "RedHat",
+                "calcValue": 23
+            },
+            {
+                "id": null,
+                "optionName": "Oracle",
+                "calcValue": 24
+            },
+            {
+                "id": null,
+                "optionName": "Fujitsu",
+                "calcValue": 25
+            },
+            {
+                "id": null,
+                "optionName": "Teamviewer",
+                "calcValue": 26
+            }
+        ],
+        "defaultValue": null,
+        "name": "Nature of Service",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "Higher SLA",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Remark",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "text_area",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "Start Date Assumed",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "List Price",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "currency_foreign",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Pack",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Contract",
+                "calcValue": 2
+            }
+        ],
+        "defaultValue": null,
+        "name": "Opportunity Type",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Credit",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Proforma",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "30 Days",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "60 Days",
+                "calcValue": 4
+            }
+        ],
+        "defaultValue": null,
+        "name": "Payment Terms",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "New Hardware",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Installed Hardware",
+                "calcValue": 2
+            }
+        ],
+        "defaultValue": null,
+        "name": "HW Status",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Competition",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "Multi-Year",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "End Date Assumed",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Africa",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Asia Pacific",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "Asia",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "Canada",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "EMEA",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "Mix Inc Germany",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "Mix Inc UKI",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "Mix",
+                "calcValue": 8
+            },
+            {
+                "id": null,
+                "optionName": "South America",
+                "calcValue": 9
+            },
+            {
+                "id": null,
+                "optionName": "UKI",
+                "calcValue": 10
+            },
+            {
+                "id": null,
+                "optionName": "USA",
+                "calcValue": 11
+            }
+        ],
+        "defaultValue": null,
+        "name": "Region",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "2018",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "2019",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "2020",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "2021",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "2022",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "2023",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "2024",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "2025",
+                "calcValue": 8
+            }
+        ],
+        "defaultValue": null,
+        "name": "Ren_Year",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Enduser",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Estimated upsell amount",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "currency",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "Additional hardware",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "1 - Vendor Renewal",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "2 - Conversion",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "3 - Customer request",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "4 - Vendor Lead",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "5 - Employee",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "6 - Others",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "7 - SWH Renewal",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "8 - Recycled Data",
+                "calcValue": 8
+            },
+            {
+                "id": null,
+                "optionName": "9 - Vendor Unassigned",
+                "calcValue": 9
+            },
+            {
+                "id": null,
+                "optionName": "10 - Vendor SWH",
+                "calcValue": 10
+            },
+            {
+                "id": null,
+                "optionName": "11 - Vendor Already Quoted",
+                "calcValue": 11
+            },
+            {
+                "id": null,
+                "optionName": "12 - BIDS",
+                "calcValue": 12
+            },
+            {
+                "id": null,
+                "optionName": "13 - Leads Generated By Campaign",
+                "calcValue": 13
+            },
+            {
+                "id": null,
+                "optionName": "14 - Leads Generated by Employee (BD)",
+                "calcValue": 14
+            }
+        ],
+        "defaultValue": null,
+        "name": "Lead_Source",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "None",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Discount 5%",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "General",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "Partner Choice",
+                "calcValue": 4
+            }
+        ],
+        "defaultValue": null,
+        "name": "Campaign",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Margin",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "float",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Purchase Price",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "currency_foreign",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Lenovo",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "IBM",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "Cisco",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "Dell",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "HPE",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "VM Ware",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "Fujitsu",
+                "calcValue": 7
+            }
+        ],
+        "defaultValue": null,
+        "name": "Vendor",
+        "calcFormula": null,
+        "entityName": "Account",
+        "typeId": "multiselect_checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Credit",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Proforma",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "30 Days",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "60 Days",
+                "calcValue": 4
+            }
+        ],
+        "defaultValue": null,
+        "name": "Payment Terms",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": "0",
+        "name": "Multi-Year",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "checkbox",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "1 - Vendor Renewal",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "2 - Conversion",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "3 - Customer request",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "4 - Vendor Lead",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "5 - Employee",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "6 - Others",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "7 - SWH Renewal",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "8 - Recycled Data",
+                "calcValue": 8
+            },
+            {
+                "id": null,
+                "optionName": "9 - Vendor Unassigned",
+                "calcValue": 9
+            },
+            {
+                "id": null,
+                "optionName": "10 - Vendor SWH",
+                "calcValue": 10
+            },
+            {
+                "id": null,
+                "optionName": "11 - Vendor Already Quoted",
+                "calcValue": 11
+            },
+            {
+                "id": null,
+                "optionName": "12 - BIDS",
+                "calcValue": 12
+            },
+            {
+                "id": null,
+                "optionName": "13 - Leads Generated By Campaign",
+                "calcValue": 13
+            },
+            {
+                "id": null,
+                "optionName": "14 - Leads Generated by Employee (BD)",
+                "calcValue": 14
+            }
+        ],
+        "defaultValue": null,
+        "name": "Lead_Source",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [
+            {
+                "id": null,
+                "optionName": "Lenovo Part Numbers",
+                "calcValue": 1
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo SSU",
+                "calcValue": 2
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo Installation Service",
+                "calcValue": 3
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo Professional Service",
+                "calcValue": 4
+            },
+            {
+                "id": null,
+                "optionName": "Lenovo Mix",
+                "calcValue": 5
+            },
+            {
+                "id": null,
+                "optionName": "IBM SSU",
+                "calcValue": 6
+            },
+            {
+                "id": null,
+                "optionName": "IBM - Multivendor",
+                "calcValue": 7
+            },
+            {
+                "id": null,
+                "optionName": "IBM Installation Service",
+                "calcValue": 8
+            },
+            {
+                "id": null,
+                "optionName": "IBM Professional Service",
+                "calcValue": 9
+            },
+            {
+                "id": null,
+                "optionName": "IBM Mix",
+                "calcValue": 10
+            },
+            {
+                "id": null,
+                "optionName": "IBM & Lenovo Mix",
+                "calcValue": 11
+            },
+            {
+                "id": null,
+                "optionName": "TPM",
+                "calcValue": 12
+            },
+            {
+                "id": null,
+                "optionName": "Dell Service",
+                "calcValue": 13
+            },
+            {
+                "id": null,
+                "optionName": "Cisco Service",
+                "calcValue": 14
+            },
+            {
+                "id": null,
+                "optionName": "HP Service",
+                "calcValue": 15
+            },
+            {
+                "id": null,
+                "optionName": "Huawei Service",
+                "calcValue": 16
+            },
+            {
+                "id": null,
+                "optionName": "Vmware",
+                "calcValue": 17
+            },
+            {
+                "id": null,
+                "optionName": "Veeam",
+                "calcValue": 18
+            },
+            {
+                "id": null,
+                "optionName": "Veritas",
+                "calcValue": 19
+            },
+            {
+                "id": null,
+                "optionName": "Symantec",
+                "calcValue": 20
+            },
+            {
+                "id": null,
+                "optionName": "Citrix",
+                "calcValue": 21
+            },
+            {
+                "id": null,
+                "optionName": "Microsoft",
+                "calcValue": 22
+            },
+            {
+                "id": null,
+                "optionName": "RedHat",
+                "calcValue": 23
+            },
+            {
+                "id": null,
+                "optionName": "Oracle",
+                "calcValue": 24
+            },
+            {
+                "id": null,
+                "optionName": "Fujitsu",
+                "calcValue": 25
+            },
+            {
+                "id": null,
+                "optionName": "Teamviewer",
+                "calcValue": 26
+            }
+        ],
+        "defaultValue": null,
+        "name": "Nature of Service",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "dropdown",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": [],
+        "defaultValue": null,
+        "name": "Margin",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "float",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Contact Name",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Email Address",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Supplier",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Country",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Contact Name",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Email Address",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Supplier",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Country",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Contact Name",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Email Address",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Supplier",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Country",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Contact Name",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Email Address",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Supplier",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Country",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Contact Name",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Email Address",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Supplier",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    },
+    {
+        "dataSet": null,
+        "defaultValue": null,
+        "name": "Country",
+        "calcFormula": null,
+        "entityName": "Opportunity",
+        "typeId": "input",
+        "sequencePattern": null
+    }
+]

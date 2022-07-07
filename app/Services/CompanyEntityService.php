@@ -12,12 +12,14 @@ use App\DTO\Company\UpdateCompanyData;
 use App\Events\Company\CompanyCreated;
 use App\Events\Company\CompanyDeleted;
 use App\Events\Company\CompanyUpdated;
+use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -92,8 +94,25 @@ class CompanyEntityService implements CauserAware
                 $contactsData[$contactData->id] = ['is_default' => $contactData->is_default];
             }
 
+            $addressModel = new Address;
+            $contactModel = new Contact;
+
+            $addresses = $addressModel->newQuery()->whereKey(array_keys($addressesData))->get();
+            $contacts = $contactModel->newQuery()->whereKey(array_keys($contactsData))->get();
+
+            // Associate addresses with the first contact, when not assigned yet.
+            if ($contacts->isNotEmpty()) {
+                $addresses->each(static function (Address $address) use ($contacts): void {
+                    if (null === $address->contact()->getParentKey()) {
+                        $address->contact()->associate($contacts->first());
+                    }
+                });
+            }
+
             // TODO: add company locking.
-            $this->connection->transaction(function () use ($companyData, $company, $addressesData, $contactsData) {
+            $this->connection->transaction(function () use ($addresses, $companyData, $company, $addressesData, $contactsData) {
+                $addresses->each->save();
+
                 $company->save();
 
                 $company->vendors()->sync($companyData->vendors);
@@ -144,14 +163,62 @@ class CompanyEntityService implements CauserAware
                 $contactsData[$contactData->id] = ['is_default' => $contactData->is_default];
             }
 
+            $addressModel = new Address;
+            $contactModel = new Contact;
+
+            $addresses = $addressModel->newQuery()->whereKey(array_keys($addressesData))->get();
+            $contacts = $contactModel->newQuery()->whereKey(array_keys($contactsData))->get();
+
+            // Associate addresses with the first contact, when not assigned yet.
+            if ($contacts->isNotEmpty()) {
+                $addresses->each(static function (Address $address) use ($contacts): void {
+                    if (null === $address->contact()->getParentKey()) {
+                        $address->contact()->associate($contacts->first());
+                    }
+                });
+            }
+
+            /** @var ?Carbon $latestUpdatedAtOfContactRelations */
+            $latestUpdatedAtOfContactRelations = value(static function () use ($contacts, $addresses, $addressModel, $contactModel): ?Carbon {
+                $max = collect([
+                    $addresses->max($addressModel->getUpdatedAtColumn()),
+                    $contacts->max($contactModel->getUpdatedAtColumn()),
+                ])
+                    ->max();
+
+                return null !== $max ? Carbon::instance($max) : null;
+            });
 
             // TODO: add company locking.
-            $this->connection->transaction(function () use ($companyData, $company, $addressesData, $contactsData) {
+            $this->connection->transaction(function () use ($addresses, $companyData, $company, $addressesData, $contactsData, $latestUpdatedAtOfContactRelations) {
+                $addresses->each->save();
+
+                if ($latestUpdatedAtOfContactRelations?->greaterThan($company->{$company->getUpdatedAtColumn()})) {
+                    $company->updateTimestamps();
+                }
+
                 $company->save();
 
-                $company->vendors()->sync($companyData->vendors);
-                $company->addresses()->sync($addressesData);
-                $company->contacts()->sync($contactsData);
+                $relationChanges = [];
+
+                $relationChanges['vendors'] = $company->vendors()->sync($companyData->vendors);
+                $relationChanges['addresses'] = $company->addresses()->sync($addressesData);
+                $relationChanges['contacts'] = $company->contacts()->sync($contactsData);
+
+                $relationsWereChanged = collect($relationChanges)->contains(static function (array $changes): bool {
+                    foreach ($changes as $change) {
+                        if (count($change) > 0) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                });
+
+                if ($company->wasChanged() || $relationsWereChanged) {
+                    $company->opportunities()->touch();
+                    $company->opportunitiesWhereEndUser()->touch();
+                }
 
                 // TODO: refactor image processing.
                 ThumbHelper::createLogoThumbnails($company, $companyData->logo);

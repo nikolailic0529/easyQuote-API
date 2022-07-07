@@ -15,7 +15,6 @@ use Illuminate\Filesystem\FilesystemAdapter as Disk;
 use Illuminate\Support\{Arr, Str};
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
-use LynX39\LaraPdfMerger\PdfManage;
 use Smalot\PdfParser\Parser as PdfParser;
 use Spatie\PdfToText\Pdf as PdfToText;
 use iio\libmergepdf\Merger;
@@ -116,11 +115,6 @@ class HpeContractExporter implements HpeExporter
     protected function pdfWrapper(): PdfWrapper
     {
         return app('snappy.pdf.wrapper');
-    }
-
-    protected function pdfMerger(): PdfManage
-    {
-        return app('pdf-merger');
     }
 
     protected function findFilledPages(string $filePath): array

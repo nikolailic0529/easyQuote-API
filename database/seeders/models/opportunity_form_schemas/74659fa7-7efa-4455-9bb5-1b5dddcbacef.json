@@ -416,7 +416,7 @@
               "type": "label",
               "class": null,
               "label": "Label",
-              "value": "Customer Status",
+              "value": "Payment Terms",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -2191,46 +2191,7 @@
         {
           "id": "6bfe4a71-f6f2-4437-bd86-2cfc4d55381d",
           "class": "col-lg-3",
-          "controls": [
-            {
-              "id": "e521c38b-5190-4c78-954f-c70448772cdf",
-              "css": null,
-              "src": null,
-              "name": "l-1",
-              "show": false,
-              "type": "label",
-              "class": null,
-              "label": "Label",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "6bfe4a71-f6f2-4437-bd86-2cfc4d55381d",
-              "attached_element_id": "bbdd991e-2d78-449c-a58b-35743ad57658"
-            },
-            {
-              "id": "2f049ef1-d99c-4f5d-a58a-893cf4b3688c",
-              "css": null,
-              "src": null,
-              "name": "estimated_upsell_amount_currency_code",
-              "show": false,
-              "type": "currency",
-              "class": "form-control",
-              "label": "Upsell amountCurrency",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "placeholder": "Currency",
-              "field_required": false,
-              "attached_child_id": "6bfe4a71-f6f2-4437-bd86-2cfc4d55381d",
-              "attached_element_id": "bbdd991e-2d78-449c-a58b-35743ad57658"
-            }
-          ],
+          "controls": [],
           "position": 2
         },
         {

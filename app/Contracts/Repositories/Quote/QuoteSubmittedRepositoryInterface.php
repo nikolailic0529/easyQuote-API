@@ -2,14 +2,10 @@
 
 namespace App\Contracts\Repositories\Quote;
 
-use App\Models\Quote\{
-    BaseQuote,
-    Quote
-};
-use App\Http\Resources\QuoteRepository\SubmittedCollection;
+use App\Http\Resources\V1\QuoteRepository\SubmittedCollection;
+use App\Models\Quote\{BaseQuote, Quote};
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Illuminate\Support\LazyCollection;
 
 interface QuoteSubmittedRepositoryInterface
@@ -137,7 +133,7 @@ interface QuoteSubmittedRepositoryInterface
      * Map Resource to UserRepositoryCollection.
      *
      * @param mixed $resource
-     * @return \App\Http\Resources\QuoteRepository\SubmittedCollection
+     * @return \App\Http\Resources\V1\QuoteRepository\SubmittedCollection
      */
     public function toCollection($resource): SubmittedCollection;
 }

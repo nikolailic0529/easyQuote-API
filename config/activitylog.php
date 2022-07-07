@@ -57,8 +57,9 @@ return [
         ],
         'worldwide_quote' => \App\Models\Quote\WorldwideQuote::class,
         'opportunity' => \App\Models\Opportunity::class,
-        'quote_note' => \App\Models\Quote\QuoteNote::class,
-        'task' => \App\Models\Task::class,
+//        'quote_note' => \App\Models\Note\QuoteNote::class,
+        'note' => \App\Models\Note\Note::class,
+        'task' => \App\Models\Task\Task::class,
         'contract' => [
             \App\Models\Quote\Contract::class,
             \App\Models\HpeContract::class,

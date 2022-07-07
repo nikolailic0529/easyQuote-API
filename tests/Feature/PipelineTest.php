@@ -158,7 +158,8 @@ class PipelineTest extends TestCase
             'pipeline_stages' => [
                 [
                     'id' => null,
-                    'stage_name' => Str::random(40)
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 10,
                 ]
             ]
         ])
@@ -196,7 +197,8 @@ class PipelineTest extends TestCase
             'pipeline_stages' => [
                 [
                     'id' => null,
-                    'stage_name' => Str::random(40)
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 12.5
                 ]
             ]
         ])
@@ -224,11 +226,13 @@ class PipelineTest extends TestCase
             'pipeline_stages' => [
                 [
                     'id' => null,
-                    'stage_name' => Str::random(40)
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 1,
                 ],
                 [
                     'id' => $existingStageKey = $response->json('pipeline_stages.0.id'),
-                    'stage_name' => Str::random(40)
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 100,
                 ],
             ]
 

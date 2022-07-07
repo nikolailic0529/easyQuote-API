@@ -30,11 +30,6 @@ class PipelineEntityService
         $this->validator = $validator;
     }
 
-    public static function qualifyPipelineStageName(PipelineStage $pipelineStage): string
-    {
-        return sprintf("%s. %s", $pipelineStage->stage_order, $pipelineStage->stage_name);
-    }
-
     public function batchPutPipelines(PutPipelineDataCollection $collection): Collection
     {
         foreach ($collection as $data) {
@@ -122,6 +117,7 @@ class PipelineEntityService
                     $pipelineStage->unsetRelation('pipeline');
                     $pipelineStage->stage_name = $stageData->stage_name;
                     $pipelineStage->stage_order = $stageData->stage_order;
+                    $pipelineStage->stage_percentage = $stageData->stage_percentage;
                 });
             }, $data->pipeline_stages);
 
@@ -184,6 +180,7 @@ class PipelineEntityService
                     $pipelineStage->unsetRelation('pipeline');
                     $pipelineStage->stage_name = $stageData->stage_name;
                     $pipelineStage->stage_order = $stageData->stage_order;
+                    $pipelineStage->stage_percentage = $stageData->stage_percentage;
                 });
             }, $data->pipeline_stages);
 

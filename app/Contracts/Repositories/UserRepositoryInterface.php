@@ -3,22 +3,14 @@
 namespace App\Contracts\Repositories;
 
 use App\Builder\Pagination\Paginator;
-use App\Http\Requests\Collaboration\{
-    InviteUserRequest,
-    UpdateUserRequest
-};
 use App\Http\Requests\PasswordResetRequest;
 use App\Http\Requests\StoreResetPasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
-use App\Http\Resources\UserRepositoryCollection;
-use App\Models\{
-    User,
-    Collaboration\Invitation
-};
+use App\Http\Resources\V1\UserRepositoryCollection;
+use App\Models\{Collaboration\Invitation, User};
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as DbCollection;
-use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 
 interface UserRepositoryInterface
@@ -353,7 +345,7 @@ interface UserRepositoryInterface
      * Map Resource into UserRepositoryCollection.
      *
      * @param mixed $resource
-     * @return \App\Http\Resources\UserRepositoryCollection
+     * @return \App\Http\Resources\V1\UserRepositoryCollection
      */
     public function toCollection($resource): UserRepositoryCollection;
 }

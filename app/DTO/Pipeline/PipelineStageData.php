@@ -7,19 +7,15 @@ use Symfony\Component\Validator\Constraints;
 
 final class PipelineStageData extends DataTransferObject
 {
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
-     */
+    #[Constraints\Uuid]
     public ?string $stage_id = null;
 
     public int $stage_order;
 
-    /**
-     * @Constraints\NotBlank
-     *
-     * @var string
-     */
+    #[Constraints\NotBlank]
     public string $stage_name;
+
+    #[Constraints\PositiveOrZero]
+    #[Constraints\LessThanOrEqual(100)]
+    public float $stage_percentage;
 }

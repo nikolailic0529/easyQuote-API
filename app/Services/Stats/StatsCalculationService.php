@@ -18,7 +18,7 @@ use App\Models\Quote\QuoteLocationTotal;
 use App\Queries\AssetQueries;
 use App\Services\RescueQuote\RescueQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
-use Illuminate\Database\{ConnectionInterface, Eloquent\Collection, Query\JoinClause};
+use Illuminate\Database\{Eloquent\Collection, Query\JoinClause};
 use Illuminate\Support\{Collection as BaseCollection,};
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -30,8 +30,7 @@ class StatsCalculationService implements Stats
 {
     protected OutputInterface $output;
 
-    public function __construct(protected ConnectionInterface  $connection,
-                                protected LoggerInterface      $logger,
+    public function __construct(protected LoggerInterface      $logger,
                                 protected AssetQueries         $assetQueries,
                                 protected RescueQuoteCalc      $rescueQuoteCalc,
                                 protected WorldwideQuoteCalc   $worldwideQuoteCalc,
@@ -378,8 +377,6 @@ class StatsCalculationService implements Stats
 
                 $customerTotal->save();
             });
-
-            $this->logger->info('A new customer total created with new location', $customerTotal->toArray());
         });
     }
 

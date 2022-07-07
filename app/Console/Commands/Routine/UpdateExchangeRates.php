@@ -2,13 +2,15 @@
 
 namespace App\Console\Commands\Routine;
 
-use Illuminate\Console\{
-    Command,
-    ConfirmableTrait,
-};
+use App\Contracts\LoggerAware;
 use App\Contracts\Services\ManagesExchangeRates as Service;
 use App\Repositories\RateFileRepository as Repository;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonPeriod;
+use Illuminate\Console\{Command, ConfirmableTrait,};
+use Illuminate\Log\LogManager;
+use Symfony\Component\Console\Input\InputOption;
 use Throwable;
 
 class UpdateExchangeRates extends Command
@@ -20,7 +22,7 @@ class UpdateExchangeRates extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:update-exchange-rates {--file}';
+    protected $name = 'eq:update-exchange-rates';
 
     /**
      * The console command description.
@@ -45,8 +47,12 @@ class UpdateExchangeRates extends Command
      * @param Service $service
      * @return int
      */
-    public function handle(Service $service): int
+    public function handle(Service $service, LogManager $logManager): int
     {
+        if ($service instanceof LoggerAware) {
+            $service->setLogger($logManager->stack(['stdout']));
+        }
+
         // Load exchange rates from the defined file.
         if ($this->option('file')) {
             $filepath = $this->resolveFilepath();
@@ -59,12 +65,61 @@ class UpdateExchangeRates extends Command
         }
 
         // Load exchange rates from API.
-        $result = $service->updateRates();
+        $result = $service->updateRates($this->resolveDateParameters());
 
         return $this->interpretUpdateResult($result);
     }
 
-    protected function resolveFilepath()
+    protected function resolveDateParameters(): array
+    {
+        if (null === $this->option('month') && null === $this->option('year')) {
+            return [];
+        }
+
+        if (null === $this->option('month')) {
+            $dateOfYear = $this->resolveDateOfYear($this->option('year'));
+
+            return CarbonPeriod::start($dateOfYear)
+                ->end($dateOfYear->year === now()->year
+                        ? now()->endOfMonth()
+                        : $dateOfYear->endOfYear())
+                ->step(\DateInterval::createFromDateString('1month'))
+                ->toArray();
+        }
+
+        if (null === $this->option('year')) {
+            return [$this->resolveDateOfMonth($this->option('month'))];
+        }
+
+        return [
+            $this->resolveDateOfYear($this->option('year'))
+                ->setMonth(
+                    $this->resolveDateOfMonth($this->option('month'))->month
+                ),
+        ];
+    }
+
+    private function resolveDateOfMonth(string $month): CarbonImmutable
+    {
+        return Carbon::createFromFormat('!m', $month)
+            ->setYear(now()->year)
+            ->startOfMonth()
+            ->toImmutable();
+    }
+
+    private function resolveDateOfYear(string $year): CarbonImmutable
+    {
+        $dateOfYear = strlen($year) < 4
+            ? Carbon::createFromFormat('!y', $year)
+            : Carbon::createFromFormat('!Y', $year);
+
+        return $dateOfYear->startOfYear()->toImmutable();
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function resolveFilepath(): string
     {
         /** @var Repository */
         $repository = app(Repository::class);
@@ -72,7 +127,7 @@ class UpdateExchangeRates extends Command
         $names = $repository->getAllNames();
 
         if (empty($names)) {
-            $this->warn(sprintf('No rate files found. Please put at least one at %s.', config('filesystems.disks.rates.root')));
+            throw new \Exception(sprintf('No rate files found. Please put at least one at %s.', config('filesystems.disks.rates.root')));
         }
 
         $name = $this->choice('Which file?', $names, 0);
@@ -90,7 +145,7 @@ class UpdateExchangeRates extends Command
 
             return tap(
                 $date,
-                fn (Carbon $date) => $this->info(sprintf(ER_DT_01, $date->format('M Y')))
+                fn(Carbon $date) => $this->info(sprintf(ER_DT_01, $date->format('M Y')))
             );
         } catch (Throwable $e) {
             /** Fallback when something is going wrong when fetch date from the file. */
@@ -98,7 +153,7 @@ class UpdateExchangeRates extends Command
 
             return tap(
                 $this->askRatesPeriod(),
-                fn (Carbon $date) => $this->info(sprintf(ER_DT_01, $date->format('M Y')))
+                fn(Carbon $date) => $this->info(sprintf(ER_DT_01, $date->format('M Y')))
             );
         }
     }
@@ -123,5 +178,14 @@ class UpdateExchangeRates extends Command
 
         $this->error('Something went wrong when Exchange Rates updating.');
         return self::FAILURE;
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            new InputOption('file', mode: InputOption::VALUE_NONE, description: 'Load rates from a file'),
+            new InputOption('month', shortcut: 'm', mode: InputOption::VALUE_REQUIRED, description: 'Load rates from remote for the month'),
+            new InputOption('year', shortcut: 'y', mode: InputOption::VALUE_REQUIRED, description: 'Load rates from remote for the year'),
+        ];
     }
 }

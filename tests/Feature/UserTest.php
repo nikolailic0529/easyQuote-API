@@ -73,7 +73,7 @@ class UserTest extends TestCase
     public function testCanViewUser()
     {
         $this->authenticateApi();
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $this->getJson("api/users/".$user->getKey())
             ->assertOk()
@@ -102,7 +102,7 @@ class UserTest extends TestCase
     {
         $this->authenticateApi();
 
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $this->patchJson("api/users/".$user->getKey(), [
             'first_name' => $firstName = preg_replace('/[^[:alpha:]]/', '', $this->faker->firstName),
@@ -144,7 +144,7 @@ class UserTest extends TestCase
     {
         $this->authenticateApi();
 
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $this->patchJson("api/users/".$user->getKey(), ['email' => $this->faker->unique()->safeEmail])
             ->assertForbidden();
@@ -159,7 +159,7 @@ class UserTest extends TestCase
     {
         $this->authenticateApi();
 
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
         $user->activated_at = null;
         $user->save();
 
@@ -193,7 +193,7 @@ class UserTest extends TestCase
     {
         $this->authenticateApi();
 
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
         $user->activated_at = now();
         $user->save();
 
@@ -240,7 +240,7 @@ class UserTest extends TestCase
     {
         $this->authenticateApi();
 
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $this->deleteJson("api/users/".$user->getKey())
             ->assertOk()

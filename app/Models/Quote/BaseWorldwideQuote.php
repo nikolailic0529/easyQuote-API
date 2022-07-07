@@ -2,16 +2,20 @@
 
 namespace App\Models\Quote;
 
+use App\Contracts\HasOwnNotes;
 use App\Contracts\SearchableEntity;
 use App\Models\Company;
 use App\Models\ContractType;
 use App\Models\Data\Currency;
+use App\Models\ModelHasTasks;
+use App\Models\Note\ModelHasNotes;
+use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
-use App\Models\Task;
+use App\Models\Task\Task;
 use App\Models\Template\QuoteTemplate;
 use App\Models\User;
 use App\Models\Vendor;
@@ -20,8 +24,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
-abstract class BaseWorldwideQuote extends Model implements SearchableEntity
+abstract class BaseWorldwideQuote extends Model implements SearchableEntity, HasOwnNotes
 {
     public function assets(): HasMany
     {
@@ -75,14 +80,19 @@ abstract class BaseWorldwideQuote extends Model implements SearchableEntity
             ->has('opportunitySupplier');
     }
 
-    public function worldwideQuoteNotes(): HasMany
+    public function notes(): MorphToMany
     {
-        return $this->hasMany(WorldwideQuoteNote::class);
+        return $this->morphToMany(
+            related: Note::class,
+            name: 'model',
+            table: (new ModelHasNotes())->getTable(),
+            relatedPivotKey: 'note_id',
+        )->using(ModelHasNotes::class);
     }
 
-    public function tasks(): MorphMany
+    public function tasks(): MorphToMany
     {
-        return $this->morphMany(Task::class, 'taskable');
+        return $this->morphToMany(Task::class, name: 'model', table: (new ModelHasTasks())->getTable());
     }
 
     public function getSearchIndex(): string

@@ -9,7 +9,6 @@ use App\Models\Asset;
 use App\Models\Attachable;
 use App\Models\Attachment;
 use App\Models\Company;
-use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
 use App\Models\Image;
@@ -136,7 +135,6 @@ class DeduplicateCompaniesService implements LoggerAware
              * @uses Company::$vs_company_code
              * @uses Company::$vat
              * @uses Company::$vat_type
-             * @uses Company::$is_system
              * @uses Company::$type
              * @uses Company::$category
              * @uses Company::$source
@@ -148,7 +146,6 @@ class DeduplicateCompaniesService implements LoggerAware
             'vs_company_code',
             'vat',
             'vat_type',
-            'is_system',
             'type',
             'category',
             'source',
@@ -257,13 +254,13 @@ class DeduplicateCompaniesService implements LoggerAware
 
                 });
 
-                $merged->notes->each(static function (CompanyNote $note) use ($candidate): void {
-
-                    $note->company()->associate($candidate);
-
-                    $note->saveQuietly();
-
-                });
+//                $merged->notes->each(static function (CompanyNote $note) use ($candidate): void {
+//
+//                    $note->company()->associate($candidate);
+//
+//                    $note->saveQuietly();
+//
+//                });
 
                 with($merged->images->first(), static function (?Image $image) use ($candidate): void {
 

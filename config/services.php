@@ -46,7 +46,7 @@ return [
 
     'recaptcha' => [
         'skip_key' => env('RECAPTCHA_SKIP_KEY'),
-        'skip_enabled' => env('RECAPTCHA_SKIP_ENABLED', false)
+        'skip_enabled' => env('RECAPTCHA_SKIP_ENABLED', false),
     ],
 
     'recaptcha_v3' => [
@@ -78,7 +78,7 @@ return [
 
         'support_lookup_routes' => [
             'HPE' => 'hpe-data/sku/{sku}/country/{country}',
-            'LEN' => 'lenovo-data/sku/{sku}/country/{country}/currency/{currency}'
+            'LEN' => 'lenovo-data/sku/{sku}/country/{country}/currency/{currency}',
         ],
 
         'client_id' => env('VS_API_CLIENT_ID'),
@@ -95,6 +95,14 @@ return [
         // Client credentials
         'client_id' => env('DOCUMENT_API_CLIENT_ID'),
         'client_secret' => env('DOCUMENT_API_CLIENT_SECRET'),
+    ],
+
+    'pipeliner' => [
+        'url' => env('PIPELINER_URL', 'https://eu-central.pipelinersales.com'),
+        'username' => env('PIPELINER_USERNAME', ''),
+        'password' => env('PIPELINER_PASSWORD', ''),
+        'space_id' => env('PIPELINER_SPACE_ID', ''),
+        'space_endpoint' => env('PIPELINER_SPACE_ENDPOINT', 'https://eu-central.pipelinersales.com/api/v100/app/space/{space_id}/graphql/public'),
     ],
 
 ];

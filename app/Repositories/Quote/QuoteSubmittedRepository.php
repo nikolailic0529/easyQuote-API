@@ -3,28 +3,16 @@
 namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
-use App\Repositories\{
-    SearchableRepository,
-    Concerns\ResolvesImplicitModel,
-    Concerns\ResolvesTargetModel,
-};
-use App\Http\Resources\QuoteRepository\SubmittedCollection;
+use App\Http\Resources\V1\QuoteRepository\SubmittedCollection;
 use App\Models\Company;
-use App\Models\Customer\Customer;
-use App\Models\Quote\{
-    Quote,
-    BaseQuote,
-    Contract
-};
+use App\Models\Quote\{BaseQuote, Quote};
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\User;
+use App\Repositories\{Concerns\ResolvesImplicitModel, Concerns\ResolvesTargetModel, SearchableRepository,};
 use Closure;
-use Illuminate\Database\Eloquent\{
-    Model,
-    Builder
-};
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\{LazyCollection, Facades\File, Facades\Storage};
+use Illuminate\Support\{Facades\File, Facades\Storage, LazyCollection};
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {

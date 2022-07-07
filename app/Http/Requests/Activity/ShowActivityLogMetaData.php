@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Activity;
 
-use App\Http\Resources\UserListResource;
+use App\Http\Resources\V1\UserListResource;
 use App\Queries\UserQueries;
 use App\Services\Activity\ActivityDataMapper;
 use Illuminate\Contracts\Config\Repository as Config;

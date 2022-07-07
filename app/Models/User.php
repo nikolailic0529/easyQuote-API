@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Contracts\{ActivatableInterface, HasImagesDirectory, SearchableEntity};
 use App\Facades\Permission;
-use App\Models\{Collaboration\Invitation};
+use App\Models\{Collaboration\Invitation, Data\Timezone};
 use App\Models\Template\HpeContractTemplate;
 use App\Traits\{Activatable,
     Activity\LogsActivity,
@@ -29,14 +29,18 @@ use App\Traits\{Activatable,
     User\EnforceableChangePassword,
     User\PerformsActivity,
     Uuid,
-    Vendor\HasVendors,
-};
+    Vendor\HasVendors,};
+use Database\Factories\UserFactory;
 use Illuminate\Auth\{Authenticatable, MustVerifyEmail, Passwords\CanResetPassword};
 use Illuminate\Contracts\Auth\{Access\Authorizable as AuthorizableContract,
     Authenticatable as AuthenticatableContract,
-    CanResetPassword as CanResetPasswordContract
-};
-use Illuminate\Database\Eloquent\{Builder, Collection, Model, Relations\BelongsToMany, SoftDeletes};
+    CanResetPassword as CanResetPasswordContract};
+use Illuminate\Database\Eloquent\{Builder,
+    Collection,
+    Factories\HasFactory,
+    Model,
+    Relations\BelongsToMany,
+    SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Http\UploadedFile;
@@ -48,6 +52,7 @@ use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
+ * @property string|null $pl_reference
  * @property string|null $team_id
  * @property string|null $first_name
  * @property string|null $middle_name
@@ -57,10 +62,12 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $password
  * @property string|null $phone
  * @property int|null $failed_attempts
+ * @property mixed $activated_at
  *
  * @property-read string|null $user_fullname
  * @property-read Team|null $team
  * @property-read Collection<int, Permission>|Permission[] $permissions
+ * @property-read Timezone $timezone
  */
 class User extends Model implements
     ActivatableInterface,
@@ -84,7 +91,6 @@ class User extends Model implements
         HasQuoteFilesDirectory,
         HasApiTokens,
         HasInvitations,
-        Notifiable,
         BelongsToTimezone,
         BelongsToCountry,
         BelongsToCompany,
@@ -100,7 +106,12 @@ class User extends Model implements
         Loginable,
         PerformsActivity,
         EnforceableChangePassword,
-        HasRelationships;
+        HasRelationships,
+        HasFactory;
+
+    use Notifiable {
+        notify as performNotify;
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -152,6 +163,11 @@ class User extends Model implements
     protected static $submitEmptyLogs = false;
 
     protected static $recordEvents = ['created', 'updated', 'deleted'];
+
+    protected static function newFactory(): UserFactory
+    {
+        return UserFactory::new();
+    }
 
     public function companies(): HasManyDeep
     {
@@ -322,5 +338,17 @@ class User extends Model implements
     public function ledTeamUsers(): HasManyDeep
     {
         return $this->hasManyDeepFromRelations($this->ledTeams(), (new Team())->users());
+    }
+
+    public function isActive(): bool
+    {
+        return null !== $this->activated_at;
+    }
+
+    public function notify($instance)
+    {
+        if ($this->isActive()) {
+            $this->performNotify($instance);
+        }
     }
 }

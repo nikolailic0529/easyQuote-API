@@ -3,8 +3,9 @@
 namespace App\Models\Quote;
 
 use App\Casts\GroupDescription;
-use App\Contracts\{ActivatableInterface, HasOrderedScope, SearchableEntity};
+use App\Contracts\{ActivatableInterface, HasOwnNotes, HasOrderedScope, SearchableEntity};
 use App\Models\{Data\Currency,
+    Note\Note,
     Quote\Margin\CountryMargin,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
@@ -56,9 +57,9 @@ use Illuminate\Support\Traits\Tappable;
  * @property-read float|null $target_exchange_rate
  * @property-read Vendor|null $vendor
  * @property-read QuoteFile $priceList
- * @property-read QuoteNote|null $note
+ * @property-read Note|null $note
  */
-abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
+abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity, HasOwnNotes
 {
     use Uuid,
         Multitenantable,

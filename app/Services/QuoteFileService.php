@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Events\RescueQuote\RescueQuoteFileExported;
-use App\Http\Resources\DownloadableQuoteFile;
+use App\Http\Resources\V1\DownloadableQuoteFile;
 use App\Imports\CountPages as ExcelPagesCounter;
 use App\Models\Quote\Quote;
 use App\Models\QuoteFile\DataSelectSeparator;

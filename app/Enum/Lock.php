@@ -31,8 +31,11 @@ use App\Enum\Exceptions\InvalidEnumKeyException;
  * @method static UPDATE_COMPANY_NOTE(string $id)
  * @method static DELETE_COMPANY_NOTE(string $id)
  *
+ * @method static SYNC_OPPORTUNITY(string $id)
  * @method static UPDATE_OPPORTUNITY(string $id)
  * @method static DELETE_OPPORTUNITY(string $id)
+ *
+ * @method static SYNC_COMPANY(string $id)
  *
  * @method static CREATE_WWASSET_FOR_QUOTE(string $id)
  * @method static UPDATE_WWASSET(string $id)
@@ -71,8 +74,11 @@ final class Lock extends Enum
         UPDATE_COMPANY_NOTE = 'update-company-note',
         DELETE_COMPANY_NOTE = 'delete-company-note',
 
+        SYNC_OPPORTUNITY = 'sync-opportunity',
         UPDATE_OPPORTUNITY = 'update-opportunity',
         DELETE_OPPORTUNITY = 'delete-opportunity',
+
+        SYNC_COMPANY = 'sync-company',
 
         CREATE_WWASSET_FOR_QUOTE = 'create-ww-asset-for-quote',
         UPDATE_WWASSET = 'update-ww-asset',

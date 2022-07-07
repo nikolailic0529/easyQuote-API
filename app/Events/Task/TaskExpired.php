@@ -2,14 +2,9 @@
 
 namespace App\Events\Task;
 
-use App\Models\{
-    Task,
-    User,
-};
-use App\Services\TaskService;
+use App\Models\{Task\Task, User,};
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -19,16 +14,13 @@ class TaskExpired implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public Task $task;
-
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(Task $task)
+    public function __construct(public readonly Task $task)
     {
-        $this->task = $task;
     }
 
     /**
@@ -39,11 +31,15 @@ class TaskExpired implements ShouldBroadcastNow
     public function broadcastOn()
     {
         /** Creator and assigned users. */
-        $users = (clone $this->task->users)->push($this->task->user);
+        $users = $this->task->users;
+
+        if (null !== $this->task->user) {
+            $users = $users->merge([$this->task->user]);
+        }
 
         return $users
-            ->map(fn (User $user) => new PrivateChannel('user.' . $user->getKey()))
-            ->toArray();
+            ->map(static fn(User $user) => new PrivateChannel('user.'.$user->getKey()))
+            ->all();
     }
 
     /**
@@ -51,7 +47,7 @@ class TaskExpired implements ShouldBroadcastNow
      *
      * @return string
      */
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'task.expired';
     }
@@ -61,18 +57,15 @@ class TaskExpired implements ShouldBroadcastNow
      *
      * @return array
      */
-    public function broadcastWith()
+    public function broadcastWith(): array
     {
-        $service = app(TaskService::class);
-        
         $message = sprintf(
-            'Task "%s" by %s has been expired.',
+            'Task has been expired: `%s`',
             $this->task->name,
-            $service->qualifyTaskableName($this->task)
         );
 
         return [
-            'id' => (string) Str::uuid(4),
+            'id' => (string)Str::uuid(4),
             'message' => $message,
             'created_at' => now()->format(config('date.format_time')),
         ];

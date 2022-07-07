@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\CompanyNote;
 
+use App\DTO\Note\UpdateNoteData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCompanyNote extends FormRequest
@@ -21,5 +22,12 @@ class UpdateCompanyNote extends FormRequest
     public function getNoteText(): string
     {
         return $this->input('text');
+    }
+
+    public function getUpdateNoteData(): UpdateNoteData
+    {
+        return new UpdateNoteData([
+            'note' => $this->input('text'),
+        ]);
     }
 }

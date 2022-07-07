@@ -2,6 +2,7 @@
 
 namespace App\Services\Attachment;
 
+use App\Enum\AttachmentType;
 use App\Events\Attachment\AttachmentCreated;
 use App\Events\Attachment\AttachmentDeleted;
 use App\Events\Attachment\AttachmentExported;
@@ -14,18 +15,18 @@ use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Webpatser\Uuid\Uuid;
 use function tap;
 
 class AttachmentEntityService
 {
-    public function __construct(protected FilesystemAdapter   $filesystem,
-                                protected ConnectionInterface $connection,
-                                protected Dispatcher          $eventDispatcher)
+    public function __construct(protected FilesystemAdapter    $filesystem,
+                                protected ConnectionInterface  $connection,
+                                protected AttachmentDataMapper $dataMapper,
+                                protected Dispatcher           $eventDispatcher)
     {
     }
 
-    public function createAttachmentFromUploadedFile(UploadedFile $file, string $attachmentType): Attachment
+    public function createAttachmentFromUploadedFile(UploadedFile $file, AttachmentType $attachmentType): Attachment
     {
         $filePath = $this->filesystem->putFileAs(
             path: null,
@@ -33,30 +34,16 @@ class AttachmentEntityService
             name: $file->hashName(),
         );
 
-        $extension = File::extension($file->getClientOriginalName());
-        $filename = self::processFileName($file->getClientOriginalName());
-        $size = $file->getSize();
+        $metadata = $this->filesystem->getMetadata($filePath) + ['filename' => $file->getClientOriginalName()];
 
-        return tap(new Attachment(), function (Attachment $attachment) use ($size, $extension, $filename, $filePath, $attachmentType) {
-
-            $attachment->{$attachment->getKeyName()} = (string)Uuid::generate(4);
-            $attachment->filepath = $filePath;
-            $attachment->filename = $filename;
-            $attachment->extension = $extension;
-            $attachment->size = $size;
-            $attachment->type = $attachmentType;
-
-            $this->connection->transaction(function () use ($attachment) {
-                $attachment->save();
-            });
-
+        return tap($this->dataMapper->mapFromMetadata($metadata, $attachmentType), function (Attachment $attachment): void {
+            $this->connection->transaction(static fn() => $attachment->save());
         });
     }
 
-    public function createAttachmentForEntity(UploadedFile $file, string $attachmentType, Model $entity): Attachment
+    public function createAttachmentForEntity(UploadedFile $file, AttachmentType $attachmentType, Model $entity): Attachment
     {
         return tap($this->createAttachmentFromUploadedFile(file: $file, attachmentType: $attachmentType), function (Attachment $attachment) use ($entity) {
-
             $this->connection->transaction(function () use ($attachment, $entity) {
                 $entity
                     ->morphToMany($attachment::class, 'attachable')
@@ -64,7 +51,6 @@ class AttachmentEntityService
             });
 
             $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
-
         });
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\QuoteNote;
 
+use App\DTO\Note\CreateNoteData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateQuoteNoteRequest extends FormRequest
@@ -23,5 +24,12 @@ class CreateQuoteNoteRequest extends FormRequest
         return parent::validated() + [
             'quote_id' => optional($this->route('quote'))->id
         ];
+    }
+
+    public function getCreateNoteData(): CreateNoteData
+    {
+        return new CreateNoteData([
+            'note' => $this->input('text'),
+        ]);
     }
 }

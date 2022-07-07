@@ -6,6 +6,9 @@ use App\Contracts\HasOrderedScope;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property string|null $utc
+ */
 class Timezone extends Model implements HasOrderedScope
 {
     use Uuid;

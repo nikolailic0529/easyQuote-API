@@ -8,6 +8,7 @@ use App\Models\Template\QuoteTemplate;
 use App\Models\Template\SalesOrderTemplate;
 use App\Models\Template\TemplateForm;
 use App\Models\Vendor;
+use App\Services\Template\Models\TemplateControlFilter;
 use App\Services\ThumbHelper;
 use Illuminate\Support\Str;
 
@@ -141,5 +142,29 @@ class TemplateSchemaDataMapper
         );
 
         return $templateSchema;
+    }
+
+    public function setControlValue(TemplateControlFilter $controlFilter, mixed $value, array &$template, int $limit = null): void
+    {
+        $count = 0;
+
+        $limit = is_int($limit) ? abs($limit) : null;
+        $limit = 0 === $limit ? 1 : $limit;
+
+        foreach ($template as $colIndex => $col) {
+            foreach ($col['child'] as $rowIndex => $row) {
+                for ($i = 0; $i < count($row['controls']); $i++) {
+                    if ($controlFilter->isSatisfied($i, $row['controls'])) {
+                        $template[$colIndex]['child'][$rowIndex]['controls'][$i]['value'] = $value;
+                        $count++;
+                    }
+
+                    if (null !== $limit && $count === $limit) {
+                        return;
+                    }
+                }
+            }
+        }
+
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services\Address;
 use App\Contracts\CauserAware;
 use App\DTO\Address\CreateAddressData;
 use App\DTO\Address\UpdateAddressData;
+use App\DTO\Enum\DataTransferValueOption;
 use App\Events\Address\AddressCreated;
 use App\Events\Address\AddressDeleted;
 use App\Events\Address\AddressUpdated;
@@ -38,7 +39,11 @@ class AddressEntityService implements CauserAware
 
             $address->country()->associate($data->country_id);
 
-            $this->connection->transaction(fn() => $address->save());
+            if (DataTransferValueOption::Miss !== $data->contact_id) {
+                $address->contact()->associate($data->contact_id);
+            }
+
+            $this->connection->transaction(static fn() => $address->save());
 
             $this->eventDispatcher->dispatch(
                 new AddressCreated(address: $address, causer: $this->causer)
@@ -61,7 +66,11 @@ class AddressEntityService implements CauserAware
 
             $address->country()->associate($data->country_id);
 
-            $this->connection->transaction(fn() => $address->save());
+            if (DataTransferValueOption::Miss !== $data->contact_id) {
+                $address->contact()->associate($data->contact_id);
+            }
+
+            $this->connection->transaction(static fn() => $address->save());
 
             $this->eventDispatcher->dispatch(
                 new AddressUpdated(address: $oldAddress, newAddress: $address, causer: $this->causer)
@@ -71,7 +80,7 @@ class AddressEntityService implements CauserAware
 
     public function deleteAddress(Address $address): void
     {
-        $this->connection->transaction(fn() => $address->delete());
+        $this->connection->transaction(static fn() => $address->delete());
 
         $this->eventDispatcher->dispatch(
             new AddressDeleted($address, $this->causer)
@@ -82,14 +91,14 @@ class AddressEntityService implements CauserAware
     {
         $address->activated_at = now();
 
-        $this->connection->transaction(fn() => $address->save());
+        $this->connection->transaction(static fn() => $address->save());
     }
 
     public function markAddressAsInactive(Address $address): void
     {
         $address->activated_at = null;
 
-        $this->connection->transaction(fn() => $address->save());
+        $this->connection->transaction(static fn() => $address->save());
     }
 
     public function setCauser(?Model $causer): static

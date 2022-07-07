@@ -197,14 +197,14 @@ class UnifiedContractTest extends TestCase
         $this->app['db.connection']->table('hpe_contracts')->delete();
 
         factory(HpeContract::class)->create([
-            'user_id' => factory(User::class)->create()->getKey(),
+            'user_id' => User::factory()->create()->getKey(),
         ]);
         factory(Contract::class)->create([
-            'user_id' => factory(User::class)->create()->getKey(),
+            'user_id' => User::factory()->create()->getKey(),
         ]);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         /** @var Role $role */
         $role = factory(Role::class)->create();
@@ -545,16 +545,16 @@ class UnifiedContractTest extends TestCase
         $this->app['db.connection']->table('hpe_contracts')->delete();
 
         factory(HpeContract::class)->create([
-            'user_id' => factory(User::class)->create()->getKey(),
+            'user_id' => User::factory()->create()->getKey(),
             'submitted_at' => now(),
         ]);
         factory(Contract::class)->create([
-            'user_id' => factory(User::class)->create()->getKey(),
+            'user_id' => User::factory()->create()->getKey(),
             'submitted_at' => now(),
         ]);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         /** @var Role $role */
         $role = factory(Role::class)->create();

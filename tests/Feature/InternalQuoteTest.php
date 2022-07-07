@@ -61,7 +61,7 @@ class InternalQuoteTest extends TestCase
      */
     public function testCanCreateNewRowsGroupWhenUserIsNotQuoteOwner()
     {
-        $quoteOwner = factory(User::class)->create();
+        $quoteOwner = User::factory()->create();
         $quoteCustomer = factory(Customer::class)->create();
 
         $distributorFile = factory(QuoteFile::class)->create(['imported_page' => 2]);
@@ -69,7 +69,7 @@ class InternalQuoteTest extends TestCase
 
         $quote = factory(Quote::class)->create(['user_id' => $quoteOwner->getKey(), 'customer_id' => $quoteCustomer->getKey(), 'distributor_file_id' => $distributorFile->getKey()]);
 
-        $this->authenticateApi($actingUser = factory(User::class)->create());
+        $this->authenticateApi($actingUser = User::factory()->create());
 
         $response = $this->postJson('api/quotes/groups/' . $quote->getKey(), [
             'name' => Str::random(),
@@ -105,7 +105,7 @@ class InternalQuoteTest extends TestCase
      */
     public function testCanUpdateRowsGroupWhenUserIsNotQuoteOwner()
     {
-        $quoteOwner = factory(User::class)->create();
+        $quoteOwner = User::factory()->create();
         $quoteCustomer = factory(Customer::class)->create();
 
         $distributorFile = factory(QuoteFile::class)->create(['imported_page' => 2]);
@@ -125,7 +125,7 @@ class InternalQuoteTest extends TestCase
             ])
         ]);
 
-        $this->authenticateApi($actingUser = factory(User::class)->create());
+        $this->authenticateApi($actingUser = User::factory()->create());
 
         $this->patchJson('api/quotes/groups/'.$quote->getKey().'/'.$group->id, [
             'name' => Str::random(),
@@ -156,7 +156,7 @@ class InternalQuoteTest extends TestCase
      */
     public function testCanDeleteRowsGroupWhenUserIsNotQuoteOwner()
     {
-        $quoteOwner = factory(User::class)->create();
+        $quoteOwner = User::factory()->create();
         $quoteCustomer = factory(Customer::class)->create();
 
         $distributorFile = factory(QuoteFile::class)->create(['imported_page' => 2]);
@@ -176,7 +176,7 @@ class InternalQuoteTest extends TestCase
             ])
         ]);
 
-        $this->authenticateApi($actingUser = factory(User::class)->create());
+        $this->authenticateApi($actingUser = User::factory()->create());
 
         $this->deleteJson('api/quotes/groups/'.$quote->getKey().'/'.$group->id)
             ->assertOk()
@@ -194,7 +194,7 @@ class InternalQuoteTest extends TestCase
      */
     public function testCanSearchQuoteRows()
     {
-        $quoteOwner = factory(User::class)->create();
+        $quoteOwner = User::factory()->create();
         $quoteCustomer = factory(Customer::class)->create();
 
         $distributorFile = factory(QuoteFile::class)->create(['imported_page' => 2]);

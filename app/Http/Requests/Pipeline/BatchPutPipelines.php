@@ -22,38 +22,41 @@ class BatchPutPipelines extends FormRequest
     {
         return [
             'default_pipeline_indexes' => [
-                'bail', 'required', 'array', 'max:1'
+                'bail', 'required', 'array', 'max:1',
             ],
             'default_pipeline_indexes.*' => [
-                'integer'
+                'integer',
             ],
 
             'pipelines' => [
-                'bail', 'present', 'array'
+                'bail', 'present', 'array',
             ],
             'pipelines.*.id' => [
                 'bail', 'present', 'nullable', 'uuid',
-                Rule::exists(Pipeline::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Pipeline::class, 'id')->whereNull('deleted_at'),
             ],
             'pipelines.*.is_default' => [
-                'bail', 'present', 'boolean'
+                'bail', 'present', 'boolean',
             ],
             'pipelines.*.space_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Space::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Space::class, 'id')->whereNull('deleted_at'),
             ],
             'pipelines.*.pipeline_name' => [
-                'bail', 'required', 'string', 'max:191'
+                'bail', 'required', 'string', 'max:191',
             ],
             'pipelines.*.pipeline_stages' => [
-                'bail', 'present', 'array'
+                'bail', 'present', 'array',
             ],
             'pipelines.*.pipeline_stages.*.id' => [
                 'bail', 'present', 'nullable', 'uuid',
                 // TODO: validate existence of the stage entity
             ],
             'pipelines.*.pipeline_stages.*.stage_name' => [
-                'bail', 'string', 'max:191'
+                'bail', 'string', 'max:191',
+            ],
+            'pipelines.*.pipeline_stages.*.stage_percentage' => [
+                'bail', 'required', 'numeric', 'min:0', 'max:100',
             ],
         ];
     }
@@ -82,6 +85,7 @@ class BatchPutPipelines extends FormRequest
                             'stage_id' => $stage['id'],
                             'stage_name' => $stage['stage_name'],
                             'stage_order' => $order++,
+                            'stage_percentage' => (float)$stage['stage_percentage'],
                         ];
                     }, $pipeline['pipeline_stages']),
                     'is_default' => (bool)$pipeline['is_default'],
@@ -102,7 +106,7 @@ class BatchPutPipelines extends FormRequest
         });
 
         $this->merge([
-            'default_pipeline_indexes' => array_keys($defaultPipelines)
+            'default_pipeline_indexes' => array_keys($defaultPipelines),
         ]);
     }
 }

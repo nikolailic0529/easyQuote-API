@@ -127,6 +127,6 @@ class NotificationTest extends TestCase
             ->message('Test Notification')
             ->url(ui_route('users.profile'))
             ->subject($this->user)
-            ->store();
+            ->push();
     }
 }

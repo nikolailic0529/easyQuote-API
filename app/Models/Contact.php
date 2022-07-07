@@ -3,17 +3,34 @@
 namespace App\Models;
 
 use App\Contracts\HasImagesDirectory;
-use App\Traits\{Activatable, Search\Searchable, Uuid};
+use App\Contracts\HasOwnAppointments;
+use App\Contracts\LinkedToAppointments;
 use App\Contracts\SearchableEntity;
-use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDeletes};
+use App\Enum\GenderEnum;
+use App\Models\Appointment\Appointment;
+use App\Traits\{Activatable, Search\Searchable, Uuid};
+use App\Models\Appointment\ModelHasAppointments;
+use Database\Factories\ContactFactory;
+use Illuminate\Database\Eloquent\{Builder,
+    Factories\HasFactory,
+    Model,
+    Relations\BelongsTo,
+    Relations\BelongsToMany,
+    Relations\HasMany,
+    Relations\MorphToMany,
+    SoftDeletes
+};
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic;
 
 /**
+ * @property string|null $pl_reference
  * @property string|null $contact_type
+ * @property GenderEnum|null $gender
  * @property string|null $contact_name
  * @property string|null $first_name
  * @property string|null $last_name
@@ -24,11 +41,13 @@ use Intervention\Image\ImageManagerStatic;
  * @property bool|null $is_verified
  * @property bool|null $is_default
  *
+ * @property-read Collection<int, Address> $addresses
  * @property-read string $contact_representation
+ * @property-read User|null $user
  */
-class Contact extends Model implements HasImagesDirectory, SearchableEntity
+class Contact extends Model implements HasImagesDirectory, SearchableEntity, LinkedToAppointments, HasOwnAppointments
 {
-    use Uuid, SoftDeletes, Searchable, Activatable;
+    use Uuid, SoftDeletes, Searchable, Activatable, HasFactory;
 
     protected $fillable = [
         'contact_type', 'contact_name', 'job_title', 'first_name', 'last_name', 'mobile', 'phone', 'email', 'is_verified',
@@ -36,15 +55,51 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity
 
     protected $casts = [
         'is_verified' => 'boolean',
+        'gender' => GenderEnum::class,
     ];
 
     protected $hidden = [
         'deleted_at', 'contact_name', 'pivot',
     ];
 
+    protected static function newFactory(): ContactFactory
+    {
+        return ContactFactory::new();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function image()
+    {
+        return $this->morphOne(Image::class, 'imageable')->cacheForever();
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
+
     public function contactable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function appointments(): BelongsToMany
+    {
+        return $this->belongsToMany(Appointment::class);
+    }
+
+    public function ownAppointments(): MorphToMany
+    {
+        return $this->morphToMany(Appointment::class, name: 'model', table: (new ModelHasAppointments())->getTable());
+    }
+
+    public function companies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class);
     }
 
     public function scopeType(Builder $query, string $type): Builder
@@ -77,16 +132,6 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity
     public function withAppends()
     {
         return $this->append('picture');
-    }
-
-    public function image()
-    {
-        return $this->morphOne(Image::class, 'imageable')->cacheForever();
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     public function createImage($file, array $properties = [])
@@ -142,5 +187,18 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity
             $this->email,
             $this->is_verified ? 'true' : 'false',
         );
+    }
+
+    public function isEmpty(): bool
+    {
+        $attributes = ['job_title', 'first_name', 'last_name', 'mobile', 'phone', 'email'];
+
+        foreach ($attributes as $attribute) {
+            if (filled(data_get($this, $attribute))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

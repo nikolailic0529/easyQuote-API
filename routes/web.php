@@ -1,10 +1,9 @@
 <?php
 
-use App\Http\Controllers\API\Quotes\QuoteController;
-use App\Http\Controllers\API\Quotes\QuoteSubmittedController;
+use App\Http\Controllers\API\V1\HpeContractController;
+use App\Http\Controllers\API\V1\Quotes\QuoteSubmittedController;
+use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\HpeContractController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteController;
 
 /*
 |--------------------------------------------------------------------------

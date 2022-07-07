@@ -41,16 +41,13 @@ use Illuminate\Events\Dispatcher as EventDispatcher;
 
 class StatsDependentEntityEventSubscriber implements ShouldQueue
 {
-    protected StatsCalculationService $statsCalculationService;
-
     /**
      * Create the event listener.
      *
      * @param StatsCalculationService $statsCalculationService
      */
-    public function __construct(StatsCalculationService $statsCalculationService)
+    public function __construct(protected StatsCalculationService $statsCalculationService)
     {
-        $this->statsCalculationService = $statsCalculationService;
     }
 
     /**
@@ -75,11 +72,11 @@ class StatsDependentEntityEventSubscriber implements ShouldQueue
             WorldwidePackQuoteAssetsReviewStepProcessed::class,
             WorldwidePackQuoteAssetsCreationStepProcessed::class,
             WorldwidePackQuoteDiscountStepProcessed::class,
-            WorldwidePackQuoteMarginStepProcessed::class
+            WorldwidePackQuoteMarginStepProcessed::class,
         ], [$this, 'updateAggregationOfWorldwideQuote']);
 
         $events->listen([
-            WorldwideQuoteDeleted::class
+            WorldwideQuoteDeleted::class,
         ], [$this, 'deleteAggregationOfWorldwideQuote']);
 
 
@@ -87,7 +84,7 @@ class StatsDependentEntityEventSubscriber implements ShouldQueue
             OpportunityCreated::class,
             OpportunityUpdated::class,
             OpportunityMarkedAsLost::class,
-            OpportunityMarkedAsNotLost::class
+            OpportunityMarkedAsNotLost::class,
         ], [$this, 'updateAggregationOfOpportunity']);
 
         $events->listen(OpportunityDeleted::class, [$this, 'deleteAggregationOfOpportunity']);
