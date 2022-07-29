@@ -4,10 +4,9 @@ namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\GraphQl\PipelinerNoteIntegration;
 use App\Models\Note\Note;
-use App\Models\Pipeline\Pipeline;
 use App\Models\PipelinerModelUpdateLog;
 use App\Services\Note\NoteDataMapper;
-use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
@@ -16,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PushNoteStrategy implements PushStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface      $connection,
                                 protected PipelinerNoteIntegration $noteIntegration,
@@ -55,11 +54,15 @@ class PushNoteStrategy implements PushStrategy
      */
     public function sync(Model $model): void
     {
-        if (null === $model->pl_reference) {
-            if (null !== $model->owner) {
-                $this->pushClientStrategy->sync($model->owner);
-            }
+        if (!$model instanceof Note) {
+            throw new \TypeError(sprintf("Model must be an instance of %s.", Note::class));
+        }
 
+        if (null !== $model->owner) {
+            $this->pushClientStrategy->sync($model->owner);
+        }
+
+        if (null === $model->pl_reference) {
             $input = $this->dataMapper->mapPipelinerCreateNoteInput($model);
 
             $entity = $this->noteIntegration->create($input);
@@ -70,10 +73,6 @@ class PushNoteStrategy implements PushStrategy
                 $this->connection->transaction(static fn() => $note->push());
             });
         } else {
-            if (null !== $model->owner) {
-                $this->pushClientStrategy->sync($model->owner);
-            }
-
             $entity = $this->noteIntegration->getById($model->pl_reference);
 
             $input = $this->dataMapper->mapPipelinerUpdateNoteInput($model, $entity);
@@ -84,20 +83,8 @@ class PushNoteStrategy implements PushStrategy
         }
     }
 
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
-    }
-
     public function countPending(): int
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
         return $this->modelsToBeUpdatedQuery()->count();
     }
 

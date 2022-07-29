@@ -24,6 +24,7 @@ class CustomFieldSeeder extends Seeder
                 'id' => $customField['id'],
                 'pl_reference' => $customField['pl_reference'] ?? null,
                 'field_name' => $customField['field_name'],
+                'calc_formula' => $customField['calc_formula'] ?? null,
                 'parent_field_id' => $customField['parent_field_id'] ?? null,
             ];
 
@@ -33,6 +34,7 @@ class CustomFieldSeeder extends Seeder
                     'pl_reference' => $fieldValue['pl_reference'] ?? null,
                     'custom_field_id' => $customField['id'],
                     'field_value' => $fieldValue['field_value'],
+                    'calc_value' => $fieldValue['calc_value'],
                     'is_default' => $fieldValue['is_default'],
                     'entity_order' => $key,
                     'created_at' => now()->toDateTimeString(),

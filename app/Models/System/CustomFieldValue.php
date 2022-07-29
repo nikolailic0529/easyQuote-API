@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property string|null $pl_reference
  * @property string|null $field_value
+ * @property float|null $calc_value
  * @property int|null $entity_order
  * @property bool|null $is_default
  *

@@ -18,10 +18,12 @@ class UserWithIncludes extends JsonResource
         /** @var User|UserWithIncludes $this */
 
         return [
-            'id' => $this->id,
-            'team_id' => $this->team_id,
+            'id' => $this->getKey(),
 
+            'team_id' => $this->team_id,
             'team' => $this->team,
+
+            'sales_units' => $this->salesUnits,
 
             'email' => $this->email,
             'first_name' => $this->first_name,

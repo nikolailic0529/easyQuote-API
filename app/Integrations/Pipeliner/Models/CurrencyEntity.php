@@ -5,7 +5,8 @@ namespace App\Integrations\Pipeliner\Models;
 class CurrencyEntity
 {
     public function __construct(public readonly string $id,
-                                public readonly string $code)
+                                public readonly string $code,
+                                public readonly bool $isBase)
     {
     }
 
@@ -13,7 +14,8 @@ class CurrencyEntity
     {
         return new static(
             id: $array['id'],
-            code: $array['code']
+            code: $array['code'],
+            isBase: $array['isBase'],
         );
     }
 

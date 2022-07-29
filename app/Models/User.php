@@ -40,13 +40,11 @@ use Illuminate\Database\Eloquent\{Builder,
     Factories\HasFactory,
     Model,
     Relations\BelongsToMany,
+    Relations\MorphToMany,
     SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\Access\Authorizable;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManagerStatic;
 use Spatie\Permission\Traits\HasRoles;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
@@ -66,8 +64,10 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property-read string|null $user_fullname
  * @property-read Team|null $team
+ * @property-read Collection<int, SalesUnit> $salesUnits
  * @property-read Collection<int, Permission>|Permission[] $permissions
  * @property-read Timezone $timezone
+ * @property-read Image|null $image
  */
 class User extends Model implements
     ActivatableInterface,
@@ -227,15 +227,6 @@ class User extends Model implements
         return $this->role->name;
     }
 
-    public function setRoleIdAttribute(string $value)
-    {
-        if (!Role::whereId($value)->exists()) {
-            return;
-        }
-
-        $this->syncRoles(Role::whereId($value)->firstOrFail());
-    }
-
     public function getPrivilegesAttribute()
     {
         return $this->role->privileges;
@@ -258,7 +249,8 @@ class User extends Model implements
 
     public function toSearchArray(): array
     {
-        return Arr::except($this->toArray(), ['email_verified_at', 'must_change_password', 'timezone_id', 'role_id', 'picture']);
+        return Arr::except($this->toArray(), ['email_verified_at', 'must_change_password', 'timezone_id', 'role_id',
+            'picture']);
     }
 
     public function getItemNameAttribute()
@@ -283,39 +275,6 @@ class User extends Model implements
         return $this->morphOne(Image::class, 'imageable')->cacheForever();
     }
 
-    public function createImage($file, array $properties = [])
-    {
-        if (!$file instanceof UploadedFile || !$this instanceof HasImagesDirectory) {
-            return $this;
-        }
-
-        $modelImagesDir = $this->imagesDirectory();
-
-        $image = ImageManagerStatic::make($file->get());
-
-        if (filled($properties) && isset($properties['width']) && isset($properties['height'])) {
-            $image->resize($properties['width'], $properties['height'], function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-        }
-
-        $storageDir = "public/{$modelImagesDir}";
-
-        !Storage::exists($storageDir) && Storage::makeDirectory($storageDir);
-
-        $original = "{$modelImagesDir}/{$file->hashName()}";
-        $image->save(Storage::path("public/{$original}"));
-
-        $this->image()->delete();
-
-        $this->image()->create(compact('original'));
-
-        $this->image()->flushQueryCache();
-
-        return $this->load('image');
-    }
-
     public function getPictureAttribute()
     {
         if (!isset($this->image->original_image)) {
@@ -338,6 +297,11 @@ class User extends Model implements
     public function ledTeamUsers(): HasManyDeep
     {
         return $this->hasManyDeepFromRelations($this->ledTeams(), (new Team())->users());
+    }
+
+    public function salesUnits(): MorphToMany
+    {
+        return $this->morphToMany(related: SalesUnit::class, name: 'model', table: (new ModelHasSalesUnits())->getTable());
     }
 
     public function isActive(): bool

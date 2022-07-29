@@ -3,17 +3,13 @@
 namespace App\Services\Pipeliner\Webhook\EventHandlers;
 
 use App\DTO\Pipeliner\IncomingWebhookData;
-use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
-use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
-use App\Integrations\Pipeliner\Models\UpdateOpportunityInput;
-use App\Integrations\Pipeliner\Models\UpdateOpportunityInputCollection;
-use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
+use App\Services\Pipeliner\PipelinerTouchEntityService;
 
 class AppointmentEventHandler implements EventHandler
 {
-    public function __construct(protected PipelinerOpportunityIntegration $oppIntegration,
-                                protected PipelinerGraphQlClient          $client)
+    public function __construct(protected PipelinerTouchEntityService $touchEntityService,
+                                protected PipelinerGraphQlClient      $client)
     {
     }
 
@@ -23,24 +19,31 @@ class AppointmentEventHandler implements EventHandler
             return;
         }
 
-        foreach ($data->entity['opportunity_relations'] ?? [] as $url) {
-            $relationResponse = $this->client->get($url)->throw();
+        $touchingOpportunities = collect($data->entity['opportunity_relations'] ?? [])
+            ->map(function (string $url): string {
+                $relationResponse = $this->client->get($url)->throw();
 
-            $this->touchOpportunityUsingUrl($relationResponse->json('data.oppty'));
+                return $this->client->get($relationResponse->json('data.oppty'))
+                    ->throw()
+                    ->json('data.id');
+            });
+
+        if ($touchingOpportunities->isNotEmpty()) {
+            $this->touchEntityService->touchOpportunityById(...$touchingOpportunities);
         }
-    }
 
-    private function touchOpportunityUsingUrl(string $url): void
-    {
-        $opptyResponse = $this->client->get($url)->throw();
+        $touchingAccounts = collect($data->entity['account_relations'] ?? [])
+            ->map(function (string $url): string {
+                $relationResponse = $this->client->get($url)->throw();
 
-        $this->oppIntegration->bulkUpdate(
-            new UpdateOpportunityInputCollection(
-                new UpdateOpportunityInput(id: $opptyResponse->json('data.id'), name: $opptyResponse->json('data.name').' '),
-                new UpdateOpportunityInput(id: $opptyResponse->json('data.id'), name: $opptyResponse->json('data.name'))
-            ),
-            ValidationLevelCollection::from(ValidationLevel::SKIP_ALL),
-        );
+                return $this->client->get($relationResponse->json('data.account'))
+                    ->throw()
+                    ->json('data.id');
+            });
+
+        if ($touchingAccounts->isNotEmpty()) {
+            $this->touchEntityService->touchAccountById(...$touchingAccounts);
+        }
     }
 
     private function shouldBeHandled(IncomingWebhookData $data): bool

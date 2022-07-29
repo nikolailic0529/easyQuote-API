@@ -16,13 +16,8 @@ class QueuePipelinerSync extends FormRequest
     {
         return [
             'strategies' => ['bail', 'nullable', 'array'],
-            'strategies.*' => ['bail', 'required', 'string', Rule::in($this->getAllowedStrategyNames())],
+            'strategies.*' => ['bail', 'required', 'string', Rule::in(config('pipeliner.sync.aggregate_strategies'))],
         ];
-    }
-
-    public function getAllowedStrategyNames(): array
-    {
-        return array_keys(config('pipeliner.sync.strategies'));
     }
 
     public function getStrategies(): array
@@ -31,9 +26,14 @@ class QueuePipelinerSync extends FormRequest
             return [];
         }
 
+        $map = config('pipeliner.sync.strategies');
+
         return $this->collect('strategies')
-            ->map(static function (string $name): string {
-                return config('pipeliner.sync.strategies')[$name];
+            ->sortBy(static function (string $name): int|float {
+                return array_search($name, config('pipeliner.sync.aggregate_strategies'), true) ?: INF;
+            })
+            ->map(static function (string $name) use ($map): string {
+                return $map[$name];
             })
             ->all();
     }

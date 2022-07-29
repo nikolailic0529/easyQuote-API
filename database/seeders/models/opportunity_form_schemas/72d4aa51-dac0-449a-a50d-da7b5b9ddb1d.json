@@ -1662,7 +1662,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": true,
+              "field_required": false,
               "possibel_values": null,
               "attached_child_id": "c89dada4-5ea8-4620-afba-c6cfb0efe73f",
               "attached_element_id": "5f435737-d853-43c3-87e7-2fe4ed8d7ad7"
@@ -1843,14 +1843,14 @@
               "attached_element_id": "b69ac026-9532-45f8-a429-9599884aa502"
             },
             {
-              "id": "c64fba63-8faa-455e-a64e-7828d3cac31b",
+              "id": "dd1679bf-7709-4181-98e2-82ea071942ab",
               "css": null,
               "src": null,
-              "name": "sale_unit_name",
+              "name": "sales_unit_id",
               "show": false,
               "type": "dropdown",
-              "class": "form-control custom-select",
-              "label": "Sale unit name",
+              "class": "form-control",
+              "label": "Sales unit",
               "value": null,
               "is_field": true,
               "is_image": false,
@@ -1858,9 +1858,8 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
-              "possible_values": "Worldwide,EPD",
               "attached_child_id": "c89dada4-5ea8-4620-afba-c6cfb0efe73f",
               "attached_element_id": "b69ac026-9532-45f8-a429-9599884aa502"
             }
@@ -1883,6 +1882,25 @@
           "id": "59e26995-9780-4a9f-9182-3ef69852a2aa",
           "class": "col-lg-6",
           "controls": [
+            {
+              "id": "2946d90b-0f65-4816-a08a-45f3e4f0148b",
+              "css": null,
+              "src": null,
+              "name": "opportunity_recurrence",
+              "show": false,
+              "type": "modal",
+              "class": "form-control",
+              "label": "Opportunity Recurrence",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "placeholder": null,
+              "attached_child_id": "59e26995-9780-4a9f-9182-3ef69852a2aa",
+              "attached_element_id": "3bb7fc02-c28f-428d-827a-c4d0ef140631"
+            },
             {
               "id": "b5c0589d-a55c-40c9-8abe-da722927d396",
               "css": null,
@@ -2518,14 +2536,14 @@
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "9479026e-5b4c-4c39-ae2b-f947dad3c43a",
+              "id": "c357d4c0-e7a7-48a1-a73e-960147486cba",
               "css": null,
               "src": null,
-              "name": "sale_action_name",
+              "name": "pipeline_stage_id",
               "show": false,
               "type": "dropdown",
-              "class": "form-control custom-select",
-              "label": "Sale Action Name",
+              "class": "form-control",
+              "label": "Sale Action",
               "value": null,
               "is_field": true,
               "is_image": false,
@@ -2534,7 +2552,6 @@
               "is_required": false,
               "placeholder": null,
               "field_required": false,
-              "possible_values": "1. Preparation,2. Special_Bid_Required,4. Customer_Contact,5. Cust_Order_Ok,6. PO_Placed,7. Processed_in_MC,8. Proforma_Ordered,9. Closed",
               "attached_child_id": "9e4153e0-e785-47c6-ac11-77be332d0cb8",
               "attached_element_id": "eba321f3-f039-47e8-9f12-4a8ce4c797a2"
             }

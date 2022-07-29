@@ -28,7 +28,6 @@ class OpportunityAggregateService
         $stageOpportunitiesCollection = [];
 
         foreach ($defaultPipeline->pipelineStages as $pipelineStage) {
-
             $summary = $this->calculateSummaryOfPipelineStage($pipelineStage);
 
             $pagination = $this->opportunityQueries->paginateOpportunitiesOfPipelineStageQuery($pipelineStage, $request)->apiPaginate();
@@ -46,7 +45,6 @@ class OpportunityAggregateService
                 ],
                 'opportunities' => $pagination->items(),
             ]);
-
         }
 
         return $stageOpportunitiesCollection;

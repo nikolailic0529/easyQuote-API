@@ -7,26 +7,20 @@ use Symfony\Component\Validator\Constraints;
 
 final class CreateInvitationData extends DataTransferObject
 {
-    /**
-     * @Constraints\Email()
-     *
-     * @var string
-     */
+    #[Constraints\Email]
     public string $email;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string
-     */
+    #[Constraints\Uuid]
     public string $role_id;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
-     */
+    #[Constraints\Uuid]
     public ?string $team_id = null;
 
+    #[Constraints\Uuid]
+    public ?string $sales_unit_id = null;
+
     public ?string $host = null;
+
+    /** @var \App\DTO\SalesUnit\CreateSalesUnitRelationData[] **/
+    public array $sales_units = [];
 }

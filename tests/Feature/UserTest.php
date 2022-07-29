@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Data\Timezone;
+use App\Models\Role;
+use App\Models\SalesUnit;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -90,31 +93,34 @@ class UserTest extends TestCase
                 'activated_at',
                 'picture',
                 'privileges',
+                'sales_units' => [
+                    '*' => ['id', 'unit_name',]
+                ]
             ]);
     }
 
     /**
      * Test can update an existing user.
-     *
-     * @return void
      */
-    public function testCanUpdateUser()
+    public function testCanUpdateUser(): void
     {
         $this->authenticateApi();
 
         $user = User::factory()->create();
 
-        $this->patchJson("api/users/".$user->getKey(), [
+        $this->patchJson("api/users/".$user->getKey(), $data = [
             'first_name' => $firstName = preg_replace('/[^[:alpha:]]/', '', $this->faker->firstName),
             'middle_name' => $middleName = null,
             'last_name' => $lastName = preg_replace('/[^[:alpha:]]/', '', $this->faker->lastName),
-            'team_id' => $teamKey = UT_EPD_WW
+            'timezone_id' => Timezone::query()->get()->random()->getKey(),
+            'team_id' => $teamKey = UT_EPD_WW,
+            'sales_units' => SalesUnit::query()->get()->random(2)->map(static fn (SalesUnit $unit) => ['id' => $unit->getKey()]),
+            'role_id' => Role::query()->get()->random()->getKey(),
         ])
 //            ->dump()
-            ->assertOk()
-            ->assertExactJson([true]);
+            ->assertOk();
 
-        $this->getJson('api/users/'.$user->getKey())
+        $response = $this->getJson('api/users/'.$user->getKey())
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -126,13 +132,20 @@ class UserTest extends TestCase
                     'id', 'team_name'
                 ],
                 'team_id',
+                'sales_units' => [
+                    '*' => ['id', 'unit_name',]
+                ]
             ])
-            ->assertJson([
+            ->assertJsonFragment([
                 'first_name' => $firstName,
                 'middle_name' => $middleName,
                 'last_name' => $lastName,
                 'team_id' => $teamKey,
             ]);
+
+        foreach ($data['sales_units'] as $unit) {
+            $this->assertContains($unit['id'], $response->json('sales_units.*.id'));
+        }
     }
 
     /**

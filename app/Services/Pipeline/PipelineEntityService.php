@@ -30,7 +30,7 @@ class PipelineEntityService
         $this->validator = $validator;
     }
 
-    public function batchPutPipelines(PutPipelineDataCollection $collection): Collection
+    public function bulkCreateOrUpdatePipelines(PutPipelineDataCollection $collection): Collection
     {
         foreach ($collection as $data) {
             $violations = $this->validator->validate($data);

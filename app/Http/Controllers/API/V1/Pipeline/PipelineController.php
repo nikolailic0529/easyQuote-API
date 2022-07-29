@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API\V1\Pipeline;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Pipeline\BatchPutPipelines;
+use App\Http\Requests\Pipeline\BulkCreateOrUpdatePipelines;
 use App\Http\Requests\Pipeline\ShowDefaultPipeline;
 use App\Http\Requests\Pipeline\StorePipeline;
 use App\Http\Requests\Pipeline\UpdatePipeline;
@@ -77,16 +77,16 @@ class PipelineController extends Controller
     /**
      * Batch put pipeline entities.
      *
-     * @param \App\Http\Requests\Pipeline\BatchPutPipelines $request
+     * @param \App\Http\Requests\Pipeline\BulkCreateOrUpdatePipelines $request
      * @param \App\Services\Pipeline\PipelineEntityService $entityService
      * @return \Illuminate\Http\JsonResponse
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function batchPutPipelines(BatchPutPipelines $request, PipelineEntityService $entityService): JsonResponse
+    public function bulkUpdatePipelines(BulkCreateOrUpdatePipelines $request, PipelineEntityService $entityService): JsonResponse
     {
         $this->authorize('create', Pipeline::class);
 
-        $resource = $entityService->batchPutPipelines($request->getPutPipelineDataCollection());
+        $resource = $entityService->bulkCreateOrUpdatePipelines($request->getPutPipelineDataCollection());
 
         return response()->json(
             $resource,

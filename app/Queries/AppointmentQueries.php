@@ -11,8 +11,8 @@ use Illuminate\Http\Request;
 
 class AppointmentQueries
 {
-    public function listAppointmentsLinkedToQuery(HasOwnAppointments&Model   $modelHasAppointment,
-                                                  Request $request = new Request()): Builder
+    public function listAppointmentsLinkedToQuery(HasOwnAppointments&Model $modelHasAppointment,
+                                                  Request                  $request = new Request()): Builder
     {
         $model = new Appointment();
 
@@ -36,6 +36,11 @@ class AppointmentQueries
             $query, $request
         )
             ->enforceOrderBy($model->getQualifiedCreatedAtColumn())
+            ->allowQuickSearchFields(
+                'activity_type',
+                'subject',
+                'location'
+            )
             ->process();
     }
 }

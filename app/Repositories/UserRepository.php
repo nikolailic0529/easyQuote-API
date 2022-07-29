@@ -6,7 +6,7 @@ use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Enum\Lock;
 use App\Http\Requests\{PasswordResetRequest as AppPasswordResetRequest,
     StoreResetPasswordRequest,
-    UpdateProfileRequest};
+    UpdateCurrentUserRequest};
 use App\Http\Resources\{V1\UserRepositoryCollection};
 use App\Models\{Collaboration\Invitation, PasswordReset, Permission, Role, User};
 use App\Notifications\{PasswordResetRequest, PasswordResetSuccess};
@@ -251,29 +251,6 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
                 $user->timestamps = $usesTimestamps;
             }
         });
-    }
-
-    public function updateOwnProfile(UpdateProfileRequest $request): User
-    {
-        /** @var User $user */
-        $user = $request->user();
-
-        $user->createImage($request->picture, ['width' => 120, 'height' => 120]);
-
-        if ($request->delete_picture ?? false) {
-            $user->image()->flushQueryCache()->delete();
-        }
-
-        $attributes = Arr::except($request->validated(), ['password']);
-
-        if ($request->change_password) {
-            $password = Hash::make($request->password);
-            $attributes = array_merge($attributes, compact('password'));
-        }
-
-        $user->update($attributes);
-
-        return $user->withAppends();
     }
 
     public function delete(string $id): bool

@@ -2,17 +2,14 @@
 
 namespace App\Contracts\Services;
 
-use App\Enum\CompanyCategory;
+use App\Enum\CompanyCategoryEnum;
 use App\Enum\CompanyType;
-use App\Models\{
-    Company,
-    Customer\Customer,
-};
+use App\Models\{Company, Customer\Customer,};
 
 interface MigratesCustomerEntity
 {
     const COMPANY_TYPE = CompanyType::EXTERNAL;
-    const COMPANY_CATEGORY = CompanyCategory::END_USER;
+    const COMPANY_CATEGORY = CompanyCategoryEnum::EndUser;
 
     /**
      * Migrate existing not migrated customers to external companies.

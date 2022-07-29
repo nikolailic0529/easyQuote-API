@@ -169,6 +169,8 @@ class OpportunityQueries
                 $opportunityModel->qualifyColumn('ranking'),
                 $opportunityModel->qualifyColumn('status'),
                 $opportunityModel->qualifyColumn('status_reason'),
+                $opportunityModel->qualifyColumn('is_contract_duration_checked'),
+                $opportunityModel->qualifyColumn('contract_duration_months'),
                 $opportunityModel->qualifyColumn('created_at'),
 
                 new Expression("false as quotes_exist"),

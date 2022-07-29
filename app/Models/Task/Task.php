@@ -11,6 +11,7 @@ use App\Models\ModelHasTasks;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Traits\{Activity\LogsActivity,
     Auth\Multitenantable,
@@ -24,6 +25,7 @@ use Database\Factories\TaskFactory;
 use Illuminate\Database\Eloquent\{Collection,
     Factories\HasFactory,
     Model,
+    Relations\BelongsTo,
     Relations\HasMany,
     Relations\HasOne,
     Relations\MorphToMany,
@@ -44,6 +46,7 @@ use function config;
  * @property Carbon|null $expiry_date
  *
  * @property-read User|null $user
+ * @property-read SalesUnit|null $salesUnit
  * @property-read TaskReminder|null $reminder
  * @property-read TaskRecurrence|null $recurrence
  * @property-read Collection<int, User> $users
@@ -78,8 +81,6 @@ class Task extends Model
         'content' => 'array',
         'priority' => Priority::class,
     ];
-
-    protected $touches = ['opportunities'];
 
     protected static $logAttributes = [
         'name', 'priority', 'expiry_date:expiry_date_formatted',
@@ -137,6 +138,11 @@ class Task extends Model
     public function attachments(): MorphToMany
     {
         return $this->morphToMany(Attachment::class, name: 'attachable');
+    }
+
+    public function salesUnit(): BelongsTo
+    {
+        return $this->belongsTo(SalesUnit::class);
     }
 
     public function getItemNameAttribute(): string

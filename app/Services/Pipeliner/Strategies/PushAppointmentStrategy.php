@@ -4,23 +4,24 @@ namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Models\Appointment\Appointment;
-use App\Models\Pipeline\Pipeline;
 use App\Models\PipelinerModelUpdateLog;
 use App\Services\Appointment\AppointmentDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use JetBrains\PhpStorm\ArrayShape;
 
 class PushAppointmentStrategy implements PushStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface             $connection,
                                 protected PipelinerAppointmentIntegration $appointmentIntegration,
+                                protected PushSalesUnitStrategy           $pushSalesUnitStrategy,
                                 protected PushClientStrategy              $pushClientStrategy,
                                 protected AppointmentDataMapper           $dataMapper,
                                 protected LockProvider                    $lockProvider)
@@ -38,6 +39,7 @@ class PushAppointmentStrategy implements PushStrategy
 
         return $model->newQuery()
             ->orderBy($model->getQualifiedUpdatedAtColumn())
+            ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(), Collection::make($this->getSalesUnits())->modelKeys())
             ->where(static function (Builder $builder) use ($model): void {
                 $builder->whereColumn($model->getQualifiedUpdatedAtColumn(), '>', $model->getQualifiedCreatedAtColumn())
                     ->orWhereNull($model->qualifyColumn('pl_reference'));
@@ -56,8 +58,16 @@ class PushAppointmentStrategy implements PushStrategy
      */
     public function sync(Model $model): void
     {
+        if (!$model instanceof Appointment) {
+            throw new \TypeError(sprintf("Model must be an instance of %s.", Appointment::class));
+        }
+
         if (null !== $model->owner) {
             $this->pushClientStrategy->sync($model->owner);
+        }
+
+        if (null !== $model->salesUnit) {
+            $this->pushSalesUnitStrategy->sync($model->salesUnit);
         }
 
         if (null === $model->pl_reference) {
@@ -79,19 +89,9 @@ class PushAppointmentStrategy implements PushStrategy
         }
     }
 
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
-    }
-
     public function countPending(): int
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
+            $this->salesUnit ?? throw PipelinerSyncException::unsetSalesUnit();
 
         return $this->modelsToBeUpdatedQuery()->count();
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\V2\System;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CustomField\EvalCustomFieldValue;
 use App\Http\Requests\System\UpdateCustomFieldValues;
 use App\Http\Resources\V2\CustomField\CustomFieldValueExtendedResource;
 use App\Http\Resources\V2\CustomField\CustomFieldWithValuesResource;
@@ -10,6 +11,7 @@ use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
 use App\Models\System\SystemSetting;
 use App\Queries\CustomFieldQueries;
+use App\Services\CustomField\Calc\CustomFieldEvaluationService;
 use App\Services\CustomField\CustomFieldEntityService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +31,23 @@ class CustomFieldController extends Controller
         return response()->json(
             $queries->customFieldsListingQuery()->get(),
             Response::HTTP_OK
+        );
+    }
+
+    /**
+     * Calculate custom field value.
+     *
+     * @param EvalCustomFieldValue $request
+     * @param CustomFieldEvaluationService $service
+     * @param CustomField $customField
+     * @return JsonResponse
+     */
+    public function calculateCustomFieldValue(EvalCustomFieldValue         $request,
+                                              CustomFieldEvaluationService $service,
+                                              CustomField                  $customField): JsonResponse
+    {
+        return response()->json(
+            $service->evaluate($customField, $request->getExpressionVariables()),
         );
     }
 
@@ -68,9 +87,9 @@ class CustomFieldController extends Controller
      * @return CustomFieldWithValuesResource
      * @throws AuthorizationException
      */
-    public function updateValuesOfCustomField(UpdateCustomFieldValues $request,
+    public function updateValuesOfCustomField(UpdateCustomFieldValues  $request,
                                               CustomFieldEntityService $entityService,
-                                              CustomField $customField): CustomFieldWithValuesResource
+                                              CustomField              $customField): CustomFieldWithValuesResource
     {
         $this->authorize('viewAny', SystemSetting::class);
 

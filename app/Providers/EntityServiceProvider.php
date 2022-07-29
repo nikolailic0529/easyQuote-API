@@ -77,6 +77,7 @@ use App\Models\QuoteFile\QuoteFileFormat;
 use App\Models\QuoteFile\ScheduleData;
 use App\Models\Role;
 use App\Models\SalesOrder;
+use App\Models\SalesUnit;
 use App\Models\Space;
 use App\Models\System\Activity;
 use App\Models\System\ActivityExportCollection;
@@ -224,6 +225,7 @@ class EntityServiceProvider extends ServiceProvider
             'd5ac95d7-dcd3-4958-acce-82c9aba2f3cd' => SalesOrderTemplate::class,
             'bd250dc5-a62c-41e5-9aa4-022cf7c86de1' => TemplateSchema::class,
             '8cc6c6ce-1a57-4d51-9557-3e87c285efa1' => Pipeline::class,
+            '00a1e9bc-44fc-45f0-b8f3-dbaa3c82e566' => SalesUnit::class,
             'f904f1d8-3209-4f09-8e28-13d116555e1f' => OpportunityForm::class,
             'eda5b270-8bd8-4809-8ce0-cb6379fe1b01' => OpportunityFormSchema::class,
             '5b2fe950-aa70-4c36-9b1f-1383daecbb18' => Company::class,

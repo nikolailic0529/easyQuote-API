@@ -12,6 +12,9 @@ use App\Contracts\{ActivatableInterface,
     LinkedToTasks,
     SearchableEntity,
     WithLogo};
+use App\Builders\CompanyBuilder;
+use App\Enum\CompanyCategoryEnum;
+use App\Enum\CustomerTypeEnum;
 use App\Models\{Appointment\Appointment,
     Appointment\ModelHasAppointments,
     Data\Country,
@@ -35,7 +38,6 @@ use App\Traits\{Activatable,
     Quote\HasQuotes,
     Search\Searchable,
     Uuid};
-use Illuminate\Support\Carbon;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
 use Illuminate\Database\Eloquent\{Collection,
@@ -46,6 +48,7 @@ use Illuminate\Database\Eloquent\{Collection,
     Relations\MorphToMany};
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
 
@@ -62,7 +65,8 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property string|null $vs_company_code
  * @property string|null $type
  * @property string|null $source
- * @property string|null $category
+ * @property CompanyCategoryEnum|null $category
+ * @property CustomerTypeEnum|null $customer_type
  * @property string|null $email
  * @property string|null $vat
  * @property string|null $vat_type
@@ -72,14 +76,18 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property int|null $flags
  *
  * @property Image|null $image
- * @property Collection<Address>|Address[] $addresses
- * @property Collection<Contact>|Contact[] $contacts
- * @property-read Collection<Opportunity>|Opportunity[] $opportunities
- * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
- * @property-read Collection<Note>|Note[] $notes
- * @property-read Collection<Vendor>|Vendor[] $vendors
- * @property-read Collection<Country>|Country[] $countries
+ * @property Collection<int, Address>|Address[] $addresses
+ * @property Collection<int, Contact>|Contact[] $contacts
+ * @property-read Collection<int, Opportunity>|Opportunity[] $opportunities
+ * @property-read Collection<int, WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
+ * @property-read Collection<int, Task>|Task[] $tasks
+ * @property-read Collection<int, Appointment>|Appointment[] $ownAppointments
+ * @property-read Collection<int, Note>|Note[] $notes
+ * @property-read Collection<int, Attachment>|Attachment[] $attachments
+ * @property-read Collection<int, Vendor>|Vendor[] $vendors
+ * @property-read Collection<int, Country>|Country[] $countries
  * @property-read User|null $user
+ * @property-read SalesUnit|null $salesUnit
  */
 class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes
 {
@@ -101,7 +109,13 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     const FROZEN_SOURCE = 1 << 1;
 
     protected $fillable = [
-        'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id',
+        'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id',
+        'default_country_id', 'default_template_id',
+    ];
+
+    protected $casts = [
+        'category' => CompanyCategoryEnum::class,
+        'customer_type' => CustomerTypeEnum::class,
     ];
 
     protected static function newFactory(): CompanyFactory
@@ -112,6 +126,23 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     public function getFlag(int $flag): bool
     {
         return ($this->flags & $flag) === $flag;
+    }
+
+    public static function query(): CompanyBuilder
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return parent::query();
+    }
+
+    public function newQuery(): CompanyBuilder
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return parent::newQuery();
+    }
+
+    public function newEloquentBuilder($query): CompanyBuilder
+    {
+        return new CompanyBuilder($query);
     }
 
     public function vendors(): BelongsToMany
@@ -224,7 +255,7 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
             'type' => $this->type,
             'email' => $this->email,
             'phone' => $this->phone,
-            'created_at' => transform($this->{$this->getCreatedAtColumn()}, static fn (\DateTimeInterface|string $dateTime) => Carbon::parse($dateTime)),
+            'created_at' => transform($this->{$this->getCreatedAtColumn()}, static fn(\DateTimeInterface|string $dateTime) => Carbon::parse($dateTime)),
         ];
     }
 
@@ -364,6 +395,11 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function salesUnit(): BelongsTo
+    {
+        return $this->belongsTo(SalesUnit::class);
     }
 
     public function tasks(): MorphToMany

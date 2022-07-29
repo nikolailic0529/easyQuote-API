@@ -3,15 +3,20 @@
 namespace App\Http\Requests\Company;
 
 use App\DTO\Company\CreateCompanyData;
-use App\Enum\CompanyCategory;
+use App\DTO\MissingValue;
+use App\Enum\CompanyCategoryEnum;
 use App\Enum\CompanySource;
 use App\Enum\CompanyType;
+use App\Enum\CustomerTypeEnum;
 use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\SalesUnit;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class StoreCompanyRequest extends FormRequest
 {
@@ -25,6 +30,9 @@ class StoreCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
+
             'name' => [
                 'required',
                 'string',
@@ -34,13 +42,20 @@ class StoreCompanyRequest extends FormRequest
                     ->withoutTrashed(),
             ],
             'vat' => [
-                'nullable',
-                Rule::requiredIf($this->input('vat_type') === VAT::VAT_NUMBER),
-                'string',
-                'max:191',
-                Rule::unique(Company::class)
-                    ->where('user_id', auth()->id())
-                    ->whereNull('deleted_at'),
+                'bail',
+                Rule::when(static function (Fluent $data): bool {
+                    return VAT::VAT_NUMBER === $data->get('vat_type');
+                }, [
+                    'required',
+                    'string',
+                    'max:100',
+                    Rule::unique(Company::class)
+                        ->where('user_id', auth()->id())
+                        ->withoutTrashed(),
+                ], [
+                    'nullable',
+                    'exclude',
+                ]),
             ],
             'vat_type' => [
                 'nullable',
@@ -48,12 +63,12 @@ class StoreCompanyRequest extends FormRequest
                 Rule::in(VAT::getValues()),
             ],
             'short_code' => [
-                Rule::requiredIf(fn() => $this->type === CompanyType::INTERNAL),
+                Rule::requiredIf(fn() => $this->input('type') === CompanyType::INTERNAL),
                 'string',
                 'size:3',
                 Rule::unique(Company::class)
                     ->where('user_id', auth()->id())
-                    ->whereNull('deleted_at'),
+                    ->withoutTrashed(),
             ],
             'type' => [
                 'required',
@@ -62,7 +77,7 @@ class StoreCompanyRequest extends FormRequest
             ],
             'source' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
+                Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
                 Rule::in(CompanySource::getValues()),
             ],
@@ -72,38 +87,42 @@ class StoreCompanyRequest extends FormRequest
             ],
             'category' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
+                Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(CompanyCategory::getValues()),
+                new Enum(CompanyCategoryEnum::class),
             ],
-            'email' => 'required|email',
-            'phone' => 'nullable|string|min:4|phone',
-            'website' => 'nullable|string|min:4',
-            'vendors' => 'array',
-            'vendors.*' => 'required|uuid|exists:vendors,id',
+            'customer_type' => [
+                'bail', 'nullable', 'string',
+                new Enum(CustomerTypeEnum::class),
+            ],
+            'email' => ['nullable', 'email'],
+            'phone' => ['nullable', 'string', 'min:4', 'phone'],
+            'website' => ['nullable', 'string', 'min:4'],
+            'vendors' => ['array'],
+            'vendors.*' => ['required', 'uuid', 'exists:vendors,id'],
             'default_vendor_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::in($this->vendors),
+                Rule::in($this->input('vendors', [])),
             ],
             'default_country_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id),
+                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->input('default_vendor_id')),
             ],
             'default_template_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id),
+                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->input('default_country_id')),
             ],
 
             'addresses' => ['nullable', 'array'],
             'addresses.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(Address::class, 'id')->withoutTrashed(),
             ],
             'addresses.*.is_default' => [
                 'bail', 'required', 'boolean',
@@ -112,7 +131,7 @@ class StoreCompanyRequest extends FormRequest
             'contacts' => ['nullable', 'array'],
             'contacts.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(Contact::class, 'id')->withoutTrashed(),
             ],
             'contacts.*.is_default' => [
                 'bail', 'required', 'boolean',
@@ -123,7 +142,10 @@ class StoreCompanyRequest extends FormRequest
     public function getCreateCompanyData(): CreateCompanyData
     {
         return $this->companyData ??= with(true, function (): CreateCompanyData {
+            $missing = new MissingValue();
+
             return new CreateCompanyData([
+                'sales_unit_id' => $this->input('sales_unit_id'),
                 'name' => $this->input('name'),
                 'vat' => $this->input('vat'),
                 'vat_type' => $this->input('vat_type') ?? VAT::NO_VAT,
@@ -132,6 +154,11 @@ class StoreCompanyRequest extends FormRequest
                 'short_code' => $this->input('short_code'),
                 'logo' => $this->file('logo'),
                 'category' => $this->input('category'),
+                'customer_type' => $this->has('customer_type')
+                    ? value(static function (?string $value): ?CustomerTypeEnum {
+                        return isset($value) ? CustomerTypeEnum::from($value) : null;
+                    }, $this->input('customer_type'))
+                    : $missing,
                 'email' => $this->input('email'),
                 'phone' => $this->input('phone'),
                 'website' => $this->input('website'),

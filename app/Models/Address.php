@@ -5,8 +5,14 @@ namespace App\Models;
 use App\Contracts\SearchableEntity;
 use App\Traits\{Activatable, BelongsToCountry, BelongsToLocation, Search\Searchable, Uuid};
 use App\Models\Data\Country;
+use Database\Factories\AddressFactory;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, Relations\BelongsToMany, SoftDeletes};
+use Illuminate\Database\Eloquent\{Builder,
+    Factories\HasFactory,
+    Model,
+    Relations\BelongsTo,
+    Relations\BelongsToMany,
+    SoftDeletes};
 
 /**
  * Class Address
@@ -34,7 +40,7 @@ use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, Relations
  */
 class Address extends Model implements SearchableEntity
 {
-    use Uuid, SoftDeletes, Activatable, Searchable, EloquentJoin;
+    use Uuid, SoftDeletes, Activatable, Searchable, EloquentJoin, HasFactory;
 
     protected $fillable = [
         'address_type',
@@ -53,6 +59,11 @@ class Address extends Model implements SearchableEntity
     protected $hidden = [
         'addressable_id', 'addressable_type', 'deleted_at', 'pivot',
     ];
+
+    protected static function newFactory(): AddressFactory
+    {
+        return AddressFactory::new();
+    }
 
     public function contact(): BelongsTo
     {

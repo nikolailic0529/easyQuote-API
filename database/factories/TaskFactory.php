@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enum\Priority;
 use App\Enum\TaskTypeEnum;
+use App\Models\SalesUnit;
 use App\Models\Task\Task;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -15,6 +16,7 @@ class TaskFactory extends Factory
     public function definition(): array
     {
         return [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'activity_type' => $this->faker->randomElement(TaskTypeEnum::cases()),
             'user_id' => User::factory(),
             'name' => $this->faker->text(50),

@@ -37,6 +37,7 @@ final class UpdateOpportunityInput extends BaseInput
                                 public readonly CurrencyForeignFieldInput|InputValueEnum $value = InputValueEnum::Miss,
                                 public readonly CreateOpptyAccountRelationInputCollection|InputValueEnum $accountRelations = InputValueEnum::Miss,
                                 public readonly CreateContactRelationInputCollection|InputValueEnum $contactRelations = InputValueEnum::Miss,
+                                public readonly CreateCloudObjectRelationInputCollection|InputValueEnum $documents = InputValueEnum::Miss,
                                 public readonly DateTimeImmutable|InputValueEnum $wonDate = InputValueEnum::Miss,
                                 public readonly DateTimeImmutable|InputValueEnum $lostDate = InputValueEnum::Miss)
     {

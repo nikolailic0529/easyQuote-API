@@ -3,18 +3,22 @@
 namespace App\Http\Requests\Company;
 
 use App\DTO\Company\UpdateCompanyData;
-use App\Enum\CompanyCategory;
+use App\DTO\MissingValue;
+use App\Enum\CompanyCategoryEnum;
 use App\Enum\CompanySource;
 use App\Enum\CompanyType;
+use App\Enum\CustomerTypeEnum;
 use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\SalesUnit;
 use App\Models\Vendor;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Fluent;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 /**
  * @property-read Company $company
@@ -36,6 +40,9 @@ class UpdateCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
+
             'name' => [
                 'bail', 'required', 'string', 'max:191', 'min:2',
                 Rule::unique(Company::class, 'name')
@@ -101,9 +108,13 @@ class UpdateCompanyRequest extends FormRequest
                 'nullable',
                 Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(CompanyCategory::getValues()),
+                new Enum(CompanyCategoryEnum::class),
             ],
-            'email' => 'email',
+            'customer_type' => [
+                'bail', 'nullable', 'string',
+                new Enum(CustomerTypeEnum::class),
+            ],
+            'email' => ['nullable', 'email'],
             'phone' => ['nullable', 'string', 'min:4', 'phone'],
             'website' => ['nullable', 'string'],
             'vendors' => ['array'],
@@ -154,7 +165,10 @@ class UpdateCompanyRequest extends FormRequest
     public function getUpdateCompanyData(): UpdateCompanyData
     {
         return $this->companyData ??= with(true, function (): UpdateCompanyData {
+            $missing = new MissingValue();
+
             return new UpdateCompanyData([
+                'sales_unit_id' => $this->input('sales_unit_id'),
                 'name' => $this->input('name'),
                 'vat' => $this->input('vat'),
                 'vat_type' => $this->input('vat_type') ?? VAT::NO_VAT,
@@ -164,6 +178,11 @@ class UpdateCompanyRequest extends FormRequest
                 'logo' => $this->file('logo'),
                 'delete_logo' => $this->boolean('delete_logo'),
                 'category' => $this->input('category'),
+                'customer_type' => $this->has('customer_type')
+                    ? value(static function (?string $value): ?CustomerTypeEnum {
+                        return isset($value) ? CustomerTypeEnum::from($value) : null;
+                    }, $this->input('customer_type'))
+                    : $missing,
                 'email' => $this->input('email'),
                 'phone' => $this->input('phone'),
                 'website' => $this->input('website'),
@@ -179,7 +198,8 @@ class UpdateCompanyRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $nullableFields = $this->collect(['phone', 'website', 'vat', 'default_vendor_id', 'default_country_id', 'default_template_id'])
+        $nullableFields = $this->collect(['phone', 'website', 'vat', 'default_vendor_id', 'default_country_id',
+            'default_template_id'])
             ->map(static fn(mixed $value): mixed => match ($value) {
                 'null' => null,
                 default => $value

@@ -9,13 +9,12 @@ use Webpatser\Uuid\Uuid;
 
 class ImportedAddressToAddressProjector
 {
-    public function __invoke(ImportedAddress $importedAddress, ?Contact $relatedContact): Address
+    public function __invoke(ImportedAddress $importedAddress): Address
     {
-        return tap(new Address(), function (Address $address) use ($importedAddress, $relatedContact): void {
+        return tap(new Address(), function (Address $address) use ($importedAddress): void {
             $address->{$address->getKeyName()} = (string)Uuid::generate(4);
             $address->pl_reference = $importedAddress->pl_reference;
             $address->user()->associate($importedAddress->owner);
-            $address->contact()->associate($relatedContact);
             $address->address_type = $importedAddress->address_type;
             $address->address_1 = $importedAddress->address_1;
             $address->address_2 = $importedAddress->address_2;

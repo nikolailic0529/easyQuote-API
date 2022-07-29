@@ -1,0 +1,32 @@
+---
+- id: 0278e406-816c-41ff-985c-6cfa62538915
+  pl_reference: cfcd2084-95d5-05ef-66e7-dff9f98764da
+  unit_name: EPD
+  is_default: 0
+  is_enabled: 0
+  entity_order: 4
+- id: 9e9ea3fc-e532-49f9-8b2b-e8bde016e149
+  pl_reference: 79ed86c3-d96b-4b6d-8fb0-f887602a5f28
+  unit_name: Worldwide
+  is_default: 0
+  is_enabled: 0
+  entity_order: 1
+- id: b208eeb6-9fa4-44f0-a3b9-fddde8d581d5
+  pl_reference: c3af09cf-101e-4df0-883b-83074d230d00
+  unit_name: Lenovo PCG
+  is_default: 0
+  is_enabled: 0
+  entity_order: 3
+- id: e7b2f49f-9fd5-4fc5-b295-904ba9948d8c
+  pl_reference: b8bc447d-d5d8-4b18-8df7-a896472957b9
+  unit_name: UKI Development Accounts
+  is_default: 0
+  is_enabled: 0
+  entity_order: 2
+- id: eb60a785-f2ad-4a22-ac9c-166a62d50de3
+  pl_reference: e2150979-0695-4e6d-bcb4-dcc6cbcd8c06
+  unit_name: DEV
+  is_default: 1
+  is_enabled: 1
+  entity_order: 5
+...

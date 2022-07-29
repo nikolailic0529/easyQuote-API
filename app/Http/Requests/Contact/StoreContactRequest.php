@@ -3,9 +3,11 @@
 namespace App\Http\Requests\Contact;
 
 use App\DTO\Contact\CreateContactData;
+use App\DTO\MissingValue;
 use App\Enum\ContactType;
 use App\Enum\GenderEnum;
 use App\Models\Address;
+use App\Models\SalesUnit;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -23,6 +25,10 @@ class StoreContactRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
+            'address_id' => ['bail', 'uuid',
+                Rule::exists(Address::class, (new Address())->getKeyName())->withoutTrashed()],
             'contact_type' => ['required', 'string', Rule::in(ContactType::getValues())],
             'gender' => ['nullable', 'string', new Enum(GenderEnum::class)],
             'first_name' => ['required', 'string', 'filled', 'max:100'],
@@ -33,8 +39,6 @@ class StoreContactRequest extends FormRequest
             'job_title' => ['nullable', 'string', 'max:150'],
             'picture' => ['nullable', 'file', 'image', 'max:2048'],
             'is_verified' => ['nullable', 'boolean'],
-            'addresses' => ['array'],
-            'addresses.*' => ['string', 'uuid', Rule::exists(Address::class, 'id')->withoutTrashed()],
         ];
     }
 
@@ -54,7 +58,11 @@ class StoreContactRequest extends FormRequest
 
     public function getCreateContactData(): CreateContactData
     {
+        $missing = new MissingValue();
+
         return new CreateContactData([
+            'sales_unit_id' => $this->input('sales_unit_id'),
+            'address_id' => $this->whenHas('address_id', value(...), static fn() => $missing),
             'contact_type' => $this->input('contact_type'),
             'gender' => $this->filled('gender')
                 ? GenderEnum::from($this->input('gender'))
@@ -67,7 +75,6 @@ class StoreContactRequest extends FormRequest
             'job_title' => $this->input('job_title'),
             'picture' => $this->file('picture'),
             'is_verified' => $this->boolean('is_verified'),
-            'addresses' => $this->input('addresses'),
         ]);
     }
 }

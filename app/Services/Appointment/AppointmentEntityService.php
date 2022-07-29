@@ -11,6 +11,7 @@ use App\Events\Appointment\AppointmentDeleted;
 use App\Events\Appointment\AppointmentUpdated;
 use App\Models\Appointment\Appointment;
 use App\Models\Appointment\AppointmentReminder;
+use App\Models\Appointment\ModelHasAppointments;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,7 @@ class AppointmentEntityService implements CauserAware
     {
         return tap(new Appointment(), function (Appointment $appointment) use ($data, $modelHasAppointment): void {
             $appointment->{$appointment->getKeyName()} = (string)Uuid::generate(4);
+            $appointment->salesUnit()->associate($data->sales_unit_id);
             $appointment->owner()->associate($this->causer);
             $appointment->activity_type = $data->activity_type;
             $appointment->subject = $data->subject;
@@ -47,7 +49,7 @@ class AppointmentEntityService implements CauserAware
                 })
                 : null;
 
-            $this->connection->transaction(static function () use ($modelHasAppointment, $appointment, $reminder, $data) {
+            $this->connection->transaction(function () use ($modelHasAppointment, $appointment, $reminder, $data): void {
                 $appointment->save();
 
                 $reminder?->save();
@@ -89,6 +91,8 @@ class AppointmentEntityService implements CauserAware
                 }
 
                 $modelHasAppointment->ownAppointments()->attach($appointment);
+
+                $this->touchRelated($appointment);
             });
 
             $this->eventDispatcher->dispatch(
@@ -109,6 +113,7 @@ class AppointmentEntityService implements CauserAware
                 }
             });
 
+            $appointment->salesUnit()->associate($data->sales_unit_id);
             $appointment->activity_type = $data->activity_type;
             $appointment->subject = $data->subject;
             $appointment->description = $data->description;
@@ -125,7 +130,7 @@ class AppointmentEntityService implements CauserAware
                 })
                 : null;
 
-            $this->connection->transaction(static function () use ($appointment, $reminder, $data) {
+            $this->connection->transaction(function () use ($appointment, $reminder, $data): void {
                 $appointment->save();
 
                 // Delete reminder from the appointment if null provided
@@ -170,6 +175,8 @@ class AppointmentEntityService implements CauserAware
                 if (is_array($data->attachment_relations)) {
                     $appointment->attachments()->sync($data->attachment_relations);
                 }
+
+                $this->touchRelated($appointment);
             });
 
             $appointment->refresh();
@@ -183,9 +190,20 @@ class AppointmentEntityService implements CauserAware
 
     public function deleteAppointment(Appointment $appointment): void
     {
-        $this->connection->transaction(static fn() => $appointment->delete());
+        $this->connection->transaction(function () use ($appointment): void {
+            $appointment->delete();
+            $this->touchRelated($appointment);
+        });
 
         $this->eventDispatcher->dispatch(new AppointmentDeleted(appointment: $appointment));
+    }
+
+    protected function touchRelated(Appointment $appointment): void
+    {
+        foreach ($appointment->modelsHaveAppointment as $model) {
+            /** @var $model ModelHasAppointments */
+            $model->related?->touch();
+        }
     }
 
     public function setCauser(?Model $causer): static

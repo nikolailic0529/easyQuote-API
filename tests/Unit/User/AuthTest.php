@@ -2,9 +2,11 @@
 
 namespace Tests\Unit\User;
 
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\User\UserActivityService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
@@ -72,7 +74,8 @@ class AuthTest extends TestCase
     {
         $user = tap(User::factory()->create())->deactivate();
 
-        $credentials = ['email' => $user->email, 'password' => 'password', 'local_ip' => '192.168.99.99', 'g_recaptcha' => Str::random()];
+        $credentials = ['email' => $user->email, 'password' => 'password', 'local_ip' => '192.168.99.99',
+            'g_recaptcha' => Str::random()];
 
         $response = $this->postJson(url('/api/auth/signin'), $credentials)->assertStatus(422);
 
@@ -100,7 +103,7 @@ class AuthTest extends TestCase
         $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password']))
             ->assertStatus(422)
             ->assertJsonStructure([
-                'Error' => ['original' => ['local_ip']]
+                'Error' => ['original' => ['local_ip']],
             ]);
     }
 
@@ -121,7 +124,7 @@ class AuthTest extends TestCase
             ->assertExactJson([
                 'ErrorCode' => 'LO_00',
                 'ErrorDetails' => LO_00,
-                'message' => LO_00
+                'message' => LO_00,
             ]);
 
         $this->assertFalse(
@@ -141,7 +144,86 @@ class AuthTest extends TestCase
         $this->getJson(url('api/auth/user'))
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in', 'role_id', 'role_name', 'privileges'
+                'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in',
+                'role_id', 'role_name', 'privileges',
             ]);
+    }
+
+    public function testCanDeleteCurrentUserPicture(): void
+    {
+        $this->authenticate();
+
+        $response = $this->getJson('api/auth/user')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'picture',
+            ]);
+
+        $this->assertEmpty($response->json('picture'));
+
+        $this->postJson('api/auth/user', ['picture' => UploadedFile::fake()->image('picture.jpg')])
+            ->assertOk();
+
+        $response = $this->getJson('api/auth/user')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'picture',
+            ]);
+
+        $this->assertNotEmpty($response->json('picture'));
+
+        $this->postJson('api/auth/user', ['delete_picture' => true])
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in',
+                'role_id', 'role_name', 'privileges',
+            ]);
+
+        $response = $this->getJson('api/auth/user')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'picture',
+            ]);
+
+        $this->assertEmpty($response->json('picture'));
+    }
+
+    /**
+     * Test an ability to update current user.
+     */
+    public function testCanUpdateCurrentUser(): void
+    {
+        $this->authenticate();
+
+        $response = $this->getJson('api/auth/user')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'sales_units' => [
+                    '*' => ['id', 'unit_name'],
+                ],
+            ]);
+
+        $this->postJson('api/auth/user', $data = [
+            'sales_units' => SalesUnit::query()->get()->random(2)->map(static fn(SalesUnit $unit) => ['id' => $unit->getKey()])->all(),
+        ])
+            ->assertOk();
+
+        $response = $this->getJson('api/auth/user')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'sales_units' => [
+                    '*' => ['id', 'unit_name'],
+                ],
+            ]);
+
+        foreach ($data['sales_units'] as $unit) {
+            $this->assertContains($unit['id'], $response->json('sales_units.*.id'));
+        }
     }
 }

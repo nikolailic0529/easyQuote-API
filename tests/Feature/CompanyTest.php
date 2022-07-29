@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enum\CustomerTypeEnum;
 use App\Models\Address;
 use App\Models\Asset;
 use App\Models\Attachment;
@@ -319,11 +320,14 @@ class CompanyTest extends TestCase
      *
      * @return void
      */
-    public function testCanUpdateCompany()
+    public function testCanUpdateCompany(): void
     {
         $company = Company::factory()->create();
 
-        $newAttributes = Company::factory()->raw(['_method' => 'PATCH']);
+        $newAttributes = Company::factory()->raw([
+            '_method' => 'PATCH',
+            'customer_type' => $this->faker->randomElement(CustomerTypeEnum::cases())->value,
+        ]);
 
         $machineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
         $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
@@ -373,9 +377,11 @@ class CompanyTest extends TestCase
             ]);
 
         $response = $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
+                'customer_type',
                 'addresses' => [
                     '*' => [
                         'id',
@@ -396,6 +402,18 @@ class CompanyTest extends TestCase
 
         $this->assertTrue($machineAddressFromResponse['is_default']);
         $this->assertTrue($contact1FromResponse['is_default']);
+
+        $assertableAttributes = Arr::except($newAttributes, [
+            '_method',
+            'vendors',
+            'addresses',
+            'contacts',
+            'logo'
+        ]);
+
+        foreach ($assertableAttributes as $attribute => $value) {
+            $this->assertSame($value, $response->json($attribute));
+        }
     }
 
     /**

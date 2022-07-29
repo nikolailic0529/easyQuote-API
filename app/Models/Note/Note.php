@@ -36,6 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, WorldwideQuote>|WorldwideQuote[] $worldwideQuotesHaveNote
  * @property-read Collection<int, WorldwideQuoteVersion>|WorldwideQuoteVersion[] $worldwideQuoteVersionsHaveNote
  * @property-read Collection<int, Contact>|Contact[] $contactsHaveNote
+ * @property-read Collection<int, ModelHasNotes> $modelsHaveNote
  */
 class Note extends Model implements HasOwner
 {
@@ -46,8 +47,6 @@ class Note extends Model implements HasOwner
     const FROM_ENTITY_WIZARD_SUBMIT = 1 << 2;
 
     protected $guarded = [];
-
-    protected $touches = ['opportunitiesHaveNote'];
 
     protected static function newFactory(): NoteFactory
     {

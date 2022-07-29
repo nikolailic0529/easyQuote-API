@@ -48,7 +48,7 @@ class PartialUpdateCompany extends FormRequest
                 'max:2048',
             ],
             'delete_logo' => 'boolean',
-            'email' => 'email',
+            'email' => ['nullable', 'email'],
             'phone' => 'nullable|string|min:4|phone',
             'website' => 'nullable|string',
             'addresses' => ['array'],

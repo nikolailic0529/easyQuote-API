@@ -8,12 +8,12 @@ use App\DTO\Tasks\CreateTaskReminderData;
 use App\Enum\DateDayEnum;
 use App\Enum\DateMonthEnum;
 use App\Enum\DateWeekEnum;
+use App\Enum\ModelTypeHasTaskEnum;
 use App\Enum\Priority;
 use App\Enum\RecurrenceTypeEnum;
 use App\Enum\ReminderStatus;
-use App\Enum\ModelTypeHasTaskEnum;
 use App\Enum\TaskTypeEnum;
-use App\Models\{Attachment, Company, Opportunity, Quote\Quote, User};
+use App\Models\{Attachment, SalesUnit, User};
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Http\FormRequest;
@@ -72,7 +72,10 @@ class CreateTaskForTaskableRequest extends FormRequest
                     $fail("Linked model of type `$type` doesnt exist with `$value` id.");
                 }
             }],
-            'taskable.type' => ['bail', 'required', 'string', new Enum(ModelTypeHasTaskEnum::class)]
+            'taskable.type' => ['bail', 'required', 'string', new Enum(ModelTypeHasTaskEnum::class)],
+
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
         ];
     }
 
@@ -101,6 +104,7 @@ class CreateTaskForTaskableRequest extends FormRequest
             $timezone = $user->timezone->utc ?? config('app.timezone');
 
             return new CreateTaskData([
+                'sales_unit_id' => $this->input('sales_unit_id'),
                 'activity_type' => TaskTypeEnum::from($this->input('activity_type')),
                 'name' => $this->input('name'),
                 'content' => $this->input('content'),
@@ -110,7 +114,6 @@ class CreateTaskForTaskableRequest extends FormRequest
                 'priority' => Priority::from((int)$this->input('priority')),
                 'users' => $this->input('users') ?? [],
                 'attachments' => $this->input('attachments') ?? [],
-
                 'reminder' => $this->whenHas('reminder', function () use ($timezone): CreateTaskReminderData {
                     return new CreateTaskReminderData([
                         'set_date' => $this->date('reminder.set_date', tz: $timezone)
@@ -120,7 +123,6 @@ class CreateTaskForTaskableRequest extends FormRequest
                         'status' => ReminderStatus::tryFrom($this->input('reminder.status')),
                     ]);
                 }, fn() => null),
-
                 'recurrence' => $this->whenHas('recurrence', function () use ($timezone): CreateTaskRecurrenceData {
                     return new CreateTaskRecurrenceData([
                         'type' => RecurrenceTypeEnum::tryFrom($this->input('recurrence.type')),

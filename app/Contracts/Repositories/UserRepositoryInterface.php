@@ -5,7 +5,7 @@ namespace App\Contracts\Repositories;
 use App\Builder\Pagination\Paginator;
 use App\Http\Requests\PasswordResetRequest;
 use App\Http\Requests\StoreResetPasswordRequest;
-use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Requests\UpdateCurrentUserRequest;
 use App\Http\Resources\V1\UserRepositoryCollection;
 use App\Models\{Collaboration\Invitation, User};
 use Closure;
@@ -102,14 +102,6 @@ interface UserRepositoryInterface
      * @return boolean
      */
     public function increment(string $id, string $attribute, array $options = []): bool;
-
-    /**
-     * Update Current Authenticated User's Profile.
-     *
-     * @param UpdateProfileRequest $request
-     * @return \App\Models\User
-     */
-    public function updateOwnProfile(UpdateProfileRequest $request): User;
 
     /**
      * Find the User by id.

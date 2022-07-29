@@ -6,9 +6,11 @@ return [
 
         'event_handlers' => [
             \App\Services\Pipeliner\Webhook\EventHandlers\AccountEventHandler::class,
+            \App\Services\Pipeliner\Webhook\EventHandlers\AccountRelationEventHandler::class,
             \App\Services\Pipeliner\Webhook\EventHandlers\AppointmentEventHandler::class,
             \App\Services\Pipeliner\Webhook\EventHandlers\ContactEventHandler::class,
             \App\Services\Pipeliner\Webhook\EventHandlers\TaskEventHandler::class,
+            \App\Services\Pipeliner\Webhook\EventHandlers\OpportunityEventHandler::class,
         ],
 
         'options' => [
@@ -32,6 +34,12 @@ return [
         'allowed_methods' => explode(',', env('PIPELINER_SYNC_ALLOWED_METHODS', '*')),
 
         /**
+         * The allowed sales units for synchronization.
+         * Use '*' to mean all sales units.
+         */
+        'allowed_sales_units' => explode(',', env('PIPELINER_SYNC_ALLOWED_UNITS', '*')),
+
+        /**
          * The strategies EQ will use to synchronize entities between Pipeliner CRM & itself.
          */
         'strategies' => [
@@ -45,8 +53,20 @@ return [
             'PullAppointmentStrategy' => \App\Services\Pipeliner\Strategies\PullAppointmentStrategy::class,
             'PushNoteStrategy' => \App\Services\Pipeliner\Strategies\PushNoteStrategy::class,
             'PullNoteStrategy' => \App\Services\Pipeliner\Strategies\PullNoteStrategy::class,
+            'PushAttachmentStrategy' => \App\Services\Pipeliner\Strategies\PushAttachmentStrategy::class,
+            'PullAttachmentStrategy' => \App\Services\Pipeliner\Strategies\PullAttachmentStrategy::class,
             'PushCustomFieldStrategy' => \App\Services\Pipeliner\Strategies\PushCustomFieldStrategy::class,
             'PullCustomFieldStrategy' => \App\Services\Pipeliner\Strategies\PullCustomFieldStrategy::class,
+            'PushSalesUnitStrategy' => \App\Services\Pipeliner\Strategies\PushSalesUnitStrategy::class,
+            'PullSalesUnitStrategy' => \App\Services\Pipeliner\Strategies\PullSalesUnitStrategy::class,
+            'PushCurrencyStrategy' => \App\Services\Pipeliner\Strategies\PushCurrencyStrategy::class,
+        ],
+
+        'aggregate_strategies' => [
+            'PushOpportunityStrategy',
+            'PullOpportunityStrategy',
+            'PushCompanyStrategy',
+            'PullCompanyStrategy',
         ],
 
         'default_strategies' => [
@@ -75,6 +95,8 @@ return [
                 'opportunity_distributor3' => 'cf_distributor3n_id',
                 'opportunity_distributor4' => 'cf_distributor4n_id',
                 'opportunity_distributor5' => 'cf_distributor5n_id',
+
+                'opportunity_personal_rating' => 'cf_personal_rating_id',
             ],
 
         ],

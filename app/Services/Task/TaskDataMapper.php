@@ -19,13 +19,13 @@ use App\Integrations\Pipeliner\Models\CreateActivityContactRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityContactRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInputCollection;
-use App\Integrations\Pipeliner\Models\CreateCloudObjectInput;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInput;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateTaskInput;
 use App\Integrations\Pipeliner\Models\CreateTaskRecurrenceInput;
 use App\Integrations\Pipeliner\Models\CreateTaskReminderInput;
 use App\Integrations\Pipeliner\Models\RemoveReminderTaskInput;
+use App\Integrations\Pipeliner\Models\SalesUnitEntity;
 use App\Integrations\Pipeliner\Models\SetReminderTaskInput;
 use App\Integrations\Pipeliner\Models\TaskEntity;
 use App\Integrations\Pipeliner\Models\UpdateTaskInput;
@@ -37,6 +37,7 @@ use App\Models\DateMonth;
 use App\Models\DateWeek;
 use App\Models\Opportunity;
 use App\Models\RecurrenceType;
+use App\Models\SalesUnit;
 use App\Models\Task\Task;
 use App\Models\Task\TaskRecurrence;
 use App\Models\Task\TaskReminder;
@@ -79,7 +80,7 @@ class TaskDataMapper implements CauserAware
         $attributes['activityTypeId'] = ($this->pipelinerTaskTypeResolver)($task->activity_type->value)?->id ?? InputValueEnum::Miss;
         $attributes['subject'] = $task->name;
         $attributes['description'] = $this->getDescriptionFromTaskContent($task->content);
-        $attributes['dueDate'] = $task->expiry_date?->toDateTimeImmutable();
+        $attributes['dueDate'] = $task->expiry_date?->toDateTimeImmutable() ?? InputValueEnum::Miss;
         $attributes['priority'] = match ($task->priority) {
             Priority::Low => PriorityEnum::Low,
             Priority::Medium => PriorityEnum::Medium,
@@ -131,19 +132,13 @@ class TaskDataMapper implements CauserAware
             $attributes['opportunityRelations'] = new CreateActivityLeadOpptyRelationInputCollection(...array_values($opportunityRelations));
         }
 
-        $salesUnit = ($this->salesUnitResolver)('Worldwide');
-
-        if (null === $salesUnit) {
-            throw new \RuntimeException("Unable to resolve sales unit: 'Worldwide'.");
-        }
-
-        $attributes['unitId'] = $salesUnit->id;
+        $attributes['unitId'] = $task->salesUnit?->pl_reference ?? InputValueEnum::Miss;
         $attributes['documents'] = $task->attachments
             ->whereNotNull('pl_reference')
             ->values()
             ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
-            return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
-        })
+                return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
+            })
             ->whenNotEmpty(
                 static function (BaseCollection $collection): CreateCloudObjectRelationInputCollection {
                     return new CreateCloudObjectRelationInputCollection(...$collection->all());
@@ -158,6 +153,13 @@ class TaskDataMapper implements CauserAware
         $attributes = [];
 
         $attributes['id'] = $entity->id;
+        $attributes['unitId'] = value(static function (?SalesUnit $unit, ?SalesUnitEntity $entity): InputValueEnum|string {
+            if (null === $unit || $unit->pl_reference === $entity?->id) {
+                return InputValueEnum::Miss;
+            }
+
+            return $unit->pl_reference ?? InputValueEnum::Miss;
+        }, $task->salesUnit, $entity->unit);
         $attributes['activityTypeId'] = ($this->pipelinerTaskTypeResolver)($task->activity_type->value)?->id ?? InputValueEnum::Miss;
         $attributes['subject'] = $task->name;
         $attributes['description'] = $this->getDescriptionFromTaskContent($task->content);
@@ -312,6 +314,13 @@ class TaskDataMapper implements CauserAware
     {
         return tap(new Task(), function (Task $task) use ($entity): void {
             $task->{$task->getKeyName()} = (string)Uuid::generate(4);
+
+            if (null !== $entity->unit) {
+                $task->salesUnit()->associate(
+                    SalesUnit::query()->where('unit_name', $entity->unit->name)->first()
+                );
+            }
+
             $task->pl_reference = $entity->id;
             $task->activity_type = TaskTypeEnum::tryFrom($entity->activityType->name) ?? TaskTypeEnum::Task;
             $task->name = $entity->subject;
@@ -443,12 +452,12 @@ class TaskDataMapper implements CauserAware
             }
         }
 
-        $toBeMergedBelongsToRelations = [
+        $toBeMergedHasOneRelations = [
             'reminder',
             'recurrence',
         ];
 
-        foreach ($toBeMergedBelongsToRelations as $relation) {
+        foreach ($toBeMergedHasOneRelations as $relation) {
             /** @var Model&SoftDeletes|null $relatedOriginal */
             $relatedOriginal = $task->$relation;
 
@@ -459,6 +468,16 @@ class TaskDataMapper implements CauserAware
                 $relatedOriginal->{$relatedOriginal->getDeletedAtColumn()} = $relatedOriginal->freshTimestamp();
             } elseif (null !== $another->$relation) {
                 $task->setRelation($relation, $relatedChanged->replicate()->task()->associate($task));
+            }
+        }
+
+        $toBeMergedBelongsToRelations = [
+            'salesUnit'
+        ];
+
+        foreach ($toBeMergedBelongsToRelations as $relation) {
+            if (null !== $another->$relation) {
+                $task->$relation()->associate($another->$relation);
             }
         }
 

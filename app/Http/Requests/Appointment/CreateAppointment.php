@@ -13,6 +13,7 @@ use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesUnit;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Http\FormRequest;
@@ -77,6 +78,9 @@ class CreateAppointment extends FormRequest
                 }
             }],
             'model_has_appointment.type' => ['bail', 'required', 'string', new Enum(ModelTypeHasAppointmentEnum::class)],
+
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
         ];
     }
 
@@ -102,6 +106,7 @@ class CreateAppointment extends FormRequest
             $timezone = $this->user()->timezone->utc ?? config('app.timezone');
 
             return new CreateAppointmentData([
+                'sales_unit_id' => $this->input('sales_unit_id'),
                 'activity_type' => AppointmentTypeEnum::from($this->input('activity_type')),
                 'subject' => $this->input('subject'),
                 'description' => (string)$this->input('description'),

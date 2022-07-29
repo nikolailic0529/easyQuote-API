@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property string|null $pl_reference
  * @property string|null $field_name
+ * @property string|null $calc_formula
  * @property-read CustomField|null $parentField
  * @property-read Collection<int, CustomFieldValue> $values
  */

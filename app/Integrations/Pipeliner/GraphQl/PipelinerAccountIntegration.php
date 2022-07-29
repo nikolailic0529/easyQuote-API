@@ -8,7 +8,10 @@ use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Models\AccountEntity;
 use App\Integrations\Pipeliner\Models\AccountFilterInput;
 use App\Integrations\Pipeliner\Models\CreateAccountInput;
+use App\Integrations\Pipeliner\Models\CreateOrUpdateContactAccountRelationInputCollection;
 use App\Integrations\Pipeliner\Models\UpdateAccountInput;
+use App\Integrations\Pipeliner\Models\UpdateAccountInputCollection;
+use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
 use GraphQL\Mutation;
 use GraphQL\Query;
 use GraphQL\QueryBuilder\MutationBuilder;
@@ -21,25 +24,34 @@ class PipelinerAccountIntegration
     {
     }
 
-    public function scroll(string $after = null, string $before = null, AccountFilterInput $filter = null, int $chunkSize = 10): AccountEntityScrollIterator
+    public function scroll(string             $after = null,
+                           string             $before = null,
+                           AccountFilterInput $filter = null,
+                           int                $first = 10): AccountEntityScrollIterator
     {
         /** @noinspection PhpUnhandledExceptionInspection */
-        $iterator = $this->scrollGenerator(after: $after, before: $before, filter: $filter, chunkSize: $chunkSize);
+        $iterator = $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
 
         return new AccountEntityScrollIterator($iterator);
     }
 
-    public function simpleScroll(string $after = null, string $before = null, AccountFilterInput $filter = null, int $chunkSize = 10): \Generator
+    public function simpleScroll(string             $after = null,
+                                 string             $before = null,
+                                 AccountFilterInput $filter = null,
+                                 int                $first = 10): \Generator
     {
         /** @noinspection PhpUnhandledExceptionInspection */
-        return $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, chunkSize: $chunkSize);
+        return $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
     }
 
     /**
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function scrollGenerator(string $after = null, string $before = null, AccountFilterInput $filter = null, int $chunkSize = 10): \Generator
+    protected function scrollGenerator(string             $after = null,
+                                       string             $before = null,
+                                       AccountFilterInput $filter = null,
+                                       int                $first = 10): \Generator
     {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
@@ -54,7 +66,7 @@ class PipelinerAccountIntegration
                                     ->setArguments([
                                         'filter' => '$filter',
                                         'orderBy' => new RawObject('{modified: Asc}'),
-                                        'first' => $chunkSize,
+                                        'first' => $first,
                                         'after' => '$after',
                                         'before' => '$before',
                                     ])
@@ -96,7 +108,7 @@ class PipelinerAccountIntegration
         }
 
         if ($hasNextPage) {
-            yield from $this->scrollGenerator(after: $after, before: $before, chunkSize: $chunkSize);
+            yield from $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
     }
 
@@ -104,7 +116,10 @@ class PipelinerAccountIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function simpleScrollGenerator(string $after = null, string $before = null, AccountFilterInput $filter = null, int $chunkSize = 10): \Generator
+    protected function simpleScrollGenerator(string             $after = null,
+                                             string             $before = null,
+                                             AccountFilterInput $filter = null,
+                                             int                $first = 10): \Generator
     {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
@@ -118,7 +133,7 @@ class PipelinerAccountIntegration
                                 (new Query('getByCriteria'))
                                     ->setArguments([
                                         'orderBy' => new RawObject('{modified: Asc}'),
-                                        'first' => $chunkSize,
+                                        'first' => $first,
                                         'after' => '$after',
                                         'before' => '$before',
                                         'filter' => '$filter',
@@ -128,7 +143,7 @@ class PipelinerAccountIntegration
                                             ->setSelectionSet([
                                                 (new Query('node'))
                                                     ->setSelectionSet([
-                                                        'id',
+                                                        'id', 'modified',
                                                     ]),
                                             ]),
                                         (new Query('pageInfo'))
@@ -158,11 +173,11 @@ class PipelinerAccountIntegration
         $after = $response->json('data.entities.account.getByCriteria.pageInfo.endCursor');
 
         foreach ($response->json('data.entities.account.getByCriteria.edges.*.node') as $node) {
-            yield $after => $node['id'];
+            yield $after => $node;
         }
 
         if ($hasNextPage) {
-            yield from $this->simpleScrollGenerator(after: $after, before: $before, chunkSize: $chunkSize);
+            yield from $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
     }
 
@@ -358,10 +373,109 @@ class PipelinerAccountIntegration
         return AccountEntity::fromArray($response->json('data.updateAccount.account'));
     }
 
+    public function bulkUpdate(UpdateAccountInputCollection $input,
+                               ValidationLevelCollection    $validationLevel = null): array
+    {
+        $builder = (new MutationBuilder())
+            ->setVariable(name: 'input', type: '[CreateOrUpdateAccountInput!]', isRequired: true)
+            ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
+            ->selectField(
+                (new Mutation('bulkUpdateAccount'))
+                    ->setArguments(['input' => '$input', 'validationLevel' => '$validationLevel'])
+                    ->setSelectionSet([
+                        (new Query('result'))
+                            ->setSelectionSet([
+                                'updated',
+                                (new Query('errors'))
+                                    ->setSelectionSet(['entityId', 'code', 'message', 'index', 'message']),
+                            ]),
+                    ])
+            );
+
+        $response = $this->client
+            ->post($this->client->buildSpaceEndpoint(), [
+                'query' => $builder->getQuery()->__toString(),
+                'variables' => [
+                    'input' => $input->jsonSerialize(),
+                    'validationLevel' => $validationLevel?->jsonSerialize(),
+                ],
+            ]);
+
+        GraphQlRequestException::throwIfHasErrors($response);
+
+        $response->throw();
+
+        return $response->json('data.bulkUpdateAccount.result');
+    }
+
+    public function bulkUpdateContactAccountRelation(CreateOrUpdateContactAccountRelationInputCollection $input,
+                                                     ValidationLevelCollection                           $validationLevel = null): array
+    {
+        $builder = (new MutationBuilder())
+            ->setVariable(name: 'input', type: '[CreateOrUpdateContactAccountRelationInput!]', isRequired: true)
+            ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
+            ->selectField(
+                (new Mutation('bulkUpdateContactAccountRelation'))
+                    ->setArguments(['input' => '$input', 'validationLevel' => '$validationLevel'])
+                    ->setSelectionSet([
+                        (new Query('result'))
+                            ->setSelectionSet([
+                                'updated',
+                                (new Query('errors'))
+                                    ->setSelectionSet(['entityId', 'code', 'message', 'index', 'message']),
+                            ]),
+                    ])
+            );
+
+        $response = $this->client
+            ->post($this->client->buildSpaceEndpoint(), [
+                'query' => $builder->getQuery()->__toString(),
+                'variables' => [
+                    'input' => $input->jsonSerialize(),
+                    'validationLevel' => $validationLevel?->jsonSerialize(),
+                ],
+            ]);
+
+        GraphQlRequestException::throwIfHasErrors($response);
+
+        $response->throw();
+
+        return $response->json('data.bulkUpdateContactAccountRelation.result');
+    }
+
+    public function deleteContactAccountRelation(string $id): void
+    {
+        $builder = (new MutationBuilder())
+            ->setVariable(name: 'input', type: 'DeleteContactAccountRelationInput', isRequired: true)
+            ->selectField(
+                (new Mutation('deleteContactAccountRelation'))
+                    ->setArguments(['input' => '$input'])
+                    ->setSelectionSet([
+                        (new Query('contactAccountRelation'))
+                            ->setSelectionSet([
+                                'id',
+                            ]),
+                    ])
+            );
+
+        $response = $this->client
+            ->post($this->client->buildSpaceEndpoint(), [
+                'query' => $builder->getQuery()->__toString(),
+                'variables' => [
+                    'input' => ['id' => $id],
+                ],
+            ]);
+
+        GraphQlRequestException::throwIfHasErrors($response);
+
+        $response->throw();
+    }
+
     public static function getAccountEntitySelectionSet(): array
     {
         return [
             'id',
+            'name',
             'formattedName',
             'email1',
             'phone1',
@@ -376,6 +490,14 @@ class PipelinerAccountIntegration
             'modified',
             'revision',
 
+            (new Query('unit'))
+                ->setSelectionSet(
+                    PipelinerSalesUnitIntegration::getSalesUnitEntitySelectionSet()
+                ),
+
+            (new Query('customerType'))
+                ->setSelectionSet(['id', 'optionName', 'calcValue']),
+
             (new Query('picture'))
                 ->setSelectionSet([
                     'id',
@@ -389,6 +511,33 @@ class PipelinerAccountIntegration
                     'publicUrl',
                     'created',
                     'modified',
+                ]),
+
+            (new Query('documents'))
+                ->setSelectionSet([
+                    (new Query('edges'))
+                        ->setSelectionSet([
+                            (new Query('node'))
+                                ->setSelectionSet([
+                                    'id',
+                                    (new Query('cloudObject'))
+                                        ->setSelectionSet([
+                                            'id',
+                                            'filename',
+                                            'isPublic',
+                                            'mimeType',
+                                            'params',
+                                            'size',
+                                            'type',
+                                            'url',
+                                            'publicUrl',
+                                            'created',
+                                            'modified',
+                                        ]),
+                                    'created',
+                                    'modified',
+                                ]),
+                        ]),
                 ]),
         ];
     }

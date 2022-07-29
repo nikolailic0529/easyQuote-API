@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property string|null $pl_reference
  * @property string|null $company_name
  * @property string|null $company_category
+ * @property string|null $customer_type
  * @property string|null $email
  * @property string|null $phone
  * @property string|null $website
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property string|null $picture_url
  * @property string|null $picture_filename
  *
+ * @property-read SalesUnit|null $salesUnit
  * @property-read Collection<int, ImportedAddress>|ImportedAddress[] $addresses
  * @property-read Collection<int, ImportedContact>|ImportedContact[] $contacts
  * @property-read ImportedContact|null $primaryContact
@@ -47,6 +49,11 @@ class ImportedCompany extends Model
     public function getFlag(int $flag): bool
     {
         return ($this->flags & $flag) === $flag;
+    }
+
+    public function salesUnit(): BelongsTo
+    {
+        return $this->belongsTo(SalesUnit::class);
     }
 
     public function addresses(): BelongsToMany

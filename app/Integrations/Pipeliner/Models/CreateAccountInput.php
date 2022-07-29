@@ -36,7 +36,8 @@ class CreateAccountInput extends BaseInput
                                 public readonly string|InputValueEnum                 $unitId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                 $zipCode = InputValueEnum::Miss,
                                 public readonly bool|InputValueEnum                   $isUnsubscribed = InputValueEnum::Miss,
-                                public readonly CreateCloudObjectInput|InputValueEnum $picture = InputValueEnum::Miss)
+                                public readonly CreateCloudObjectInput|InputValueEnum $picture = InputValueEnum::Miss,
+                                public readonly CreateCloudObjectRelationInputCollection|InputValueEnum $documents = InputValueEnum::Miss)
     {
     }
 }

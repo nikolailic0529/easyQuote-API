@@ -95,6 +95,7 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             $company->name = $importedCompany->company_name;
             $company->type = CompanyType::EXTERNAL;
             $company->category = $importedCompany->company_category;
+            $company->customer_type = $importedCompany->customer_type;
             $company->source = CompanySource::PL;
             $company->flags |= Company::FROZEN_SOURCE;
             $company->vat = $importedCompany->vat;
@@ -115,7 +116,6 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             }
         });
 
-
         // when the email, phone, or website fields are blank in the company entity,
         // we'll populate their values from the imported company.
         with($company, function (Company $company) use ($importedCompany) {
@@ -125,6 +125,10 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
 
             if (is_null($company->pl_reference)) {
                 $company->pl_reference = $importedCompany->pl_reference;
+            }
+
+            if (null !== $importedCompany->salesUnit) {
+                $company->salesUnit()->associate($importedCompany->salesUnit);
             }
 
             $company->vat = coalesce_blank($company->vat, $importedCompany->vat);
@@ -193,6 +197,7 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             $company->contacts->whereStrict('pl_reference', $importedContact->pl_reference)
                 ->each(static function (Contact $contact) use ($importedContact) {
                     $contact->contact_type = $importedContact->contact_type;
+                    $contact->salesUnit()->associate($importedContact->salesUnit ?? $contact->salesUnit);
                     $contact->gender = $importedContact->gender;
                     $contact->first_name = $importedContact->first_name;
                     $contact->last_name = $importedContact->last_name;
@@ -210,19 +215,23 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         $newImportedAddresses = $importedAddressHashes->diffKeys($existingAddressHashes);
         $newImportedContacts = $importedContactHashes->diffKeys($existingContactHashes);
 
+        $newAddressMap = $newImportedAddresses
+            ->mapWithKeys(function (ImportedAddress $a) use ($company): array {
+                $address = ($this->addressProjector)($a);
+                $address->user()->associate($address->user ?? $company->user);
+
+                return [$a->getKey() => $address];
+            });
+
         $newContactMap = $newImportedContacts
-            ->mapWithKeys(function (ImportedContact $c): array {
-                $contact = ($this->contactProjector)($c);
+            ->mapWithKeys(function (ImportedContact $c) use ($newAddressMap, $company): array {
+                $contact = ($this->contactProjector)($c, $newAddressMap->get($c->address()->getParentKey()));
+                $contact->user()->associate($contact->user ?? $company->user);
 
                 return [$c->getKey() => $contact];
             });
 
-        $newAddresses = $newImportedAddresses
-            ->map(function (ImportedAddress $a) use ($newContactMap): Address {
-                return ($this->addressProjector)($a, $newContactMap->get($a->contact_id, $newContactMap->first()));
-            })
-            ->values();
-
+        $newAddresses = $newAddressMap->values();
         $newContacts = $newContactMap->values();
 
         $defaultInvoiceAddress = $company->addresses->first(static function (Address $address): bool {
@@ -242,15 +251,6 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             );
         });
 
-        $this->connection->transaction(static function () use ($newContacts, $company): void {
-            $company->contacts->each->push();
-
-            if ($newContacts->isNotEmpty()) {
-                $newContacts->each->push();
-                $company->contacts()->syncWithoutDetaching($newContacts->values());
-            }
-        });
-
         $this->connection->transaction(static function () use ($newAddresses, $defaultInvoiceAddress, $company): void {
             $company->addresses->each->push();
             $defaultInvoiceAddress->save();
@@ -260,6 +260,23 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             if ($newAddresses->isNotEmpty()) {
                 $newAddresses->each->push();
                 $company->addresses()->syncWithoutDetaching($newAddresses->values());
+            }
+        });
+
+        $this->connection->transaction(static function () use ($newContacts, $company): void {
+            $company->contacts->each(static function (Contact $contact): void {
+                $contact->user?->save();
+                $contact->save();
+            });
+
+            if ($newContacts->isNotEmpty()) {
+                $newContacts->each(static function (Contact $contact): void {
+                    $contact->user?->save();
+                    $contact->save();
+                });
+
+                $newContacts->each->push();
+                $company->contacts()->syncWithoutDetaching($newContacts->values());
             }
         });
 

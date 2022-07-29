@@ -4,15 +4,17 @@ namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\Models\AppointmentEntity;
+use App\Integrations\Pipeliner\Models\AppointmentFilterInput;
 use App\Integrations\Pipeliner\Models\CloudObjectEntity;
+use App\Integrations\Pipeliner\Models\EntityFilterStringField;
+use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
 use App\Models\Appointment\Appointment;
 use App\Models\Attachment;
-use App\Models\Pipeline\Pipeline;
 use App\Models\PipelinerModelScrollCursor;
 use App\Services\Appointment\AppointmentDataMapper;
 use App\Services\Attachment\AttachmentDataMapper;
 use App\Services\Attachment\AttachmentFileService;
-use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use DateTimeInterface;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -22,7 +24,7 @@ use JetBrains\PhpStorm\ArrayShape;
 
 class PullAppointmentStrategy implements PullStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface             $connection,
                                 protected LockProvider                    $lockProvider,
@@ -40,6 +42,10 @@ class PullAppointmentStrategy implements PullStrategy
      */
     public function sync(object $entity): Model
     {
+        if (!$entity instanceof AppointmentEntity) {
+            throw new \TypeError(sprintf("Entity must be an instance of %s.", AppointmentEntity::class));
+        }
+
         /** @var Appointment|null $appointment */
         $appointment = Appointment::query()
             ->withTrashed()
@@ -59,6 +65,7 @@ class PullAppointmentStrategy implements PullStrategy
                 $appointment->reminder?->save();
 
                 $appointment->opportunitiesHaveAppointment()->syncWithoutDetaching($appointment->opportunitiesHaveAppointment);
+                $appointment->companiesHaveAppointment()->syncWithoutDetaching($appointment->companiesHaveAppointment);
                 $appointment->companies()->sync($appointment->companies);
                 $appointment->contacts()->sync($appointment->contacts);
                 $appointment->opportunities()->sync($appointment->opportunities);
@@ -81,6 +88,7 @@ class PullAppointmentStrategy implements PullStrategy
             $appointment->reminder?->save();
 
             $appointment->opportunitiesHaveAppointment()->syncWithoutDetaching($appointment->opportunitiesHaveAppointment);
+            $appointment->companiesHaveAppointment()->syncWithoutDetaching($appointment->companiesHaveAppointment);
             $appointment->companies()->attach($appointment->companies);
             $appointment->contacts()->attach($appointment->contacts);
             $appointment->opportunities()->attach($appointment->opportunities);
@@ -115,7 +123,10 @@ class PullAppointmentStrategy implements PullStrategy
 
         $metadata = $this->attachmentFileService->downloadFromUrl($entity->url);
 
-        tap($this->attachmentDataMapper->mapFromCloudObjectEntity($entity, $metadata), function (Attachment $attachment) use ($model): void {
+        tap($this->attachmentDataMapper->mapFromCloudObjectEntity($entity, $metadata), function (Attachment $attachment) use
+        (
+            $model
+        ): void {
             $this->connection->transaction(static function () use ($model, $attachment): void {
                 $attachment->save();
                 $model->attachments()->syncWithoutDetaching($attachment);
@@ -130,31 +141,17 @@ class PullAppointmentStrategy implements PullStrategy
         );
     }
 
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
-    }
-
     public function countPending(): int
     {
-        $mostRecentCursor = $this->getMostRecentScrollCursor();
-
-        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull($mostRecentCursor);
+        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull();
 
         return $count;
     }
 
     public function iteratePending(): \Traversable
     {
-        $latestCursor = $this->getMostRecentScrollCursor();
-
         return $this->appointmentIntegration->scroll(
-            after: $latestCursor?->cursor,
+            ...$this->resolveScrollParameters()
         );
     }
 
@@ -163,12 +160,27 @@ class PullAppointmentStrategy implements PullStrategy
         return (new Appointment())->getMorphClass();
     }
 
-    private function computeTotalEntitiesCountAndLastIdToPull(PipelinerModelScrollCursor $scrollCursor = null): array
+    #[ArrayShape(['after' => 'string|null', 'filter' => AppointmentFilterInput::class])]
+    private function resolveScrollParameters(): array
+    {
+        $filter = AppointmentFilterInput::new();
+        $unitFilter = SalesUnitFilterInput::new()->name(EntityFilterStringField::eq(
+            ...collect($this->getSalesUnits())->pluck('unit_name')
+        ));
+        $filter->unit($unitFilter);
+
+        return [
+            'after' => $this->getMostRecentScrollCursor()?->cursor,
+            'filter' => $filter,
+        ];
+    }
+
+    private function computeTotalEntitiesCountAndLastIdToPull(): array
     {
         /** @var \Generator $iterator */
         $iterator = $this->appointmentIntegration->simpleScroll(
-            after: $scrollCursor?->cursor,
-            first: 1000
+            ...$this->resolveScrollParameters(),
+            ...['first' => 1_000]
         );
 
         $totalCount = 0;
@@ -186,11 +198,8 @@ class PullAppointmentStrategy implements PullStrategy
 
     private function getMostRecentScrollCursor(): ?PipelinerModelScrollCursor
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return PipelinerModelScrollCursor::query()
-            ->whereBelongsTo($this->pipeline)
             ->where('model_type', $this->getModelType())
             ->latest()
             ->first();
@@ -201,7 +210,8 @@ class PullAppointmentStrategy implements PullStrategy
         return $entity instanceof Appointment;
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => DateTimeInterface::class, 'modified' => DateTimeInterface::class])]
+    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => DateTimeInterface::class,
+        'modified' => DateTimeInterface::class])]
     public function getMetadata(string $reference): array
     {
         $entity = $this->appointmentIntegration->getById($reference);

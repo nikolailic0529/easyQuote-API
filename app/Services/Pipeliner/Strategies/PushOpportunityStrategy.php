@@ -2,23 +2,21 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
-use App\Enum\AddressType;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerPipelineIntegration;
-use App\Integrations\Pipeliner\Models\PipelineEntity;
 use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
-use App\Models\Address;
+use App\Models\Data\Currency;
 use App\Models\Opportunity;
-use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelUpdateLog;
 use App\Services\Opportunity\OpportunityDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerAccountLookupService;
 use App\Services\Pipeliner\PipelinerOpportunityLookupService;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,8 +25,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PushOpportunityStrategy implements PushStrategy
 {
-    protected ?Pipeline $pipeline = null;
-    protected ?PipelineEntity $pipelineEntity = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface               $connection,
                                 protected PipelinerAccountLookupService     $accountLookupService,
@@ -37,41 +34,28 @@ class PushOpportunityStrategy implements PushStrategy
                                 protected PipelinerAccountIntegration       $accountIntegration,
                                 protected PipelinerOpportunityIntegration   $oppIntegration,
                                 protected PipelinerClientIntegration        $clientIntegration,
+                                protected PushSalesUnitStrategy             $pushSalesUnitStrategy,
                                 protected PushClientStrategy                $pushClientStrategy,
+                                protected PushCurrencyStrategy              $pushCurrencyStrategy,
                                 protected PushContactStrategy               $pushContactStrategy,
                                 protected PushCompanyStrategy               $pushCompanyStrategy,
                                 protected PushNoteStrategy                  $pushNoteStrategy,
                                 protected PushTaskStrategy                  $pushTaskStrategy,
+                                protected PushAttachmentStrategy            $pushAttachmentStrategy,
                                 protected PushAppointmentStrategy           $pushAppointmentStrategy,
                                 protected OpportunityDataMapper             $dataMapper)
     {
     }
 
 
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, function () use ($pipeline): void {
-            $this->pipeline = $pipeline;
-            $this->pipelineEntity = null;
-        });
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
-    }
-
     /**
      * @throws PipelinerSyncException
      */
     private function modelsToBeUpdatedQuery(): Builder
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
         $updateLogModel = new PipelinerModelUpdateLog();
 
         $lastOpportunityUpdatedAt = $updateLogModel->newQuery()
-            ->whereBelongsTo($this->pipeline)
             ->where('model_type', $this->getModelType())
             ->latest()
             ->value('latest_model_updated_at');
@@ -83,7 +67,7 @@ class PushOpportunityStrategy implements PushStrategy
         return $model->newQuery()
             ->select($model->qualifyColumn('*'))
             ->orderBy($model->getQualifiedUpdatedAtColumn())
-            ->whereBelongsTo($this->pipeline)
+            ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(), Collection::make($this->getSalesUnits())->modelKeys())
             ->where(static function (Builder $builder) use ($model): void {
                 $builder->whereColumn($model->getQualifiedUpdatedAtColumn(), '>', $model->getQualifiedCreatedAtColumn())
                     ->orWhereNull($model->qualifyColumn('pl_reference'));
@@ -104,7 +88,10 @@ class PushOpportunityStrategy implements PushStrategy
                     ->whereNull("latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}")
                     ->orWhereColumn($model->getQualifiedUpdatedAtColumn(), '>', "latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}");
             })
-            ->unless(is_null($lastOpportunityUpdatedAt), static function (Builder $builder) use ($model, $lastOpportunityUpdatedAt): void {
+            ->unless(is_null($lastOpportunityUpdatedAt), static function (Builder $builder) use (
+                $model,
+                $lastOpportunityUpdatedAt
+            ): void {
                 $builder->where($model->getQualifiedUpdatedAtColumn(), '>', $lastOpportunityUpdatedAt);
             });
     }
@@ -125,14 +112,6 @@ class PushOpportunityStrategy implements PushStrategy
         return $this->modelsToBeUpdatedQuery()->lazyById(100);
     }
 
-    private function resolvePipelineEntity(): PipelineEntity
-    {
-        return $this->pipelineEntity ??= collect($this->pipelineIntegration->getAll())
-            ->sole(function (PipelineEntity $entity): bool {
-                return 0 === strcasecmp($entity->name, $this->pipeline->pipeline_name);
-            });
-    }
-
     /**
      * @param Opportunity $model
      * @return void
@@ -143,8 +122,12 @@ class PushOpportunityStrategy implements PushStrategy
      */
     public function sync(Model $model): void
     {
+        if (!$model instanceof Opportunity) {
+            throw new \TypeError(sprintf("Model must be an instance of %s.", Opportunity::class));
+        }
+
         if (is_null($model->pl_reference)) {
-            $oppEntity = $this->opportunityLookupService->find($model, $this->resolvePipelineEntity());
+            $oppEntity = $this->opportunityLookupService->find($model, $this->getSalesUnits());
 
             if (null !== $oppEntity) {
                 $model->pl_reference = $oppEntity->id;
@@ -155,18 +138,21 @@ class PushOpportunityStrategy implements PushStrategy
             }
         }
 
+        if (null !== $model->salesUnit) {
+            $this->pushSalesUnitStrategy->sync($model->salesUnit);
+        }
+
         // Pushing owner, account, contact entities at first,
         // as we map their ids to the opportunity entity.
+        $this->pushCurrenciesOfOppty($model);
         $this->pushOwnerOfOppty($model);
         $this->pushAccountsFromOppty($model);
-        $this->pushContactsFromOppty($model);
+        $this->pushAttachmentsFromOppty($model);
 
         if (is_null($model->pl_reference)) {
-            $input = $this->dataMapper->mapPipelinerCreateOpportunityInput(
-                opportunity: $model,
-            );
+            $input = $this->dataMapper->mapPipelinerCreateOpportunityInput(opportunity: $model);
 
-            $oppEntity = $this->oppIntegration->create($input, ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS));
+            $oppEntity = $this->oppIntegration->create($input, ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS, ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
 
             tap($model, function (Opportunity $opportunity) use ($oppEntity): void {
                 $opportunity->pl_reference = $oppEntity->id;
@@ -184,7 +170,7 @@ class PushOpportunityStrategy implements PushStrategy
             $modifiedFields = $input->getModifiedFields();
 
             if (false === empty($modifiedFields)) {
-                $this->oppIntegration->update($input, ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS));
+                $this->oppIntegration->update($input, ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS, ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
             }
         }
 
@@ -200,6 +186,27 @@ class PushOpportunityStrategy implements PushStrategy
         return (new Opportunity())->getMorphClass();
     }
 
+    private function pushCurrenciesOfOppty(Opportunity $opportunity): void
+    {
+        $currencyCodes = collect([
+            $opportunity->estimated_upsell_amount_currency_code,
+            $opportunity->list_price_currency_code,
+            $opportunity->opportunity_amount_currency_code,
+            $opportunity->purchase_price_currency_code,
+        ])
+            ->filter(static fn(?string $code): bool => null !== $code)
+            ->unique()
+            ->values()
+            ->all();
+
+        Currency::query()
+            ->whereIn('code', $currencyCodes)
+            ->get()
+            ->each(function (Currency $currency): void {
+                $this->pushCurrencyStrategy->sync($currency);
+            });
+    }
+
     private function pushOwnerOfOppty(Opportunity $opportunity): void
     {
         if (null !== $opportunity->owner) {
@@ -207,86 +214,25 @@ class PushOpportunityStrategy implements PushStrategy
         }
     }
 
-    private function pushContactsFromOppty(Opportunity $opportunity): void
-    {
-        $addressesToBeLinkedWithContact = Collection::make();
-        $primaryContact = $opportunity->primaryAccountContact;
-
-        // Check if the primary contact isn't associated with any addresses.
-        $primaryContactIsNotAssociatedWithAnyAddress = Collection::wrap($opportunity->primaryAccount?->addresses)
-            ->doesntContain(static function (Address $address) use ($primaryContact): bool {
-                return $address->contact()->is($primaryContact);
-            });
-
-        if ($primaryContactIsNotAssociatedWithAnyAddress && null !== $primaryContact) {
-            $primaryAddress = Collection::wrap($opportunity->primaryAccount?->addresses)
-                ->sortByDesc('pivot.is_default')
-                ->first(static function (Address $address) use ($primaryContact): bool {
-                    if ($primaryContact->contact_type === $address->address_type) {
-                        $address->contact()->associate($primaryContact);
-
-                        return true;
-                    }
-
-                    return false;
-                });
-
-            $addressesToBeLinkedWithContact->push(
-                $primaryAddress
-            );
-        }
-
-        $addressesToBeLinkedWithContact = $addressesToBeLinkedWithContact->merge(
-            Collection::wrap($opportunity->primaryAccount?->addresses)
-                ->filter(static fn(Address $address): bool => null === $address->contact)
-                ->each(function (Address $address) use ($opportunity): void {
-                    $contact = Collection::wrap($opportunity->primaryAccount?->contacts)
-                        ->sortByDesc('pivot.is_default')
-                        ->first();
-
-                    $address->contact()->associate($contact);
-                })
-        );
-
-        $addressesToBeLinkedWithContact = $addressesToBeLinkedWithContact->merge(
-            Collection::wrap($opportunity->endUser?->addresses)
-                ->filter(static fn(Address $address): bool => null === $address->contact)
-                ->each(function (Address $address) use ($opportunity): void {
-                    $contact = Collection::wrap($opportunity->endUser?->contacts)
-                        ->sortByDesc('pivot.is_default')
-                        ->first();
-
-                    $address->contact()->associate($contact);
-                })
-        );
-
-        $this->connection->transaction(static function () use ($addressesToBeLinkedWithContact): void {
-            $addressesToBeLinkedWithContact->each->save();
-        });
-
-        Collection::wrap($opportunity->primaryAccount?->addresses)
-            ->merge(Collection::wrap($opportunity->endUser?->addresses))
-            // Reject the default invoice address from pushing as it's being assumed as a part of account attributes.
-            ->reject(static function (Address $address): bool {
-                return $address->pivot->is_default && AddressType::INVOICE === $address->address_type;
-            })
-            ->each(function (Address $address): void {
-                $this->pushContactStrategy->sync($address);
-            });
-
-        // Refresh the addresses.
-        $opportunity->primaryAccount?->load('addresses');
-        $opportunity->endUser?->load('addresses');
-    }
-
     private function pushAccountsFromOppty(Opportunity $opportunity): void
     {
         if (null !== $opportunity->primaryAccount) {
-            $this->pushCompanyStrategy->sync($opportunity->primaryAccount);
+            $this->pushCompanyStrategy
+                ->setSalesUnits(...$this->getSalesUnits())
+                ->sync($opportunity->primaryAccount);
         }
 
         if (null !== $opportunity->endUser) {
-            $this->pushCompanyStrategy->sync($opportunity->endUser);
+            $this->pushCompanyStrategy
+                ->setSalesUnits(...$this->getSalesUnits())
+                ->sync($opportunity->endUser);
+        }
+    }
+
+    private function pushAttachmentsFromOppty(Opportunity $opportunity): void
+    {
+        foreach ($opportunity->attachments as $attachment) {
+            $this->pushAttachmentStrategy->sync($attachment);
         }
     }
 

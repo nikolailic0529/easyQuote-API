@@ -4,34 +4,30 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Contracts\{Repositories\UserRepositoryInterface, Services\AuthServiceInterface};
 use App\Contracts\Repositories\System\BuildRepositoryInterface;
-use App\Http\Controllers\API\ResetPassword;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{Auth\LogoutUser, PasswordResetRequest, UpdateProfileRequest, UserSignInRequest};
+use App\Http\Requests\{Auth\LogoutUser, PasswordResetRequest, UpdateCurrentUserRequest, UserSignInRequest};
 use App\Http\Resources\{V1\AuthenticatedUserResource,
     V1\Invitation\InvitationPublicResource,
     V1\User\AttemptsResource,
     V1\User\AuthResource};
 use App\Models\{PasswordReset};
+use App\Services\User\UserEntityService;
+use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
-    protected $user;
-
-    protected $auth;
-
-    public function __construct(UserRepositoryInterface $user, AuthServiceInterface $auth)
+    public function __construct(protected UserRepositoryInterface $user,
+                                protected AuthServiceInterface    $auth)
     {
-        $this->user = $user;
-        $this->auth = $auth;
     }
 
     /**
      * Show specified Invitation
      *
      * @param string $invitation
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function showInvitation(string $invitation)
+    public function showInvitation(string $invitation): JsonResponse
     {
         return response()->json(
             InvitationPublicResource::make($this->user->invitation($invitation))
@@ -42,15 +38,15 @@ class AuthController extends Controller
      * Authenticate specified User
      *
      * @param UserSignInRequest $request
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function signin(UserSignInRequest $request)
+    public function signin(UserSignInRequest $request): JsonResponse
     {
         $response = $this->auth->authenticate($request->validated());
 
         return response()->json(
             AuthResource::make($response)->additional([
-                'recaptcha_response' => request('recaptcha_response')
+                'recaptcha_response' => request('recaptcha_response'),
             ])
         );
     }
@@ -58,9 +54,9 @@ class AuthController extends Controller
     /**
      * Logout authenticated User
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function logout()
+    public function logout(): JsonResponse
     {
         return response()->json(
             $this->auth->logout()
@@ -70,10 +66,10 @@ class AuthController extends Controller
     /**
      * Authenticate user with username & password and logout.
      *
-     * @param  LogoutUser $request
-     * @return \Illuminate\Http\Response
+     * @param LogoutUser $request
+     * @return JsonResponse
      */
-    public function authenticateAndLogout(LogoutUser $request)
+    public function authenticateAndLogout(LogoutUser $request): JsonResponse
     {
         return response()->json(
             $this->auth->logout($request->getLogoutableUser())
@@ -83,9 +79,10 @@ class AuthController extends Controller
     /**
      * Get authenticated User
      *
-     * @return \Illuminate\Http\Response
+     * @param BuildRepositoryInterface $build
+     * @return JsonResponse
      */
-    public function user(BuildRepositoryInterface $build)
+    public function user(BuildRepositoryInterface $build): JsonResponse
     {
         return response()->json(
             AuthenticatedUserResource::make(
@@ -99,9 +96,9 @@ class AuthController extends Controller
      * Show failed access attempts by specific user.
      *
      * @param string $email
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function showAttempts(string $email)
+    public function showAttempts(string $email): JsonResponse
     {
         return response()->json(
             AttemptsResource::make($this->user->findByEmail($email))
@@ -109,16 +106,23 @@ class AuthController extends Controller
     }
 
     /**
-     * Update Current User's Profile.
+     * Update current user.
      *
-     * @param UpdateProfileRequest $request
-     * @return \Illuminate\Http\Response
+     * @param UpdateCurrentUserRequest $request
+     * @param UserEntityService $service
+     * @param BuildRepositoryInterface $build
+     * @return JsonResponse
      */
-    public function updateOwnProfile(UpdateProfileRequest $request, BuildRepositoryInterface $build)
+    public function updateCurrentUser(UpdateCurrentUserRequest $request,
+                                      UserEntityService        $service,
+                                      BuildRepositoryInterface $build): JsonResponse
     {
         return response()->json(
             AuthenticatedUserResource::make(
-                $this->user->updateOwnProfile($request)->load('company:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+                $service
+                    ->updateCurrentUser($request->user(), $request->getUpdateCurrentProfileData())
+                    ->load('company:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+                    ->withAppends()
             )
                 ->additional(['build' => $build->last()])
         );
@@ -127,10 +131,11 @@ class AuthController extends Controller
     /**
      * Perform Reset Password.
      *
-     * @param ResetPassword $reset
-     * @return \Illuminate\Http\Response
+     * @param PasswordResetRequest $request
+     * @param PasswordReset $reset
+     * @return JsonResponse
      */
-    public function resetPassword(PasswordResetRequest $request, PasswordReset $reset)
+    public function resetPassword(PasswordResetRequest $request, PasswordReset $reset): JsonResponse
     {
         return response()->json(
             $this->user->performResetPassword($request, $reset->token)
@@ -143,9 +148,9 @@ class AuthController extends Controller
      * Returns True if the token isn't expired and exists.
      *
      * @param string $reset
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function verifyPasswordReset(string $reset)
+    public function verifyPasswordReset(string $reset): JsonResponse
     {
         return response()->json(
             $this->user->verifyPasswordReset($reset)

@@ -2,15 +2,13 @@
 
 namespace App\Services\Pipeliner\Strategies\Contracts;
 
-use App\Models\Pipeline\Pipeline;
-use Illuminate\Database\Eloquent\Model;
-use JetBrains\PhpStorm\ArrayShape;
+use App\Models\SalesUnit;
 
 interface SyncStrategy
 {
-    public function setPipeline(Pipeline $pipeline): static;
+    public function setSalesUnits(SalesUnit ...$units): static;
 
-    public function getPipeline(): ?Pipeline;
+    public function getSalesUnits(): array;
 
     public function countPending(): int;
 

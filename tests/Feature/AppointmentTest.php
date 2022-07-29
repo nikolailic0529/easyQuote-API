@@ -15,6 +15,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class AppointmentTest extends TestCase
@@ -31,7 +32,9 @@ class AppointmentTest extends TestCase
         /** @var \App\Models\Appointment\Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Company::factory(), 'companiesHaveAppointment')
-            ->create();
+            ->create([
+                'subject' => Str::random(40)
+            ]);
 
         $response = $this->getJson('api/companies/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
 //            ->dump()
@@ -52,6 +55,18 @@ class AppointmentTest extends TestCase
             ]);
 
         $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/companies/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->subject)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/companies/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->activity_type->value)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
     }
 
     /**
@@ -64,7 +79,9 @@ class AppointmentTest extends TestCase
         /** @var \App\Models\Appointment\Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Opportunity::factory(), 'opportunitiesHaveAppointment')
-            ->create();
+            ->create([
+                'subject' => Str::random(40)
+            ]);
 
         $response = $this->getJson('api/opportunities/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
 //            ->dump()
@@ -85,6 +102,18 @@ class AppointmentTest extends TestCase
             ]);
 
         $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/opportunities/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->subject)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/opportunities/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->activity_type->value)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
     }
 
 
@@ -98,7 +127,9 @@ class AppointmentTest extends TestCase
         /** @var Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Contact::factory(), 'contactsHaveAppointment')
-            ->create();
+            ->create([
+                'subject' => Str::random(40)
+            ]);
 
         $response = $this->getJson('api/contacts/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
 //            ->dump()
@@ -119,6 +150,18 @@ class AppointmentTest extends TestCase
             ]);
 
         $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/contacts/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->subject)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/contacts/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->activity_type->value)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
     }
 
     /**
@@ -131,7 +174,9 @@ class AppointmentTest extends TestCase
         /** @var Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Quote::factory(), 'rescueQuotesHaveAppointment')
-            ->create();
+            ->create([
+                'subject' => Str::random(40)
+            ]);
 
         $response = $this->getJson('api/quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
 //            ->dump()
@@ -152,6 +197,18 @@ class AppointmentTest extends TestCase
             ]);
 
         $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->subject)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->activity_type->value)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
     }
 
     /**
@@ -164,7 +221,9 @@ class AppointmentTest extends TestCase
         /** @var Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(WorldwideQuote::factory(), 'worldwideQuotesHaveAppointment')
-            ->create();
+            ->create([
+                'subject' => Str::random(40)
+            ]);
 
         $response = $this->getJson('api/ww-quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
 //            ->dump()
@@ -185,6 +244,24 @@ class AppointmentTest extends TestCase
             ]);
 
         $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/ww-quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->subject)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/ww-quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.$appointment->activity_type->value)
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(1, $response->json('data'));
+
+        $response = $this->getJson('api/ww-quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments?search='.Str::random(40))
+//            ->dump()
+            ->assertOk();
+
+        $this->assertCount(0, $response->json('data'));
     }
 
     /**

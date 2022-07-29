@@ -3,12 +3,14 @@
 namespace App\Models\Collaboration;
 
 use App\Contracts\SearchableEntity;
+use App\Models\ModelHasSalesUnits;
 use App\Models\Role;
+use App\Models\SalesUnit;
 use App\Models\Team;
 use App\Models\User;
 use App\Traits\{Activity\LogsActivity, Auth\Multitenantable, CanGenerateToken, Search\Searchable, Uuid};
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDeletes};
+use Illuminate\Database\Eloquent\{Builder, Collection, Model, Relations\BelongsTo, Relations\MorphToMany, SoftDeletes};
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -24,6 +26,7 @@ use Illuminate\Support\Str;
  *
  * @property-read User|null $user
  * @property-read Role|null $role
+ * @property-read Collection<int, SalesUnit> $salesUnits
  */
 class Invitation extends Model implements SearchableEntity
 {
@@ -83,6 +86,11 @@ class Invitation extends Model implements SearchableEntity
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function salesUnits(): MorphToMany
+    {
+        return $this->morphToMany(related: SalesUnit::class, name: 'model', table: (new ModelHasSalesUnits())->getTable());
     }
 
     public function user(): BelongsTo

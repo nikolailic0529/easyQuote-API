@@ -6,6 +6,7 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\Models\AccountEntity;
 use App\Integrations\Pipeliner\Models\AccountFilterInput;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
+use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
 use App\Models\Company;
 use App\Services\Pipeliner\Exceptions\MultiplePipelinerEntitiesFoundException;
 
@@ -19,10 +20,13 @@ class PipelinerAccountLookupService
     /**
      * @throws MultiplePipelinerEntitiesFoundException
      */
-    public function find(Company $company): ?AccountEntity
+    public function find(Company $company, array $units): ?AccountEntity
     {
         $filter = AccountFilterInput::new()
-            ->name(EntityFilterStringField::ieq($company->name));
+            ->name(EntityFilterStringField::ieq($company->name))
+            ->unit(SalesUnitFilterInput::new()->name(
+                EntityFilterStringField::eq(...collect($units)->pluck('unit_name'))
+            ));
 
         $entities = $this->integration->getByCriteria(
             filter: $filter

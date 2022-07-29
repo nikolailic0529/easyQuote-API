@@ -13,6 +13,7 @@ final class CreateAppointmentInput extends BaseInput
     public function __construct(public readonly string                                                                                 $subject,
                                 #[SerializeWith(DateTimeSerializer::class, DateTimeInterface::ATOM)] public readonly DateTimeImmutable $startDate,
                                 #[SerializeWith(DateTimeSerializer::class, DateTimeInterface::ATOM)] public readonly DateTimeImmutable $endDate,
+                                public readonly string|InputValueEnum                                                                  $unitId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                  $activityTypeId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                  $ownerId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                  $description = InputValueEnum::Miss,

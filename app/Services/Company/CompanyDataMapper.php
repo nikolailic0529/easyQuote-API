@@ -2,9 +2,10 @@
 
 namespace App\Services\Company;
 
-use App\Enum\AccountCategory;
 use App\Enum\AddressType;
+use App\Enum\CompanyCategoryEnum;
 use App\Enum\ContactType;
+use App\Enum\CustomerTypeEnum;
 use App\Enum\GenderEnum;
 use App\Enum\VAT;
 use App\Integrations\Pipeliner\Enum\CloudObjectTypeEnum;
@@ -13,17 +14,23 @@ use App\Integrations\Pipeliner\Models\AccountEntity;
 use App\Integrations\Pipeliner\Models\ContactRelationEntity;
 use App\Integrations\Pipeliner\Models\CreateAccountInput;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectInput;
+use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInput;
+use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInputCollection;
+use App\Integrations\Pipeliner\Models\CreateOrUpdateContactAccountRelationInput;
+use App\Integrations\Pipeliner\Models\CreateOrUpdateContactAccountRelationInputCollection;
 use App\Integrations\Pipeliner\Models\DataEntity;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\FieldFilterInput;
 use App\Integrations\Pipeliner\Models\UpdateAccountInput;
 use App\Models\Address;
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\ImportedAddress;
 use App\Models\ImportedCompany;
 use App\Models\ImportedContact;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\Address\AddressHashResolver;
@@ -37,6 +44,7 @@ use App\Services\Pipeliner\RuntimeCachedFieldEntityResolver;
 use App\Services\ThumbHelper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Str;
 use Webpatser\Uuid\Uuid;
 
@@ -55,7 +63,7 @@ class CompanyDataMapper
         /** @var Address|null $defaultAddress */
         $defaultAddress = $company->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(static fn(Address $address): bool => ($address->address_type === AddressType::INVOICE));
+            ->first(static fn(Address $address): bool => AddressType::INVOICE === $address->address_type);
 
         $picture = InputValueEnum::Miss;
 
@@ -63,19 +71,37 @@ class CompanyDataMapper
             $picture = $this->mapCreateCloudObjectInputFromCompanyImage($company);
         }
 
+        $documents = $company
+            ->attachments
+            ->whereNotNull('pl_reference')
+            ->values()
+            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+                return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
+            })
+            ->whenNotEmpty(
+                static function (BaseCollection $collection): CreateCloudObjectRelationInputCollection {
+                    return new CreateCloudObjectRelationInputCollection(...$collection->all());
+                },
+                static fn(): InputValueEnum => InputValueEnum::Miss);
+
         return new CreateAccountInput(
             name: $company->name,
             ownerId: (string)$company->owner?->pl_reference,
             address: (string)$defaultAddress?->address_1,
             city: (string)$defaultAddress?->city,
             country: (string)$defaultAddress?->country?->name,
+            customerTypeId: isset($company->customer_type)
+                ? $this->resolveDataEntityByOptionName('Account', 'customer_type_id', $company->customer_type->value)?->id ?? InputValueEnum::Miss
+                : InputValueEnum::Miss,
             customFields: json_encode($this->projectCompanyAttrsToCustomFields($company)),
             email1: (string)$company->email,
             phone1: (string)$company->phone,
             homePage: (string)$company->website,
             stateProvince: (string)$defaultAddress?->state,
+            unitId: $company->salesUnit?->pl_reference ?? InputValueEnum::Miss,
             zipCode: (string)$defaultAddress?->post_code,
-            picture: $picture
+            picture: $picture,
+            documents: $documents
         );
     }
 
@@ -96,6 +122,8 @@ class CompanyDataMapper
             'homePage' => $accountEntity->homePage,
             'stateProvince' => $accountEntity->stateProvince,
             'zipCode' => $accountEntity->zipCode,
+            'unitId' => $accountEntity->unit?->id,
+            'customerTypeId' => $accountEntity->customerType?->id,
             'customFields' => json_encode($accountEntity->customFields),
         ];
 
@@ -109,7 +137,23 @@ class CompanyDataMapper
             'homePage' => (string)$company->website,
             'stateProvince' => (string)$defaultAddress?->state,
             'zipCode' => (string)$defaultAddress?->post_code,
+            'unitId' => $company->salesUnit?->pl_reference ?? InputValueEnum::Miss,
+            'customerTypeId' => isset($company->customer_type)
+                ? $this->resolveDataEntityByOptionName('Account', 'customer_type_id', $company->customer_type->value)?->id ?? InputValueEnum::Miss
+                : InputValueEnum::Miss,
             'customFields' => json_encode(array_merge($accountEntity->customFields, $this->projectCompanyAttrsToCustomFields($company))),
+            'documents' => $company
+                ->attachments
+                ->whereNotNull('pl_reference')
+                ->values()
+                ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+                    return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
+                })
+                ->whenNotEmpty(
+                    static function (BaseCollection $collection): CreateCloudObjectRelationInputCollection {
+                        return new CreateCloudObjectRelationInputCollection(...$collection->all());
+                    },
+                    static fn(): InputValueEnum => InputValueEnum::Miss),
         ];
 
         $changedFields = array_diff_assoc($newFields, $oldFields);
@@ -126,6 +170,30 @@ class CompanyDataMapper
             $accountEntity->id,
             ...$changedFields
         );
+    }
+
+    public function mapPipelinerCreateOrUpdateContactAccountRelationInputCollection(Company $company): CreateOrUpdateContactAccountRelationInputCollection
+    {
+        $primaryContactMatched = false;
+
+        return $company->contacts
+            ->map(static function (Contact $contact) use (
+                $company,
+                &$primaryContactMatched
+            ): CreateOrUpdateContactAccountRelationInput {
+                $input = new CreateOrUpdateContactAccountRelationInput(
+                    accountId: $company->pl_reference,
+                    contactId: $contact->pl_reference,
+                    isPrimary: false === $primaryContactMatched && (bool)$contact->pivot->is_default
+                );
+
+                $primaryContactMatched = $primaryContactMatched || (bool)$contact->pivot->is_default;
+
+                return $input;
+            })
+            ->pipe(static function (BaseCollection $collection) {
+                return new CreateOrUpdateContactAccountRelationInputCollection(...$collection->all());
+            });
     }
 
     public function projectCompanyAttrsToCustomFields(Company $company): array
@@ -169,16 +237,45 @@ class CompanyDataMapper
 
         $customFields['cfVat'] = VAT::VAT_NUMBER === $company->vat_type ? $company->vat : '';
         $customFields['cfVatTypeId'] = $this->resolveDataEntityByOptionName(
-                entityName: 'Account',
-                apiName: 'cf_vat_type_id',
-                optionName: match ($company->vat_type ?? VAT::NO_VAT) {
-                    VAT::NO_VAT => 'NO VAT',
-                    VAT::EXEMPT => 'Exempt',
-                    VAT::VAT_NUMBER => 'Vat Number',
-                }
-            )?->id ?? '';
+            entityName: 'Account',
+            apiName: 'cf_vat_type_id',
+            optionName: match ($company->vat_type ?? VAT::NO_VAT) {
+                VAT::NO_VAT => 'NO VAT',
+                VAT::EXEMPT => 'Exempt',
+                VAT::VAT_NUMBER => 'Vat Number',
+            }
+        )?->id ?? '';
+
+        $categoryFieldMap = $this->getCategoryCustomFieldMap();
+
+        foreach ($categoryFieldMap as $category => $field) {
+            $customFields[$field] = $category === $company->category;
+        }
 
         return $customFields;
+    }
+
+    private function getCategoryCustomFieldMap(): \WeakMap
+    {
+        return tap(new \WeakMap(), static function (\WeakMap $map): void {
+            $map[CompanyCategoryEnum::BusinessPartner] = 'cfBusinessPartner';
+            $map[CompanyCategoryEnum::Reseller] = 'cfReseller';
+            $map[CompanyCategoryEnum::EndUser] = 'cfEndUser';
+            $map[CompanyCategoryEnum::Distributor] = 'cfDistributor';
+        });
+    }
+
+    public function resolveCategoryFromCustomFields(array $customFields): CompanyCategoryEnum
+    {
+        $categoryFieldMap = $this->getCategoryCustomFieldMap();
+
+        foreach ($categoryFieldMap as $category => $field) {
+            if (Arr::get($customFields, $field)) {
+                return $category;
+            }
+        }
+
+        return CompanyCategoryEnum::Reseller;
     }
 
     public function mapImportedCompanyFromAccountEntity(AccountEntity $entity, array $contactRelations): ImportedCompany
@@ -187,7 +284,8 @@ class CompanyDataMapper
             $account->{$account->getKeyName()} = (string)Uuid::generate(4);
             $account->pl_reference = $entity->id;
             $account->company_name = $entity->formattedName;
-            $account->company_category = AccountCategory::RESELLER;
+            $account->company_category = $this->resolveCategoryFromCustomFields($entity->customFields);
+            $account->customer_type = CustomerTypeEnum::tryFrom($entity->customerType?->optionName ?? '');
             $account->email = $entity?->email1;
             $account->phone = $entity?->phone1;
             $account->website = $entity->homePage;
@@ -204,6 +302,12 @@ class CompanyDataMapper
             $account->picture_filename = $entity->picture?->filename;
             $account->picture_url = $entity->picture?->url;
 
+            if (null !== $entity->unit) {
+                $account->salesUnit()->associate(
+                    SalesUnit::query()->where('unit_name', $entity->unit->name)->first()
+                );
+            }
+
             if ($entity->customFields['cfReseller'] ?? false) {
                 $account->flags |= ImportedCompany::IS_RESELLER;
             }
@@ -212,7 +316,8 @@ class CompanyDataMapper
                 $account->flags |= ImportedCompany::IS_END_USER;
             }
 
-            [$addresses, $contacts] = $this->mapImportedAddressesContactsFromContactRelations(...$contactRelations);
+            [$addresses,
+                $contacts] = $this->mapImportedAddressesContactsFromContactRelations($entity, ...$contactRelations);
 
             $account->setRelation('addresses', $addresses);
             $account->setRelation('contacts', $contacts);
@@ -225,23 +330,28 @@ class CompanyDataMapper
 
     public function mergeAttributesFrom(Company $company, ImportedCompany $another): void
     {
-        if (is_null($company->vat_type)) {
-            $company->vat_type = $another->vat_type ?? VAT::NO_VAT;
-        }
+        $company->vat_type = coalesce_blank($another->vat_type, $company->vat_type, VAT::NO_VAT);
 
         if (VAT::NO_VAT !== $company->vat_type) {
-            $company->vat = coalesce_blank($company->vat, $another->vat);
+            $company->vat = coalesce_blank($another->vat, $company->vat);
         }
 
         $company->name = $another->company_name;
-        $company->email = coalesce_blank($company->email, $another->email);
-        $company->phone = coalesce_blank($company->phone, $another->phone);
-        $company->website = coalesce_blank($company->website, $another->website);
+        $company->email = coalesce_blank($another->email, $company->email);
+        $company->phone = coalesce_blank($another->phone, $company->phone);
+        $company->website = coalesce_blank($another->website, $company->website);
+        $company->category = coalesce_blank($another->company_category, $company->category);
+        $company->customer_type = $another->customer_type;
 
         $vendorNames = Str::of($another->vendors_cs)
             ->explode(',')
-            ->map(static fn(string $v) => trim($v))
             ->filter(static fn(string $v) => filled($v))
+            ->map(static function (string $v) {
+                return match ($v = trim($v)) {
+                    'HPE' => 'Hewlett Packard Enterprise',
+                    default => $v,
+                };
+            })
             ->values()
             ->all();
 
@@ -249,7 +359,11 @@ class CompanyDataMapper
             ->whereIn('name', $vendorNames)
             ->get();
 
-        $company->vendors->merge($vendors);
+        $company->setRelation('vendors', $vendors);
+
+        if (null !== $another->salesUnit) {
+            $company->salesUnit()->associate($another->salesUnit);
+        }
 
         /** @var $importedAddressesHaveRelThroughPlRef Collection */
         /** @var $importedAddressesDontHaveRelThroughPlRef Collection */
@@ -285,6 +399,7 @@ class CompanyDataMapper
             $company->contacts->whereStrict('pl_reference', $importedContact->pl_reference)
                 ->each(static function (Contact $contact) use ($importedContact) {
                     $contact->contact_type = $importedContact->contact_type;
+                    $contact->salesUnit()->associate($importedContact->salesUnit ?? $contact->salesUnit);
                     $contact->gender = $importedContact->gender;
                     $contact->first_name = $importedContact->first_name;
                     $contact->last_name = $importedContact->last_name;
@@ -308,51 +423,118 @@ class CompanyDataMapper
         $newImportedAddresses = $anotherAddressMap->diffKeys($currentAddressMap);
         $newImportedContacts = $anotherContactMap->diffKeys($currentContactMap);
 
+        $newAddressMap = $newImportedAddresses
+            ->mapWithKeys(function (ImportedAddress $a) use ($company): array {
+                $address = ($this->addressProjector)($a);
+                $address->user()->associate($address->user ?? $company->user);
+
+                return [$a->getKey() => $address];
+            });
+
         $newContactMap = $newImportedContacts
-            ->mapWithKeys(function (ImportedContact $c) use ($company): array {
-                $contact = ($this->contactProjector)($c);
+            ->mapWithKeys(function (ImportedContact $c) use ($newAddressMap, $company): array {
+                $contact = ($this->contactProjector)($c, $newAddressMap->get($c->address()->getParentKey()));
                 $contact->user()->associate($contact->user ?? $company->user);
 
                 return [$c->getKey() => $contact];
             });
 
-        $newAddresses = $newImportedAddresses
-            ->map(function (ImportedAddress $a) use ($company, $newContactMap): Address {
-                $address = ($this->addressProjector)($a, $newContactMap->get($a->contact_id));
-                $address->user()->associate($address->user ?? $company->user);
-
-                return $address;
-            })
-            ->values();
-
         $newContactCollection = Collection::make($newContactMap->values())->reject(static fn(Contact $contact): bool => $contact->isEmpty());
-        $newAddressCollection = Collection::make($newAddresses->values())->reject(static fn(Address $address): bool => $address->isEmpty());
+        $newAddressCollection = Collection::make($newAddressMap->values())->reject(static fn(Address $address): bool => $address->isEmpty());
 
         $company->contacts->push(...$newContactCollection);
         $company->addresses->push(...$newAddressCollection);
+
+        $defaultInvoiceAddress = $company->addresses->first(static function (Address $address): bool {
+            return $address->pivot?->is_default && AddressType::INVOICE === $address->address_type;
+        });
+
+        if (null === $defaultInvoiceAddress) {
+            $company->addresses->push($defaultInvoiceAddress = tap(new Address(), static function (Address $address): void {
+                $address->{$address->getKeyName()} = (string)Uuid::generate(4);
+            }));
+        }
+
+        tap($defaultInvoiceAddress, static function (Address $address) use ($company, $another): void {
+            $address->setRelation($company->addresses()->getPivotAccessor(), $company->addresses()->newPivot([
+                'is_default' => true,
+                $company->addresses()->getRelatedPivotKeyName() => $address->getKey(),
+                $company->addresses()->getForeignPivotKeyName() => $company->getKey(),
+                $company->addresses()->getMorphType() => $company->getMorphClass(),
+            ], $address->exists));
+
+            $address->address_type = AddressType::INVOICE;
+            $address->address_1 = $another->address_1;
+            $address->address_2 = $another->address_2;
+            $address->city = $another->city;
+            $address->post_code = $another->post_code;
+            $address->state = $another->state;
+            $address->state_code = $another->state_code;
+            $address->country()->associate(
+                Country::query()->where('name', $another->country_name)->first()
+            );
+        });
+
+        // Change attributes of the addresses associated with contacts
+        $company->contacts->each(static function (Contact $contact): void {
+            if (null === $contact->address) {
+                return;
+            }
+
+            tap($contact->address, static function (Address $address) use ($contact) {
+                $address->address_type = $contact->contact_type;
+            });
+        });
+
+        // Update HW & SW countries
+        /** @var ImportedAddress|null $newHardwareAddr */
+        /** @var ImportedAddress|null $newSoftwareAddr */
+        $newHardwareAddr = $another->addresses->first(static fn(ImportedAddress $addr) => AddressType::HARDWARE === $addr->address_type);
+        $newSoftwareAddr = $another->addresses->first(static fn(ImportedAddress $addr) => AddressType::SOFTWARE === $addr->address_type);
+
+        $company->addresses
+            ->each(static function (Address $address) use ($newHardwareAddr, $newSoftwareAddr): void {
+                if (null !== $newHardwareAddr?->country && AddressType::HARDWARE === $address->address_type) {
+                    $address->country()->associate($newHardwareAddr->country);
+                } elseif (null !== $newSoftwareAddr?->country && AddressType::SOFTWARE === $address->address_type) {
+                    $address->country()->associate($newSoftwareAddr->country);
+                }
+            });
     }
 
-    private function mapImportedAddressesContactsFromContactRelations(ContactRelationEntity ...$entities): array
+    private function mapImportedAddressesContactsFromContactRelations(AccountEntity         $entity,
+                                                                      ContactRelationEntity ...$entities): array
     {
         $newAddresses = new Collection();
         $newContacts = new Collection();
 
+        $typeCountryMap = [
+            AddressType::HARDWARE => Arr::get($entity->customFields, 'cfHardwareCountry'),
+            AddressType::SOFTWARE => Arr::get($entity->customFields, 'cfSoftwareCountry'),
+        ];
+
         foreach ($entities as $contactRelation) {
             $owner = PipelinerClientEntityToUserProjector::from($contactRelation->contact->owner)();
 
-            $address = $this->mapImportedAddressFromContactRelationEntity($contactRelation, $owner);
+            $address = $this->mapImportedAddressFromContactRelationEntity($typeCountryMap, $contactRelation, $owner);
             $contact = $this->mapImportedContactFromContactRelationEntity($contactRelation, $owner);
 
-            $newAddresses[] = $address->contact()->associate($contact->getKey());
-            $newContacts[] = $contact;
+            $newAddresses[] = $address;
+            $newContacts[] = $contact->address()->associate($address->getKey());
         }
 
         return [$newAddresses, $newContacts];
     }
 
-    private function mapImportedAddressFromContactRelationEntity(ContactRelationEntity $entity, User $owner): ImportedAddress
+    private function mapImportedAddressFromContactRelationEntity(array                 $typeCountryMap,
+                                                                 ContactRelationEntity $entity,
+                                                                 User                  $owner): ImportedAddress
     {
-        return tap(new ImportedAddress(), function (ImportedAddress $address) use ($entity, $owner): void {
+        return tap(new ImportedAddress(), function (ImportedAddress $address) use (
+            $entity,
+            $owner,
+            $typeCountryMap
+        ): void {
             $address->{$address->getKeyName()} = (string)Uuid::generate(4);
             $address->pl_reference = $entity->contact->id;
             $address->owner()->associate($owner);
@@ -372,22 +554,35 @@ class CompanyDataMapper
             $address->state = $entity->contact->stateProvince;
             $address->state_code = $entity->contact->customFields['cfStateCode1'] ?? null;
 
-            if (filled($entity->contact->country)) {
+            if (isset($typeCountryMap[$address->address_type])) {
                 $address->country()->associate(
-                    Country::query()->where('name', $entity->contact->country)->first()
+                    Country::query()->where('iso_3166_2', $typeCountryMap[$address->address_type])->first()
                 );
             } else {
-                $address->country()->disassociate();
+                if (filled($entity->contact->country)) {
+                    $address->country()->associate(
+                        Country::query()->where('name', $entity->contact->country)->first()
+                    );
+                } else {
+                    $address->country()->disassociate();
+                }
             }
         });
     }
 
-    private function mapImportedContactFromContactRelationEntity(ContactRelationEntity $entity, User $owner): ImportedContact
+    private function mapImportedContactFromContactRelationEntity(ContactRelationEntity $entity,
+                                                                 User                  $owner): ImportedContact
     {
         return tap(new ImportedContact(), function (ImportedContact $contact) use ($entity, $owner): void {
             $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
             $contact->pl_reference = $entity->contact->id;
             $contact->owner()->associate($owner);
+
+            if (null !== $entity->contact->unit) {
+                $contact->salesUnit()->associate(
+                    SalesUnit::query()->where('unit_name', $entity->contact->unit->name)->first()
+                );
+            }
 
             $type = ($this->pipelinerDataResolver)($entity->contact->customFields['cfType1Id'] ?? null)?->optionName ?? '';
             $contact->contact_type = match (trim(strtolower($type))) {
@@ -410,7 +605,7 @@ class CompanyDataMapper
 
     public function resolveVatTypeFromCustomFields(array $customFields): string
     {
-        $fieldValue = ($this->pipelinerDataResolver)($entity->customFields['cfVatTypeId'] ?? null)?->optionName;
+        $fieldValue = ($this->pipelinerDataResolver)($customFields['cfVatTypeId'] ?? null)?->optionName;
 
         $vatType = trim(strtolower($fieldValue ?? ''));
 

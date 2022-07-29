@@ -5,10 +5,9 @@ namespace App\Services\Pipeliner\Strategies;
 use App\Integrations\Pipeliner\GraphQl\PipelinerNoteIntegration;
 use App\Integrations\Pipeliner\Models\NoteEntity;
 use App\Models\Note\Note;
-use App\Models\Pipeline\Pipeline;
 use App\Models\PipelinerModelScrollCursor;
 use App\Services\Note\NoteDataMapper;
-use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
@@ -17,7 +16,7 @@ use JetBrains\PhpStorm\ArrayShape;
 
 class PullNoteStrategy implements PullStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface      $connection,
                                 protected PipelinerNoteIntegration $noteIntegration,
@@ -33,6 +32,10 @@ class PullNoteStrategy implements PullStrategy
      */
     public function sync(object $entity): Model
     {
+        if (!$entity instanceof NoteEntity) {
+            throw new \TypeError(sprintf("Entity must be an instance of %s.", NoteEntity::class));
+        }
+
         /** @var Note|null $note */
         $note = Note::query()
             ->withTrashed()
@@ -83,21 +86,9 @@ class PullNoteStrategy implements PullStrategy
         );
     }
 
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
-    }
-
     public function countPending(): int
     {
-        $mostRecentCursor = $this->getMostRecentScrollCursor();
-
-        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull($mostRecentCursor);
+        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull();
 
         return $count;
     }
@@ -107,7 +98,7 @@ class PullNoteStrategy implements PullStrategy
         $latestCursor = $this->getMostRecentScrollCursor();
 
         return $this->noteIntegration->scroll(
-            after: $latestCursor?->cursor,
+            ...$this->resolveScrollParameters(),
         );
     }
 
@@ -116,12 +107,12 @@ class PullNoteStrategy implements PullStrategy
         return (new Note())->getMorphClass();
     }
 
-    private function computeTotalEntitiesCountAndLastIdToPull(PipelinerModelScrollCursor $scrollCursor = null): array
+    private function computeTotalEntitiesCountAndLastIdToPull(): array
     {
         /** @var \Generator $iterator */
         $iterator = $this->noteIntegration->simpleScroll(
-            after: $scrollCursor?->cursor,
-            first: 1000
+            ...$this->resolveScrollParameters(),
+            ...['first' => 1_000]
         );
 
         $totalCount = 0;
@@ -137,13 +128,18 @@ class PullNoteStrategy implements PullStrategy
         return [$totalCount, $lastId];
     }
 
+    #[ArrayShape(['after' => 'string|null'])]
+    private function resolveScrollParameters(): array
+    {
+        return [
+            'after' => $this->getMostRecentScrollCursor()?->cursor,
+        ];
+    }
+
     private function getMostRecentScrollCursor(): ?PipelinerModelScrollCursor
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return PipelinerModelScrollCursor::query()
-            ->whereBelongsTo($this->pipeline)
             ->where('model_type', $this->getModelType())
             ->latest()
             ->first();
@@ -154,7 +150,8 @@ class PullNoteStrategy implements PullStrategy
         return $entity instanceof Note;
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class, 'modified' => \DateTimeInterface::class])]
+    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
+        'modified' => \DateTimeInterface::class])]
     public function getMetadata(string $reference): array
     {
         $entity = $this->noteIntegration->getById($reference);

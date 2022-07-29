@@ -7,6 +7,7 @@ use App\Contracts\HasOwnNotes;
 use App\DTO\Note\CreateNoteData;
 use App\DTO\Note\UpdateNoteData;
 use App\Events\RescueQuote\NoteCreated;
+use App\Models\Note\ModelHasNotes;
 use App\Models\Note\Note;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
@@ -27,9 +28,10 @@ class NoteEntityService implements CauserAware
             $note->owner()->associate($this->causer);
             $note->note = $data->note;
 
-            $this->connection->transaction(static function () use ($note, $model): void {
+            $this->connection->transaction(function () use ($note, $model): void {
                 $note->save();
                 $model->notes()->attach($note);
+                $this->touchRelated($note);
             });
 
             $this->eventDispatcher->dispatch(
@@ -43,13 +45,27 @@ class NoteEntityService implements CauserAware
         return tap($note, function (Note $note) use ($data): void {
             $note->note = $data->note;
 
-            $this->connection->transaction(static fn () => $note->save());
+            $this->connection->transaction(function () use ($note) {
+                $note->save();
+                $this->touchRelated($note);
+            });
         });
     }
 
     public function deleteNote(Note $note): void
     {
-        $this->connection->transaction(static fn () => $note->delete());
+        $this->connection->transaction(function () use ($note) {
+            $note->delete();
+            $this->touchRelated($note);
+        });
+    }
+
+    protected function touchRelated(Note $note): void
+    {
+        foreach ($note->modelsHaveNote as $model) {
+            /** @var $model ModelHasNotes */
+            $model->related?->touch();
+        }
     }
 
     public function setCauser(?Model $causer): static

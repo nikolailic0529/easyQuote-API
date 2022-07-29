@@ -19,18 +19,36 @@ class ThumbnailService
     {
     }
 
+    public function createResizedImageFor(\SplFileInfo $file, Model $model, array $properties): Image
+    {
+        return tap(new Image(), function (Image $image) use ($file, $model, $properties) {
+            $modelImagesDir = static::resolveImagesDirectoryFor($model);
+
+            $this->filesystem->makeDirectory($modelImagesDir);
+
+            $imageInter = ImageIntervention::make($file);
+
+            $imageInter->resize((int)$properties['width'], (int)$properties['height'], static function (Constraint $constraint): void {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            $filepath = Str::random(40).'.'.static::resolveFileExtension($file);
+            $relativePath = implode(DIRECTORY_SEPARATOR, [$modelImagesDir, $filepath]);
+
+            $this->filesystem->put($relativePath, $imageInter->encode(static::resolveFileExtension($file), quality: 100));
+
+            $image->imageable()->associate($model);
+            $image->original = $relativePath;
+
+            $image->save();
+        });
+    }
+
     public function createThumbnailsFor(\SplFileInfo $file, Model&WithLogo $model): Image
     {
         return tap(new Image(), function (Image $image) use ($file, $model) {
-            $modelImagesDir = (string)Str::of($model::class)
-                ->classBasename()
-                ->plural()
-                ->snake()
-                ->prepend('images', DIRECTORY_SEPARATOR, $model->getKey(), DIRECTORY_SEPARATOR);
-
-            if ($model instanceof HasImagesDirectory) {
-                $modelImagesDir = $model->imagesDirectory();
-            }
+            $modelImagesDir = static::resolveImagesDirectoryFor($model);
 
             $this->filesystem->makeDirectory($modelImagesDir);
 
@@ -38,16 +56,30 @@ class ThumbnailService
 
             $stream = fopen($file->getRealPath(), 'r');
 
-            $filepath = 'images/'.Str::random(40).'.'.static::resolveFileExtension($file);
+            $filepath = Str::random(40).'.'.static::resolveFileExtension($file);
+            $relativePath = implode(DIRECTORY_SEPARATOR, [$modelImagesDir, $filepath]);
 
-            $this->filesystem->writeStream($filepath, $stream);
+            $this->filesystem->writeStream($relativePath, $stream);
 
             $image->imageable()->associate($model);
-            $image->original = $filepath;
+            $image->original = $relativePath;
             $image->thumbnails = $thumbnails;
 
             $image->save();
         });
+    }
+
+    protected static function resolveImagesDirectoryFor(Model $model): string
+    {
+        if ($model instanceof HasImagesDirectory) {
+            return $model->imagesDirectory();
+        }
+
+        return (string)Str::of($model::class)
+            ->classBasename()
+            ->plural()
+            ->snake()
+            ->prepend('images', DIRECTORY_SEPARATOR, $model->getKey(), DIRECTORY_SEPARATOR);
     }
 
     protected static function resolveFileExtension(\SplFileInfo $file): string

@@ -12,6 +12,7 @@ use App\Models\Data\Country;
 use App\Models\HpeContract;
 use App\Models\Note\Note;
 use App\Models\Opportunity;
+use App\Models\Pipeline\Pipeline;
 use App\Models\Quote\Contract;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
@@ -25,6 +26,7 @@ use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\Role;
 use App\Models\SalesOrder;
+use App\Models\SalesUnit;
 use App\Models\System\Activity;
 use App\Models\System\Notification;
 use App\Models\System\SystemSetting;
@@ -53,6 +55,7 @@ use App\Policies\MultiYearDiscountPolicy;
 use App\Policies\NotePolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\OpportunityPolicy;
+use App\Policies\PipelinePolicy;
 use App\Policies\PrePayDiscountPolicy;
 use App\Policies\PromotionalDiscountPolicy;
 use App\Policies\QuoteFilePolicy;
@@ -62,6 +65,7 @@ use App\Policies\QuoteTemplatePolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SalesOrderPolicy;
 use App\Policies\SalesOrderTemplatePolicy;
+use App\Policies\SalesUnitPolicy;
 use App\Policies\SNDPolicy;
 use App\Policies\SystemSettingPolicy;
 use App\Policies\TaskPolicy;
@@ -88,20 +92,16 @@ class AuthServiceProvider extends ServiceProvider
         Contract::class                 => ContractPolicy::class,
         QuoteFile::class                => QuoteFilePolicy::class,
         Task::class                     => TaskPolicy::class,
-
         QuoteTemplate::class            => QuoteTemplatePolicy::class,
         ContractTemplate::class         => ContractTemplatePolicy::class,
         HpeContractTemplate::class      => HpeContractTemplatePolicy::class,
         SalesOrderTemplate::class       => SalesOrderTemplatePolicy::class,
-
         Company::class                  => CompanyPolicy::class,
         Vendor::class                   => VendorPolicy::class,
-
         SND::class                      => SNDPolicy::class,
         PrePayDiscount::class           => PrePayDiscountPolicy::class,
         MultiYearDiscount::class        => MultiYearDiscountPolicy::class,
         PromotionalDiscount::class      => PromotionalDiscountPolicy::class,
-
         Margin::class                   => MarginPolicy::class,
         Role::class                     => RolePolicy::class,
         User::class                     => UserPolicy::class,
@@ -116,15 +116,13 @@ class AuthServiceProvider extends ServiceProvider
         ImportableColumn::class         => ImportableColumnPolicy::class,
         Asset::class                    => AssetPolicy::class,
         HpeContract::class              => HpeContractPolicy::class,
-
         WorldwideQuote::class           => WorldwideQuotePolicy::class,
         WorldwideDistribution::class    => WorldwideDistributionPolicy::class,
-
         Opportunity::class              => OpportunityPolicy::class,
-
         SalesOrder::class               => SalesOrderPolicy::class,
-
         Note::class                     => NotePolicy::class,
+        Pipeline::class                 => PipelinePolicy::class,
+        SalesUnit::class                => SalesUnitPolicy::class,
     ];
 
     public function register()

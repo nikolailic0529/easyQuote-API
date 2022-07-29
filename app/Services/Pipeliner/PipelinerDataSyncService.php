@@ -16,10 +16,10 @@ use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
 use App\Models\Opportunity;
-use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelScrollCursor;
 use App\Models\PipelinerModelUpdateLog;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Models\QueueSyncResult;
@@ -35,9 +35,10 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Events\Dispatcher;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Str;
 use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\Pure;
@@ -74,10 +75,10 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
     protected function prepareStrategies(): void
     {
-        $pipeline = $this->getDefaultPipeline();
+        $units = $this->getEnabledSalesUnits();
 
         foreach ($this->syncStrategies as $strategy) {
-            $strategy->setPipeline($pipeline);
+            $strategy->setSalesUnits(...$units);
         }
     }
 
@@ -176,6 +177,8 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
     #[ArrayShape(['applied' => "array[]"])]
     public function syncModel(Model $model): array
     {
+        $this->logger->info('Starting model syncing.', ['model_id' => $model->getKey(), 'model_type' => class_basename($model)]);
+
         $this->prepareStrategies();
 
         $applicableStrategies = [];
@@ -237,9 +240,15 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 ];
             });
 
+        $this->logger->info('Model syncing completed.', [
+            'model_id' => $model->getKey(),
+            'model_type' => class_basename($model),
+            'applied' => $appliedStrategies->values()->all(),
+        ]);
+
         return $appliedStrategies
             ->values()
-            ->pipe(function (Collection $collection) {
+            ->pipe(function (BaseCollection $collection) {
                 return [
                     'applied' => $collection->all(),
                 ];
@@ -405,12 +414,24 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
     private function persistScrollCursor(string $cursor, SyncStrategy $strategy): void
     {
-        tap(new PipelinerModelScrollCursor, function (PipelinerModelScrollCursor $cursorModel) use ($strategy, $cursor) {
-            $cursorModel->pipeline()->associate($strategy->getPipeline());
+        tap(new PipelinerModelScrollCursor, function (PipelinerModelScrollCursor $cursorModel) use (
+            $strategy,
+            $cursor
+        ) {
             $cursorModel->model_type = $strategy->getModelType();
             $cursorModel->cursor = $cursor;
 
             $this->connection->transaction(static fn() => $cursorModel->save());
+        });
+    }
+
+    private function persistUpdateLog(\DateTimeInterface $dateTime, SyncStrategy $strategy): void
+    {
+        tap(new PipelinerModelUpdateLog, function (PipelinerModelUpdateLog $log) use ($strategy, $dateTime): void {
+            $log->model_type = $strategy->getModelType();
+            $log->latest_model_updated_at = $dateTime;
+
+            $this->connection->transaction(static fn() => $log->save());
         });
     }
 
@@ -456,11 +477,16 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         }
 
         if (false === $updateErrorOccurred && null !== $lastSyncedModel) {
-            $this->logger->info('Persisting update log.', [
-                'updatedAt' => $lastSyncedModel->{$lastSyncedModel->getUpdatedAtColumn()},
-            ]);
 
-            $this->persistUpdateLog($lastSyncedModel->{$lastSyncedModel->getUpdatedAtColumn()}, $strategy);
+            if ($lastSyncedModel->usesTimestamps() === false) {
+                $this->logger->warning("Model doesn't support timestamps. Update log won't be persisted.");
+            } else {
+                $this->logger->info('Persisting update log.', [
+                    'updatedAt' => $lastSyncedModel->{$lastSyncedModel->getUpdatedAtColumn()},
+                ]);
+
+                $this->persistUpdateLog($lastSyncedModel->{$lastSyncedModel->getUpdatedAtColumn()}, $strategy);
+            }
         }
     }
 
@@ -488,17 +514,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         return '*' === $allowedMethods[0] || in_array($method, $allowedMethods, true);
     }
 
-    private function persistUpdateLog(\DateTimeInterface $dateTime, SyncStrategy $strategy): void
-    {
-        tap(new PipelinerModelUpdateLog, function (PipelinerModelUpdateLog $log) use ($strategy, $dateTime): void {
-            $log->pipeline()->associate($strategy->getPipeline());
-            $log->model_type = $strategy->getModelType();
-            $log->latest_model_updated_at = $dateTime;
-
-            $this->connection->transaction(static fn() => $log->save());
-        });
-    }
-
     public function queueSync(array $strategies = []): QueueSyncResult
     {
         $job = new QueuedPipelinerDataSync($this->causer, $strategies);
@@ -523,18 +538,30 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         return $this->dataSyncStatus;
     }
 
-    protected function getDefaultPipeline(): Pipeline
+    /**
+     * @return SalesUnit
+     * @throws PipelinerSyncException
+     */
+    protected function getEnabledSalesUnits(): Collection
     {
-        if (!app()->environment('production')) {
-            /** @noinspection PhpIncompatibleReturnTypeInspection */
-            return Pipeline::query()
-                ->where('is_system', true)
-                ->where('pipeline_name', 'DEV')
-                ->sole();
-        }
+        /** @var Collection $units */
+        $units = SalesUnit::query()
+            ->where('is_enabled', true)
+            ->get();
 
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        return Pipeline::query()->where('is_default', true)->sole();
+        $allowedUnitNames = $this->config->get('pipeliner.sync.allowed_sales_units', []);
+
+        return $units->each(static function (SalesUnit $unit) use ($allowedUnitNames) {
+            throw_unless(
+                head($allowedUnitNames) === '*' || in_array($unit->unit_name, $allowedUnitNames, true),
+                PipelinerSyncException::nonAllowedSalesUnit($unit)
+            );
+        })
+            ->pipe(static function (Collection $collection): Collection {
+                throw_if($collection->isEmpty(), PipelinerSyncException::noSalesUnitIsEnabled());
+
+                return $collection;
+            });
     }
 
     public function setLogger(LoggerInterface $logger): static

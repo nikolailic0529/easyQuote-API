@@ -36,28 +36,36 @@ class AttachmentEntityService
 
         $metadata = $this->filesystem->getMetadata($filePath) + ['filename' => $file->getClientOriginalName()];
 
-        return tap($this->dataMapper->mapFromMetadata($metadata, $attachmentType), function (Attachment $attachment): void {
-            $this->connection->transaction(static fn() => $attachment->save());
-        });
+        return tap($this->dataMapper->mapFromMetadata($metadata, $attachmentType),
+            function (Attachment $attachment): void {
+                $this->connection->transaction(static fn() => $attachment->save());
+            });
     }
 
-    public function createAttachmentForEntity(UploadedFile $file, AttachmentType $attachmentType, Model $entity): Attachment
+    public function createAttachmentForEntity(UploadedFile   $file,
+                                              AttachmentType $attachmentType,
+                                              Model          $entity): Attachment
     {
-        return tap($this->createAttachmentFromUploadedFile(file: $file, attachmentType: $attachmentType), function (Attachment $attachment) use ($entity) {
-            $this->connection->transaction(function () use ($attachment, $entity) {
-                $entity
-                    ->morphToMany($attachment::class, 'attachable')
-                    ->attach($attachment);
-            });
+        return tap($this->createAttachmentFromUploadedFile($file, $attachmentType),
+            function (Attachment $attachment) use ($entity): void {
+                $this->connection->transaction(function () use ($attachment, $entity) {
+                    $entity
+                        ->morphToMany($attachment::class, 'attachable')
+                        ->attach($attachment);
 
-            $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
-        });
+                    $this->touchRelated($attachment);
+                });
+
+                $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
+            });
     }
 
     public function deleteAttachment(Attachment $attachment, Model $entity): void
     {
-        $this->connection->transaction(function () use ($attachment) {
+        $this->connection->transaction(function () use ($attachment): void {
             $attachment->delete();
+
+            $this->touchRelated($attachment);
         });
 
         if ($this->filesystem->exists($attachment->filepath)) {
@@ -69,16 +77,25 @@ class AttachmentEntityService
 
     public function downloadAttachment(Attachment $attachment): StreamedResponse
     {
-        return tap($this->filesystem->download(path: $attachment->filepath, name: $attachment->filename), function () use ($attachment) {
-            /** @var Attachable|null $attachable */
-            $attachable = Attachable::query()->find($attachment->getKey());
+        return tap($this->filesystem->download(path: $attachment->filepath, name: $attachment->filename),
+            function () use ($attachment): void {
+                /** @var Attachable|null $attachable */
+                $attachable = Attachable::query()->find($attachment->getKey());
 
-            if (is_null($attachable) || is_null($attachable->related)) {
-                return;
-            }
+                if (is_null($attachable) || is_null($attachable->related)) {
+                    return;
+                }
 
-            $this->eventDispatcher->dispatch(new AttachmentExported($attachment, $attachable->related));
-        });
+                $this->eventDispatcher->dispatch(new AttachmentExported($attachment, $attachable->related));
+            });
+    }
+
+    protected function touchRelated(Attachment $attachment): void
+    {
+        foreach ($attachment->attachables as $attachable) {
+            /** @var $attachable Attachable */
+            $attachable->related?->touch();
+        }
     }
 
     private static function processFileName(string $filename): string

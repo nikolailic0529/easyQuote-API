@@ -13,4 +13,9 @@ class ActivityRelationFilterInput extends BaseFilterInput
     {
         return $this->setField(__FUNCTION__, $field);
     }
+
+    public function accountId(EntityFilterStringField $field): static
+    {
+        return $this->setField(__FUNCTION__, $field);
+    }
 }

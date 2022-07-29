@@ -18,7 +18,6 @@ use App\Models\Collaboration\Invitation;
 use App\Models\User;
 use App\Queries\UserQueries;
 use App\Services\Invitation\InvitationEntityService;
-use App\Services\ProfileHelper;
 use App\Services\User\UserEntityService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -134,7 +133,8 @@ class UserController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function inviteUser(InviteUserRequest $request, InvitationEntityService $invitationEntityService): JsonResponse
+    public function inviteUser(InviteUserRequest       $request,
+                               InvitationEntityService $invitationEntityService): JsonResponse
     {
         $this->authorize('create', User::class);
 
@@ -150,24 +150,20 @@ class UserController extends Controller
      * Update the specified resource in storage.
      *
      * @param UpdateUserRequest $request
+     * @param UserEntityService $service
      * @param User $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function updateUser(UpdateUserRequest $request, User $user): JsonResponse
+    public function updateUser(UpdateUserRequest $request,
+                               UserEntityService $service,
+                               User              $user): JsonResponse
     {
-        $this->authorize('updateProfile', [$user, $request]);
+        $this->authorize('updateProfile', $user);
 
-        $resource = ProfileHelper::listenAndFlushUserProfile($user,
-            function () use ($user, $request) {
-                return $this->userRepository->update($user->getKey(),
-                    $request->validated()
-                );
-            });
+        $service->updateUser($user, $request->getUpdateUserData());
 
-        return response()->json(
-            $resource
-        );
+        return response()->json($user);
     }
 
     /**
@@ -260,8 +256,8 @@ class UserController extends Controller
      * @return JsonResponse
      */
     public function registerUser(CompleteInvitationRequest $request,
-                                 UserEntityService $userEntityService,
-                                 Invitation $invitation): JsonResponse
+                                 UserEntityService         $userEntityService,
+                                 Invitation                $invitation): JsonResponse
     {
         return response()->json(
             $userEntityService->registerUser(invitation: $invitation, userData: $request->getRegisterUserData()),

@@ -9,7 +9,6 @@ use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Webpatser\Uuid\Uuid;
 
 class CustomFieldDataMapper
 {
@@ -33,6 +32,7 @@ class CustomFieldDataMapper
             return tap(new CustomFieldValue(), static function (CustomFieldValue $value) use ($item, $n): void {
                 $value->pl_reference = $item->id;
                 $value->field_value = $item->optionName;
+                $value->calc_value = $item->calcValue;
                 $value->entity_order = $n;
 
                 if (is_array($item->allowedBy)) {
@@ -45,7 +45,7 @@ class CustomFieldDataMapper
     public function mergeAttributesFrom(CustomField $field, CustomField $another): void
     {
         $toBeMergedAttributes = [
-          'pl_reference',
+            'pl_reference',
         ];
 
         foreach ($toBeMergedAttributes as $attribute) {

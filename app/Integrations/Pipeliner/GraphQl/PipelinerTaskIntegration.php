@@ -401,6 +401,10 @@ class PipelinerTaskIntegration
                 ->setSelectionSet(
                     PipelinerClientIntegration::getClientEntitySelectionSet()
                 ),
+            (new Query('unit'))
+                ->setSelectionSet(
+                    PipelinerSalesUnitIntegration::getSalesUnitEntitySelectionSet()
+                ),
             (new Query('taskRecurrence'))
                 ->setSelectionSet([
                     'id',

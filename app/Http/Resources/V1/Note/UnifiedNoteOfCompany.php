@@ -26,15 +26,16 @@ class UnifiedNoteOfCompany extends JsonResource
         /** @var User|null $user */
         $user = $request->user();
 
+        $parentEntityType = match ($parentEntityType = class_basename(Relation::getMorphedModel($this->model_type))) {
+            'WorldwideQuote' => 'Quote',
+            default => $parentEntityType,
+        };
+
         return [
             'id' => $this->getKey(),
             'note_entity_type' => $this->getMorphClass(),
-            'note_entity_class' => Str::snake(class_basename($this->resource)),
-            'parent_entity_type' => match (Relation::getMorphedModel($this->model_type)) {
-                Quote::class, WorldwideQuote::class => 'Quote',
-                Company::class => 'Company',
-                Opportunity::class => 'Opportunity',
-            },
+            'note_entity_class' => Str::snake("$parentEntityType note"),
+            'parent_entity_type' => $parentEntityType,
             'quote_id' => $this->quote_id,
             'customer_id' => $this->customer_id,
             'quote_number' => $this->quote_number,

@@ -3,20 +3,28 @@
 namespace App\Http\Requests\Opportunity;
 
 use App\DTO\Opportunity\CreateOpportunityData;
+use App\DTO\Opportunity\CreateOpportunityRecurrenceData;
+use App\Enum\DateDayEnum;
+use App\Enum\DateMonthEnum;
+use App\Enum\DateWeekEnum;
+use App\Enum\RecurrenceTypeEnum;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\ContractType;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\PipelineQueries;
 use App\Rules\Opportunity\SaleActionName;
 use App\Rules\Opportunity\ValidSupplierData;
+use App\Rules\ScalarValue;
 use App\Services\Opportunity\OpportunityDataMapper;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class CreateOpportunity extends FormRequest
 {
@@ -37,13 +45,10 @@ class CreateOpportunity extends FormRequest
                 Rule::exists(Pipeline::class, 'id')->withoutTrashed(),
             ],
             'pipeline_stage_id' => [
-                'bail', 'required_without:sale_action_name', 'uuid',
+                'bail', 'required', 'uuid',
                 Rule::exists(PipelineStage::class, 'id')->withoutTrashed()->where(function (Builder $builder): void {
                     $builder->where('pipeline_id', $this->input('pipeline_id', $this->getDefaultPipeline()->getKey()));
                 }),
-            ],
-            'sale_action_name' => [
-                'bail', 'required_without:pipeline_stage_id', 'string', new SaleActionName,
             ],
             'contract_type_id' => [
                 'bail', 'required', 'uuid',
@@ -96,22 +101,26 @@ class CreateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'opportunity_start_date' => [
-                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')),
+                'date_format:Y-m-d',
             ],
             'is_opportunity_start_date_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_end_date' => [
-                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')),
+                'date_format:Y-m-d',
             ],
             'is_opportunity_end_end_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_closing_date' => [
-                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')),
+                'date_format:Y-m-d',
             ],
             'contract_duration_months' => [
-                'bail', Rule::requiredIf(fn() => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
+                'bail', Rule::requiredIf(fn() => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1',
+                'max:60',
             ],
             'is_contract_duration_checked' => [
                 'bail', 'boolean',
@@ -159,7 +168,10 @@ class CreateOpportunity extends FormRequest
                 'bail', 'string', 'size:3',
             ],
             'personal_rating' => [
-                'bail', 'nullable', 'string', 'filled', 'max:191',
+                'bail', 'nullable', new ScalarValue(), 'filled',
+            ],
+            'ranking' => [
+                'bail', 'nullable', 'integer', 'min:0', 'max:100',
             ],
             'margin_value' => [
                 'bail', 'nullable', 'numeric',
@@ -169,6 +181,10 @@ class CreateOpportunity extends FormRequest
             ],
             'sale_unit_name' => [
                 'bail', 'string', 'max:191',
+            ],
+            'sales_unit_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed(),
             ],
             'competition_name' => [
                 'bail', 'nullable', 'string', 'max:191',
@@ -218,6 +234,19 @@ class CreateOpportunity extends FormRequest
             'suppliers_grid.*.contact_email' => [
                 'bail', 'nullable', 'string', 'max:100',
             ],
+
+            'recurrence.stage_id' => ['bail', 'required_with:recurrence', 'uuid',
+                Rule::exists(PipelineStage::class, (new PipelineStage())->getKeyName())->withoutTrashed()],
+            'recurrence.type' => ['bail', 'required_with:recurrence', new Enum(RecurrenceTypeEnum::class)],
+            'recurrence.occur_every' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:99'],
+            'recurrence.occurrences_count' => ['bail', 'required_with:recurrence', 'integer', 'min:-1', 'max:9999'],
+            'recurrence.start_date' => ['bail', 'required_with:recurrence', 'date'],
+            'recurrence.end_date' => ['bail', 'nullable', 'date', 'after:recurrence.start_date'],
+            'recurrence.day' => ['bail', 'required_with:recurrence', new Enum(DateDayEnum::class)],
+            'recurrence.month' => ['bail', 'required_with:recurrence', new Enum(DateMonthEnum::class)],
+            'recurrence.week' => ['bail', 'required_with:recurrence', new Enum(DateWeekEnum::class)],
+            'recurrence.day_of_week' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:127'],
+            'recurrence.condition' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:3'],
         ];
     }
 
@@ -232,19 +261,36 @@ class CreateOpportunity extends FormRequest
 
     public function getOpportunityData(): CreateOpportunityData
     {
+        /** @var User $user */
+        $user = $this->user();
+        $timezone = $user->timezone->utc ?? config('app.timezone');
+
         return $this->createOpportunityData ??= new CreateOpportunityData([
+            'recurrence' => $this->whenHas('recurrence', function () use ($timezone): CreateOpportunityRecurrenceData {
+                return new CreateOpportunityRecurrenceData([
+                    'stage_id' => $this->input('recurrence.stage_id'),
+                    'type' => RecurrenceTypeEnum::tryFrom($this->input('recurrence.type')),
+                    'occur_every' => $this->input('recurrence.occur_every'),
+                    'occurrences_count' => $this->input('recurrence.occurrences_count'),
+                    'condition' => $this->input('recurrence.condition'),
+                    'start_date' => $this->date('recurrence.start_date', tz: $timezone)
+                        ->tz(config('app.timezone'))
+                        ->toDateTimeImmutable(),
+                    'end_date' => $this->date('recurrence.end_date', tz: $timezone)
+                        ?->tz(config('app.timezone'))
+                        ?->toDateTimeImmutable(),
+                    'day' => DateDayEnum::tryFrom($this->input('recurrence.day')),
+                    'month' => DateMonthEnum::tryFrom($this->input('recurrence.month')),
+                    'week' => DateWeekEnum::tryFrom($this->input('recurrence.week')),
+                    'day_of_week' => (int)$this->input('recurrence.day_of_week'),
+                ]);
+            }, fn() => null),
+
+            'sales_unit_id' => $this->input('sales_unit_id'),
             'pipeline_id' => $this->input('pipeline_id', function (): string {
                 return $this->getDefaultPipeline()->getKey();
             }),
-            'pipeline_stage_id' => $this->input('pipeline_stage_id', function (): ?string {
-                if ($this->missing('sale_action_name')) {
-                    return null;
-                }
-
-                $stageName = OpportunityDataMapper::resolveStageNameFromSaleAction($this->input('sale_action_name'));
-
-                return $this->getDefaultPipeline()->pipelineStages()->where('stage_name', $stageName)->first()?->getKey();
-            }),
+            'pipeline_stage_id' => $this->input('pipeline_stage_id'),
             'user_id' => $this->user()->getKey(),
             'contract_type_id' => $this->input('contract_type_id'),
             'account_manager_id' => $this->input('account_manager_id'),
@@ -284,7 +330,8 @@ class CreateOpportunity extends FormRequest
             'list_price_currency_code' => $this->input('list_price_currency_code'),
             'estimated_upsell_amount' => transform($this->input('estimated_upsell_amount'), fn($value) => (float)$value),
             'estimated_upsell_amount_currency_code' => $this->input('estimated_upsell_amount_currency_code'),
-            'personal_rating' => $this->input('personal_rating'),
+            'personal_rating' => transform($this->input('personal_rating'), static fn(mixed $v): string => (string)$v),
+            'ranking' => transform($this->input('ranking'), static fn(mixed $v): int => (int)$v),
             'margin_value' => transform($this->input('margin_value'), fn($value) => (float)$value),
             'service_level_agreement_id' => $this->input('service_level_agreement_id'),
             'sale_unit_name' => $this->input('sale_unit_name'),
@@ -298,7 +345,6 @@ class CreateOpportunity extends FormRequest
             'remarks' => $this->input('remarks'),
             'notes' => $this->input('notes'),
             'campaign_name' => $this->input('campaign_name'),
-            'sale_action_name' => $this->input('sale_action_name'),
             'create_suppliers' => transform($this->input('suppliers_grid'), function (array $suppliers) {
                 return array_map(fn(array $supplier) => [
                     'supplier_name' => $supplier['supplier_name'] ?? null,

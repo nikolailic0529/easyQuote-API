@@ -31,10 +31,12 @@ use App\Http\Controllers\API\V1\HpeContractController;
 use App\Http\Controllers\API\V1\HpeContractFileController;
 use App\Http\Controllers\API\V1\InvitationController;
 use App\Http\Controllers\API\V1\Margins\CountryMarginController;
+use App\Http\Controllers\API\V1\OpportunityAttachmentController;
 use App\Http\Controllers\API\V1\OpportunityController;
 use App\Http\Controllers\API\V1\OpportunityNoteController;
 use App\Http\Controllers\API\V1\PermissionController;
 use App\Http\Controllers\API\V1\Pipeline\PipelineController;
+use App\Http\Controllers\API\V1\Pipeliner\PipelinerWebhookController;
 use App\Http\Controllers\API\V1\PipelinerController;
 use App\Http\Controllers\API\V1\Quotes\CustomerController;
 use App\Http\Controllers\API\V1\Quotes\QuoteController;
@@ -49,6 +51,7 @@ use App\Http\Controllers\API\V1\S4QuoteController;
 use App\Http\Controllers\API\V1\SalesOrders\SalesOrderController;
 use App\Http\Controllers\API\V1\SalesOrders\SalesOrderDraftedController;
 use App\Http\Controllers\API\V1\SalesOrders\SalesOrderSubmittedController;
+use App\Http\Controllers\API\V1\SalesUnit\SalesUnitController;
 use App\Http\Controllers\API\V1\ServiceController;
 use App\Http\Controllers\API\V1\Space\SpaceController;
 use App\Http\Controllers\API\V1\StatsController;
@@ -76,7 +79,6 @@ use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteController;
 use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteDraftedController;
 use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteNoteController;
 use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteSubmittedController;
-use App\Http\Controllers\V1\Pipeliner\PipelinerWebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('settings/public', [SystemSettingController::class, 'showPublicSettings']);
@@ -96,7 +98,7 @@ Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function ()
     Route::group(['middleware' => 'auth:api'], function () {
         Route::get('logout', [AuthController::class, 'logout'])->name('account.logout');
         Route::match(['get', 'put'], 'user', [AuthController::class, 'user'])->name('account.show');
-        Route::post('user', [AuthController::class, 'updateOwnProfile'])->name('account.update');
+        Route::post('user', [AuthController::class, 'updateCurrentUser'])->name('account.update');
     });
 });
 
@@ -534,6 +536,10 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('opportunity-notes/{note}', [OpportunityNoteController::class, 'updateOpportunityNote']);
     Route::delete('opportunity-notes/{note}', [OpportunityNoteController::class, 'deleteOpportunityNote']);
 
+    Route::get('opportunities/{opportunity}/attachments', [OpportunityAttachmentController::class, 'listAttachments']);
+    Route::post('opportunities/{opportunity}/attachments', [OpportunityAttachmentController::class, 'storeAttachment']);
+    Route::delete('opportunities/{opportunity}/attachments/{attachment:id}', [OpportunityAttachmentController::class, 'deleteAttachment']);
+
     Route::get('opportunity-forms', [OpportunityFormController::class, 'paginateOpportunityForms']);
     Route::get('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'showOpportunityForm']);
     Route::post('opportunity-forms', [OpportunityFormController::class, 'storeOpportunityForm']);
@@ -705,11 +711,17 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('pipelines/default/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfDefaultPipeline']);
     Route::get('pipelines/{pipeline}/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfPipeline']);
     Route::post('pipelines', [PipelineController::class, 'storePipeline']);
-    Route::put('pipelines', [PipelineController::class, 'batchPutPipelines']);
+    Route::put('pipelines', [PipelineController::class, 'bulkUpdatePipelines']);
     Route::patch('pipelines/{pipeline}', [PipelineController::class, 'updatePipeline']);
     Route::patch('pipelines/{pipeline}/default', [PipelineController::class, 'markPipelineAsDefault']);
     Route::delete('pipelines/{pipeline}', [PipelineController::class, 'deletePipeline']);
     Route::get('pipeline-stages/{stage}/opportunities', [OpportunityController::class, 'paginateOpportunitiesOfPipelineStage']);
+
+    /**
+     * Sales Units.
+     */
+    Route::get('sales-units/list', [SalesUnitController::class, 'showListOfSalesUnits']);
+    Route::put('sales-units', [SalesUnitController::class, 'bulkCreateOrUpdateSalesUnits']);
 
     Route::get('tasks/taskable/{taskable}', [TaskController::class, 'listTasksOfTaskable'])->whereUuid('taskable');
     Route::post('tasks', [TaskController::class, 'createTask']);

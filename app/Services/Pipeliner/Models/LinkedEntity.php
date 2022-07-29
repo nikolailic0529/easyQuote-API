@@ -7,7 +7,7 @@ class LinkedEntity
     public function __construct(public readonly string $entityName,
                                 public readonly string $id,
                                 public readonly string $plReference,
-                                public readonly bool   $isValid)
+                                public readonly bool|null   $isValid)
     {
     }
 

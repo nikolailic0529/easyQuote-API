@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Events\Pipeliner\QueuedPipelinerSyncFailed;
-use App\Events\Pipeliner\QueuedPipelinerSyncProcessed;
-use App\Events\Pipeliner\QueuedPipelinerSyncProgress;
-use App\Events\Pipeliner\QueuedPipelinerSyncStarting;
-use App\Integrations\Pipeliner\GraphQl\PipelinerDataIntegration;
-use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
-use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
+use App\Enum\DateDayEnum;
+use App\Enum\DateMonthEnum;
+use App\Enum\DateWeekEnum;
+use App\Enum\DayOfWeekEnum;
+use App\Enum\OpportunityRecurrenceConditionEnum;
+use App\Enum\RecurrenceTypeEnum;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -18,16 +17,15 @@ use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Role;
+use App\Models\SalesUnit;
 use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -413,7 +411,7 @@ class OpportunityTest extends TestCase
      *
      * @returtn void
      */
-    public function testCanCreateOpportunity()
+    public function testCanCreateOpportunity(): void
     {
         $this->authenticateApi();
 
@@ -698,9 +696,23 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 2,
+            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
-        $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
+        $data['suppliers_grid'] = collect()->times(5, function (int $n) {
+            /** @var CustomField $field */
+            $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
+
+            /** @var CustomFieldValue $value */
+            $value = $field->values()->whereHas('allowedBy')->first();
+
+            return [
+                'supplier_name' => $value->field_value,
+                'country_name' => $value->allowedBy->random()->field_value,
+                'contact_name' => $this->faker->firstName(),
+                'contact_email' => $this->faker->companyEmail(),
+            ];
+        })->all();
 
         $response = $this->postJson('api/opportunities', $data)
 //            ->dump()
@@ -806,12 +818,244 @@ class OpportunityTest extends TestCase
             ]);
     }
 
+    public function testCanCreateOpportunityWithRecurrence(): void
+    {
+        $this->authenticateApi();
+
+        $account = tap(new Company(), function (Company $company) {
+            $company->name = $this->faker->company;
+            $company->vat = Str::random(40);
+            $company->type = 'External';
+            $company->email = $this->faker->companyEmail;
+            $company->phone = $this->faker->e164PhoneNumber;
+            $company->website = $this->faker->url;
+
+            $company->save();
+
+            $contact = Contact::factory()->create();
+
+            $company->contacts()->sync($contact);
+
+            $address = factory(Address::class)->create();
+
+            $company->addresses()->sync($address);
+        });
+
+        $response = $this->getJson('api/external-companies')
+//            ->dump()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'vat',
+                        'email',
+                        'phone',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $primaryAccountID = $response->json('data.0.id');
+
+        $response = $this->getJson('api/companies/'.$primaryAccountID)
+//            ->dump()
+            ->assertJsonStructure([
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'email',
+                        'first_name',
+                        'last_name',
+                        'phone',
+                        'mobile',
+                        'job_title',
+                        'is_verified',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $primaryAccountContactID = $response->json('contacts.0.id');
+
+        $data = Opportunity::factory()->raw([
+            'primary_account_id' => $primaryAccountID,
+            'primary_account_contact_id' => $primaryAccountContactID,
+            'is_contract_duration_checked' => true,
+            'contract_duration_months' => 2,
+            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'recurrence' => [
+                'stage_id' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->getKey(),
+                'condition' => OpportunityRecurrenceConditionEnum::Lost->value | OpportunityRecurrenceConditionEnum::Won->value,
+                'type' => $this->faker->randomElement(RecurrenceTypeEnum::cases())->value,
+                'occur_every' => $this->faker->numberBetween(1, 99),
+                'occurrences_count' => $this->faker->numberBetween(-1, 9999),
+                'start_date' => $this->faker->dateTimeBetween('+1day', '+3day')->format('Y-m-d H:i:s'),
+                'end_date' => $this->faker->dateTimeBetween('+3day', '+7day')->format('Y-m-d H:i:s'),
+                'day' => $this->faker->randomElement(DateDayEnum::cases())->value,
+                'month' => $this->faker->randomElement(DateMonthEnum::cases())->value,
+                'week' => $this->faker->randomElement(DateWeekEnum::cases())->value,
+                'day_of_week' => $this->faker->randomElement([
+                    DayOfWeekEnum::Sunday->value,
+                    DayOfWeekEnum::Sunday->value | DayOfWeekEnum::Monday->value,
+                    DayOfWeekEnum::Sunday->value | DayOfWeekEnum::Monday->value | DayOfWeekEnum::Tuesday->value,
+                    DayOfWeekEnum::Sunday->value | DayOfWeekEnum::Monday->value | DayOfWeekEnum::Tuesday->value | DayOfWeekEnum::Wednesday->value,
+                    DayOfWeekEnum::Sunday->value | DayOfWeekEnum::Monday->value | DayOfWeekEnum::Tuesday->value | DayOfWeekEnum::Wednesday->value | DayOfWeekEnum::Thursday->value,
+                    DayOfWeekEnum::Sunday->value | DayOfWeekEnum::Monday->value | DayOfWeekEnum::Tuesday->value | DayOfWeekEnum::Wednesday->value | DayOfWeekEnum::Friday->value,
+                    DayOfWeekEnum::Sunday->value | DayOfWeekEnum::Monday->value | DayOfWeekEnum::Tuesday->value | DayOfWeekEnum::Wednesday->value | DayOfWeekEnum::Friday->value | DayOfWeekEnum::Saturday->value,
+                ]),
+            ],
+        ]);
+
+        $data['suppliers_grid'] = collect()->times(5, function (int $n) {
+            /** @var CustomField $field */
+            $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
+
+            /** @var CustomFieldValue $value */
+            $value = $field->values()->whereHas('allowedBy')->first();
+
+            return [
+                'supplier_name' => $value->field_value,
+                'country_name' => $value->allowedBy->random()->field_value,
+                'contact_name' => $this->faker->firstName(),
+                'contact_email' => $this->faker->companyEmail(),
+            ];
+        })->all();
+
+        $response = $this->postJson('api/opportunities', $data)
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                "id",
+                "user_id",
+                "pipeline_id",
+                "pipeline",
+                "contract_type_id",
+                "contract_type",
+                "primary_account_id",
+                "primary_account" => [
+                    "id",
+                    "addresses" => [
+                        "*" => [
+                            "id",
+                            "is_default",
+                        ],
+                    ],
+                    "contacts" => [
+                        "*" => [
+                            "id",
+                            "is_default",
+                        ],
+                    ],
+                ],
+                "primary_account_contact_id",
+                "primary_account_contact",
+                "account_manager_id",
+                "account_manager",
+                "project_name",
+                "nature_of_service",
+                "renewal_month",
+                "renewal_year",
+                "customer_status",
+                "end_user_name",
+                "hardware_status",
+                "region_name",
+                "opportunity_start_date",
+                "opportunity_end_date",
+                "opportunity_closing_date",
+                "is_contract_duration_checked",
+                "contract_duration_months",
+                "expected_order_date",
+                "customer_order_date",
+                "purchase_order_date",
+                "supplier_order_date",
+                "supplier_order_transaction_date",
+                "supplier_order_confirmation_date",
+                "opportunity_amount",
+                "opportunity_amount_currency_code",
+                "purchase_price",
+                "purchase_price_currency_code",
+                "list_price",
+                "list_price_currency_code",
+                "estimated_upsell_amount",
+                "estimated_upsell_amount_currency_code",
+                "margin_value",
+                "personal_rating",
+                "ranking",
+                "account_manager_name",
+                "service_level_agreement_id",
+                "sale_unit_name",
+                "drop_in",
+                "lead_source_name",
+                "has_higher_sla",
+                "is_multi_year",
+                "has_additional_hardware",
+                "has_service_credits",
+                "remarks",
+                "sale_action_name",
+                "updated_at",
+                "created_at",
+
+                "status",
+                "status_reason",
+
+                "base_list_price",
+                "base_purchase_price",
+                "base_opportunity_amount",
+
+                "is_opportunity_start_date_assumed",
+                "is_opportunity_end_date_assumed",
+
+                "suppliers_grid" => [
+                    "*" => [
+                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                    ],
+                ],
+                'recurrence' => [
+                    'id',
+                    'stage_id',
+                    'condition',
+                    'user_id',
+                    'opportunity_id',
+                    'type',
+                    'day',
+                    'week',
+                    'day_of_week',
+                    'month',
+                    'occur_every',
+                    'occurrences_count',
+                    'created_at',
+                    'updated_at',
+                ],
+            ]);
+
+        $this->getJson('api/opportunities/'.$response->json('id'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'recurrence' => [
+                    'id',
+                    'stage_id',
+                    'condition',
+                    'user_id',
+                    'opportunity_id',
+                    'type',
+                    'day',
+                    'week',
+                    'day_of_week',
+                    'month',
+                    'occur_every',
+                    'occurrences_count',
+                    'created_at',
+                    'updated_at',
+                ],
+            ]);
+    }
+
     /**
      * Test an ability to update an existing opportunity.
-     *
-     * @return void
      */
-    public function testCanUpdateOpportunity()
+    public function testCanUpdateOpportunity(): void
     {
         $this->authenticateApi();
 
@@ -992,6 +1236,7 @@ class OpportunityTest extends TestCase
         $newContactOfPrimaryAccount = Contact::factory()->create();
 
         $this->patchJson('api/companies/'.$primaryAccountID, [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'name' => $account->name,
             'vat_type' => 'NO VAT',
             'type' => 'External',
@@ -1022,6 +1267,34 @@ class OpportunityTest extends TestCase
             ]);
 
         $this->assertEmpty($response->json('primary_account_contact_id'));
+    }
+
+    /**
+     * Test an ability to partially update an existing opportunity.
+     */
+    public function testCanPartiallyUpdateOpportunity(): void
+    {
+        $this->authenticateApi();
+
+        $opportunity = Opportunity::factory()->create([
+            'user_id' => $this->app['auth.driver']->id(),
+        ]);
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data = [
+            'customer_order_date' => $this->faker->dateTimeBetween('+1day', '+3day')->format('Y-m-d')
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/opportunities/'.$opportunity->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'customer_order_date',
+            ]);
+
+        foreach ($data as $attr => $value) {
+            $this->assertSame($value, $response->json($attr));
+        }
     }
 
     /**
@@ -1096,9 +1369,23 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 60,
+            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
-        $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
+        $data['suppliers_grid'] = collect()->times(5, function (int $n) {
+            /** @var CustomField $field */
+            $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
+
+            /** @var CustomFieldValue $value */
+            $value = $field->values()->whereHas('allowedBy')->first();
+
+            return [
+                'supplier_name' => $value->field_value,
+                'country_name' => $value->allowedBy->random()->field_value,
+                'contact_name' => $this->faker->firstName(),
+                'contact_email' => $this->faker->companyEmail(),
+            ];
+        })->all();
 
         $response = $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data)
 //            ->dump()
@@ -1184,6 +1471,7 @@ class OpportunityTest extends TestCase
         $newContactOfPrimaryAccount = Contact::factory()->create();
 
         $this->patchJson('api/companies/'.$primaryAccountID, [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'name' => $account->name,
             'vat_type' => 'NO VAT',
             'type' => 'External',
@@ -1259,7 +1547,9 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
                     ],
                 ],
                 'errors',
@@ -1293,7 +1583,9 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
                     ],
                 ],
                 'errors',
@@ -1331,7 +1623,9 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
                     ],
                 ],
                 'errors',
@@ -1357,7 +1651,8 @@ class OpportunityTest extends TestCase
                         '*' => ['id', 'name', 'short_code',],
                     ],
                     'addresses' => [
-                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2', 'country_id'],
+                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
+                            'country_id'],
                     ],
                     'contacts' => [
                         '*' => ['id', 'contact_type', 'first_name', 'last_name'],
@@ -1398,7 +1693,7 @@ class OpportunityTest extends TestCase
             ->toArray();
 
         $this->assertArrayHasKey('Invoice', $groupedAddresses);
-        $this->assertCount(2, $groupedAddresses['Invoice']);
+        $this->assertCount(3, $groupedAddresses['Invoice']);
 
         $expectedAddresses = [
             [
@@ -1456,7 +1751,9 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
                     ],
                 ],
                 'errors',
@@ -1484,7 +1781,8 @@ class OpportunityTest extends TestCase
                         '*' => ['id', 'name', 'short_code',],
                     ],
                     'addresses' => [
-                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2', 'country_id'],
+                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
+                            'country_id'],
                     ],
                     'contacts' => [
                         '*' => ['id', 'contact_type', 'first_name', 'last_name'],
@@ -1553,7 +1851,9 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
                     ],
                 ],
                 'errors',
@@ -1587,7 +1887,9 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
                     ],
                 ],
                 'errors',
@@ -1613,7 +1915,8 @@ class OpportunityTest extends TestCase
                         '*' => ['id', 'name', 'short_code',],
                     ],
                     'addresses' => [
-                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2', 'country_id'],
+                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
+                            'country_id'],
                     ],
                     'contacts' => [
                         '*' => ['id', 'contact_type', 'first_name', 'last_name'],
@@ -1659,7 +1962,9 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
                     ],
                 ],
                 'errors',
@@ -1794,10 +2099,18 @@ class OpportunityTest extends TestCase
         $this->assertTrue($companyResponse->json('permissions.delete'));
 
         foreach ($companyResponse->json('addresses.*.user_id') as $ownerID) {
+            if (null === $ownerID) {
+                continue;
+            }
+
             $this->assertSame($user->getKey(), $ownerID);
         }
 
         foreach ($companyResponse->json('contacts.*.user_id') as $ownerID) {
+            if (null === $ownerID) {
+                continue;
+            }
+
             $this->assertSame($user->getKey(), $ownerID);
         }
     }
@@ -2050,6 +2363,7 @@ class OpportunityTest extends TestCase
                         '*' => [
                             'id',
                             'user_id',
+                            'pipeline_stage_id',
                             'account_manager_id',
                             'project_name',
                             'opportunity_closing_date',

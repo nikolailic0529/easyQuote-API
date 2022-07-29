@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Company;
+use App\Models\SalesUnit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CompanyFactory extends Factory
@@ -12,6 +13,7 @@ class CompanyFactory extends Factory
     public function definition(): array
     {
         return [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'name' => $this->faker->company,
             'short_code' => $this->faker->unique()->regexify('/[A-Z]{3}/'),
             'vat' => $this->faker->unique()->bankAccountNumber(),

@@ -54,5 +54,9 @@ class MacroServiceProvider extends ServiceProvider
         Validator::extend('alpha_spaces', function ($attribute, $value, $parameters) {
             return preg_match('/^[\pL\s]+$/', $value);
         }, 'The :attribute may only contain letters and spaces.');
+
+        Validator::extend('one_of', function (...$args) {
+            dd($args);
+        });
     }
 }

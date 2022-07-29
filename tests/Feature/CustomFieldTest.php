@@ -535,4 +535,25 @@ class CustomFieldTest extends TestCase
                 ],
             ]);
     }
+
+    /**
+     * Test an ability to calculate value of a custom field.
+     */
+    public function testCanCalculateCustomFieldValue(): void
+    {
+        $this->authenticateApi();
+
+        $this->postJson('api/v2/custom-fields/opportunity_ranking/calculate', [
+            'variables' => [
+                'customer_order_date' => null,
+                'personal_rating' => '2',
+            ]
+        ])
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'result',
+                'errors',
+            ]);
+    }
 }

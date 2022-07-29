@@ -35,6 +35,7 @@ class AppointmentWithIncludesResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'sales_unit_id' => $this->salesUnit()->getParentKey(),
             'activity_type' => $this->activity_type,
             'subject' => $this->subject,
             'description' => $this->description,
@@ -42,6 +43,8 @@ class AppointmentWithIncludesResource extends JsonResource
 
             'start_date' => Carbon::instance($this->start_date)->tz($tz)->format(config('date.format_time')),
             'end_date' => Carbon::instance($this->end_date)->tz($tz)->format(config('date.format_time')),
+
+            'sales_unit' => $this->salesUnit,
             'reminder' => $this->reminder,
 
             'user_relations' => $this->userRelations,

@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesUnit;
 use App\Models\Task\Task;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -143,6 +144,7 @@ class TaskTest extends TestCase
         $taskable = Opportunity::factory()->create();
 
         $this->postJson('api/tasks', [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'activity_type' => 'Task',
             'name' => $this->faker->text(100),
             'content' => [],
@@ -158,6 +160,7 @@ class TaskTest extends TestCase
         $taskable = Company::factory()->create();
 
         $this->postJson('api/tasks', [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'activity_type' => 'Task',
             'name' => $this->faker->text(100),
             'content' => [],
@@ -173,6 +176,7 @@ class TaskTest extends TestCase
         $taskable = factory(Quote::class)->create();
 
         $this->postJson('api/tasks', [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'activity_type' => 'Task',
             'name' => $this->faker->text(100),
             'content' => [],
@@ -188,6 +192,7 @@ class TaskTest extends TestCase
         $taskable = factory(WorldwideQuote::class)->create();
 
         $this->postJson('api/tasks', [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'activity_type' => 'Task',
             'name' => $this->faker->text(100),
             'content' => [],
@@ -213,6 +218,7 @@ class TaskTest extends TestCase
         $this->authenticateApi();
 
         $this->patchJson("api/tasks/".$task->getKey(), [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'activity_type' => 'Task',
             'name' => $this->faker->text(100),
             'content' => [],

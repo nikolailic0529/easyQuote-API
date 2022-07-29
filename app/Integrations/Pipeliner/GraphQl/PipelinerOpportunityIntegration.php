@@ -2,7 +2,6 @@
 
 namespace App\Integrations\Pipeliner\GraphQl;
 
-use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\Exceptions\EntityNotFoundException;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Models\CreateOpportunityInput;
@@ -23,18 +22,24 @@ class PipelinerOpportunityIntegration
     {
     }
 
-    public function scroll(string $after = null, string $before = null, OpportunityFilterInput $filter = null, int $chunkSize = 10): OpportunityEntityScrollIterator
+    public function scroll(string                 $after = null,
+                           string                 $before = null,
+                           OpportunityFilterInput $filter = null,
+                           int                    $first = 10): OpportunityEntityScrollIterator
     {
         /** @noinspection PhpUnhandledExceptionInspection */
-        $iterator = $this->scrollGenerator(after: $after, before: $before, filter: $filter, chunkSize: $chunkSize);
+        $iterator = $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
 
         return new OpportunityEntityScrollIterator($iterator);
     }
 
-    public function simpleScroll(string $after = null, string $before = null, OpportunityFilterInput $filter = null, int $chunkSize = 10): \Generator
+    public function simpleScroll(string                 $after = null,
+                                 string                 $before = null,
+                                 OpportunityFilterInput $filter = null,
+                                 int                    $first = 10): \Generator
     {
         /** @noinspection PhpUnhandledExceptionInspection */
-        return $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, chunkSize: $chunkSize);
+        return $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
     }
 
     /**
@@ -124,7 +129,10 @@ class PipelinerOpportunityIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function scrollGenerator(string $after = null, string $before = null, OpportunityFilterInput $filter = null, int $chunkSize = 10): \Generator
+    protected function scrollGenerator(string                 $after = null,
+                                       string                 $before = null,
+                                       OpportunityFilterInput $filter = null,
+                                       int                    $first = 10): \Generator
     {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
@@ -139,7 +147,7 @@ class PipelinerOpportunityIntegration
                                     ->setArguments([
                                         'filter' => '$filter',
                                         'orderBy' => new RawObject('{modified: Asc}'),
-                                        'first' => $chunkSize,
+                                        'first' => $first,
                                         'after' => '$after',
                                         'before' => '$before',
                                     ])
@@ -181,7 +189,7 @@ class PipelinerOpportunityIntegration
         }
 
         if ($hasNextPage) {
-            yield from $this->scrollGenerator(after: $after, before: $before, filter: $filter, chunkSize: $chunkSize);
+            yield from $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
     }
 
@@ -189,7 +197,10 @@ class PipelinerOpportunityIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function simpleScrollGenerator(string $after = null, string $before = null, OpportunityFilterInput $filter = null, int $chunkSize = 10): \Generator
+    protected function simpleScrollGenerator(string                 $after = null,
+                                             string                 $before = null,
+                                             OpportunityFilterInput $filter = null,
+                                             int                    $first = 10): \Generator
     {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
@@ -203,7 +214,7 @@ class PipelinerOpportunityIntegration
                                 (new Query('getByCriteria'))
                                     ->setArguments([
                                         'orderBy' => new RawObject('{modified: Asc}'),
-                                        'first' => $chunkSize,
+                                        'first' => $first,
                                         'after' => '$after',
                                         'before' => '$before',
                                         'filter' => '$filter',
@@ -248,7 +259,7 @@ class PipelinerOpportunityIntegration
         }
 
         if ($hasNextPage) {
-            yield from $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, chunkSize: $chunkSize);
+            yield from $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
     }
 
@@ -414,6 +425,33 @@ class PipelinerOpportunityIntegration
                         ]),
                 ]),
 
+            (new Query('documents'))
+                ->setSelectionSet([
+                    (new Query('edges'))
+                        ->setSelectionSet([
+                            (new Query('node'))
+                                ->setSelectionSet([
+                                    'id',
+                                    (new Query('cloudObject'))
+                                        ->setSelectionSet([
+                                            'id',
+                                            'filename',
+                                            'isPublic',
+                                            'mimeType',
+                                            'params',
+                                            'size',
+                                            'type',
+                                            'url',
+                                            'publicUrl',
+                                            'created',
+                                            'modified',
+                                        ]),
+                                    'created',
+                                    'modified',
+                                ]),
+                        ]),
+                ]),
+
             (new Query('value'))
                 ->setSelectionSet([
                     'baseValue',
@@ -422,10 +460,7 @@ class PipelinerOpportunityIntegration
                 ]),
 
             (new Query('unit'))
-                ->setSelectionSet([
-                    'id',
-                    'name',
-                ]),
+                ->setSelectionSet(PipelinerSalesUnitIntegration::getSalesUnitEntitySelectionSet()),
 
             (new Query('step'))
                 ->setSelectionSet([
@@ -450,10 +485,7 @@ class PipelinerOpportunityIntegration
                 ->setSelectionSet(PipelinerContactIntegration::getContactEntitySelectionSet()),
 
             (new Query('productCurrency'))
-                ->setSelectionSet([
-                    'id',
-                    'code',
-                ]),
+                ->setSelectionSet(PipelinerCurrencyIntegration::getCurrencyEntitySelectionSet()),
 
             'customFields',
 

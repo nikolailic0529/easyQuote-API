@@ -20,6 +20,7 @@ class CustomFieldValueResource extends JsonResource
         return [
             'id' => $this->getKey(),
             'field_value' => $this->field_value,
+            'calc_value' => $this->calc_value,
             'allowed_by' => $this->allowedByRelations->pluck('allowed_by_id'),
             'entity_order' => $this->entity_order,
             'is_default' => $this->is_default,

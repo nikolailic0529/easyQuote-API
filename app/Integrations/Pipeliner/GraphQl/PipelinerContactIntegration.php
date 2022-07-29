@@ -8,6 +8,7 @@ use App\Integrations\Pipeliner\Models\ContactEntity;
 use App\Integrations\Pipeliner\Models\ContactFilterInput;
 use App\Integrations\Pipeliner\Models\CreateContactInput;
 use App\Integrations\Pipeliner\Models\UpdateContactInput;
+use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
 use GraphQL\Mutation;
 use GraphQL\Query;
 use GraphQL\QueryBuilder\MutationBuilder;
@@ -245,15 +246,16 @@ class PipelinerContactIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    public function create(CreateContactInput $input): ContactEntity
+    public function create(CreateContactInput $input, ValidationLevelCollection $validationLevel = null): ContactEntity
     {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: 'CreateContactInput', isRequired: true)
+            ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
             ->selectField(
                 (new Mutation('createContact'))
                     ->setArguments([
                         'input' => '$input',
-                        'validationLevel' => new RawObject('[SKIP_USER_DEFINED_VALIDATIONS]'),
+                        'validationLevel' => '$validationLevel',
                     ])
                     ->setSelectionSet([
                         (new Query('contact'))
@@ -265,7 +267,8 @@ class PipelinerContactIntegration
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
-                    'input' => $input->jsonSerialize(),
+                    'input' => $input,
+                    'validationLevel' => $validationLevel,
                 ],
             ]);
 
@@ -280,13 +283,17 @@ class PipelinerContactIntegration
      * @throws GraphQlRequestException
      * @throws \Illuminate\Http\Client\RequestException
      */
-    public function update(UpdateContactInput $input): ContactEntity
+    public function update(UpdateContactInput $input, ValidationLevelCollection $validationLevel = null): ContactEntity
     {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: 'UpdateContactInput', isRequired: true)
+            ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
             ->selectField(
                 (new Mutation('updateContact'))
-                    ->setArguments(['input' => '$input'])
+                    ->setArguments([
+                        'input' => '$input',
+                        'validationLevel' => '$validationLevel',
+                    ])
                     ->setSelectionSet([
                         (new Query('contact'))
                             ->setSelectionSet(static::getContactEntitySelectionSet()),
@@ -297,7 +304,8 @@ class PipelinerContactIntegration
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
-                    'input' => $input->jsonSerialize(),
+                    'input' => $input,
+                    'validationLevel' => $validationLevel,
                 ],
             ]);
 
@@ -331,6 +339,9 @@ class PipelinerContactIntegration
 
             (new Query('owner'))
                 ->setSelectionSet(PipelinerClientIntegration::getClientEntitySelectionSet()),
+
+            (new Query('unit'))
+                ->setSelectionSet(PipelinerSalesUnitIntegration::getSalesUnitEntitySelectionSet()),
 
             (new Query('accountRelations'))
                 ->setSelectionSet([

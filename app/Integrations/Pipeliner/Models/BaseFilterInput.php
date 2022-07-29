@@ -6,9 +6,9 @@ abstract class BaseFilterInput implements \JsonSerializable
 {
     protected array $fields = [];
 
-    public static function new(): static
+    public static function new(mixed ...$args): static
     {
-        return new static();
+        return new static(...$args);
     }
 
     protected function setField(string $name, BaseFilterInput $value): static

@@ -300,7 +300,7 @@ class CompanyController extends Controller
     {
         $this->authorize('view', $company);
 
-        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($company)->get();
+        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($company, $request)->get();
 
         return AppointmentListResource::collection($resource);
     }
@@ -322,7 +322,7 @@ class CompanyController extends Controller
 
         $resource = $service
             ->setCauser($request->user())
-            ->updateCompany(company: $company, companyData: $request->getUpdateCompanyData());
+            ->updateCompany(company: $company, data: $request->getUpdateCompanyData());
 
         return response()->json(
             \App\Http\Resources\V1\Company\CompanyWithIncludes::make($resource),

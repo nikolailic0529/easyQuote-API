@@ -13,6 +13,7 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\ConnectionInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Spatie\Geocoder\Exceptions\CouldNotGeocode;
 use Spatie\Geocoder\Geocoder;
 use Throwable;
 
@@ -97,9 +98,7 @@ class GoogleAddressGeocodingService implements AddressGeocoder, LoggerAware
             ->where('searchable_address', $address)
             ->first();
 
-
         if (false === is_null($existingLocation)) {
-
             $this->logger->info(LC_FE_01, [
                 'location' => $existingLocation->only(['id', 'searchable_address']),
             ]);
@@ -107,7 +106,11 @@ class GoogleAddressGeocodingService implements AddressGeocoder, LoggerAware
             return $existingLocation;
         }
 
-        $result = $this->geocoder->getCoordinatesForAddress($address);
+        try {
+            $result = $this->geocoder->getCoordinatesForAddress($address);
+        } catch (CouldNotGeocode $e) {
+            return null;
+        }
 
         $dto = GeocoderData::fromArray($result);
 

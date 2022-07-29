@@ -10,6 +10,9 @@ use Symfony\Component\Validator\Constraints;
 
 final class UpdateTaskData extends DataTransferObject
 {
+    #[Constraints\Uuid]
+    public string $sales_unit_id;
+
     public TaskTypeEnum $activity_type;
 
     #[Constraints\NotBlank]

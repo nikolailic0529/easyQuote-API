@@ -3,18 +3,18 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
-use App\Models\Pipeline\Pipeline;
 use App\Models\User;
+use App\Services\Pipeliner\Exceptions\MultiplePipelinerEntitiesFoundException;
 use App\Services\Pipeliner\PipelinerClientLookupService;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\User\UserDataMapper;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
-use JetBrains\PhpStorm\ArrayShape;
 
 class PushClientStrategy implements PushStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface          $connection,
                                 protected PipelinerClientLookupService $clientLookupService,
@@ -27,9 +27,15 @@ class PushClientStrategy implements PushStrategy
     /**
      * @param User $model
      * @return void
+     * @throws MultiplePipelinerEntitiesFoundException
+     * @throws \Throwable
      */
     public function sync(Model $model): void
     {
+        if (!$model instanceof User) {
+            throw new \TypeError(sprintf("Model must be an instance of %s.", User::class));
+        }
+
         if (null !== $model->pl_reference) {
             return;
         }
@@ -59,16 +65,6 @@ class PushClientStrategy implements PushStrategy
 
             $this->connection->transaction(static fn() => $user->saveQuietly());
         });
-    }
-
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return $this;
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
     }
 
     public function countPending(): int

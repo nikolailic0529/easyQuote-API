@@ -4,30 +4,34 @@ namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
 use App\Integrations\Pipeliner\Models\CloudObjectEntity;
+use App\Integrations\Pipeliner\Models\EntityFilterStringField;
+use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
 use App\Integrations\Pipeliner\Models\TaskEntity;
+use App\Integrations\Pipeliner\Models\TaskFilterInput;
 use App\Models\Attachment;
-use App\Models\Pipeline\Pipeline;
 use App\Models\PipelinerModelScrollCursor;
 use App\Models\Task\Task;
 use App\Services\Attachment\AttachmentDataMapper;
 use App\Services\Attachment\AttachmentFileService;
-use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Task\TaskDataMapper;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use JetBrains\PhpStorm\ArrayShape;
 
 class PullTaskStrategy implements PullStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface      $connection,
                                 protected PipelinerTaskIntegration $taskIntegration,
                                 protected TaskDataMapper           $dataMapper,
                                 protected AttachmentDataMapper     $attachmentDataMapper,
                                 protected AttachmentFileService    $attachmentFileService,
+                                protected PullAttachmentStrategy   $pullAttachmentStrategy,
                                 protected LockProvider             $lockProvider)
     {
     }
@@ -39,6 +43,10 @@ class PullTaskStrategy implements PullStrategy
      */
     public function sync(object $entity): Model
     {
+        if (!$entity instanceof TaskEntity) {
+            throw new \TypeError(sprintf("Entity must be an instance of %s.", TaskEntity::class));
+        }
+
         /** @var Task|null $task */
         $task = Task::query()
             ->withTrashed()
@@ -91,32 +99,12 @@ class PullTaskStrategy implements PullStrategy
 
     private function syncRelationsOfTaskEntity(TaskEntity $entity, Task $model): void
     {
-        foreach ($entity->documents as $document) {
-            $this->syncDocument($document, $model);
-        }
-    }
-
-    private function syncDocument(CloudObjectEntity $entity, Task $model): void
-    {
-        /** @var Attachment|null $attachment */
-        $attachment = Attachment::query()
-            ->where('pl_reference', $entity->id)
-            ->withTrashed()
-            ->first();
-
-        // skip if already exists
-        if (null !== $attachment) {
-            return;
-        }
-
-        $metadata = $this->attachmentFileService->downloadFromUrl($entity->url);
-
-        tap($this->attachmentDataMapper->mapFromCloudObjectEntity($entity, $metadata), function (Attachment $attachment) use ($model): void {
-            $this->connection->transaction(static function () use ($model, $attachment): void {
-                $attachment->save();
-                $model->attachments()->syncWithoutDetaching($attachment);
+        $attachments = Collection::make($entity->documents)
+            ->map(function (CloudObjectEntity $entity): Attachment {
+                return $this->pullAttachmentStrategy->sync($entity);
             });
-        });
+
+        $this->connection->transaction(static fn() => $model->attachments()->syncWithoutDetaching($attachments));
     }
 
     public function syncByReference(string $reference): Model
@@ -126,31 +114,17 @@ class PullTaskStrategy implements PullStrategy
         );
     }
 
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
-    }
-
     public function countPending(): int
     {
-        $mostRecentCursor = $this->getMostRecentScrollCursor();
-
-        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull($mostRecentCursor);
+        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull();
 
         return $count;
     }
 
     public function iteratePending(): \Traversable
     {
-        $latestCursor = $this->getMostRecentScrollCursor();
-
         return $this->taskIntegration->scroll(
-            after: $latestCursor?->cursor,
+            ...$this->resolveScrollParameters()
         );
     }
 
@@ -159,12 +133,12 @@ class PullTaskStrategy implements PullStrategy
         return (new Task())->getMorphClass();
     }
 
-    private function computeTotalEntitiesCountAndLastIdToPull(PipelinerModelScrollCursor $scrollCursor = null): array
+    private function computeTotalEntitiesCountAndLastIdToPull(): array
     {
         /** @var \Generator $iterator */
         $iterator = $this->taskIntegration->simpleScroll(
-            after: $scrollCursor?->cursor,
-            first: 1000
+            ...$this->resolveScrollParameters(),
+            ...['first' => 1_000]
         );
 
         $totalCount = 0;
@@ -180,13 +154,25 @@ class PullTaskStrategy implements PullStrategy
         return [$totalCount, $lastId];
     }
 
+    #[ArrayShape(['after' => 'string|null', 'filter' => TaskFilterInput::class])]
+    private function resolveScrollParameters(): array
+    {
+        $filter = TaskFilterInput::new();
+        $unitFilter = SalesUnitFilterInput::new()->name(EntityFilterStringField::eq(
+            ...collect($this->getSalesUnits())->pluck('unit_name')
+        ));
+        $filter->unit($unitFilter);
+
+        return [
+            'after' => $this->getMostRecentScrollCursor()?->cursor,
+            'filter' => $filter,
+        ];
+    }
+
     private function getMostRecentScrollCursor(): ?PipelinerModelScrollCursor
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return PipelinerModelScrollCursor::query()
-            ->whereBelongsTo($this->pipeline)
             ->where('model_type', $this->getModelType())
             ->latest()
             ->first();
@@ -197,7 +183,8 @@ class PullTaskStrategy implements PullStrategy
         return $entity instanceof Task;
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class, 'modified' => \DateTimeInterface::class])]
+    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
+        'modified' => \DateTimeInterface::class])]
     public function getMetadata(string $reference): array
     {
         $entity = $this->taskIntegration->getById($reference);

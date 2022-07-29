@@ -6,7 +6,7 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Integrations\Pipeliner\Models\OpportunityFilterInput;
-use App\Integrations\Pipeliner\Models\PipelineEntity;
+use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
 use App\Models\Opportunity;
 use App\Services\Pipeliner\Exceptions\MultiplePipelinerEntitiesFoundException;
 use Illuminate\Support\LazyCollection;
@@ -21,10 +21,12 @@ class PipelinerOpportunityLookupService
     /**
      * @throws MultiplePipelinerEntitiesFoundException
      */
-    public function find(Opportunity $opportunity, PipelineEntity $pipelineEntity): ?OpportunityEntity
+    public function find(Opportunity $opportunity, array $units): ?OpportunityEntity
     {
         $filter = OpportunityFilterInput::new()
-            ->pipelineId(EntityFilterStringField::eq($pipelineEntity->id))
+            ->unit(SalesUnitFilterInput::new()->name(
+                EntityFilterStringField::eq(...collect($units)->pluck('unit_name'))
+            ))
             ->name(EntityFilterStringField::ieq($opportunity->project_name));
 
         $iterator = $this->integration->scroll(

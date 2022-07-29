@@ -9,10 +9,10 @@ use App\Integrations\Pipeliner\Models\FieldDataSetItemCollection;
 use App\Integrations\Pipeliner\Models\FieldEntity;
 use App\Integrations\Pipeliner\Models\FieldFilterInput;
 use App\Integrations\Pipeliner\Models\UpdateDraftFieldInput;
-use App\Models\Pipeline\Pipeline;
 use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\ConnectionResolverInterface;
@@ -21,7 +21,7 @@ use Illuminate\Support\Collection;
 
 class PushCustomFieldStrategy implements PushStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionResolverInterface $connectionResolver,
                                 protected Config                      $config,
@@ -35,6 +35,10 @@ class PushCustomFieldStrategy implements PushStrategy
      */
     public function sync(Model $model): void
     {
+        if (!$model instanceof CustomField) {
+            throw new \TypeError(sprintf("Model must be an instance of %s.", CustomField::class));
+        }
+
         if (!isset($this->getSyncFieldMap()[$model->field_name])) {
             throw new PipelinerSyncException("Unsupported CustomField model for sync.");
         }
@@ -68,10 +72,11 @@ class PushCustomFieldStrategy implements PushStrategy
             }
         });
 
-        $dataSetCollection = $fieldValues->map(function (CustomFieldValue $value, int $n) use ($plField): FieldDataSetItem {
+        $dataSetCollection = $fieldValues->map(function (CustomFieldValue $value, int $n) use ($plField
+        ): FieldDataSetItem {
             return new FieldDataSetItem(
                 optionName: $value->field_value,
-                calcValue: $n,
+                calcValue: (float)$value->calc_value,
                 id: $value->pl_reference,
                 allowedBy: $value->allowedBy->pluck('pl_reference')->all(),
             );
@@ -98,16 +103,6 @@ class PushCustomFieldStrategy implements PushStrategy
     private function getSyncFieldMap(): array
     {
         return $this->config->get('pipeliner.sync.custom_fields.mapping', []);
-    }
-
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
     }
 
     public function countPending(): int

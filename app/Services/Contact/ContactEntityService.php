@@ -8,12 +8,10 @@ use App\DTO\Contact\UpdateContactData;
 use App\Events\Contact\ContactCreated;
 use App\Events\Contact\ContactDeleted;
 use App\Events\Contact\ContactUpdated;
-use App\Models\Address;
 use App\Models\Contact;
 use App\Models\Image;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -35,21 +33,12 @@ class ContactEntityService implements CauserAware
         return tap(new Contact(), function (Contact $contact) use ($data) {
             $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
             $contact->user()->associate($this->causer);
-            $contact->contact_type = $data->contact_type;
-            $contact->gender = $data->gender;
-            $contact->email = $data->email;
-            $contact->first_name = $data->first_name;
-            $contact->last_name = $data->last_name;
-            $contact->phone = $data->phone;
-            $contact->mobile = $data->mobile;
-            $contact->job_title = $data->job_title;
-            $contact->is_verified = $data->is_verified;
+
+            $contact->forceFill(
+                $data->except('picture')->toArray()
+            );
 
             $this->connection->transaction(static fn() => $contact->save());
-
-            if (is_array($data->addresses)) {
-                $this->syncAddressesWithContact($contact, $data->addresses);
-            }
 
             if (false === is_null($data->picture)) {
                 $contact->image()->delete();
@@ -60,44 +49,6 @@ class ContactEntityService implements CauserAware
             $this->eventDispatcher->dispatch(
                 new ContactCreated(contact: $contact, causer: $this->causer)
             );
-        });
-    }
-
-    protected function syncAddressesWithContact(Contact $contact, array $addressModelKeys): void
-    {
-        $addressModel = new Address();
-
-        $disassociatedAddresses = $addressModel->newQuery()
-            ->whereKeyNot($addressModelKeys)
-            ->whereBelongsTo($contact)
-            ->get([
-                $addressModel->getKeyName(),
-                $addressModel->contact()->getForeignKeyName(),
-                $addressModel->getCreatedAtColumn(),
-                $addressModel->getUpdatedAtColumn()
-            ]);
-
-        $associatedAddresses = $addressModel->newQuery()
-            ->whereKey($addressModelKeys)
-            ->where(static function (Builder $builder) use ($addressModel, $contact): void {
-                $builder->where($addressModel->contact()->getForeignKeyName(), '<>', $contact->getKey())
-                    ->orWhereNull($addressModel->contact()->getForeignKeyName());
-            })
-            ->get([
-                $addressModel->getKeyName(),
-                $addressModel->contact()->getForeignKeyName(),
-                $addressModel->getCreatedAtColumn(),
-                $addressModel->getUpdatedAtColumn()
-            ]);
-
-        $this->connection->transaction(function () use ($contact, $associatedAddresses, $disassociatedAddresses): void {
-            $disassociatedAddresses->each(static function (Address $address): void {
-               $address->contact()->disassociate();
-            });
-
-            $associatedAddresses->each(static function (Address $address) use ($contact): void {
-                $address->contact()->associate($contact)->save();
-            });
         });
     }
 
@@ -143,21 +94,11 @@ class ContactEntityService implements CauserAware
         return tap($contact, function (Contact $contact) use ($data) {
             $oldContact = (new Contact)->setRawAttributes($contact->getRawOriginal());
 
-            $contact->contact_type = $data->contact_type;
-            $contact->gender = $data->gender;
-            $contact->email = $data->email;
-            $contact->first_name = $data->first_name;
-            $contact->last_name = $data->last_name;
-            $contact->phone = $data->phone;
-            $contact->mobile = $data->mobile;
-            $contact->job_title = $data->job_title;
-            $contact->is_verified = $data->is_verified;
+            $contact->forceFill(
+                $data->except('picture')->toArray()
+            );
 
             $this->connection->transaction(static fn() => $contact->save());
-
-            if (is_array($data->addresses)) {
-                $this->syncAddressesWithContact($contact, $data->addresses);
-            }
 
             if (false === is_null($data->picture)) {
                 $contact->image()->delete();

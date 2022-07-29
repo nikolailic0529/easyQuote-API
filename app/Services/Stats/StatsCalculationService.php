@@ -155,8 +155,6 @@ class StatsCalculationService implements Stats
             ->first();
 
         if (!$company instanceof Company) {
-            customlog(['message' => "External Company does not exist. Company Name: '{$quote->customer->name}'."]);
-
             return;
         }
 

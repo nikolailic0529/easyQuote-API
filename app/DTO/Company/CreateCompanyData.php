@@ -2,21 +2,22 @@
 
 namespace App\DTO\Company;
 
+use App\DTO\MissingValue;
+use App\Enum\CustomerTypeEnum;
 use Illuminate\Http\UploadedFile;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\Validator\Constraints;
 
 final class CreateCompanyData extends DataTransferObject
 {
+    #[Constraints\Uuid]
+    public string $sales_unit_id;
+
     public string $name;
 
     public ?string $vat;
 
-    /**
-     * @Constraints\Choice({"EXEMPT", "NO VAT", "VAT Number"})
-     *
-     * @var string
-     */
+    #[Constraints\Choice(choices: ["EXEMPT", "NO VAT", "VAT Number"])]
     public string $vat_type;
 
     public ?string $type;
@@ -29,38 +30,25 @@ final class CreateCompanyData extends DataTransferObject
 
     public ?string $category;
 
+    /** @var \App\Enum\CustomerTypeEnum|\App\DTO\MissingValue|null */
+    public CustomerTypeEnum|MissingValue|null $customer_type;
+
     public ?string $email;
 
     public ?string $phone;
 
     public ?string $website;
 
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     *
-     * @var array
-     */
+    #[Constraints\All(new Constraints\Uuid())]
     public array $vendors;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
-     */
+    #[Constraints\Uuid]
     public ?string $default_vendor_id;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
-     */
+    #[Constraints\Uuid]
     public ?string $default_template_id;
 
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
-     */
+    #[Constraints\Uuid]
     public ?string $default_country_id;
 
     /**

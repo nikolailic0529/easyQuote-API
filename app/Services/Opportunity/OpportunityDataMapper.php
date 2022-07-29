@@ -13,6 +13,8 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerCurrencyIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerDataIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerFieldIntegration;
 use App\Integrations\Pipeliner\Models\ContactRelationEntity;
+use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInput;
+use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateContactRelationInput;
 use App\Integrations\Pipeliner\Models\CreateContactRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateOpportunityInput;
@@ -25,7 +27,7 @@ use App\Integrations\Pipeliner\Models\FieldFilterInput;
 use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Integrations\Pipeliner\Models\StepEntity;
 use App\Integrations\Pipeliner\Models\UpdateOpportunityInput;
-use App\Models\Address;
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
@@ -36,6 +38,7 @@ use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\PipelineQueries;
 use App\Services\Opportunity\Models\PipelinerOppMap;
@@ -143,7 +146,12 @@ class OpportunityDataMapper implements CauserAware
                                        array  $accountData,
                                        array  $contacts): ImportedCompany
     {
-        return tap(new ImportedCompany(), function (ImportedCompany $account) use ($primaryContactName, $contacts, $accountData, $accountName): void {
+        return tap(new ImportedCompany(), function (ImportedCompany $account) use (
+            $primaryContactName,
+            $contacts,
+            $accountData,
+            $accountName
+        ): void {
             $account->company_name = $accountName;
             $account->company_category = self::resolveCategoryOfCompany($accountData);
             $account->email = self::coalesceMap($accountData, PipelinerOppMap::PRIMARY_EMAIL);
@@ -202,7 +210,11 @@ class OpportunityDataMapper implements CauserAware
                 return [$primaryContactName, null];
             });
 
-            return tap(new ImportedContact(), static function (ImportedContact $contact) use ($contactLastName, $contactFirstName, $primaryContactName): void {
+            return tap(new ImportedContact(), static function (ImportedContact $contact) use (
+                $contactLastName,
+                $contactFirstName,
+                $primaryContactName
+            ): void {
                 $contact->contact_type = ContactType::HARDWARE;
                 $contact->first_name = $contactFirstName;
                 $contact->last_name = $contactLastName;
@@ -293,8 +305,8 @@ class OpportunityDataMapper implements CauserAware
                 title: $contactData['titlesalutation'] ?? null,
             );
 
-            $newAddresses[] = $newAddress->contact()->associate($newContact->getKey());
-            $newContacts[] = $newContact;
+            $newAddresses[] = $newAddress;
+            $newContacts[] = $newContact->address()->associate($newAddress->getKey());
         }
 
         return [$newAddresses, $newContacts];
@@ -329,7 +341,15 @@ class OpportunityDataMapper implements CauserAware
                                                       ?string $title,
                                                       bool    $isPrimary = false): ImportedContact
     {
-        return tap(new ImportedContact(), static function (ImportedContact $contact) use ($plReference, $isPrimary, $firstName, $lastName, $email, $phone, $title) {
+        return tap(new ImportedContact(), static function (ImportedContact $contact) use (
+            $plReference,
+            $isPrimary,
+            $firstName,
+            $lastName,
+            $email,
+            $phone,
+            $title
+        ) {
             $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
             $contact->pl_reference = $plReference;
 
@@ -438,19 +458,27 @@ class OpportunityDataMapper implements CauserAware
             ?? $pl->pipelineStages()->where('stage_percentage', $entity->percent)->first();
     }
 
-    public function mapOpportunityFromOpportunityEntity(OpportunityEntity $entity, ImportedCompany $primaryAccount): Opportunity
+    public function mapOpportunityFromOpportunityEntity(OpportunityEntity $entity, Collection $accounts): Opportunity
     {
-        return tap(new Opportunity(), function (Opportunity $opportunity) use ($entity, $primaryAccount): void {
+        return tap(new Opportunity(), function (Opportunity $opportunity) use ($entity, $accounts): void {
 
             /** @var DataEntity[] $dataFieldMap */
             $dataFieldMap = $this->resolveValuesFromQueryableDataFieldsOfOpportunityEntity($entity);
 
-            $resolveDataFieldValue = static function (?string $id) use ($dataFieldMap): ?string {
+            $resolveDataFieldOptionName = static function (?string $id) use ($dataFieldMap): ?string {
                 if (is_null($id) || !isset($dataFieldMap[$id])) {
                     return null;
                 }
 
                 return $dataFieldMap[$id]->optionName;
+            };
+
+            $resolveDataFieldCalcValue = static function (?string $id) use ($dataFieldMap): ?string {
+                if (is_null($id) || !isset($dataFieldMap[$id])) {
+                    return null;
+                }
+
+                return $dataFieldMap[$id]->calcValue;
             };
 
             $currencyFieldMap = $this->resolveValuesFromQueryableCurrencyFieldsOfOpportunityEntity($entity);
@@ -466,24 +494,58 @@ class OpportunityDataMapper implements CauserAware
             $opportunity->{$opportunity->getKeyName()} = (string)Uuid::generate(4);
             $opportunity->pl_reference = $entity->id;
             $opportunity->user()->associate($this->causer);
+            $opportunity->salesUnit()->associate(
+                SalesUnit::query()->where('unit_name', $entity->unit->name)->first()
+            );
             $opportunity->pipeline()->associate($this->getDefaultPipeline());
             $opportunity->pipelineStage()->associate($this->resolvePipelineStageFromStepEntity($entity->step));
-            $opportunity->contractType()->associate(($this->contractTypeResolver)($resolveDataFieldValue(Arr::get($entity->customFields, 'cfOpportunityTypeId'))));
+            $opportunity->contractType()->associate(($this->contractTypeResolver)($resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfOpportunityTypeId'))));
 
-            $accountManagerName = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfAccountManagerId'));
+            $accountManagerName = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfAccountManagerId'));
             $opportunity->accountManager()->associate(($this->accountOwnerResolver)($accountManagerName));
 
-            $opportunity->importedPrimaryAccount()->associate($primaryAccount);
-            $opportunity->importedPrimaryAccountContact()->associate($primaryAccount->primaryContact);
+            /** @var Company|null $primaryAccount */
+            /** @var Company|null $endUser */
+            [$primaryAccount, $endUser] = value(static function () use ($entity, $accounts): array {
+                $accounts = Collection::make($accounts->all());
+
+                $primaryAccountKey = $accounts
+                    ->search(static function (Company $company) use ($entity): bool {
+                        return $entity->primaryAccount->id === $company->pl_reference;
+                    });
+
+                return [
+                    false !== $primaryAccountKey ? $accounts->pull($primaryAccountKey) : null,
+                    $accounts->shift(),
+                ];
+            });
+
+            /** @var Contact|null $primaryContact */
+            $primaryContact = value(static function () use ($entity, $primaryAccount): ?Contact {
+                if (null === $primaryAccount) {
+                    return null;
+                }
+
+                if (null === $entity->primaryContact) {
+                    return null;
+                }
+
+                return $primaryAccount->contacts
+                    ->first(static fn(Contact $contact): bool => $entity->primaryContact->id === $contact->pl_reference);
+            });
+
+            $opportunity->primaryAccount()->associate($primaryAccount);
+            $opportunity->primaryAccountContact()->associate($primaryContact);
+            $opportunity->endUser()->associate($endUser);
 
             $opportunity->project_name = $entity->name;
-            $opportunity->nature_of_service = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfNatureOfServiceId'));
-            $opportunity->renewal_month = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfRenMonthId'));
-            $opportunity->renewal_year = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfRenYearId'));
-            $opportunity->customer_status = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfCustomerStatusId'));
+            $opportunity->nature_of_service = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfNatureOfServiceId'));
+            $opportunity->renewal_month = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfRenMonthId'));
+            $opportunity->renewal_year = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfRenYearId'));
+            $opportunity->customer_status = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfCustomerStatusId'));
             $opportunity->end_user_name = Arr::get($entity->customFields, 'cfEnduser');
-            $opportunity->hardware_status = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfHwStatusId'));
-            $opportunity->region_name = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfRegionId'));
+            $opportunity->hardware_status = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfHwStatusId'));
+            $opportunity->region_name = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfRegionId'));
             $opportunity->opportunity_start_date = self::tryParseDateString(Arr::get($entity->customFields, 'cfStartDate'));
             $opportunity->is_opportunity_start_date_assumed = (bool)Arr::get($entity->customFields, 'cfStartDateAssumed');
             $opportunity->opportunity_end_date = self::tryParseDateString(Arr::get($entity->customFields, 'cfEndDate'));
@@ -491,7 +553,7 @@ class OpportunityDataMapper implements CauserAware
             $opportunity->opportunity_closing_date = $entity->closingDate;
             $opportunity->expected_order_date = Arr::get($entity->customFields, 'cfDelayedClosing');
             $opportunity->is_contract_duration_checked = (bool)Arr::get($entity->customFields, 'cfSupportDuration', false);
-            $opportunity->contract_duration_months = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfSupportDurationMonthsId'));
+            $opportunity->contract_duration_months = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfSupportDurationMonthsId'));
             $opportunity->opportunity_amount = $entity->value->valueForeign;
             $opportunity->base_opportunity_amount = $entity->value->baseValue;
             $opportunity->opportunity_amount_currency_code = $resolveCurrencyFieldValue($entity->value->currencyId);
@@ -503,12 +565,12 @@ class OpportunityDataMapper implements CauserAware
             $opportunity->list_price = Arr::get($entity->customFields, 'cfListPrice.valueForeign');
             $opportunity->base_list_price = Arr::get($entity->customFields, 'cfListPrice.baseValue');
             $opportunity->list_price_currency_code = $resolveCurrencyFieldValue(Arr::get($entity->customFields, 'cfListPrice.currencyId'));
-            $opportunity->personal_rating = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfPersonalRatingId'));
+            $opportunity->personal_rating = $resolveDataFieldCalcValue(Arr::get($entity->customFields, 'cfPersonalRatingId'));
             $opportunity->margin_value = Arr::get($entity->customFields, 'cfMargin1');
             $opportunity->service_level_agreement_id = Arr::get($entity->customFields, 'cfSla');
             $opportunity->sale_unit_name = $entity->unit->name;
-            $opportunity->drop_in = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfDropInId'));
-            $opportunity->lead_source_name = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfLeadSourceId'));
+            $opportunity->drop_in = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfDropInId'));
+            $opportunity->lead_source_name = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfLeadSourceId'));
             $opportunity->has_higher_sla = (bool)Arr::get($entity->customFields, 'cfHigherSla');
             $opportunity->is_multi_year = (bool)Arr::get($entity->customFields, 'cfConfiguration1n');
             $opportunity->has_additional_hardware = (bool)Arr::get($entity->customFields, 'cfAdditionalHardware');
@@ -516,15 +578,16 @@ class OpportunityDataMapper implements CauserAware
             $opportunity->remarks = Arr::get($entity->customFields, 'cfRemark');
             $opportunity->sale_action_name = $entity->step->getQualifiedStepName();
             $opportunity->ranking = $entity->ranking;
-            $opportunity->campaign_name = $resolveDataFieldValue(Arr::get($entity->customFields, 'cfCampaignId'));
+            $opportunity->campaign_name = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfCampaignId'));
             $opportunity->competition_name = Arr::get($entity->customFields, 'cfCompetition');
             $opportunity->notes = $entity->description;
 
-            $opportunity->{$opportunity->getDeletedAtColumn()} = $opportunity->freshTimestamp();
+//            $opportunity->{$opportunity->getDeletedAtColumn()} = $opportunity->freshTimestamp();
 
             $opportunity->setRelation('opportunitySuppliers', $this->mapSuppliersFromOpportunityEntity($entity));
 
-            $opportunity->opportunitySuppliers->each(static function (OpportunitySupplier $supplier) use ($opportunity): void {
+            $opportunity->opportunitySuppliers->each(static function (OpportunitySupplier $supplier) use ($opportunity
+            ): void {
                 $supplier->opportunity()->associate($opportunity->getKey());
             });
         });
@@ -533,11 +596,13 @@ class OpportunityDataMapper implements CauserAware
     public function mergeAttributesFrom(Opportunity $opportunity, Opportunity $another): void
     {
         $toBeMergedBelongsToRelations = [
+            'salesUnit',
             'pipelineStage',
             'contractType',
             'accountManager',
-            'importedPrimaryAccount',
-            'importedPrimaryAccountContact',
+            'primaryAccount',
+            'primaryAccountContact',
+            'endUser',
         ];
 
         foreach ($toBeMergedBelongsToRelations as $relation) {
@@ -607,7 +672,11 @@ class OpportunityDataMapper implements CauserAware
             });
         };
 
-        $opportunitySuppliersToBeDeleted = $opportunity->opportunitySuppliers->filter(static function (OpportunitySupplier $supplier) use ($matchSupplier, $another): bool {
+        $opportunitySuppliersToBeDeleted = $opportunity->opportunitySuppliers->filter(static function (OpportunitySupplier $supplier) use
+        (
+            $matchSupplier,
+            $another
+        ): bool {
             return null === $matchSupplier($supplier, $another->opportunitySuppliers);
         });
 
@@ -621,7 +690,9 @@ class OpportunityDataMapper implements CauserAware
             if (null === $matchingSupplier) {
                 $opportunity->opportunitySuppliers
                     ->push(
-                        tap($anotherSupplier->replicate(), static function (OpportunitySupplier $supplier) use ($opportunity): void {
+                        tap($anotherSupplier->replicate(), static function (OpportunitySupplier $supplier) use (
+                            $opportunity
+                        ): void {
                             $supplier->opportunity()->associate($opportunity->getKey());
                         })
                     );
@@ -662,7 +733,8 @@ class OpportunityDataMapper implements CauserAware
                 return collect($supplierFields)->contains(static fn(mixed $value) => filled($value));
             })
             ->map(function (array $supplierFields): OpportunitySupplier {
-                return tap(new OpportunitySupplier(), function (OpportunitySupplier $supplier) use ($supplierFields): void {
+                return tap(new OpportunitySupplier(), function (OpportunitySupplier $supplier) use ($supplierFields
+                ): void {
                     $supplier->supplier_name = ($this->pipelinerDataResolver)($supplierFields['distributor_id'])?->optionName;
                     $supplier->country_name = ($this->pipelinerDataResolver)($supplierFields['country_id'])?->optionName;
                     $supplier->contact_name = $supplierFields['contact_name'];
@@ -741,13 +813,13 @@ class OpportunityDataMapper implements CauserAware
                 entityName: 'Opportunity',
                 apiName: $apiName,
                 optionName: transform(data_get($opportunity, $path), fn(mixed $v): string => (string)$v),
-            ))
-            ->all();
+            ));
 
-        $purchasePriceCurrencyEntity = ($this->pipelinerCurrencyResolver)($opportunity->purchase_price_currency_code ?? '');
-        $listPriceCurrencyEntity = ($this->pipelinerCurrencyResolver)($opportunity->list_price_currency_code ?? '');
+        $purchasePriceCurrencyEntity = ($this->pipelinerCurrencyResolver)($opportunity->purchase_price_currency_code ?? setting('base_currency'));
+        $listPriceCurrencyEntity = ($this->pipelinerCurrencyResolver)($opportunity->list_price_currency_code ?? setting('base_currency'));
 
         $customFields = [
+            'cfPersonalRatingId' => $this->resolveDataEntityByCalcValue('Opportunity', 'cf_personal_rating_id', (float)$opportunity->personal_rating)?->id,
             'cfDelayedClosing' => isset($opportunity->expected_order_date) ? Carbon::parse($opportunity->expected_order_date)->toDateString() : null,
             'cfRemark' => $opportunity->remarks,
             'cfStartDate' => $opportunity->opportunity_start_date,
@@ -832,6 +904,20 @@ class OpportunityDataMapper implements CauserAware
         }
 
         return null;
+    }
+
+    public function resolveDataEntityByCalcValue(string $entityName, string $apiName, float $calcValue): ?DataEntity
+    {
+        $field = ($this->pipelinerFieldResolver)(
+            FieldFilterInput::new()
+                ->entityName(EntityFilterStringField::ieq($entityName))
+                ->apiName(EntityFilterStringField::ieq($apiName))
+        );
+
+        return collect($field?->dataSet)
+            ->first(static function (DataEntity $entity) use ($calcValue): bool {
+               return $entity->calcValue === $calcValue;
+            });
     }
 
     public function mapImportedOpportunityDataFromImportedRow(array $row,
@@ -924,8 +1010,6 @@ class OpportunityDataMapper implements CauserAware
             $this->projectOpportunityAttrsToCustomFields($opportunity)
         );
 
-        $unit = ($this->salesUnitResolver)((string)$opportunity->sale_unit_name);
-
         $pipeline = ($this->pipelineResolver)($opportunity->pipeline->pipeline_name);
 
         $step = null;
@@ -934,7 +1018,7 @@ class OpportunityDataMapper implements CauserAware
             $step = ($this->stepResolver)($opportunity->pipelineStage?->stage_name, $pipeline->id);
         }
 
-        $currencyOfValue = ($this->pipelinerCurrencyResolver)($opportunity->opportunity_amount_currency_code ?? '');
+        $currencyOfValue = ($this->pipelinerCurrencyResolver)($opportunity->opportunity_amount_currency_code ?? setting('base_currency'));
 
         $closingDate = transform($opportunity->opportunity_closing_date, static fn(string $date): \DateTimeImmutable => Carbon::parse($date)->toDateTimeImmutable());
 
@@ -953,6 +1037,18 @@ class OpportunityDataMapper implements CauserAware
         $accountRelationCollection = new CreateOpptyAccountRelationInputCollection(...$accountRelations);
         $contactRelationCollection = new CreateContactRelationInputCollection(...array_values($this->collectContactRelationInputsFromOpportunity($opportunity)));
 
+        $documents = $opportunity->attachments
+            ->whereNotNull('pl_reference')
+            ->values()
+            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+                return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
+            })
+            ->whenNotEmpty(
+                static function (BaseCollection $collection): CreateCloudObjectRelationInputCollection {
+                    return new CreateCloudObjectRelationInputCollection(...$collection->all());
+                },
+                static fn(): InputValueEnum => InputValueEnum::Miss);
+
         return new CreateOpportunityInput(
             closingDate: $closingDate,
             name: $opportunity->project_name,
@@ -960,8 +1056,9 @@ class OpportunityDataMapper implements CauserAware
             stepId: $step?->id ?? '',
             accountRelations: $accountRelationCollection->valid() ? $accountRelationCollection : InputValueEnum::Miss,
             contactRelations: $contactRelationCollection->valid() ? $contactRelationCollection : InputValueEnum::Miss,
+            documents: $documents,
             description: $opportunity->notes ?? '',
-            unitId: $unit?->id ?? '',
+            unitId: $opportunity->salesUnit?->pl_reference ?? '',
             customFields: json_encode($customFields),
             value: new CurrencyForeignFieldInput(
                 baseValue: $opportunity->base_opportunity_amount,
@@ -980,15 +1077,12 @@ class OpportunityDataMapper implements CauserAware
 
         $customFields = array_merge($customFields, $this->projectOpportunityAttrsToCustomFields($opportunity));
 
-        $unit = ($this->salesUnitResolver)((string)$opportunity->sale_unit_name);
-        $unitId = $unit?->id;
-
         $step = ($this->stepResolver)($opportunity->pipelineStage?->stage_name, $oppEntity->step->pipeline->id);
         $stepId = $step?->id;
 
         $ownerId = (string)$opportunity->owner?->pl_reference;
 
-        $currencyOfValue = ($this->pipelinerCurrencyResolver)($opportunity->opportunity_amount_currency_code ?? '');
+        $currencyOfValue = ($this->pipelinerCurrencyResolver)($opportunity->opportunity_amount_currency_code ?? setting('base_currency'));
 
         $closingDate = transform($opportunity->opportunity_closing_date, static fn(string $date): \DateTimeImmutable => Carbon::parse($date)->toDateTimeImmutable());
 
@@ -1024,11 +1118,8 @@ class OpportunityDataMapper implements CauserAware
             $stepId = InputValueEnum::Miss;
         }
 
-        if ($unitId === $oppEntity->unit?->id) {
-            $unitId = InputValueEnum::Miss;
-        }
-
-        $customFieldsDiff = array_udiff_assoc($customFields, $oppEntity->customFields, function (mixed $a, mixed $b): int {
+        $customFieldsDiff = array_udiff_assoc($customFields, $oppEntity->customFields, function (mixed $a,
+                                                                                                 mixed $b): int {
             if ($a === null || $b === null) {
                 return $a === $b ? 0 : 1;
             }
@@ -1119,7 +1210,8 @@ class OpportunityDataMapper implements CauserAware
             );
         }
 
-        $contactRelationsDiff = array_udiff_assoc($contactRelations, $existingContactRelationMap, function (mixed $a, mixed $b): int {
+        $contactRelationsDiff = array_udiff_assoc($contactRelations, $existingContactRelationMap, function (mixed $a,
+                                                                                                            mixed $b): int {
             if ($a === null || $b === null) {
                 return $a === $b ? 0 : 1;
             }
@@ -1132,6 +1224,23 @@ class OpportunityDataMapper implements CauserAware
             ? new CreateContactRelationInputCollection(...array_values($contactRelations))
             : InputValueEnum::Miss;
 
+        $documents = $opportunity->attachments
+            ->whereNotNull('pl_reference')
+            ->values()
+            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+                return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
+            })
+            ->whenNotEmpty(
+                static function (BaseCollection $collection): CreateCloudObjectRelationInputCollection {
+                    return new CreateCloudObjectRelationInputCollection(...$collection->all());
+                },
+                static fn(): InputValueEnum => InputValueEnum::Miss);
+
+        $unitId = $opportunity->salesUnit?->pl_reference ?? InputValueEnum::Miss;
+        if ($unitId === $oppEntity->unit->id) {
+            $unitId = InputValueEnum::Miss;
+        }
+
         return new UpdateOpportunityInput(
             id: $oppEntity->id,
             closingDate: $closingDate,
@@ -1143,7 +1252,8 @@ class OpportunityDataMapper implements CauserAware
             customFields: $customFieldsJson,
             value: $value,
             accountRelations: $accountRelationCollection,
-            contactRelations: $contactRelationCollection
+            contactRelations: $contactRelationCollection,
+            documents: $documents,
         );
     }
 
@@ -1156,27 +1266,20 @@ class OpportunityDataMapper implements CauserAware
         $contactRelations = [];
         $primaryContactMatched = false;
 
-        $collectContactsFromAccount = static function (Company $account, ?Contact $primaryContact) use (&$primaryContactMatched) {
+        $collectContactsFromAccount = static function (Company $account, ?Contact $primaryContact)
+        use (&$primaryContactMatched): array {
             return $account
-                ->addresses
-                // Reject the default invoice address from the contact relations
-                // as it's being assumed as a part of account attributes
-                ->reject(static function (Address $address): bool {
-                    return $address->pivot->is_default && AddressType::INVOICE === $address->address_type;
-                })
-                ->sortByDesc(static function (Address $address): bool {
-                    return AddressType::INVOICE === $address->address_type;
-                })
+                ->contacts
                 ->sortByDesc('pivot.is_default')
-                ->mapWithKeys(static function (Address $address) use ($primaryContact, &$primaryContactMatched): array {
+                ->mapWithKeys(static function (Contact $contact) use ($primaryContact, &$primaryContactMatched): array {
                     $input = new CreateContactRelationInput(
-                        contactId: $address->pl_reference,
-                        isPrimary: false === $primaryContactMatched && $primaryContact?->is($address->contact),
+                        contactId: $contact->pl_reference,
+                        isPrimary: false === $primaryContactMatched && $primaryContact?->is($contact),
                     );
 
                     $primaryContactMatched = $primaryContactMatched || $input->isPrimary;
 
-                    return [$address->pl_reference => $input];
+                    return [$contact->pl_reference => $input];
                 })->all();
         };
 
@@ -1216,12 +1319,11 @@ class OpportunityDataMapper implements CauserAware
             contacts: $accountContactData
         );
 
+        $importedCompany->addresses->each->save();
         $importedCompany->primaryContact?->save();
+        $importedCompany->contacts->each->save();
 
         $importedCompany->primaryContact()->associate($importedCompany->primaryContact);
-
-        $importedCompany->contacts->each->save();
-        $importedCompany->addresses->each->save();
 
         $importedCompany->push();
 

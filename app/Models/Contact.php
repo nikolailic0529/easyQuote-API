@@ -41,9 +41,10 @@ use Intervention\Image\ImageManagerStatic;
  * @property bool|null $is_verified
  * @property bool|null $is_default
  *
- * @property-read Collection<int, Address> $addresses
+ * @property-read Address|null $address
  * @property-read string $contact_representation
  * @property-read User|null $user
+ * @property-read SalesUnit|null $salesUnit
  */
 class Contact extends Model implements HasImagesDirectory, SearchableEntity, LinkedToAppointments, HasOwnAppointments
 {
@@ -72,14 +73,14 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity, Lin
         return $this->belongsTo(User::class);
     }
 
+    public function salesUnit(): BelongsTo
+    {
+        return $this->belongsTo(SalesUnit::class);
+    }
+
     public function image()
     {
         return $this->morphOne(Image::class, 'imageable')->cacheForever();
-    }
-
-    public function addresses(): HasMany
-    {
-        return $this->hasMany(Address::class);
     }
 
     public function contactable(): MorphTo
@@ -100,6 +101,11 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity, Lin
     public function companies(): BelongsToMany
     {
         return $this->belongsToMany(Company::class);
+    }
+
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(Address::class);
     }
 
     public function scopeType(Builder $query, string $type): Builder

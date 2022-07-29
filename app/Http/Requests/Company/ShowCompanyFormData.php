@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Company;
 
-use App\Enum\CompanyCategory;
+use App\Enum\CompanyCategoryEnum;
 use App\Enum\CompanySource;
 use App\Enum\CompanyType;
 use App\Queries\VendorQueries;
@@ -38,10 +38,10 @@ class ShowCompanyFormData extends FormRequest
 
     private function resolveCategories(): array
     {
-        $categories = collect(CompanyCategory::getValues());
+        $categories = collect(CompanyCategoryEnum::cases());
 
         if (config('request-correlation.update-customer-from-opportunity') === $this->input('correlation_id')) {
-            $categories = $categories->reject(CompanyCategory::END_USER);
+            $categories = $categories->reject(CompanyCategoryEnum::EndUser);
         }
 
         return $categories->values()->all();

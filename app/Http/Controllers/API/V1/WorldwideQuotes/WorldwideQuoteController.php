@@ -852,7 +852,7 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('view', $worldwideQuote);
 
-        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($worldwideQuote)->get();
+        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($worldwideQuote, $request)->get();
 
         return AppointmentListResource::collection($resource);
     }

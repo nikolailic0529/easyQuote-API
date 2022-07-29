@@ -11,24 +11,25 @@ use JetBrains\PhpStorm\Pure;
  */
 class ContactEntity
 {
-    public function __construct(public readonly string        $id,
-                                public readonly ?ClientEntity $owner,
-                                public readonly string        $address,
-                                public readonly string        $email1,
-                                public readonly string        $phone1,
-                                public readonly string        $phone2,
-                                public readonly string        $title,
-                                public readonly string        $formattedName,
-                                public readonly string        $firstName,
-                                public readonly string        $middleName,
-                                public readonly string        $lastName,
-                                public readonly string        $zipCode,
-                                public readonly string        $stateProvince,
-                                public readonly string        $city,
-                                public readonly string        $country,
-                                public readonly GenderEnum    $gender,
-                                public readonly array         $customFields,
-                                public readonly array         $accountRelations)
+    public function __construct(public readonly string           $id,
+                                public readonly ?ClientEntity    $owner,
+                                public readonly ?SalesUnitEntity $unit,
+                                public readonly string           $address,
+                                public readonly string           $email1,
+                                public readonly string           $phone1,
+                                public readonly string           $phone2,
+                                public readonly string           $title,
+                                public readonly string           $formattedName,
+                                public readonly string           $firstName,
+                                public readonly string           $middleName,
+                                public readonly string           $lastName,
+                                public readonly string           $zipCode,
+                                public readonly string           $stateProvince,
+                                public readonly string           $city,
+                                public readonly string           $country,
+                                public readonly GenderEnum       $gender,
+                                public readonly array            $customFields,
+                                public readonly array            $accountRelations)
     {
     }
 
@@ -38,6 +39,7 @@ class ContactEntity
         return new static(
             id: $array['id'],
             owner: ClientEntity::tryFromArray($array['owner']),
+            unit: SalesUnitEntity::tryFromArray($array['unit']),
             address: $array['address'],
             email1: $array['email1'],
             phone1: $array['phone1'],

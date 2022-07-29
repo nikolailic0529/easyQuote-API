@@ -4,9 +4,11 @@ namespace App\Services\Opportunity;
 
 use App\Contracts\CauserAware;
 use App\Contracts\Services\PermissionBroker;
-use App\DTO\{Opportunity\BatchOpportunityUploadResult,
+use App\DTO\{MissingValue,
+    Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
+    Opportunity\CreateOpportunityRecurrenceData,
     Opportunity\CreateSupplierData,
     Opportunity\ImportedOpportunityData,
     Opportunity\MarkOpportunityAsLostData,
@@ -14,28 +16,24 @@ use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\UpdateOpportunityData,
     Opportunity\UpdateSupplierData,
     Opportunity\UploadOpportunityData};
-use App\Enum\CompanySource;
-use App\Enum\CompanyType;
 use App\Enum\Lock;
 use App\Enum\OpportunityStatus;
-use App\Enum\VAT;
 use App\Events\{Opportunity\OpportunityBatchFilesImported,
     Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
     Opportunity\OpportunityUpdated};
-use App\Models\Address;
 use App\Models\Company;
-use App\Models\Contact;
-use App\Models\ImportedAddress;
+use App\Models\DateDay;
+use App\Models\DateMonth;
+use App\Models\DateWeek;
 use App\Models\ImportedCompany;
-use App\Models\ImportedContact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Pipeline\PipelineStage;
+use App\Models\RecurrenceType;
 use App\Models\User;
-use App\Models\Vendor;
 use App\Queries\PipelineQueries;
 use App\Services\Company\ImportedCompanyToPrimaryAccountProjector;
 use App\Services\Exceptions\ValidationException;
@@ -47,7 +45,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\MessageBag;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Factory as ValidatorFactory;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -124,7 +121,8 @@ class OpportunityEntityService implements CauserAware
         return $primaryAccount;
     }
 
-    public function associateOpportunityWithImportedPrimaryAccountContact(Opportunity $opportunity, Company $primaryAccount): void
+    public function associateOpportunityWithImportedPrimaryAccountContact(Opportunity $opportunity,
+                                                                          Company     $primaryAccount): void
     {
         if (false === is_null($opportunity->importedPrimaryAccountContact)) {
             $primaryContact = $primaryAccount
@@ -345,6 +343,7 @@ class OpportunityEntityService implements CauserAware
         }
 
         return tap(new Opportunity(), function (Opportunity $opportunity) use ($data) {
+            $opportunity->salesUnit()->associate($data->sales_unit_id);
             $opportunity->pipeline()->associate($data->pipeline_id);
             $opportunity->user()->associate($data->user_id);
             $opportunity->contractType()->associate($data->contract_type_id);
@@ -379,7 +378,9 @@ class OpportunityEntityService implements CauserAware
             $opportunity->supplier_order_transaction_date = $data->supplier_order_transaction_date?->toDateString();
             $opportunity->supplier_order_confirmation_date = $data->supplier_order_confirmation_date?->toDateString();
             $opportunity->opportunity_amount = $data->opportunity_amount;
-            $opportunity->base_opportunity_amount = transform($data->opportunity_amount, function (float $value) use ($data): float {
+            $opportunity->base_opportunity_amount = transform($data->opportunity_amount, function (float $value) use (
+                $data
+            ): float {
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
@@ -390,7 +391,8 @@ class OpportunityEntityService implements CauserAware
             });
             $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
             $opportunity->purchase_price = $data->purchase_price;
-            $opportunity->base_purchase_price = transform($data->purchase_price, function (float $value) use ($data): float {
+            $opportunity->base_purchase_price = transform($data->purchase_price, function (float $value) use ($data
+            ): float {
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
@@ -414,6 +416,7 @@ class OpportunityEntityService implements CauserAware
             });
             $opportunity->list_price_currency_code = $data->list_price_currency_code;
             $opportunity->personal_rating = $data->personal_rating;
+            $opportunity->ranking = $data->ranking;
             $opportunity->margin_value = $data->margin_value;
             $opportunity->service_level_agreement_id = $data->service_level_agreement_id;
             $opportunity->sale_unit_name = $data->sale_unit_name;
@@ -424,13 +427,38 @@ class OpportunityEntityService implements CauserAware
             $opportunity->has_additional_hardware = $data->has_additional_hardware;
             $opportunity->has_service_credits = $data->has_service_credits;
             $opportunity->remarks = $data->remarks;
-            $opportunity->sale_action_name = $data->sale_action_name;
             $opportunity->campaign_name = $data->campaign_name;
             $opportunity->competition_name = $data->competition_name;
             $opportunity->notes = $data->notes;
 
-            $this->connection->transaction(static function () use ($data, $opportunity): void {
+            $recurrence = isset($data->recurrence)
+                ? tap(new Opportunity\OpportunityRecurrence(), function (Opportunity\OpportunityRecurrence $recurrence) use
+                (
+                    $data,
+                    $opportunity
+                ): void {
+                    $recurrence->owner()->associate($this->causer);
+                    $recurrence->opportunity()->associate($opportunity);
+                    $recurrence->stage()->associate($data->recurrence->stage_id);
+                    $recurrence->type()->associate(RecurrenceType::query()->where('value', $data->recurrence->type)->sole());
+                    $recurrence->occur_every = $data->recurrence->occur_every;
+                    $recurrence->occurrences_count = $data->recurrence->occurrences_count;
+                    $recurrence->start_date = \Carbon\Carbon::instance($data->recurrence->start_date);
+                    $recurrence->end_date = isset($data->recurrence->end_date)
+                        ? Carbon::instance($data->recurrence->end_date)
+                        : null;
+                    $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
+                    $recurrence->month()->associate(DateMonth::query()->where('value', $data->recurrence->month)->sole());
+                    $recurrence->week()->associate(DateWeek::query()->where('value', $data->recurrence->week)->sole());
+                    $recurrence->day_of_week = $data->recurrence->day_of_week;
+                    $recurrence->condition = $data->recurrence->condition;
+                })
+                : null;
+
+            $this->connection->transaction(static function () use ($data, $opportunity, $recurrence): void {
                 $opportunity->save();
+
+                $recurrence?->opportunity()?->associate($opportunity)?->save();
 
                 if (false === empty($data->create_suppliers)) {
                     $suppliersData = array_map(static fn(CreateSupplierData $supplierData): array => [
@@ -494,124 +522,119 @@ class OpportunityEntityService implements CauserAware
         return tap($opportunity, function (Opportunity $opportunity) use ($lock, $data) {
             $oldOpportunity = (new Opportunity())->setRawAttributes($opportunity->getRawOriginal());
 
-            $lock->block(30, function () use ($opportunity, $data) {
-                $opportunity->pipeline()->associate($data->pipeline_id);
-                $opportunity->contractType()->associate($data->contract_type_id);
-                $opportunity->project_name = $data->project_name;
-                $opportunity->primaryAccount()->associate($data->primary_account_id);
-                $opportunity->endUser()->associate($data->end_user_id);
-                $opportunity->primaryAccountContact()->associate($data->primary_account_contact_id);
-                $opportunity->accountManager()->associate($data->account_manager_id);
-                $opportunity->pipelineStage()->associate($data->pipeline_stage_id);
-                $opportunity->are_end_user_addresses_available = $data->are_end_user_addresses_available;
-                $opportunity->are_end_user_contacts_available = $data->are_end_user_contacts_available;
-                $opportunity->nature_of_service = $data->nature_of_service;
-                $opportunity->renewal_month = $data->renewal_month;
-                $opportunity->renewal_year = $data->renewal_year;
-                $opportunity->customer_status = $data->customer_status;
-                $opportunity->end_user_name = $data->end_user_name;
-                $opportunity->hardware_status = $data->hardware_status;
-                $opportunity->region_name = $data->region_name;
-                $opportunity->opportunity_start_date = $data->opportunity_start_date?->toDateString();
-                $opportunity->is_opportunity_start_date_assumed = $data->is_opportunity_start_date_assumed;
-                $opportunity->opportunity_end_date = $data->opportunity_end_date?->toDateString();
-                $opportunity->is_opportunity_end_date_assumed = $data->is_opportunity_end_date_assumed;
-                $opportunity->opportunity_closing_date = $data->opportunity_closing_date?->toDateString();
+            $attributes = $data->except('create_suppliers', 'update_suppliers', 'recurrence')->toArray();
 
-                $opportunity->contract_duration_months = $data->contract_duration_months;
-                $opportunity->is_contract_duration_checked = $data->is_contract_duration_checked;
+            $convertToBase = function (float $value, ?string $fromCode): float {
+                $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
-                $opportunity->expected_order_date = $data->expected_order_date?->toDateString();
-                $opportunity->customer_order_date = $data->customer_order_date?->toDateString();
-                $opportunity->purchase_order_date = $data->purchase_order_date?->toDateString();
-                $opportunity->supplier_order_date = $data->supplier_order_date?->toDateString();
-                $opportunity->supplier_order_transaction_date = $data->supplier_order_transaction_date?->toDateString();
-                $opportunity->supplier_order_confirmation_date = $data->supplier_order_confirmation_date?->toDateString();
-                $opportunity->opportunity_amount = $data->opportunity_amount;
-                $opportunity->base_opportunity_amount = transform($data->opportunity_amount, function (float $value) use ($data): float {
-                    $baseCurrency = $this->currencyConverter->getBaseCurrency();
+                return $this->currencyConverter->convertCurrencies(
+                    fromCode: $fromCode ?? $baseCurrency,
+                    toCode: $baseCurrency,
+                    amount: $value
+                );
+            };
 
-                    return $this->currencyConverter->convertCurrencies(
-                        fromCode: $data->opportunity_amount_currency_code ?? $baseCurrency,
-                        toCode: $baseCurrency,
-                        amount: $value
-                    );
+            if (!$data->opportunity_amount instanceof MissingValue) {
+                $attributes['base_opportunity_amount'] = isset($data->opportunity_amount)
+                    ? $convertToBase($data->opportunity_amount, $data->opportunity_amount_currency_code)
+                    : null;
+            }
+
+            if (!$data->purchase_price instanceof MissingValue) {
+                $attributes['base_purchase_price'] = isset($data->purchase_price)
+                    ? $convertToBase($data->purchase_price, $data->purchase_price_currency_code)
+                    : null;
+            }
+
+            if (!$data->list_price instanceof MissingValue) {
+                $attributes['base_list_price'] = isset($data->list_price)
+                    ? $convertToBase($data->list_price, $data->list_price_currency_code)
+                    : null;
+            }
+
+            foreach ($attributes as $attr => $value) {
+                if (!$value instanceof MissingValue) {
+                    $opportunity->$attr = $value;
+                }
+            }
+
+            $recurrence = new MissingValue();
+
+            if ($data->recurrence instanceof CreateOpportunityRecurrenceData) {
+                $recurrence = tap($opportunity->recurrence ?? new Opportunity\OpportunityRecurrence(), function (Opportunity\OpportunityRecurrence $recurrence) use
+                (
+                    $data,
+                    $opportunity
+                ): void {
+                    $recurrence->owner()->associate($this->causer);
+                    $recurrence->opportunity()->associate($opportunity);
+                    $recurrence->stage()->associate($data->recurrence->stage_id);
+                    $recurrence->type()->associate(RecurrenceType::query()->where('value', $data->recurrence->type)->sole());
+                    $recurrence->occur_every = $data->recurrence->occur_every;
+                    $recurrence->occurrences_count = $data->recurrence->occurrences_count;
+                    $recurrence->start_date = \Carbon\Carbon::instance($data->recurrence->start_date);
+                    $recurrence->end_date = isset($data->recurrence->end_date)
+                        ? Carbon::instance($data->recurrence->end_date)
+                        : null;
+                    $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
+                    $recurrence->month()->associate(DateMonth::query()->where('value', $data->recurrence->month)->sole());
+                    $recurrence->week()->associate(DateWeek::query()->where('value', $data->recurrence->week)->sole());
+                    $recurrence->day_of_week = $data->recurrence->day_of_week;
+                    $recurrence->condition = $data->recurrence->condition;
                 });
-                $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
-                $opportunity->purchase_price = $data->purchase_price;
-                $opportunity->base_purchase_price = transform($data->purchase_price, function (float $value) use ($data): float {
-                    $baseCurrency = $this->currencyConverter->getBaseCurrency();
+            } elseif (null === $data->recurrence) {
+                $recurrence = null;
+            }
 
-                    return $this->currencyConverter->convertCurrencies(
-                        fromCode: $data->purchase_price_currency_code ?? $baseCurrency,
-                        toCode: $baseCurrency,
-                        amount: $value
-                    );
-                });
-                $opportunity->purchase_price_currency_code = $data->purchase_price_currency_code;
-                $opportunity->estimated_upsell_amount = $data->estimated_upsell_amount;
-                $opportunity->estimated_upsell_amount_currency_code = $data->estimated_upsell_amount_currency_code;
-                $opportunity->list_price = $data->list_price;
-                $opportunity->base_list_price = transform($data->list_price, function (float $value) use ($data): float {
-                    $baseCurrency = $this->currencyConverter->getBaseCurrency();
+            if (is_array($data->update_suppliers)) {
+                $supplierDataMap = collect($data->update_suppliers)
+                    ->mapWithKeys(static fn(UpdateSupplierData $supplier): array => [$supplier->supplier_id => $supplier]);
 
-                    return $this->currencyConverter->convertCurrencies(
-                        fromCode: $data->list_price_currency_code ?? $baseCurrency,
-                        toCode: $baseCurrency,
-                        amount: $value
-                    );
-                });
-                $opportunity->list_price_currency_code = $data->list_price_currency_code;
-                $opportunity->personal_rating = $data->personal_rating;
-                $opportunity->margin_value = $data->margin_value;
-                $opportunity->service_level_agreement_id = $data->service_level_agreement_id;
-                $opportunity->sale_unit_name = $data->sale_unit_name;
-                $opportunity->drop_in = $data->drop_in;
-                $opportunity->lead_source_name = $data->lead_source_name;
-                $opportunity->has_higher_sla = $data->has_higher_sla;
-                $opportunity->is_multi_year = $data->is_multi_year;
-                $opportunity->has_additional_hardware = $data->has_additional_hardware;
-                $opportunity->has_service_credits = $data->has_service_credits;
-                $opportunity->remarks = $data->remarks;
-                $opportunity->sale_action_name = $data->sale_action_name;
-                $opportunity->campaign_name = $data->campaign_name;
-                $opportunity->competition_name = $data->competition_name;
-                $opportunity->notes = $data->notes;
-
-                $newOpportunitySuppliers = array_map(static function (CreateSupplierData $supplierData) use ($opportunity): OpportunitySupplier {
-                    return tap(new OpportunitySupplier(), static function (OpportunitySupplier $supplier) use ($opportunity, $supplierData): void {
-                        $supplier->{$supplier->getKeyName()} = (string)Uuid::generate(4);
-                        $supplier->opportunity_id = $opportunity->getKey();
-                        $supplier->supplier_name = $supplierData->supplier_name;
-                        $supplier->country_name = $supplierData->country_name;
-                        $supplier->contact_name = $supplierData->contact_name;
-                        $supplier->contact_email = $supplierData->contact_email;
-                        $supplier->{$supplier->getCreatedAtColumn()} = $supplier->freshTimestampString();
-                        $supplier->{$supplier->getUpdatedAtColumn()} = $supplier->freshTimestampString();
-                    });
-                }, $data->create_suppliers);
-
-                $batchCreateSupplierData = array_map(static fn(OpportunitySupplier $supplier): array => $supplier->getAttributes(), $newOpportunitySuppliers);
-
-                $this->connection->transaction(static function () use ($batchCreateSupplierData, $data, $opportunity): void {
-                    $opportunity->save();
-
-                    $existingSupplierKeys = array_map(static fn(UpdateSupplierData $supplierData) => $supplierData->supplier_id, $data->update_suppliers);
-
-                    $opportunity->opportunitySuppliers()->whereKeyNot($existingSupplierKeys)->delete();
-
-                    foreach ($data->update_suppliers as $supplierData) {
-                        OpportunitySupplier::query()
-                            ->whereKey($supplierData->supplier_id)
-                            ->update([
-                                'supplier_name' => $supplierData->supplier_name,
-                                'country_name' => $supplierData->country_name,
-                                'contact_name' => $supplierData->contact_name,
-                                'contact_email' => $supplierData->contact_email,
-                            ]);
+                $opportunity->opportunitySuppliers->each(static function (OpportunitySupplier $supplier) use (
+                    $supplierDataMap
+                ): void {
+                    if ($supplierDataMap->has($supplier->getKey()) === false) {
+                        $supplier->{$supplier->getDeletedAtColumn()} = $supplier->freshTimestamp();
+                        return;
                     }
 
-                    OpportunitySupplier::query()->insert($batchCreateSupplierData);
+                    /** @var UpdateSupplierData $data */
+                    $data = $supplierDataMap->get($supplier->getKey());
+
+                    $supplier->forceFill($data->except('supplier_id')->toArray());
+                });
+            }
+
+            if (is_array($data->create_suppliers)) {
+                collect($data->create_suppliers)
+                    ->each(static function (CreateSupplierData $data) use ($opportunity): void {
+                        $supplier = tap(new OpportunitySupplier(),
+                            static function (OpportunitySupplier $supplier) use ($opportunity, $data): void {
+                                $supplier->{$supplier->getKeyName()} = (string)Uuid::generate(4);
+                                $supplier->opportunity_id = $opportunity->getKey();
+                                $supplier->supplier_name = $data->supplier_name;
+                                $supplier->country_name = $data->country_name;
+                                $supplier->contact_name = $data->contact_name;
+                                $supplier->contact_email = $data->contact_email;
+                                $supplier->{$supplier->getCreatedAtColumn()} = $supplier->freshTimestampString();
+                                $supplier->{$supplier->getUpdatedAtColumn()} = $supplier->freshTimestampString();
+                            });
+
+                        $opportunity->opportunitySuppliers->push($supplier);
+                    });
+            }
+
+            $lock->block(30, function () use ($opportunity, $recurrence, $data) {
+                $this->connection->transaction(static function () use ($recurrence, $data, $opportunity): void {
+                    $opportunity->save();
+                    $opportunity->opportunitySuppliers->each->save();
+
+                    // Delete recurrence from the task if null provided
+                    if (null === $recurrence) {
+                        $opportunity->recurrence?->delete();
+                    } elseif ($recurrence instanceof Opportunity\OpportunityRecurrence) {
+                        $recurrence->save();
+                    }
                 });
             });
 

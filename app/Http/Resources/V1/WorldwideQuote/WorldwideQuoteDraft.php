@@ -33,6 +33,9 @@ class WorldwideQuoteDraft extends JsonResource
             'type_name' => $this->type_name,
             'company_id' => $this->company_id,
 
+            'has_distributor_files' => $this->contract_type_id === CT_CONTRACT && (bool)$this->has_distributor_files,
+            'has_schedule_files' => $this->contract_type_id === CT_CONTRACT && (bool)$this->has_schedule_files,
+
             'user_fullname' => $this->user_fullname,
             'company_name' => $this->company_name,
             'customer_name' => $this->customer_name,

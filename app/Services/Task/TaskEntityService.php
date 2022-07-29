@@ -9,7 +9,14 @@ use App\DTO\Tasks\UpdateTaskData;
 use App\Events\Task\TaskCreated;
 use App\Events\Task\TaskDeleted;
 use App\Events\Task\TaskUpdated;
-use App\Models\{DateDay, DateMonth, DateWeek, RecurrenceType, Task\Task, Task\TaskRecurrence, Task\TaskReminder};
+use App\Models\{DateDay,
+    DateMonth,
+    DateWeek,
+    Note\ModelHasNotes,
+    RecurrenceType,
+    Task\Task,
+    Task\TaskRecurrence,
+    Task\TaskReminder};
 use App\Services\Exceptions\ValidationException;
 use Carbon\Carbon;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -40,10 +47,11 @@ class TaskEntityService implements CauserAware
         return tap(new Task(), function (Task $task) use ($data, $linkedModel) {
             $task->{$task->getKeyName()} = (string)Uuid::generate(4);
             $task->user()->associate($this->causer);
+            $task->salesUnit()->associate($data->sales_unit_id);
             $task->activity_type = $data->activity_type;
             $task->name = $data->name;
             $task->content = $data->content;
-            $task->expiry_date = Carbon::instance($data->expiry_date);
+            $task->expiry_date = isset($data->expiry_date) ? Carbon::instance($data->expiry_date) : null;
             $task->priority = $data->priority;
 
             $reminder = isset($data->reminder)
@@ -73,7 +81,7 @@ class TaskEntityService implements CauserAware
                 })
                 : null;
 
-            $this->connection->transaction(static function () use ($linkedModel, $task, $recurrence, $reminder, $data) {
+            $this->connection->transaction(function () use ($linkedModel, $task, $recurrence, $reminder, $data): void {
                 $task->save();
 
                 $reminder?->save();
@@ -83,6 +91,8 @@ class TaskEntityService implements CauserAware
                 $task->attachments()->sync($data->attachments);
 
                 $linkedModel->tasks()->attach($task);
+
+                $this->touchRelated($task);
             });
 
             $this->eventsDispatcher->dispatch(new TaskCreated($task, $linkedModel));
@@ -98,12 +108,13 @@ class TaskEntityService implements CauserAware
         }
 
         return tap($task, function (Task $task) use ($data) {
-            $shouldDeleteNotifications = $task->expiry_date->ne($data->expiry_date);
+            $shouldDeleteNotifications = is_null($task->expiry_date) || $task->expiry_date->ne($data->expiry_date);
 
+            $task->salesUnit()->associate($data->sales_unit_id);
             $task->activity_type = $data->activity_type;
             $task->name = $data->name;
             $task->content = $data->content;
-            $task->expiry_date = Carbon::instance($data->expiry_date);
+            $task->expiry_date = isset($data->expiry_date) ? Carbon::instance($data->expiry_date) : null;
             $task->priority = $data->priority;
 
             $reminder = isset($data->reminder)
@@ -141,7 +152,7 @@ class TaskEntityService implements CauserAware
 
             $usersSyncResult = [];
 
-            $this->connection->transaction(static function () use ($data, $shouldDeleteNotifications, $task, $recurrence, $reminder, &$usersSyncResult) {
+            $this->connection->transaction(function () use ($data, $shouldDeleteNotifications, $task, $recurrence, $reminder, &$usersSyncResult): void {
                 $task->save();
 
                 // Delete reminder from the task if null provided
@@ -164,6 +175,8 @@ class TaskEntityService implements CauserAware
                 if ($shouldDeleteNotifications) {
                     $task->notifications()->where('notification_key', 'expired')->delete();
                 }
+
+                $this->touchRelated($task);
             });
 
             $this->eventsDispatcher->dispatch(new TaskUpdated($task, $usersSyncResult));
@@ -172,9 +185,21 @@ class TaskEntityService implements CauserAware
 
     public function deleteTask(Task $task): void
     {
-        $this->connection->transaction(static fn() => $task->delete());
+        $this->connection->transaction(function () use ($task) {
+            $task->delete();
+
+            $this->touchRelated($task);
+        });
 
         $this->eventsDispatcher->dispatch(new TaskDeleted($task));
+    }
+
+    protected function touchRelated(Task $task): void
+    {
+        foreach ($task->linkedModelRelations as $relation) {
+            /** @var ModelHasNotes $relation */
+            $relation->related?->touch();
+        }
     }
 
     public function setCauser(?Model $causer): static

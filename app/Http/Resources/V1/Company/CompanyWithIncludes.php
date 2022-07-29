@@ -21,12 +21,13 @@ class CompanyWithIncludes extends JsonResource
         /** @var CompanyWithIncludes|\App\Models\Company $this */
 
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
+            'id' => $this->getKey(),
+            'user_id' => $this->owner()->getParentKey(),
+            'sales_unit_id' => $this->salesUnit()->getParentKey(),
 
-            'default_vendor_id' => $this->default_vendor_id,
-            'default_country_id' => $this->default_country_id,
-            'default_template_id' => $this->default_template_id,
+            'default_vendor_id' => $this->defaultVendor()->getParentKey(),
+            'default_country_id' => $this->defaultCountry()->getParentKey(),
+            'default_template_id' => $this->defaultTemplate()->getParentKey(),
 
             'is_system' => $this->getFlag(Company::SYSTEM),
             'is_source_frozen' => $this->getFlag(Company::FROZEN_SOURCE),
@@ -35,6 +36,7 @@ class CompanyWithIncludes extends JsonResource
             'short_code' => $this->short_code,
             'type' => $this->type,
             'category' => $this->category,
+            'customer_type' => $this->customer_type,
 
             'source' => $this->source,
             'source_long' => __($this->source),
@@ -49,7 +51,6 @@ class CompanyWithIncludes extends JsonResource
 
             'vendors' => value(function () {
                 /** @var CompanyWithIncludes|\App\Models\Company $this */
-
                 $this->prioritizeDefaultCountryOnVendors();
 
                 return $this->vendors;
@@ -60,14 +61,20 @@ class CompanyWithIncludes extends JsonResource
             'default_country' => $this->defaultCountry,
             'default_vendor' => $this->defaultVendor,
             'default_template' => $this->defaultTemplate,
+            'sales_unit' => $this->salesUnit,
 
             'addresses' => with($this->addresses, function (Collection $addresses) {
                 return $addresses
                     ->sortBy('created_at')
                     ->values()
-                    ->each(function (Address $address) {
+                    ->each(function (Address $address): void {
                         $address->setAttribute('is_default', (bool)$address->pivot->is_default);
                         $address->loadMissing('country');
+                        $address->setAttribute('contact_id',
+                            $this->contacts
+                                ->first(static fn(Contact $contact): bool => $contact->address()->is($address))
+                                ?->getKey()
+                        );
                     });
             }),
             'contacts' => with($this->contacts, function (Collection $contacts) {
@@ -85,7 +92,7 @@ class CompanyWithIncludes extends JsonResource
                 'delete' => $request->user()->can('delete', $this->resource),
             ],
 
-            'created_at' => optional($this->created_at)->format(config('date.format_time')),
+            'created_at' => $this->{$this->getCreatedAtColumn()}?->format(config('date.format_time')),
             'activated_at' => $this->activated_at,
         ];
     }

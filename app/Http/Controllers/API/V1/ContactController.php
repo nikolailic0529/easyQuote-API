@@ -49,7 +49,6 @@ class ContactController extends Controller
         $resource = $entityService
             ->setCauser($request->user())
             ->createContact($request->getCreateContactData())
-            ->load('addresses')
             ->withAppends();
 
         return response()->json(
@@ -66,7 +65,7 @@ class ContactController extends Controller
     public function show(Contact $contact): JsonResponse
     {
         return response()->json(
-            $contact->load('addresses')->withAppends()
+            $contact->withAppends()
         );
     }
 
@@ -85,7 +84,6 @@ class ContactController extends Controller
         $resource = $entityService
             ->setCauser($request->user())
             ->updateContact($contact, $request->getUpdateContactData())
-            ->load('addresses')
             ->withAppends();
 
         return response()->json(
@@ -171,7 +169,7 @@ class ContactController extends Controller
     {
         $this->authorize('view', $contact);
 
-        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($contact)->get();
+        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($contact, $request)->get();
 
         return AppointmentListResource::collection($resource);
     }

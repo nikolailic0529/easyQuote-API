@@ -341,6 +341,10 @@ class PipelinerAppointmentIntegration
                 ->setSelectionSet(
                     PipelinerClientIntegration::getClientEntitySelectionSet()
                 ),
+            (new Query('unit'))
+                ->setSelectionSet(
+                    PipelinerSalesUnitIntegration::getSalesUnitEntitySelectionSet()
+                ),
             (new Query('reminder'))
                 ->setSelectionSet([
                     'id',

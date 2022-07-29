@@ -8,6 +8,9 @@ use Symfony\Component\Validator\Constraints;
 
 final class UpdateAppointmentData extends DataTransferObject
 {
+    #[Constraints\Uuid]
+    public string $sales_unit_id;
+
     public AppointmentTypeEnum $activity_type;
 
     #[Constraints\NotBlank]

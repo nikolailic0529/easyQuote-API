@@ -10,6 +10,7 @@ use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Traits\HasTimestamps;
 use App\Traits\Uuid;
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $flags
  *
  * @property-read bool $invitees_can_edit
+ * @property-read SalesUnit|null $salesUnit
  * @property-read AppointmentReminder|null $reminder
  * @property-read Collection<int, ModelHasAppointments> $modelsHaveAppointment
  * @property-read Collection<int, User> $users
@@ -79,8 +81,6 @@ class Appointment extends Model implements HasOwner
         'end_date' => 'datetime',
         'invitees_can_edit' => 'boolean',
     ];
-
-    protected $touches = ['opportunitiesHaveAppointment'];
 
     protected static function newFactory(): AppointmentFactory
     {
@@ -130,6 +130,11 @@ class Appointment extends Model implements HasOwner
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function salesUnit(): BelongsTo
+    {
+        return $this->belongsTo(SalesUnit::class);
     }
 
     public function companyRelations(): HasMany

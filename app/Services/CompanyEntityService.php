@@ -9,12 +9,14 @@ use App\DTO\Company\CreateCompanyData;
 use App\DTO\Company\PartialUpdateCompanyData;
 use App\DTO\Company\UpdateCompanyContactData;
 use App\DTO\Company\UpdateCompanyData;
+use App\DTO\MissingValue;
 use App\Events\Company\CompanyCreated;
 use App\Events\Company\CompanyDeleted;
 use App\Events\Company\CompanyUpdated;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\User;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
@@ -65,32 +67,40 @@ class CompanyEntityService implements CauserAware
         });
     }
 
-    public function createCompany(CreateCompanyData $companyData)
+    public function createCompany(CreateCompanyData $data)
     {
-        return tap(new Company(), function (Company $company) use ($companyData) {
-            $company->name = $companyData->name;
-            $company->vat = $companyData->vat;
-            $company->vat_type = $companyData->vat_type;
-            $company->type = $companyData->type;
-            $company->source = $companyData->source;
-            $company->short_code = $companyData->short_code;
-            $company->category = $companyData->category;
-            $company->email = $companyData->email;
-            $company->phone = $companyData->phone;
-            $company->website = $companyData->website;
-            $company->defaultVendor()->associate($companyData->default_vendor_id);
-            $company->defaultTemplate()->associate($companyData->default_template_id);
-            $company->defaultCountry()->associate($companyData->default_country_id);
+        return tap(new Company(), function (Company $company) use ($data) {
+            $company->name = $data->name;
+            $company->vat = $data->vat;
+            $company->vat_type = $data->vat_type;
+            $company->type = $data->type;
+            $company->source = $data->source;
+            $company->short_code = $data->short_code;
+            $company->category = $data->category;
+            if (!$data->customer_type instanceof MissingValue) {
+                $company->customer_type = $data->customer_type;
+            }
+            $company->email = $data->email;
+            $company->phone = $data->phone;
+            $company->website = $data->website;
+            $company->salesUnit()->associate($data->sales_unit_id);
+            $company->defaultVendor()->associate($data->default_vendor_id);
+            $company->defaultTemplate()->associate($data->default_template_id);
+            $company->defaultCountry()->associate($data->default_country_id);
+
+            if ($this->causer instanceof User) {
+                $company->owner()->associate($this->causer);
+            }
 
             $addressesData = [];
 
-            foreach ($companyData->addresses as $addressData) {
+            foreach ($data->addresses as $addressData) {
                 $addressesData[$addressData->id] = ['is_default' => $addressData->is_default];
             }
 
             $contactsData = [];
 
-            foreach ($companyData->contacts as $contactData) {
+            foreach ($data->contacts as $contactData) {
                 $contactsData[$contactData->id] = ['is_default' => $contactData->is_default];
             }
 
@@ -110,17 +120,17 @@ class CompanyEntityService implements CauserAware
             }
 
             // TODO: add company locking.
-            $this->connection->transaction(function () use ($addresses, $companyData, $company, $addressesData, $contactsData) {
+            $this->connection->transaction(function () use ($addresses, $data, $company, $addressesData, $contactsData) {
                 $addresses->each->save();
 
                 $company->save();
 
-                $company->vendors()->sync($companyData->vendors);
+                $company->vendors()->sync($data->vendors);
                 $company->addresses()->sync($addressesData);
                 $company->contacts()->sync($contactsData);
 
                 // TODO: refactor image processing.
-                ThumbHelper::createLogoThumbnails($company, $companyData->logo);
+                ThumbHelper::createLogoThumbnails($company, $data->logo);
             });
 
             $this->eventDispatcher->dispatch(
@@ -129,37 +139,41 @@ class CompanyEntityService implements CauserAware
         });
     }
 
-    public function updateCompany(Company $company, UpdateCompanyData $companyData): Company
+    public function updateCompany(Company $company, UpdateCompanyData $data): Company
     {
-        return tap($company, function (Company $company) use ($companyData) {
+        return tap($company, function (Company $company) use ($data) {
             $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
                 $oldCompany->setRawAttributes($company->getRawOriginal());
                 $oldCompany->load(['addresses', 'contacts', 'vendors']);
             });
 
-            $company->name = $companyData->name;
-            $company->vat = $companyData->vat;
-            $company->vat_type = $companyData->vat_type;
-            $company->type = $companyData->type;
-            $company->source = $companyData->source;
-            $company->short_code = $companyData->short_code;
-            $company->category = $companyData->category;
-            $company->email = $companyData->email;
-            $company->phone = $companyData->phone;
-            $company->website = $companyData->website;
-            $company->defaultVendor()->associate($companyData->default_vendor_id);
-            $company->defaultTemplate()->associate($companyData->default_template_id);
-            $company->defaultCountry()->associate($companyData->default_country_id);
+            $company->name = $data->name;
+            $company->vat = $data->vat;
+            $company->vat_type = $data->vat_type;
+            $company->type = $data->type;
+            $company->source = $data->source;
+            $company->short_code = $data->short_code;
+            $company->category = $data->category;
+            if (!$data->customer_type instanceof MissingValue) {
+                $company->customer_type = $data->customer_type;
+            }
+            $company->email = $data->email;
+            $company->phone = $data->phone;
+            $company->website = $data->website;
+            $company->salesUnit()->associate($data->sales_unit_id);
+            $company->defaultVendor()->associate($data->default_vendor_id);
+            $company->defaultTemplate()->associate($data->default_template_id);
+            $company->defaultCountry()->associate($data->default_country_id);
 
             $addressesData = [];
 
-            foreach ($companyData->addresses as $addressData) {
+            foreach ($data->addresses as $addressData) {
                 $addressesData[$addressData->id] = ['is_default' => $addressData->is_default];
             }
 
             $contactsData = [];
 
-            foreach ($companyData->contacts as $contactData) {
+            foreach ($data->contacts as $contactData) {
                 $contactsData[$contactData->id] = ['is_default' => $contactData->is_default];
             }
 
@@ -190,7 +204,7 @@ class CompanyEntityService implements CauserAware
             });
 
             // TODO: add company locking.
-            $this->connection->transaction(function () use ($addresses, $companyData, $company, $addressesData, $contactsData, $latestUpdatedAtOfContactRelations) {
+            $this->connection->transaction(function () use ($addresses, $data, $company, $addressesData, $contactsData, $latestUpdatedAtOfContactRelations) {
                 $addresses->each->save();
 
                 if ($latestUpdatedAtOfContactRelations?->greaterThan($company->{$company->getUpdatedAtColumn()})) {
@@ -201,7 +215,7 @@ class CompanyEntityService implements CauserAware
 
                 $relationChanges = [];
 
-                $relationChanges['vendors'] = $company->vendors()->sync($companyData->vendors);
+                $relationChanges['vendors'] = $company->vendors()->sync($data->vendors);
                 $relationChanges['addresses'] = $company->addresses()->sync($addressesData);
                 $relationChanges['contacts'] = $company->contacts()->sync($contactsData);
 
@@ -221,9 +235,9 @@ class CompanyEntityService implements CauserAware
                 }
 
                 // TODO: refactor image processing.
-                ThumbHelper::createLogoThumbnails($company, $companyData->logo);
+                ThumbHelper::createLogoThumbnails($company, $data->logo);
 
-                if ($companyData->delete_logo) {
+                if ($data->delete_logo) {
                     $company->image()->flushQueryCache()->delete();
                 }
             });
@@ -270,7 +284,6 @@ class CompanyEntityService implements CauserAware
                     ->all();
 
             });
-
 
             $this->connection->transaction(function () use ($companyData, $company, $addressesData, $contactsData) {
                 $company->save();

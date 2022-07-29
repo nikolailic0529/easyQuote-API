@@ -7,7 +7,6 @@ use App\Enum\GenderEnum;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string|null $pl_reference
@@ -21,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property mixed|null $job_title
  * @property false|mixed $is_verified
  * @property mixed|string $contact_name
+ *
+ * @property-read SalesUnit|null $salesUnit
  */
 class ImportedContact extends Model implements HasOwner
 {
@@ -39,8 +40,13 @@ class ImportedContact extends Model implements HasOwner
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function addresses(): HasMany
+    public function salesUnit(): BelongsTo
     {
-        return $this->hasMany(ImportedAddress::class);
+        return $this->belongsTo(SalesUnit::class);
+    }
+
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(ImportedAddress::class);
     }
 }

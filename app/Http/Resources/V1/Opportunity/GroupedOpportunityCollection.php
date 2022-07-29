@@ -23,6 +23,7 @@ class GroupedOpportunityCollection extends ResourceCollection
             ->each(static function (PipelineStageOpportunitiesData $stage) use ($request, $user) {
 
                 foreach ($stage->opportunities as $opportunity) {
+                    $opportunity->setAttribute($opportunity->pipelineStage()->getForeignKeyName(), $stage->stage_id);
                     $opportunity->setAttribute('permissions', [
                         'view' => $user->can('view', $opportunity),
                         'update' => $user->can('update', $opportunity),

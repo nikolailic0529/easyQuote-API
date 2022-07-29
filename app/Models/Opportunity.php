@@ -13,6 +13,7 @@ use App\Models\Appointment\Appointment;
 use App\Models\Appointment\ModelHasAppointments;
 use App\Models\Note\ModelHasNotes;
 use App\Models\Note\Note;
+use App\Models\Opportunity\OpportunityRecurrence;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -115,8 +117,10 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  *
+ * @property-read SalesUnit|null $salesUnit
  * @property-read \App\Models\Pipeline\Pipeline|null $pipeline
  * @property-read PipelineStage|null $pipelineStage
+ * @property-read OpportunityRecurrence|null $recurrence
  * @property-read ContractType|null $contractType
  * @property-read Company|null $primaryAccount
  * @property-read Company|null $endUser
@@ -128,6 +132,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
  * @property-read Collection<int, Task>|Task[] $tasks
  * @property-read bool|null $quotes_exist
+ * @property-read Collection<int,Attachment>|Attachment[] $attachments
  */
 class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes
 {
@@ -149,6 +154,11 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
         return $this->belongsTo(User::class);
     }
 
+    public function salesUnit(): BelongsTo
+    {
+        return $this->belongsTo(SalesUnit::class);
+    }
+
     public function pipeline(): BelongsTo
     {
         return $this->belongsTo(Pipeline::class);
@@ -157,6 +167,11 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
     public function pipelineStage(): BelongsTo
     {
         return $this->belongsTo(PipelineStage::class);
+    }
+
+    public function recurrence(): HasOne
+    {
+        return $this->hasOne(OpportunityRecurrence::class)->latestOfMany();
     }
 
     public function contractType(): BelongsTo
@@ -270,6 +285,15 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
     public function latestPipelinerSyncLog(): MorphOne
     {
         return $this->morphOne(related: PipelinerSyncStrategyLog::class, name: 'model')->latestOfMany('updated_at');
+    }
+
+    public function attachments(): MorphToMany
+    {
+        return $this->morphToMany(
+            related: Attachment::class,
+            name: 'attachable',
+            relatedPivotKey: 'attachment_id'
+        );
     }
 }
 

@@ -2,264 +2,203 @@
 
 namespace App\DTO\Opportunity;
 
+use App\DTO\MissingValue;
 use Carbon\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\Validator\Constraints;
 
 final class UpdateOpportunityData extends DataTransferObject
 {
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string
-     */
-    public string $pipeline_id;
+    /** @var string|\App\DTO\MissingValue */
+    public string|MissingValue $sales_unit_id;
+
+    /** @var string|\App\DTO\MissingValue */
+    public string|MissingValue $pipeline_id;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $pipeline_stage_id;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $contract_type_id;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $account_manager_id;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $primary_account_id;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $end_user_id;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $are_end_user_addresses_available;
+
+    /** @var bool|\App\DTO\MissingValue  */
+    public bool|MissingValue $are_end_user_contacts_available;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $primary_account_contact_id;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $project_name;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $nature_of_service;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $renewal_month;
+
+    /** @var int|\App\DTO\MissingValue|null */
+    public int|MissingValue|null $renewal_year;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $customer_status;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $end_user_name;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $hardware_status;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $region_name;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $opportunity_start_date;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $is_opportunity_start_date_assumed = false;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $opportunity_end_date;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $is_opportunity_end_date_assumed = false;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $opportunity_closing_date;
+
+    /** @var int|\App\DTO\MissingValue|null */
+    public int|MissingValue|null $contract_duration_months;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $is_contract_duration_checked = false;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $expected_order_date;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $customer_order_date;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $purchase_order_date;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $supplier_order_date;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $supplier_order_transaction_date;
+
+    /** @var \Carbon\Carbon|\App\DTO\MissingValue|null */
+    public Carbon|MissingValue|null $supplier_order_confirmation_date;
+
+    /** @var float|\App\DTO\MissingValue|null */
+    public float|MissingValue|null $opportunity_amount;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $opportunity_amount_currency_code;
+
+    /** @var float|\App\DTO\MissingValue|null */
+    public float|MissingValue|null $purchase_price;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $purchase_price_currency_code;
+
+    /** @var float|\App\DTO\MissingValue|null */
+    public float|MissingValue|null $list_price;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $list_price_currency_code;
+
+    /** @var float|\App\DTO\MissingValue|null */
+    public float|MissingValue|null $estimated_upsell_amount;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $estimated_upsell_amount_currency_code;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $personal_rating;
+
+    /** @var int|\App\DTO\MissingValue|null */
+    public int|MissingValue|null $ranking;
+
+    /** @var float|\App\DTO\MissingValue|null */
+    public float|MissingValue|null $margin_value;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $competition_name;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $service_level_agreement_id;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $sale_unit_name;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $drop_in;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $lead_source_name;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $has_higher_sla;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $is_multi_year;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $has_additional_hardware;
+
+    /** @var bool|\App\DTO\MissingValue */
+    public bool|MissingValue $has_service_credits;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $remarks;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $notes;
+
+    /** @var string|\App\DTO\MissingValue|null */
+    public string|MissingValue|null $campaign_name;
 
     /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
+     * @var \App\DTO\Opportunity\CreateSupplierData[]|\App\DTO\MissingValue
      */
-    public ?string $pipeline_stage_id;
+    public array|MissingValue $create_suppliers;
 
     /**
-     * @Constraints\Uuid
-     *
-     * @var string|null
+     * @var \App\DTO\Opportunity\UpdateSupplierData[]|\App\DTO\MissingValue
      */
-    public ?string $contract_type_id;
+    public array|MissingValue $update_suppliers;
 
-    /**
-     * @Constraints\Uuid
-     */
-    public ?string $account_manager_id;
+    /** @var \App\DTO\Opportunity\CreateOpportunityRecurrenceData|\App\DTO\MissingValue|null */
+    public CreateOpportunityRecurrenceData|MissingValue|null $recurrence;
 
-    /**
-     * @Constraints\Uuid
-     */
-    public ?string $primary_account_id;
+    public function __construct(array $parameters = [])
+    {
+        $class = new \ReflectionClass(static::class);
+        $missing = new MissingValue();
 
-    /**
-     * @Constraints\Uuid
-     */
-    public ?string $end_user_id;
+        foreach ($class->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+            if ($property->isStatic()) {
+                continue;
+            }
 
-    public bool $are_end_user_addresses_available;
+            if (key_exists($property->getName(), $parameters) === false) {
+                $parameters[$property->getName()] = $missing;
+            }
+        }
 
-    public bool $are_end_user_contacts_available;
-
-    /**
-     * @Constraints\Uuid
-     */
-    public ?string $primary_account_contact_id;
-
-    /**
-     * @Constraints\Length(
-     *      max=191
-     * )
-     */
-    public ?string $project_name;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $nature_of_service;
-
-    /**
-     * @Constraints\NotBlank(
-     *    allowNull=true
-     * )
-     */
-    public ?string $renewal_month;
-
-    /**
-     * @Constraints\PositiveOrZero
-     */
-    public ?int $renewal_year;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $customer_status;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $end_user_name;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $hardware_status;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $region_name;
-
-    public ?Carbon $opportunity_start_date;
-
-    public bool $is_opportunity_start_date_assumed = false;
-
-    public ?Carbon $opportunity_end_date;
-
-    public bool $is_opportunity_end_date_assumed = false;
-
-    public ?Carbon $opportunity_closing_date;
-
-    public ?int $contract_duration_months;
-
-    public bool $is_contract_duration_checked = false;
-
-    public ?Carbon $expected_order_date;
-
-    public ?Carbon $customer_order_date;
-
-    public ?Carbon $purchase_order_date;
-
-    public ?Carbon $supplier_order_date;
-
-    public ?Carbon $supplier_order_transaction_date;
-
-    public ?Carbon $supplier_order_confirmation_date;
-
-    public ?float $opportunity_amount;
-
-    /**
-     * @Constraints\Length(
-     *     min=3,
-     *     max=3
-     * )
-     */
-    public ?string $opportunity_amount_currency_code;
-
-    public ?float $purchase_price;
-
-    /**
-     * @Constraints\Length(
-     *     min=3,
-     *     max=3
-     * )
-     */
-    public ?string $purchase_price_currency_code;
-
-    public ?float $list_price;
-
-    /**
-     * @Constraints\Length(
-     *     min=3,
-     *     max=3
-     * )
-     */
-    public ?string $list_price_currency_code;
-
-    public ?float $estimated_upsell_amount;
-
-    /**
-     * @Constraints\Length(
-     *     min=3,
-     *     max=3
-     * )
-     */
-    public ?string $estimated_upsell_amount_currency_code;
-
-    /**
-     * @Constraints\NotBlank(allowNull=true)
-     */
-    public ?string $personal_rating;
-
-    public ?float $margin_value;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $competition_name;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $service_level_agreement_id;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $sale_unit_name;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $drop_in;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $lead_source_name;
-
-    public bool $has_higher_sla;
-
-    public bool $is_multi_year;
-
-    public bool $has_additional_hardware;
-
-    public bool $has_service_credits;
-
-    /**
-     * @Constraints\Length(
-     *     max=10000
-     * )
-     */
-    public ?string $remarks;
-
-    /**
-     * @Constraints\Length(
-     *     max=10000
-     * )
-     */
-    public ?string $notes;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $sale_action_name;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     *
-     * @var string|null
-     */
-    public ?string $campaign_name;
-
-    /**
-     * @var \App\DTO\Opportunity\CreateSupplierData[]
-     */
-    public array $create_suppliers;
-
-    /**
-     * @var \App\DTO\Opportunity\UpdateSupplierData[]
-     */
-    public array $update_suppliers;
+        parent::__construct($parameters);
+    }
 }

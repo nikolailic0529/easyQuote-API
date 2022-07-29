@@ -12,6 +12,7 @@ use DateTimeImmutable;
 final class UpdateTaskInput extends BaseInput
 {
     public function __construct(public readonly string                                                                                $id,
+                                public readonly string|InputValueEnum                                                                 $unitId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                 $activityTypeId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                 $subject = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                 $description = InputValueEnum::Miss,

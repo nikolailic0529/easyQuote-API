@@ -51,7 +51,25 @@ class WorldwideQuoteQueries
 
     public function draftedListingQuery(Request $request = null): Builder
     {
+        $distributorFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
+            ->has('opportunitySupplier')
+            ->has('distributorFile')
+            ->limit(1);
+
+        $scheduleFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
+            ->has('opportunitySupplier')
+            ->has('scheduleFile')
+            ->limit(1);
+
         return $this->listingQuery($request)
+            ->addSelect([
+                'has_distributor_files' => $this->connection->query()
+                    ->selectRaw('exists ('.$distributorFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
+                'has_schedule_files' => $this->connection->query()
+                    ->selectRaw('exists ('.$scheduleFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
+            ])
             ->whereNull('worldwide_quotes.submitted_at');
     }
 
@@ -94,7 +112,7 @@ class WorldwideQuoteQueries
             ->join('opportunities', function (JoinClause $join) {
                 $join->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
-            ->join('companies', function (JoinClause $join) {
+            ->leftJoin('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'opportunities.primary_account_id');
             })
             ->leftJoin('companies as end_user', function (JoinClause $join) {

@@ -6,11 +6,11 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerFieldIntegration;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\FieldEntity;
 use App\Integrations\Pipeliner\Models\FieldFilterInput;
-use App\Models\Pipeline\Pipeline;
 use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
 use App\Services\CustomField\CustomFieldDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\ConnectionResolverInterface;
@@ -20,7 +20,7 @@ use JetBrains\PhpStorm\ArrayShape;
 
 class PullCustomFieldStrategy implements PullStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionResolverInterface $connectionResolver,
                                 protected Config                      $config,
@@ -36,6 +36,10 @@ class PullCustomFieldStrategy implements PullStrategy
      */
     public function sync(object $entity): Model
     {
+        if (!$entity instanceof FieldEntity) {
+            throw new \TypeError(sprintf("Entity must be an instance of %s.", FieldEntity::class));
+        }
+
         $this->ensureFieldReferenceSupportedForSync($entity->apiName);
 
         $fieldName = $this->resolveLocalFieldName($entity->apiName);
@@ -120,7 +124,8 @@ class PullCustomFieldStrategy implements PullStrategy
         return $this->config->get('pipeliner.sync.custom_fields.mapping', []);
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class, 'modified' => \DateTimeInterface::class])]
+    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
+        'modified' => \DateTimeInterface::class])]
     public function getMetadata(string $reference): array
     {
         /** @var FieldEntity $plField */
@@ -132,16 +137,6 @@ class PullCustomFieldStrategy implements PullStrategy
             'created' => $entity->created,
             'modified' => $entity->modified,
         ];
-    }
-
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
     }
 
     public function countPending(): int

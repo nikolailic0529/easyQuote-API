@@ -37,7 +37,7 @@ class PipelinerController extends Controller
     {
         $result = $service
             ->setCauser($request->user())
-            ->queueSync();
+            ->queueSync($request->getStrategies());
 
         return response()->json($result);
     }

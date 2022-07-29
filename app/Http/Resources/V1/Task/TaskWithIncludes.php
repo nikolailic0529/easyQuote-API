@@ -24,12 +24,14 @@ class TaskWithIncludes extends JsonResource
             'id' => $this->id,
             'user_id' => $this->user_id,
             'user' => UserRelationResource::make($this->user),
+            'sales_unit_id' => $this->salesUnit()->getParentKey(),
             'activity_type' => $this->activity_type,
             'name' => $this->name,
             'content' => $this->content,
             'expiry_date' => $this->expiry_date?->tz($tz)?->format(config('date.format_time')),
             'priority' => $this->priority,
 
+            'sales_unit' => $this->salesUnit,
             'recurrence' => TaskRecurrenceResource::make($this->recurrence),
             'reminder' => TaskReminderResource::make($this->reminder),
 

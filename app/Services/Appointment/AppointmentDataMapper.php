@@ -12,6 +12,7 @@ use App\Integrations\Pipeliner\Enum\InviteeResponseEnum;
 use App\Integrations\Pipeliner\Enum\InviteeTypeEnum;
 use App\Integrations\Pipeliner\Enum\ReminderStatusEnum;
 use App\Integrations\Pipeliner\Models\AppointmentEntity;
+use App\Integrations\Pipeliner\Models\CreateActivityAccountRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityAccountRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateActivityClientRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityClientRelationInputCollection;
@@ -21,6 +22,7 @@ use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateAppointmentInput;
 use App\Integrations\Pipeliner\Models\CreateAppointmentReminderInput;
+use App\Integrations\Pipeliner\Models\SalesUnitEntity;
 use App\Integrations\Pipeliner\Models\UpdateAppointmentInput;
 use App\Models\Appointment\Appointment;
 use App\Models\Appointment\AppointmentContactInvitee;
@@ -28,6 +30,7 @@ use App\Models\Appointment\AppointmentReminder;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
 use App\Services\Pipeliner\RuntimeCachedAppointmentTypeResolver;
@@ -59,8 +62,17 @@ class AppointmentDataMapper implements CauserAware
             $appointment->end_date = Carbon::instance($entity->endDate);
             $appointment->location = $entity->location;
 
+            if (null !== $entity->unit) {
+                $appointment->salesUnit()->associate(
+                    SalesUnit::query()->where('unit_name', $entity->unit->name)->first()
+                );
+            }
+
             $reminder = isset($entity->reminder)
-                ? tap(new AppointmentReminder(), static function (AppointmentReminder $reminder) use ($appointment, $entity) {
+                ? tap(new AppointmentReminder(), static function (AppointmentReminder $reminder) use (
+                    $appointment,
+                    $entity
+                ) {
                     $reminder->appointment()->associate($appointment);
 
                     $reminder->start_date_offset = $entity->reminder->endDateOffset;
@@ -113,7 +125,11 @@ class AppointmentDataMapper implements CauserAware
                 $relations = new Collection();
 
                 foreach ($entity->inviteesContacts as $contactRelation) {
-                    $relations[] = tap(new AppointmentContactInvitee(), static function (AppointmentContactInvitee $invitee) use ($appointment, $contactRelation): void {
+                    $relations[] = tap(new AppointmentContactInvitee(), static function (AppointmentContactInvitee $invitee) use
+                    (
+                        $appointment,
+                        $contactRelation
+                    ): void {
                         $invitee->appointment()->associate($appointment);
                         $invitee->pl_reference = $contactRelation->id;
 
@@ -172,6 +188,7 @@ class AppointmentDataMapper implements CauserAware
             }));
 
             $appointment->setRelation('opportunitiesHaveAppointment', $appointment->opportunities);
+            $appointment->setRelation('companiesHaveAppointment', $appointment->companies);
         });
     }
 
@@ -208,12 +225,23 @@ class AppointmentDataMapper implements CauserAware
             }
         }
 
+        $toBeMergedBelongsToRelations = [
+            'salesUnit',
+        ];
+
+        foreach ($toBeMergedBelongsToRelations as $relation) {
+            if (null !== $another->$relation) {
+                $appointment->$relation()->associate($another->$relation);
+            }
+        }
+
         $toBeMergedManyToManyRelations = [
             'companies',
             'contacts',
             'inviteesUsers',
             'opportunities',
             'opportunitiesHaveAppointment',
+            'companiesHaveAppointment',
         ];
 
         foreach ($toBeMergedManyToManyRelations as $relation) {
@@ -259,9 +287,12 @@ class AppointmentDataMapper implements CauserAware
         $attributes['startDate'] = Carbon::instance($appointment->start_date)->toDateTimeImmutable();
         $attributes['endDate'] = Carbon::instance($appointment->end_date)->toDateTimeImmutable();
         $attributes['location'] = $appointment->location;
-        $attributes['accountRelations'] = $appointment->users->whereNotNull('pl_reference')
-            ->map(static function (User $user): CreateActivityClientRelationInput {
-                return new CreateActivityClientRelationInput($user->pl_reference);
+        $attributes['accountRelations'] = $appointment
+            ->companies
+            ->merge($appointment->companiesHaveAppointment)
+            ->whereNotNull('pl_reference')
+            ->map(static function (Company $company): CreateActivityAccountRelationInput {
+                return new CreateActivityAccountRelationInput($company->pl_reference);
             })
             ->pipe(static function (BaseCollection $collection): CreateActivityAccountRelationInputCollection {
                 return new CreateActivityAccountRelationInputCollection(...$collection->all());
@@ -296,7 +327,8 @@ class AppointmentDataMapper implements CauserAware
             ->pipe(static function (BaseCollection $collection): CreateActivityContactRelationInputCollection {
                 return new CreateActivityContactRelationInputCollection(...$collection->all());
             });
-        $attributes['reminder'] = value(static function () use ($appointment): CreateAppointmentReminderInput|InputValueEnum {
+        $attributes['reminder'] = value(static function () use ($appointment
+        ): CreateAppointmentReminderInput|InputValueEnum {
             if (null === $appointment->reminder) {
                 return InputValueEnum::Miss;
             }
@@ -315,29 +347,38 @@ class AppointmentDataMapper implements CauserAware
                 },
             );
         });
+        $attributes['unitId'] = $appointment->salesUnit?->pl_reference ?? InputValueEnum::Miss;
 
         return new CreateAppointmentInput(
             ...$attributes
         );
     }
 
-    public function mapPipelinerUpdateAppointmentInput(Appointment $appointment, AppointmentEntity $entity): UpdateAppointmentInput
+    public function mapPipelinerUpdateAppointmentInput(Appointment $appointment,
+                                                       AppointmentEntity $entity): UpdateAppointmentInput
     {
         $attributes = [];
 
         $attributes['id'] = $entity->id;
+        $attributes['unitId'] = value(static function (?SalesUnit $unit, ?SalesUnitEntity $entity): InputValueEnum|string {
+            if (null === $unit || $unit->pl_reference === $entity?->id) {
+                return InputValueEnum::Miss;
+            }
+
+            return $unit->pl_reference ?? InputValueEnum::Miss;
+        }, $appointment->salesUnit, $entity->unit);
         $attributes['activityTypeId'] = ($this->pipelinerAppointmentTypeResolver)($appointment->activity_type->value)?->id ?? InputValueEnum::Miss;
         $attributes['subject'] = $appointment->subject;
         $attributes['description'] = $appointment->description;
         $attributes['startDate'] = Carbon::instance($appointment->start_date)->toDateTimeImmutable();
         $attributes['endDate'] = Carbon::instance($appointment->end_date)->toDateTimeImmutable();
         $attributes['location'] = $appointment->location;
-        $attributes['accountRelations'] = $appointment->users
+        $attributes['accountRelations'] = $appointment
+            ->companies
+            ->merge($appointment->companiesHaveAppointment)
             ->whereNotNull('pl_reference')
-            ->unique('pl_reference')
-            ->values()
-            ->map(static function (User $user): CreateActivityClientRelationInput {
-                return new CreateActivityClientRelationInput($user->pl_reference);
+            ->map(static function (Company $company): CreateActivityAccountRelationInput {
+                return new CreateActivityAccountRelationInput($company->pl_reference);
             })
             ->pipe(static function (BaseCollection $collection): CreateActivityAccountRelationInputCollection {
                 return new CreateActivityAccountRelationInputCollection(...$collection->all());

@@ -20,6 +20,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class LinkedEntityAggregateService
 {
+    const VALIDATE_REFS = 1 << 0;
+
+    protected int $flags = 0;
+
     public function __construct(protected PipelinerAccountIntegration     $accountIntegration,
                                 protected PipelinerOpportunityIntegration $opportunityIntegration,
                                 protected PipelinerContactIntegration     $contactIntegration,
@@ -32,8 +36,10 @@ class LinkedEntityAggregateService
     /**
      * @return LinkedEntity[]
      */
-    public function aggregate(): array
+    public function aggregate(int $flags = 0): array
     {
+        $this->flags = $flags;
+
         $models = [
             Company::class,
             Opportunity::class,
@@ -64,14 +70,16 @@ class LinkedEntityAggregateService
 
         $refs = $entitiesOfModel->pluck('pl_reference')->all();
 
-        $validRefMap = $this->validateRefs($class, $refs);
+        $validRefMap = ($this->flags & self::VALIDATE_REFS) === self::VALIDATE_REFS
+            ? $this->validateRefs($class, $refs)
+            : [];
 
         return $entitiesOfModel->map(static function (object $item) use ($entityName, $validRefMap): LinkedEntity {
             return LinkedEntity::fromArray([
                 'id' => $item->id,
                 'pl_reference' => $item->pl_reference,
                 'entity_name' => $entityName,
-                'is_valid' => $validRefMap[$item->pl_reference],
+                'is_valid' => $validRefMap[$item->pl_reference] ?? null,
             ]);
         })
             ->all();

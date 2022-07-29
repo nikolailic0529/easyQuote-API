@@ -14,7 +14,7 @@ use App\Http\Resources\V1\Appointment\AppointmentListResource;
 use App\Http\Resources\V1\Opportunity\GroupedOpportunityCollection;
 use App\Http\Resources\V1\Opportunity\OpportunityList;
 use App\Http\Resources\V1\Opportunity\OpportunityOfStage;
-use App\Http\Resources\V1\Opportunity\OpportunityWithIncludes;
+use App\Http\Resources\V1\Opportunity\OpportunityWithIncludesResource;
 use App\Http\Resources\V1\Opportunity\UploadedOpportunities;
 use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
@@ -117,7 +117,7 @@ class OpportunityController extends Controller
         $this->authorize('view', $opportunity);
 
         return response()->json(
-            OpportunityWithIncludes::make($opportunity),
+            OpportunityWithIncludesResource::make($opportunity),
             R::HTTP_OK
         );
     }
@@ -143,7 +143,7 @@ class OpportunityController extends Controller
             );
 
         return response()->json(
-            OpportunityWithIncludes::make($resource),
+            OpportunityWithIncludesResource::make($resource),
             R::HTTP_CREATED
         );
     }
@@ -216,7 +216,7 @@ class OpportunityController extends Controller
             );
 
         return response()->json(
-            OpportunityWithIncludes::make($resource),
+            OpportunityWithIncludesResource::make($resource),
             R::HTTP_OK
         );
     }
@@ -328,7 +328,7 @@ class OpportunityController extends Controller
     {
         $this->authorize('view', $opportunity);
 
-        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($opportunity)->get();
+        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($opportunity, $request)->get();
 
         return AppointmentListResource::collection($resource);
     }

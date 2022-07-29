@@ -12,66 +12,50 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
 use App\Integrations\Pipeliner\Models\ActivityRelationFilterInput;
 use App\Integrations\Pipeliner\Models\AppointmentEntity;
 use App\Integrations\Pipeliner\Models\AppointmentFilterInput;
+use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
+use App\Integrations\Pipeliner\Models\LeadOpptyAccountRelationEntity;
 use App\Integrations\Pipeliner\Models\NoteEntity;
 use App\Integrations\Pipeliner\Models\NoteFilterInput;
 use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Integrations\Pipeliner\Models\OpportunityFilterInput;
-use App\Integrations\Pipeliner\Models\PipelineEntity;
+use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
 use App\Integrations\Pipeliner\Models\TaskEntity;
 use App\Integrations\Pipeliner\Models\TaskFilterInput;
+use App\Models\Attachment;
 use App\Models\Company;
-use App\Models\Contact;
-use App\Models\ImportedAddress;
-use App\Models\ImportedCompany;
-use App\Models\ImportedContact;
 use App\Models\Opportunity;
-use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelScrollCursor;
-use App\Services\Company\CompanyDataMapper;
 use App\Services\Opportunity\OpportunityDataMapper;
-use App\Services\Opportunity\OpportunityEntityService;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use JetBrains\PhpStorm\ArrayShape;
 
 class PullOpportunityStrategy implements PullStrategy
 {
-    protected ?Pipeline $pipeline = null;
-    protected ?PipelineEntity $pipelineEntity = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface             $connection,
                                 protected PipelinerPipelineIntegration    $pipelineIntegration,
                                 protected PipelinerOpportunityIntegration $oppIntegration,
+                                protected PullCompanyStrategy             $pullCompanyStrategy,
                                 protected PullTaskStrategy                $pullTaskStrategy,
                                 protected PullAppointmentStrategy         $pullAppointmentStrategy,
                                 protected PullNoteStrategy                $pullNoteStrategy,
+                                protected PullAttachmentStrategy          $pullAttachmentStrategy,
                                 protected PipelinerAppointmentIntegration $appointmentIntegration,
                                 protected PipelinerTaskIntegration        $taskIntegration,
                                 protected PipelinerNoteIntegration        $noteIntegration,
-                                protected OpportunityEntityService        $entityService,
-                                protected CompanyDataMapper               $companyDataMapper,
                                 protected OpportunityDataMapper           $oppDataMapper,
                                 protected LockProvider                    $lockProvider)
     {
-    }
-
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, function () use ($pipeline): void {
-            $this->pipeline = $pipeline;
-            $this->pipelineEntity = null;
-        });
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
     }
 
     /**
@@ -79,24 +63,15 @@ class PullOpportunityStrategy implements PullStrategy
      */
     public function countPending(): int
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
-        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull($this->getMostRecentScrollCursor());
+        [$count, $lastId] = $this->computeTotalEntitiesCountAndLastIdToPull();
 
         return $count;
     }
 
     public function iteratePending(): \Traversable
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
-        $pipelineEntity = $this->resolvePipelineEntity();
-
-        $cursor = $this->getMostRecentScrollCursor();
-
         $iterator = $this->oppIntegration->scroll(
-            after: $cursor?->cursor,
-            filter: OpportunityFilterInput::new()->pipelineId(EntityFilterStringField::eq($pipelineEntity->id))
+            ...$this->resolveScrollParameters()
         );
 
         foreach ($iterator as $cursor => $item) {
@@ -112,6 +87,10 @@ class PullOpportunityStrategy implements PullStrategy
      */
     public function sync(object $entity): Model
     {
+        if (!$entity instanceof OpportunityEntity) {
+            throw new \TypeError(sprintf("Entity must be an instance of %s.", OpportunityEntity::class));
+        }
+
         $lock = $this->lockProvider->lock(Lock::SYNC_OPPORTUNITY($entity->id), 30);
 
         return $lock->block(30, function () use ($entity): Opportunity {
@@ -121,67 +100,36 @@ class PullOpportunityStrategy implements PullStrategy
                 ->where('pl_reference', $entity->id)
                 ->first();
 
-            $primaryAccount = $this->companyDataMapper->mapImportedCompanyFromAccountEntity($entity->primaryAccount, $entity->contactRelations);
+            /** @var Collection|Company[] $accounts */
+            $accounts = Collection::make($entity->accountRelations)
+                ->map(function (LeadOpptyAccountRelationEntity $relationEntity) use ($entity): Company {
+                    return $this->pullCompanyStrategy->sync($relationEntity->account, contactRelations: $entity->contactRelations);
+                });
+
+            $newOpportunity = $this->oppDataMapper->mapOpportunityFromOpportunityEntity($entity, $accounts);
 
             // Merge attributes when a model exists already.
             if (null !== $opportunity) {
-                $updatedOpportunity = $this->oppDataMapper->mapOpportunityFromOpportunityEntity($entity, $primaryAccount);
-
-                $this->oppDataMapper->mergeAttributesFrom($opportunity, $updatedOpportunity);
-
-                $this->saveImportedPrimaryAccount($opportunity->importedPrimaryAccount);
-
-                $primaryAcc = $this->entityService->associateOpportunityWithImportedPrimaryAccount($opportunity);
-
-                $this->entityService->associateOpportunityWithImportedPrimaryAccountContact($opportunity, $primaryAcc);
+                $this->oppDataMapper->mergeAttributesFrom($opportunity, $newOpportunity);
 
                 $this->connection->transaction(static function () use ($opportunity): void {
                     $opportunity->withoutTimestamps(static function (Opportunity $opportunity): void {
-                        $opportunity->primaryAccount?->withoutTimestamps(static fn(Company $company): bool => $company->save());
-                        $opportunity->endUser?->withoutTimestamps(static fn(Company $company): bool => $company->save());
-
                         $opportunity->push();
                     });
                 });
 
-                $this->syncRelationsOfOpportunityEntity($entity);
+                $this->syncRelationsOfOpportunityEntity($entity, $opportunity);
 
                 return $opportunity;
             }
 
-            $opportunity = $this->oppDataMapper->mapOpportunityFromOpportunityEntity($entity, $primaryAccount);
-
-            $this->saveImportedPrimaryAccount($opportunity->importedPrimaryAccount);
-
-            $this->connection->transaction(static function () use ($opportunity) {
-                $opportunity->push();
+            $this->connection->transaction(static function () use ($newOpportunity): void {
+                $newOpportunity->push();
             });
 
-            $this->entityService->finishSavingOfImportedOpportunity($opportunity);
+            $this->syncRelationsOfOpportunityEntity($entity, $newOpportunity);
 
-            $this->syncRelationsOfOpportunityEntity($entity);
-
-            return $opportunity;
-        });
-    }
-
-    private function saveImportedPrimaryAccount(ImportedCompany $primaryAccount): void
-    {
-        $this->connection->transaction(static function () use ($primaryAccount): void {
-            $primaryAccount->contacts->each(static function (ImportedContact $contact): void {
-                $contact->owner?->save();
-                $contact->save();
-            });
-
-            $primaryAccount->addresses->each(static function (ImportedAddress $address): void {
-                $address->owner?->save();
-                $address->save();
-            });
-
-            $primaryAccount->push();
-
-            $primaryAccount->addresses()->sync($primaryAccount->addresses);
-            $primaryAccount->contacts()->sync($primaryAccount->contacts);
+            return $newOpportunity;
         });
     }
 
@@ -210,7 +158,7 @@ class PullOpportunityStrategy implements PullStrategy
         }
     }
 
-    private function syncRelationsOfOpportunityEntity(OpportunityEntity $entity): void
+    private function syncRelationsOfOpportunityEntity(OpportunityEntity $entity, Opportunity $model): void
     {
         $relations = $this->iterateRelationsOfOpportunityEntity($entity);
 
@@ -224,6 +172,13 @@ class PullOpportunityStrategy implements PullStrategy
 
             $strategy->sync($item);
         }
+
+        $attachments = Collection::make($entity->documents)
+            ->map(function (CloudObjectEntity $entity): Attachment {
+                return $this->pullAttachmentStrategy->sync($entity);
+            });
+
+        $this->connection->transaction(static fn() => $model->attachments()->syncWithoutDetaching($attachments));
     }
 
     public function syncByReference(string $reference): Model
@@ -238,22 +193,11 @@ class PullOpportunityStrategy implements PullStrategy
         return (new Opportunity())->getMorphClass();
     }
 
-    private function resolvePipelineEntity(): PipelineEntity
+    private function computeTotalEntitiesCountAndLastIdToPull(): array
     {
-        return $this->pipelineEntity ??= collect($this->pipelineIntegration->getAll())
-            ->sole(function (PipelineEntity $entity): bool {
-                return 0 === strcasecmp($entity->name, $this->pipeline->pipeline_name);
-            });
-    }
-
-    private function computeTotalEntitiesCountAndLastIdToPull(PipelinerModelScrollCursor $scrollCursor = null): array
-    {
-        $pipelineEntity = $this->resolvePipelineEntity();
-
         $iterator = $this->oppIntegration->simpleScroll(
-            after: $scrollCursor?->cursor,
-            filter: OpportunityFilterInput::new()->pipelineId(EntityFilterStringField::eq($pipelineEntity->id)),
-            chunkSize: 1000
+            ...$this->resolveScrollParameters(),
+            ...['first' => 1_000]
         );
 
         $totalCount = 0;
@@ -270,6 +214,21 @@ class PullOpportunityStrategy implements PullStrategy
         }
 
         return [$totalCount, $lastId];
+    }
+
+    #[ArrayShape(['after' => 'string|null', 'filter' => OpportunityFilterInput::class])]
+    private function resolveScrollParameters(): array
+    {
+        $filter = OpportunityFilterInput::new();
+        $unitFilter = SalesUnitFilterInput::new()->name(EntityFilterStringField::eq(
+            ...collect($this->getSalesUnits())->pluck('unit_name')
+        ));
+        $filter->unit($unitFilter);
+
+        return [
+            'after' => $this->getMostRecentScrollCursor()?->cursor,
+            'filter' => $filter,
+        ];
     }
 
     private function isStrategyYetToBeAppliedTo(string $plReference, string|\DateTimeInterface $modified): bool
@@ -298,11 +257,8 @@ class PullOpportunityStrategy implements PullStrategy
      */
     private function getMostRecentScrollCursor(): ?PipelinerModelScrollCursor
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return PipelinerModelScrollCursor::query()
-            ->whereBelongsTo($this->pipeline)
             ->where('model_type', $this->getModelType())
             ->latest()
             ->first();
@@ -313,7 +269,8 @@ class PullOpportunityStrategy implements PullStrategy
         return $entity instanceof Opportunity;
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class, 'modified' => \DateTimeInterface::class])]
+    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
+        'modified' => \DateTimeInterface::class])]
     public function getMetadata(?string $reference): array
     {
         $entity = $this->oppIntegration->getById($reference);

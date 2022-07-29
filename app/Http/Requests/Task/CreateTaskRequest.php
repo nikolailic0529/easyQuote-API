@@ -12,7 +12,7 @@ use App\Enum\Priority;
 use App\Enum\RecurrenceTypeEnum;
 use App\Enum\ReminderStatus;
 use App\Enum\TaskTypeEnum;
-use App\Models\{Attachment, User};
+use App\Models\{Attachment, SalesUnit, User};
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -54,6 +54,9 @@ class CreateTaskRequest extends FormRequest
             'recurrence.week' => ['bail', 'required_with:recurrence', new Enum(DateWeekEnum::class)],
 
             'recurrence.day_of_week' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:127'],
+
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
         ];
     }
 
@@ -66,6 +69,7 @@ class CreateTaskRequest extends FormRequest
             $timezone = $user->timezone->utc ?? config('app.timezone');
 
             return new CreateTaskData([
+                'sales_unit_id' => $this->input('sales_unit_id'),
                 'activity_type' => TaskTypeEnum::from($this->input('activity_type')),
                 'name' => $this->input('name'),
                 'content' => $this->input('content'),
@@ -75,7 +79,6 @@ class CreateTaskRequest extends FormRequest
                 'priority' => Priority::from((int)$this->input('priority')),
                 'users' => $this->input('users') ?? [],
                 'attachments' => $this->input('attachments') ?? [],
-
                 'reminder' => $this->whenHas('reminder', function () use ($timezone): CreateTaskReminderData {
                     return new CreateTaskReminderData([
                         'set_date' => $this->date('reminder.set_date', tz: $timezone)
@@ -85,7 +88,6 @@ class CreateTaskRequest extends FormRequest
                         'status' => ReminderStatus::tryFrom($this->input('reminder.status')),
                     ]);
                 }, fn() => null),
-
                 'recurrence' => $this->whenHas('recurrence', function () use ($timezone): CreateTaskRecurrenceData {
                     return new CreateTaskRecurrenceData([
                         'type' => RecurrenceTypeEnum::tryFrom($this->input('recurrence.type')),

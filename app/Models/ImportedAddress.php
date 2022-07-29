@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string|null $pl_reference
- * @property string|null $contact_id
  * @property string|null $country_id
  * @property mixed|string $address_type
  * @property mixed|null $address_1
@@ -19,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property mixed|null $post_code
  * @property mixed|null $state
  * @property mixed|null $state_code
+ *
+ * @property-read Country|null $country
  */
 class ImportedAddress extends Model implements HasOwner
 {
@@ -29,11 +30,6 @@ class ImportedAddress extends Model implements HasOwner
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function contact(): BelongsTo
-    {
-        return $this->belongsTo(Contact::class);
     }
 
     public function country(): BelongsTo

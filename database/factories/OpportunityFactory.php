@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
+use App\Models\SalesUnit;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -24,6 +25,7 @@ class OpportunityFactory extends Factory
         $endCustomer = Company::factory()->create();
 
         return [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'pipeline_id' => PL_WWDP,
             'pipeline_stage_id' => PipelineStage::query()->where('pipeline_id', PL_WWDP)->first()->getKey(),
             'contract_type_id' => $this->faker->randomElement([CT_CONTRACT, CT_PACK]),
@@ -106,7 +108,7 @@ class OpportunityFactory extends Factory
                 '4 - Strong selling signals',
                 '5 - Will be ordered',
             ]),
-            'ranking' => $this->faker->randomFloat(2, 0, 1),
+            'ranking' => $this->faker->randomElement([0, 20, 40, 60, 80, 100]),
 
             'sale_action_name' => $this->faker->randomElement([
                 "Preparation", "Special Bid Required", "Quote Ready", "Customer Contact", "Customer Order OK", "PO Placed", "Processed in MC", "Closed",

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enum\AttachmentType;
 use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $extension
  * @property int|null $size
  * @property AttachmentType|null $type
+ *
+ * @property-read Collection<int, Attachable> $attachables
  */
 class Attachment extends Model
 {

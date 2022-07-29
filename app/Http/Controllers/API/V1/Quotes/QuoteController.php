@@ -413,7 +413,7 @@ class QuoteController extends Controller
     {
         $this->authorize('view', $quote);
 
-        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($quote)->get();
+        $resource = $appointmentQueries->listAppointmentsLinkedToQuery($quote, $request)->get();
 
         return AppointmentListResource::collection($resource);
     }

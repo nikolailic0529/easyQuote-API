@@ -58,27 +58,13 @@ class UserPolicy
      * @param  \App\Http\Requests\Collaboration\UpdateUserRequest $request
      * @return mixed
      */
-    public function updateProfile(User $user, User $collaborator, UpdateUserRequest $request)
+    public function updateProfile(User $user, User $collaborator)
     {
-        if ($user->cant('update_users')) {
-            return false;
-        }
-
-        /**
-         * When Updatable Collaborator doesn't have Administrator role we allow the action.
-         */
-        if (!$collaborator->hasRole('Administrator')) {
+        if ($user->can('update_users')) {
             return true;
         }
 
-        /**
-         * When Updatable Collaborator has Administrator role and User is trying to update his email we deny the action.
-         */
-        if ($request->has('email') && $request->email !== $collaborator->email) {
-            return $this->deny(AEU_01);
-        }
-
-        return true;
+        return false;
     }
 
     /**

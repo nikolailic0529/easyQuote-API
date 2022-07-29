@@ -1,6 +1,9 @@
 <?php
 
+use Database\Seeders\PipelineSeeder;
+use Illuminate\Database\Console\Seeds\SeedCommand;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration {
@@ -11,6 +14,11 @@ return new class extends Migration {
      */
     public function up()
     {
+        Artisan::call(SeedCommand::class, [
+            '--class' => PipelineSeeder::class,
+            '--force' => true,
+        ]);
+
         $seeds = [
             [
                 // name: Default Pipeline

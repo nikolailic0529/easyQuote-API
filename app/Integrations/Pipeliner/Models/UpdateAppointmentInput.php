@@ -11,6 +11,7 @@ use DateTimeInterface;
 final class UpdateAppointmentInput extends BaseInput
 {
     public function __construct(public readonly string                                                                                                $id,
+                                public readonly string|InputValueEnum                                                                                 $unitId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                                 $activityTypeId = InputValueEnum::Miss,
                                 public readonly string|InputValueEnum                                                                                 $subject = InputValueEnum::Miss,
                                 #[SerializeWith(DateTimeSerializer::class, DateTimeInterface::ATOM)] public readonly DateTimeImmutable|InputValueEnum $startDate = InputValueEnum::Miss,

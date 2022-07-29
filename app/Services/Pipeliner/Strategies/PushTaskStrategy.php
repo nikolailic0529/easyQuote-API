@@ -5,23 +5,22 @@ namespace App\Services\Pipeliner\Strategies;
 use App\Integrations\Pipeliner\GraphQl\CloudObjectIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
 use App\Integrations\Pipeliner\Models\TaskEntity;
-use App\Models\Attachment;
-use App\Models\Pipeline\Pipeline;
 use App\Models\PipelinerModelUpdateLog;
 use App\Models\Task\Task;
 use App\Models\Task\TaskReminder;
 use App\Services\Attachment\AttachmentDataMapper;
-use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\Task\TaskDataMapper;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 class PushTaskStrategy implements PushStrategy
 {
-    protected ?Pipeline $pipeline = null;
+    use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface      $connection,
                                 protected PushClientStrategy       $clientStrategy,
@@ -29,6 +28,8 @@ class PushTaskStrategy implements PushStrategy
                                 protected TaskDataMapper           $dataMapper,
                                 protected CloudObjectIntegration   $cloudObjectIntegration,
                                 protected AttachmentDataMapper     $attachmentDataMapper,
+                                protected PushSalesUnitStrategy    $pushSalesUnitStrategy,
+                                protected PushAttachmentStrategy   $pushAttachmentStrategy,
                                 protected LockProvider             $lockProvider)
     {
     }
@@ -44,6 +45,7 @@ class PushTaskStrategy implements PushStrategy
 
         return $model->newQuery()
             ->orderBy($model->getQualifiedUpdatedAtColumn())
+            ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(), Collection::make($this->getSalesUnits())->modelKeys())
             ->where(static function (Builder $builder) use ($model): void {
                 $builder->whereColumn($model->getQualifiedUpdatedAtColumn(), '>', $model->getQualifiedCreatedAtColumn())
                     ->orWhereNull($model->qualifyColumn('pl_reference'));
@@ -62,8 +64,16 @@ class PushTaskStrategy implements PushStrategy
      */
     public function sync(Model $model): void
     {
+        if (!$model instanceof Task) {
+            throw new \TypeError(sprintf("Model must be an instance of %s.", Task::class));
+        }
+
         if (null !== $model->user) {
             $this->clientStrategy->sync($model->user);
+        }
+
+        if (null !== $model->salesUnit) {
+            $this->pushSalesUnitStrategy->sync($model->salesUnit);
         }
 
         $this->pushAttachmentsOfTask($model);
@@ -92,7 +102,7 @@ class PushTaskStrategy implements PushStrategy
     public function pushAttachmentsOfTask(Task $task): void
     {
         foreach ($task->attachments as $attachment) {
-            $this->pushAttachment($attachment);
+            $this->pushAttachmentStrategy->sync($attachment);
         }
     }
 
@@ -119,35 +129,8 @@ class PushTaskStrategy implements PushStrategy
         }
     }
 
-    public function pushAttachment(Attachment $attachment): void
-    {
-        if (null === $attachment->pl_reference) {
-            $input = $this->attachmentDataMapper->mapPipelinerCreateCloudObjectInput($attachment);
-
-            $entity = $this->cloudObjectIntegration->create($input);
-
-            tap($attachment, function (Attachment $attachment) use ($entity): void {
-                $attachment->pl_reference = $entity->id;
-
-                $this->connection->transaction(static fn() => $attachment->save());
-            });
-        }
-    }
-
-    public function setPipeline(Pipeline $pipeline): static
-    {
-        return tap($this, fn() => $this->pipeline = $pipeline);
-    }
-
-    public function getPipeline(): ?Pipeline
-    {
-        return $this->pipeline;
-    }
-
     public function countPending(): int
     {
-        $this->pipeline ?? throw PipelinerSyncException::unsetPipeline();
-
         return $this->modelsToBeUpdatedQuery()->count();
     }
 

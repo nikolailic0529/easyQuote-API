@@ -2,22 +2,28 @@
 
 namespace App\Http\Requests\Opportunity;
 
+use App\DTO\Opportunity\CreateOpportunityRecurrenceData;
 use App\DTO\Opportunity\UpdateOpportunityData;
+use App\Enum\DateDayEnum;
+use App\Enum\DateMonthEnum;
+use App\Enum\DateWeekEnum;
+use App\Enum\RecurrenceTypeEnum;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\ContractType;
 use App\Models\OpportunitySupplier;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\PipelineQueries;
-use App\Rules\Opportunity\SaleActionName;
 use App\Rules\Opportunity\ValidSupplierData;
-use App\Services\Opportunity\OpportunityDataMapper;
+use App\Rules\ScalarValue;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateOpportunity extends FormRequest
 {
@@ -30,24 +36,21 @@ class UpdateOpportunity extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            'pipeline_id' => [
+            'sales_unit_id' => [
                 'bail', 'uuid',
-                Rule::exists(Pipeline::class, 'id')->withoutTrashed(),
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed(),
             ],
             'pipeline_stage_id' => [
-                'bail', 'required_without:sale_action_name', 'uuid',
+                'bail', 'uuid',
                 Rule::exists(PipelineStage::class, 'id')->withoutTrashed()->where(function (Builder $builder): void {
                     $builder->where('pipeline_id', $this->input('pipeline_id', $this->getDefaultPipeline()->getKey()));
                 }),
             ],
-            'sale_action_name' => [
-                'bail', 'required_without:pipeline_stage_id', 'string', new SaleActionName,
-            ],
             'contract_type_id' => [
-                'bail', 'required', 'uuid',
+                'bail', 'uuid',
                 Rule::exists(ContractType::class, 'id'),
             ],
             'primary_account_id' => [
@@ -97,22 +100,30 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'opportunity_start_date' => [
-                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail',
+                Rule::requiredIf(fn() => $this->has('is_contract_duration_checked') && ($this->boolean('is_contract_duration_checked') === false)),
+                'date_format:Y-m-d',
             ],
             'is_opportunity_start_date_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_end_date' => [
-                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail',
+                Rule::requiredIf(fn() => $this->has('is_contract_duration_checked') && ($this->boolean('is_contract_duration_checked') === false)),
+                'date_format:Y-m-d',
             ],
             'is_opportunity_end_end_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_closing_date' => [
-                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail',
+                Rule::requiredIf(fn() => $this->has('is_contract_duration_checked') && ($this->boolean('is_contract_duration_checked') === false)),
+                'date_format:Y-m-d',
             ],
             'contract_duration_months' => [
-                'bail', Rule::requiredIf(fn() => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
+                'bail',
+                Rule::requiredIf(fn() => $this->has('is_contract_duration_checked') && $this->boolean('is_contract_duration_checked')),
+                'integer', 'min:1', 'max:60',
             ],
             'is_contract_duration_checked' => [
                 'bail', 'boolean',
@@ -160,7 +171,10 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'string', 'size:3',
             ],
             'personal_rating' => [
-                'bail', 'nullable', 'string', 'filled', 'max:191',
+                'bail', 'nullable', new ScalarValue(), 'filled',
+            ],
+            'ranking' => [
+                'bail', 'nullable', 'integer', 'min:0', 'max:100',
             ],
             'margin_value' => [
                 'bail', 'nullable', 'numeric',
@@ -220,6 +234,19 @@ class UpdateOpportunity extends FormRequest
             'suppliers_grid.*.contact_email' => [
                 'bail', 'nullable', 'string', 'max:100',
             ],
+
+            'recurrence.stage_id' => ['bail', 'required_with:recurrence', 'uuid',
+                Rule::exists(PipelineStage::class, (new PipelineStage())->getKeyName())->withoutTrashed()],
+            'recurrence.type' => ['bail', 'required_with:recurrence', new Enum(RecurrenceTypeEnum::class)],
+            'recurrence.occur_every' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:99'],
+            'recurrence.occurrences_count' => ['bail', 'required_with:recurrence', 'integer', 'min:-1', 'max:9999'],
+            'recurrence.start_date' => ['bail', 'required_with:recurrence', 'date'],
+            'recurrence.end_date' => ['bail', 'nullable', 'date', 'after:recurrence.start_date'],
+            'recurrence.day' => ['bail', 'required_with:recurrence', new Enum(DateDayEnum::class)],
+            'recurrence.month' => ['bail', 'required_with:recurrence', new Enum(DateMonthEnum::class)],
+            'recurrence.week' => ['bail', 'required_with:recurrence', new Enum(DateWeekEnum::class)],
+            'recurrence.day_of_week' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:127'],
+            'recurrence.condition' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:3'],
         ];
     }
 
@@ -234,102 +261,179 @@ class UpdateOpportunity extends FormRequest
 
     public function getOpportunityData(): UpdateOpportunityData
     {
-        return $this->updateOpportunityData ??= with(true, function () {
-            $createSuppliers = [];
-            $updateSuppliers = [];
+        return $this->updateOpportunityData ??= with(true, function (): UpdateOpportunityData {
+            /** @var User $user */
+            $user = $this->user();
+            $timezone = $user->timezone->utc ?? config('app.timezone');
 
-            foreach ($this->input('suppliers_grid') ?? [] as $supplierData) {
-                if (isset($supplierData['id'])) {
-                    $updateSuppliers[] = [
-                        'supplier_id' => $supplierData['id'],
-                        'supplier_name' => $supplierData['supplier_name'] ?? null,
-                        'country_name' => $supplierData['country_name'] ?? null,
-                        'contact_name' => $supplierData['contact_name'] ?? null,
-                        'contact_email' => $supplierData['contact_email'] ?? null,
+            $data = [];
+
+            $this->whenHas('suppliers_grid', static function (array $input) use (&$data): void {
+                $data['create_suppliers'] = [];
+                $data['update_suppliers'] = [];
+
+                foreach ($input as $supplier) {
+                    $array = [
+                        'supplier_name' => $supplier['supplier_name'] ?? null,
+                        'country_name' => $supplier['country_name'] ?? null,
+                        'contact_name' => $supplier['contact_name'] ?? null,
+                        'contact_email' => $supplier['contact_email'] ?? null,
                     ];
-                } else {
-                    $createSuppliers[] = [
-                        'supplier_name' => $supplierData['supplier_name'] ?? null,
-                        'country_name' => $supplierData['country_name'] ?? null,
-                        'contact_name' => $supplierData['contact_name'] ?? null,
-                        'contact_email' => $supplierData['contact_email'] ?? null,
-                    ];
+
+                    if (isset($supplier['id'])) {
+                        $array['supplier_id'] = $supplier['id'];
+                        $data['update_suppliers'][] = $array;
+                    } else {
+                        $data['create_suppliers'][] = $array;
+                    }
+                }
+            });
+
+            $this->whenHas('recurrence', function (array $input) use (&$data, $timezone): void {
+                $data['recurrence'] = new CreateOpportunityRecurrenceData([
+                    'stage_id' => $this->input('recurrence.stage_id'),
+                    'type' => RecurrenceTypeEnum::tryFrom($this->input('recurrence.type')),
+                    'occur_every' => $this->input('recurrence.occur_every'),
+                    'occurrences_count' => $this->input('recurrence.occurrences_count'),
+                    'condition' => $this->input('recurrence.condition'),
+                    'start_date' => $this->date('recurrence.start_date', tz: $timezone)
+                        ->tz(config('app.timezone'))
+                        ->toDateTimeImmutable(),
+                    'end_date' => $this->date('recurrence.end_date', tz: $timezone)
+                        ?->tz(config('app.timezone'))
+                        ?->toDateTimeImmutable(),
+                    'day' => DateDayEnum::tryFrom($this->input('recurrence.day')),
+                    'month' => DateMonthEnum::tryFrom($this->input('recurrence.month')),
+                    'week' => DateWeekEnum::tryFrom($this->input('recurrence.week')),
+                    'day_of_week' => (int)$this->input('recurrence.day_of_week'),
+                ]);
+            });
+
+
+            $attributes = [
+                'sales_unit_id',
+                'pipeline_stage_id',
+                'contract_type_id',
+                'account_manager_id',
+                'primary_account_id',
+                'end_user_id',
+                'are_end_user_addresses_available',
+                'are_end_user_contacts_available',
+                'primary_account_contact_id',
+                'project_name',
+                'nature_of_service',
+                'renewal_month',
+                'renewal_year',
+                'customer_status',
+                'end_user_name',
+                'hardware_status',
+                'region_name',
+                'opportunity_start_date',
+                'is_opportunity_start_date_assumed',
+                'opportunity_end_date',
+                'is_opportunity_end_date_assumed',
+                'opportunity_closing_date',
+                'is_contract_duration_checked',
+                'contract_duration_months',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+                'opportunity_amount',
+                'opportunity_amount_currency_code',
+                'purchase_price',
+                'purchase_price_currency_code',
+                'list_price',
+                'list_price_currency_code',
+                'estimated_upsell_amount',
+                'estimated_upsell_amount_currency_code',
+                'personal_rating',
+                'ranking',
+                'margin_value',
+                'service_level_agreement_id',
+                'sale_unit_name',
+                'competition_name',
+                'drop_in',
+                'lead_source_name',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+                'remarks',
+                'notes',
+                'campaign_name',
+            ];
+
+            $dateAttributes = [
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+            ];
+
+            $intAttributes = [
+                'contract_duration_months',
+                'ranking',
+            ];
+
+            $floatAttributes = [
+                'opportunity_amount',
+                'purchase_price',
+                'list_price',
+                'estimated_upsell_amount',
+                'margin_value',
+            ];
+
+            $stringAttributes = [
+                'personal_rating',
+            ];
+
+            $boolAttributes = [
+                'is_opportunity_start_date_assumed',
+                'is_opportunity_end_date_assumed',
+                'is_contract_duration_checked',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+            ];
+
+            foreach ($attributes as $attribute) {
+                if ($this->has($attribute)) {
+                    $value = $this->input($attribute);
+
+                    if (in_array($attribute, $dateAttributes, true)) {
+                        $value = transform($value, static fn(string $value) => Carbon::createFromFormat('Y-m-d', $value));
+                    }
+
+                    if (in_array($attribute, $intAttributes, true)) {
+                        $value = transform($value, static fn(mixed $value) => (int)$value);
+                    }
+
+                    if (in_array($attribute, $floatAttributes, true)) {
+                        $value = transform($value, static fn(mixed $value) => (float)$value);
+                    }
+
+                    if (in_array($attribute, $stringAttributes, true)) {
+                        $value = transform($value, static fn(mixed $value) => (string)$value);
+                    }
+
+                    if (in_array($attribute, $boolAttributes, true)) {
+                        $value = transform($value, static fn(mixed $value) => filter_var($value, FILTER_VALIDATE_BOOLEAN));
+                    }
+
+                    $data[$attribute] = $value;
                 }
             }
 
-            return new UpdateOpportunityData([
-                'pipeline_id' => $this->input('pipeline_id', function (): string {
-                    return $this->getDefaultPipeline()->getKey();
-                }),
-
-                'pipeline_stage_id' => $this->input('pipeline_stage_id', function (): ?string {
-
-                    if ($this->missing('sale_action_name')) {
-                        return null;
-                    }
-
-                    $stageName = OpportunityDataMapper::resolveStageNameFromSaleAction($this->input('sale_action_name'));
-
-                    return $this->getDefaultPipeline()->pipelineStages()->where('stage_name', $stageName)->first()?->getKey();
-
-                }),
-                'contract_type_id' => $this->input('contract_type_id'),
-                'account_manager_id' => $this->input('account_manager_id'),
-                'primary_account_id' => $this->input('primary_account_id'),
-                'end_user_id' => $this->input('end_user_id'),
-                'are_end_user_addresses_available' => $this->boolean('are_end_user_addresses_available'),
-                'are_end_user_contacts_available' => $this->boolean('are_end_user_contacts_available'),
-                'primary_account_contact_id' => $this->input('primary_account_contact_id'),
-                'project_name' => $this->input('project_name'),
-                'nature_of_service' => $this->input('nature_of_service'),
-                'renewal_month' => $this->input('renewal_month'),
-                'renewal_year' => $this->input('renewal_year'),
-                'customer_status' => $this->input('customer_status'),
-                'end_user_name' => $this->input('end_user_name'),
-                'hardware_status' => $this->input('hardware_status'),
-                'region_name' => $this->input('region_name'),
-                'opportunity_start_date' => transform($this->input('opportunity_start_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'is_opportunity_start_date_assumed' => $this->boolean('is_opportunity_start_date_assumed'),
-                'opportunity_end_date' => transform($this->input('opportunity_end_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'is_opportunity_end_date_assumed' => $this->boolean('is_opportunity_end_date_assumed'),
-                'opportunity_closing_date' => transform($this->input('opportunity_closing_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-
-                'is_contract_duration_checked' => $this->boolean('is_contract_duration_checked'),
-                'contract_duration_months' => transform($this->input('contract_duration_months'), fn(mixed $months) => (int)$months),
-
-                'expected_order_date' => transform($this->input('expected_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'customer_order_date' => transform($this->input('customer_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'purchase_order_date' => transform($this->input('purchase_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'supplier_order_date' => transform($this->input('supplier_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'supplier_order_transaction_date' => transform($this->input('supplier_order_transaction_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'supplier_order_confirmation_date' => transform($this->input('supplier_order_confirmation_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-                'opportunity_amount' => transform($this->input('opportunity_amount'), fn($value) => (float)$value),
-                'opportunity_amount_currency_code' => $this->input('opportunity_amount_currency_code'),
-                'purchase_price' => transform($this->input('purchase_price'), fn($value) => (float)$value),
-                'purchase_price_currency_code' => $this->input('purchase_price_currency_code'),
-                'list_price' => transform($this->input('list_price'), fn($value) => (float)$value),
-                'list_price_currency_code' => $this->input('list_price_currency_code'),
-                'estimated_upsell_amount' => transform($this->input('estimated_upsell_amount'), fn($value) => (float)$value),
-                'estimated_upsell_amount_currency_code' => $this->input('estimated_upsell_amount_currency_code'),
-                'personal_rating' => $this->input('personal_rating'),
-                'margin_value' => transform($this->input('margin_value'), fn($value) => (float)$value),
-                'service_level_agreement_id' => $this->input('service_level_agreement_id'),
-                'sale_unit_name' => $this->input('sale_unit_name'),
-                'competition_name' => $this->input('competition_name'),
-                'drop_in' => $this->input('drop_in'),
-                'lead_source_name' => $this->input('lead_source_name'),
-                'has_higher_sla' => $this->boolean('has_higher_sla'),
-                'is_multi_year' => $this->boolean('is_multi_year'),
-                'has_additional_hardware' => $this->boolean('has_additional_hardware'),
-                'has_service_credits' => $this->boolean('has_service_credits'),
-                'remarks' => $this->input('remarks'),
-                'notes' => $this->input('notes'),
-                'campaign_name' => $this->input('campaign_name'),
-                'sale_action_name' => $this->input('sale_action_name'),
-                'create_suppliers' => $createSuppliers,
-                'update_suppliers' => $updateSuppliers,
-            ]);
-
+            return new UpdateOpportunityData($data);
         });
     }
 }

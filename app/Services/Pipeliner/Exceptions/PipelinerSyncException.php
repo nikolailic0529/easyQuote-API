@@ -2,18 +2,30 @@
 
 namespace App\Services\Pipeliner\Exceptions;
 
-use App\Models\Address;
+use App\Models\Contact;
+use App\Models\SalesUnit;
 use JetBrains\PhpStorm\Pure;
 
 class PipelinerSyncException extends \Exception
 {
-    #[Pure] public static function unsetPipeline(): static
+    #[Pure]
+    public static function unsetSalesUnit(): static
     {
-        return new static("Pipeline must be set.");
+        return new static("Sales unit must be set.");
     }
 
-    public static function missingAddressToContactRelation(Address $address): static
+    public static function nonAllowedSalesUnit(SalesUnit $unit): static
     {
-        return new static("Address `{$address->getKey()}` must be associated with the contact.");
+        return new static ("The sales unit `$unit->unit_name` not allowed for synchronization.");
+    }
+
+    public static function noSalesUnitIsEnabled(): static
+    {
+        return new static("No sales unit is enabled.");
+    }
+
+    public static function undefinedContactAddressRelation(Contact $contact): static
+    {
+        return new static("Contact `{$contact->getKey()}` must be associated with the address.");
     }
 }

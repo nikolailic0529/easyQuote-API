@@ -12,6 +12,7 @@ use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesUnit;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -65,6 +66,9 @@ class UpdateAppointment extends FormRequest
 
             'attachment_relations' => ['array'],
             'attachment_relations.*.attachment_id' => ['required', 'uuid', Rule::exists(Attachment::class, 'id')],
+
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
         ];
     }
 
@@ -75,6 +79,7 @@ class UpdateAppointment extends FormRequest
             $timezone = $this->user()->timezone->utc ?? config('app.timezone');
 
             return new UpdateAppointmentData([
+                'sales_unit_id' => $this->input('sales_unit_id'),
                 'activity_type' => AppointmentTypeEnum::from($this->input('activity_type')),
                 'subject' => $this->input('subject'),
                 'description' => (string)$this->input('description'),
