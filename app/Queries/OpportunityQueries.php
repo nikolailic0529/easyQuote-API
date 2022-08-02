@@ -7,33 +7,39 @@ use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Auth\Access\Response;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OpportunityQueries
 {
-    public function __construct(protected Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch,
+                                protected Gate          $gate)
     {
     }
 
-    public function paginateLostOpportunitiesQuery(?Request $request = null): Builder
+    public function paginateLostOpportunitiesQuery(Request $request): Builder
     {
         return $this->paginateQuotedOpportunitiesQuery($request)
             ->where('opportunities.status', OpportunityStatus::LOST);
     }
 
-    public function paginateOkOpportunitiesQuery(?Request $request = null): Builder
+    public function paginateOkOpportunitiesQuery(Request $request): Builder
     {
         return $this->paginateQuotedOpportunitiesQuery($request)
             ->where('opportunities.status', OpportunityStatus::NOT_LOST);
     }
 
-    public function listOfCompanyOpportunitiesQuery(Company $company, ?Request $request = null): Builder
+    public function listOfCompanyOpportunitiesQuery(Company $company, Request $request): Builder
     {
         return tap($this->paginateOpportunitiesQuery($request), function (Builder $builder) use ($company) {
             $builder
@@ -42,7 +48,7 @@ class OpportunityQueries
         });
     }
 
-    public function paginateOpportunitiesQuery(?Request $request = null): Builder
+    public function paginateOpportunitiesQuery(Request $request): Builder
     {
         $request ??= new Request();
 
@@ -78,7 +84,8 @@ class OpportunityQueries
             })
             ->leftJoin('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'opportunities.primary_account_id');
-            });
+            })
+            ->tap($this->scopeCurrentUser($request));
 
         return RequestQueryBuilder::for(
             builder: $query,
@@ -121,7 +128,7 @@ class OpportunityQueries
             ->process();
     }
 
-    public function paginateQuotedOpportunitiesQuery(?Request $request = null): Builder
+    public function paginateQuotedOpportunitiesQuery(Request $request): Builder
     {
         return $this->paginateOpportunitiesQuery($request)
             ->addSelect([
@@ -130,13 +137,11 @@ class OpportunityQueries
             ->doesntHave('worldwideQuotes');
     }
 
-    public function paginateOpportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage, ?Request $request = null): Builder
+    public function paginateOpportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage, Request $request): Builder
     {
-        $request ??= new Request();
-
         $opportunityModel = new Opportunity();
 
-        $query = $this->opportunitiesOfPipelineStageQuery($pipelineStage)
+        $query = $this->opportunitiesOfPipelineStageQuery($pipelineStage, $request)
             ->select([
                 $opportunityModel->getQualifiedKeyName(),
                 $opportunityModel->qualifyColumn('user_id'),
@@ -206,13 +211,52 @@ class OpportunityQueries
             ->process();
     }
 
-    public function opportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage): Builder
+    public function opportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage, Request $request): Builder
     {
         $opportunityModel = new Opportunity();
 
         return $opportunityModel->newQuery()
+            ->tap($this->scopeCurrentUser($request))
             ->whereBelongsTo($pipelineStage)
             ->doesntHave('worldwideQuotes')
             ->where($opportunityModel->qualifyColumn('status'), OpportunityStatus::NOT_LOST);
+    }
+
+    protected function scopeCurrentUser(Request $request): callable
+    {
+        return function (Builder $builder) use ($request): void {
+            /** @var User|null $user */
+            $user = $request->user();
+
+            if (null === $user) {
+                Response::deny('The query cannot be performed without user authentication.')->authorize();
+            }
+
+            $builder->unless($this->gate->allows('viewAnyOwnerEntities', Opportunity::class), function (Builder $builder) use
+            (
+                $user
+            ): void {
+
+                /** @var \Staudenmeir\LaravelCte\Query\Builder $builder */
+
+                $builder->withExpression('led_team_users',
+                    $user->ledTeamUsers()->getQuery()
+                        ->select($user->ledTeamUsers()->getModel()->getQualifiedKeyName())
+                        ->toBase()
+                );
+
+                $builder->where(static function (Builder $builder) use ($user): void {
+                    $builder
+                        ->where($builder->qualifyColumn('user_id'), $user->getKey())
+                        ->orWhere($builder->qualifyColumn('account_manager_id'), $user->getKey())
+                        ->orWhereIn($builder->qualifyColumn('user_id'), static function (BaseBuilder $builder) use ($user): void {
+                            $builder->select($user->ledTeamUsers()->getModel()->getKeyName())->from('led_team_users');
+                        })
+                        ->orWhereIn($builder->qualifyColumn('account_manager_id'), static function (BaseBuilder $builder) use ($user): void {
+                            $builder->select($user->ledTeamUsers()->getModel()->getKeyName())->from('led_team_users');
+                        });
+                });
+            });
+        };
     }
 }

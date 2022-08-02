@@ -110,7 +110,7 @@ class CompanyDataMapper
         /** @var Address|null $defaultAddress */
         $defaultAddress = $company->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(static fn(Address $address): bool => ($address->address_type === AddressType::INVOICE));
+            ->first(static fn(Address $address): bool => AddressType::INVOICE === $address->address_type);
 
         $oldFields = [
             'name' => $accountEntity->formattedName,
@@ -156,7 +156,17 @@ class CompanyDataMapper
                     static fn(): InputValueEnum => InputValueEnum::Miss),
         ];
 
-        $changedFields = array_diff_assoc($newFields, $oldFields);
+        $changedFields = array_udiff_assoc($newFields, $oldFields, function (mixed $a, mixed $b): int {
+            if ($a === null || $b === null) {
+                return $a === $b ? 0 : 1;
+            }
+
+            if ($a === InputValueEnum::Miss || $b === InputValueEnum::Miss) {
+                return $a === $b ? 0 : 1;
+            }
+
+            return $a <=> $b;
+        });
 
         if (null !== $company->image) {
             $picture = $this->mapCreateCloudObjectInputFromCompanyImage($company);
@@ -299,6 +309,8 @@ class CompanyDataMapper
             $account->state = $entity->stateProvince;
             $account->state_code = Arr::get($entity->customFields, 'cfStateCode');
             $account->country_name = $entity->country;
+            $account->hw_country_code = Arr::get($entity->customFields, 'cfHardwareCountry');
+            $account->sw_country_code = Arr::get($entity->customFields, 'cfSoftwareCountry');
             $account->picture_filename = $entity->picture?->filename;
             $account->picture_url = $entity->picture?->url;
 
@@ -486,19 +498,25 @@ class CompanyDataMapper
             });
         });
 
-        // Update HW & SW countries
-        /** @var ImportedAddress|null $newHardwareAddr */
-        /** @var ImportedAddress|null $newSoftwareAddr */
-        $newHardwareAddr = $another->addresses->first(static fn(ImportedAddress $addr) => AddressType::HARDWARE === $addr->address_type);
-        $newSoftwareAddr = $another->addresses->first(static fn(ImportedAddress $addr) => AddressType::SOFTWARE === $addr->address_type);
+        $hwSwCountryMap = [
+          AddressType::HARDWARE => isset($another->hw_country_code)
+              ? Country::query()->where('iso_3166_2', $another->hw_country_code)->first()
+              : null,
+            AddressType::SOFTWARE => isset($another->sw_country_code)
+                ? Country::query()->where('iso_3166_2', $another->sw_country_code)->first()
+                : null,
+        ];
 
+        // Update HW & SW countries
         $company->addresses
-            ->each(static function (Address $address) use ($newHardwareAddr, $newSoftwareAddr): void {
-                if (null !== $newHardwareAddr?->country && AddressType::HARDWARE === $address->address_type) {
-                    $address->country()->associate($newHardwareAddr->country);
-                } elseif (null !== $newSoftwareAddr?->country && AddressType::SOFTWARE === $address->address_type) {
-                    $address->country()->associate($newSoftwareAddr->country);
-                }
+            ->each(static function (Address $address) use ($hwSwCountryMap): void {
+                $country = match ($address->address_type) {
+                    AddressType::HARDWARE => $hwSwCountryMap[AddressType::HARDWARE],
+                    AddressType::SOFTWARE => $hwSwCountryMap[AddressType::SOFTWARE],
+                    default => $address->country,
+                };
+
+                $address->country()->associate($country ?? $address->country);
             });
     }
 

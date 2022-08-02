@@ -2,36 +2,36 @@
 
 namespace App\DTO\User;
 
-use App\DTO\MissingValue;
+use App\DTO\Enum\DataTransferValueOption;
 use Illuminate\Http\UploadedFile;
 use Spatie\DataTransferObject\DataTransferObject;
 
 final class UpdateCurrentUserData extends DataTransferObject
 {
-    /** @var string|\App\DTO\MissingValue */
-    public string|MissingValue $first_name;
-    /** @var string|\App\DTO\MissingValue|null */
-    public string|MissingValue|null $middle_name;
-    /** @var string|\App\DTO\MissingValue */
-    public string|MissingValue $last_name;
-    /** @var string|\App\DTO\MissingValue|null */
-    public string|MissingValue|null $phone;
-    /** @var string|\App\DTO\MissingValue */
-    public string|MissingValue $timezone_id;
-    /** @var string|\App\DTO\MissingValue */
-    public string|MissingValue $country_id;
-    /** @var \App\DTO\SalesUnit\CreateSalesUnitRelationData[]|\App\DTO\MissingValue */
-    public array|MissingValue $sales_units;
-    /** @var \Illuminate\Http\UploadedFile|\App\DTO\MissingValue|null */
-    public UploadedFile|MissingValue|null $picture;
-    /** @var bool|\App\DTO\MissingValue */
-    public bool|MissingValue $delete_picture = false;
-    /** @var bool|\App\DTO\MissingValue */
-    public bool|MissingValue $change_password = false;
-    /** @var string|\App\DTO\MissingValue|null */
-    public string|MissingValue|null $password;
-    /** @var string|\App\DTO\MissingValue|null */
-    public string|MissingValue|null $default_route;
-    /** @var int|\App\DTO\MissingValue */
-    public int|MissingValue $recent_notifications_limit;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption */
+    public string|DataTransferValueOption $first_name = DataTransferValueOption::Miss;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
+    public string|DataTransferValueOption|null $middle_name = DataTransferValueOption::Miss;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption */
+    public string|DataTransferValueOption $last_name = DataTransferValueOption::Miss;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
+    public string|DataTransferValueOption|null $phone = DataTransferValueOption::Miss;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption */
+    public string|DataTransferValueOption $timezone_id = DataTransferValueOption::Miss;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption */
+    public string|DataTransferValueOption $country_id = DataTransferValueOption::Miss;
+    /** @var \App\DTO\SalesUnit\CreateSalesUnitRelationData[]|\App\DTO\Enum\DataTransferValueOption */
+    public array|DataTransferValueOption $sales_units = DataTransferValueOption::Miss;
+    /** @var \Illuminate\Http\UploadedFile|\App\DTO\Enum\DataTransferValueOption|null */
+    public UploadedFile|DataTransferValueOption|null $picture = DataTransferValueOption::Miss;
+    /** @var bool|\App\DTO\Enum\DataTransferValueOption */
+    public bool|DataTransferValueOption $delete_picture = DataTransferValueOption::Miss;
+    /** @var bool|\App\DTO\Enum\DataTransferValueOption */
+    public bool|DataTransferValueOption $change_password = DataTransferValueOption::Miss;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
+    public string|DataTransferValueOption|null $password = DataTransferValueOption::Miss;
+    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
+    public string|DataTransferValueOption|null $default_route = DataTransferValueOption::Miss;
+    /** @var int|\App\DTO\Enum\DataTransferValueOption */
+    public int|DataTransferValueOption $recent_notifications_limit = DataTransferValueOption::Miss;
 }

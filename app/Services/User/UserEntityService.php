@@ -2,6 +2,7 @@
 
 namespace App\Services\User;
 
+use App\DTO\Enum\DataTransferValueOption;
 use App\DTO\Invitation\RegisterUserData;
 use App\DTO\MissingValue;
 use App\DTO\User\UpdateCurrentUserData;
@@ -85,7 +86,7 @@ class UserEntityService
             $attrMap['phone'] = $data->phone;
 
             foreach ($attrMap as $attr => $value) {
-                if (!$value instanceof MissingValue) {
+                if ($value !== DataTransferValueOption::Miss) {
                     $user->$attr = $value;
                 }
             }
@@ -98,7 +99,7 @@ class UserEntityService
             foreach ($relationMap as $rel => $value) {
                 $relation = $user->$rel();
 
-                if (!$value instanceof MissingValue) {
+                if ($value !== DataTransferValueOption::Miss) {
                     if ($relation instanceof BelongsTo) {
                         $relation->associate($value);
                     } elseif ($relation instanceof BelongsToMany) {

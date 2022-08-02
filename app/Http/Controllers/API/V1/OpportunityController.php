@@ -42,7 +42,7 @@ class OpportunityController extends Controller
     {
         $this->authorize('viewAny', Opportunity::class);
 
-        $resource = $request->transformOpportunitiesQuery($queries->paginateOkOpportunitiesQuery($request))->apiPaginate();
+        $resource = $queries->paginateOkOpportunitiesQuery($request)->apiPaginate();
 
         return OpportunityList::collection($resource);
     }
@@ -59,7 +59,7 @@ class OpportunityController extends Controller
     {
         $this->authorize('viewAny', Opportunity::class);
 
-        $resource = $request->transformOpportunitiesQuery($queries->paginateLostOpportunitiesQuery($request))->apiPaginate();
+        $resource = $queries->paginateLostOpportunitiesQuery($request)->apiPaginate();
 
         return OpportunityList::collection($resource);
     }
@@ -100,7 +100,7 @@ class OpportunityController extends Controller
 
         $pagination = $queries->paginateOpportunitiesOfPipelineStageQuery($stage, $request)->apiPaginate();
 
-        $summary = $aggregateService->calculateSummaryOfPipelineStage($stage);
+        $summary = $aggregateService->calculateSummaryOfPipelineStage($stage, $request);
 
         return OpportunityOfStage::collection($pagination)->additional(['meta' => $summary->except('total')->toArray()]);
     }

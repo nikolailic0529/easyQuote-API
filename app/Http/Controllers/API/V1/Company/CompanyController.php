@@ -192,9 +192,9 @@ class CompanyController extends Controller
 
         $this->authorize('view', $company);
 
-        $query = $opportunityQueries->listOfCompanyOpportunitiesQuery(company: $company, request: $request);
-
-        $resource = $request->transformOpportunitiesQuery($query)->get();
+        $resource = $opportunityQueries
+            ->listOfCompanyOpportunitiesQuery(company: $company, request: $request)
+            ->get();
 
         return OpportunityList::collection($resource);
     }

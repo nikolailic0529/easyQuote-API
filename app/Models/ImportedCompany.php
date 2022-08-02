@@ -24,6 +24,8 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property string|null $state
  * @property string|null $state_code
  * @property string|null $country_name
+ * @property string|null $hw_country_code
+ * @property string|null $sw_country_code
  * @property string|null $vendors_cs
  * @property string|null $vat
  * @property string|null $vat_type

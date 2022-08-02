@@ -57,6 +57,7 @@
     "spatie/pdf-to-text": "^1.2",
     "spatie/valuestore": "^1.2",
     "staudenmeir/eloquent-has-many-deep": "^1.14",
+    "staudenmeir/laravel-cte": "^1.0",
     "symfony/event-dispatcher": "^5.2",
     "symfony/expression-language": "^6.1",
     "symfony/http-kernel": "^5.1.5",

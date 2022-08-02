@@ -209,21 +209,25 @@ class AuthTest extends TestCase
             ]);
 
         $this->postJson('api/auth/user', $data = [
-            'sales_units' => SalesUnit::query()->get()->random(2)->map(static fn(SalesUnit $unit) => ['id' => $unit->getKey()])->all(),
+            'first_name' => $this->faker->firstName(),
+            'last_name' => $this->faker->lastName(),
         ])
+//            ->dump()
             ->assertOk();
 
         $response = $this->getJson('api/auth/user')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
+                'first_name',
+                'last_name',
                 'sales_units' => [
                     '*' => ['id', 'unit_name'],
                 ],
             ]);
 
-        foreach ($data['sales_units'] as $unit) {
-            $this->assertContains($unit['id'], $response->json('sales_units.*.id'));
+        foreach ($data as $attr => $value) {
+            $this->assertSame($value, $response->json($attr));
         }
     }
 }

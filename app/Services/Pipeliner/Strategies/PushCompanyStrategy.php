@@ -222,12 +222,12 @@ class PushCompanyStrategy implements PushStrategy
 
         /** @var string[] $detachedContactRelations */
         $detachedContactRelations = LazyCollection::make(static fn(): \Generator => yield from $iterator)
-            ->filter(static function (ContactEntity $contactEntity) use ($contactIdMap) {
+            ->filter(static function (ContactEntity $contactEntity) use ($contactIdMap): bool {
                 return $contactIdMap->has($contactEntity->id) === false;
             })
-            ->reduce(static function (array $relations, ContactEntity $contactEntity) use ($model) {
+            ->reduce(static function (array $relations, ContactEntity $contactEntity) use ($model): array {
                 return collect($contactEntity->accountRelations)
-                    ->filter(static function (ContactAccountRelationEntity $entity) use ($model) {
+                    ->filter(static function (ContactAccountRelationEntity $entity) use ($model): bool {
                         return $entity->accountId === $model->pl_reference;
                     })
                     ->pluck('id')

@@ -88,7 +88,17 @@ class ContactDataMapper
             'customFields' => json_encode(array_merge($contactEntity->customFields, $this->projectAddressAttrsToCustomFields($contact))),
         ];
 
-        $changedFields = array_diff_assoc($newFields, $oldFields);
+        $changedFields = array_udiff_assoc($newFields, $oldFields, function (mixed $a, mixed $b): int {
+            if ($a === null || $b === null) {
+                return $a === $b ? 0 : 1;
+            }
+
+            if ($a === InputValueEnum::Miss || $b === InputValueEnum::Miss) {
+                return $a === $b ? 0 : 1;
+            }
+
+            return $a <=> $b;
+        });
 
         if (key_exists('gender', $changedFields)) {
             $changedFields['gender'] = Enum::fromKey(GenderEnum::class, $changedFields['gender']);

@@ -20,7 +20,7 @@ class OpportunityAggregateService
     /**
      * @return PipelineStageOpportunitiesData[]
      */
-    public function getOpportunitiesGroupedByPipelineStages(Request $request = null): array
+    public function getOpportunitiesGroupedByPipelineStages(Request $request): array
     {
         /** @var Pipeline $defaultPipeline */
         $defaultPipeline = $this->pipelineQueries->explicitlyDefaultPipelinesQuery()->sole();
@@ -28,9 +28,11 @@ class OpportunityAggregateService
         $stageOpportunitiesCollection = [];
 
         foreach ($defaultPipeline->pipelineStages as $pipelineStage) {
-            $summary = $this->calculateSummaryOfPipelineStage($pipelineStage);
+            $summary = $this->calculateSummaryOfPipelineStage($pipelineStage, $request);
 
-            $pagination = $this->opportunityQueries->paginateOpportunitiesOfPipelineStageQuery($pipelineStage, $request)->apiPaginate();
+            $pagination = $this->opportunityQueries
+                ->paginateOpportunitiesOfPipelineStageQuery($pipelineStage, $request)
+                ->apiPaginate();
 
             $stageOpportunitiesCollection[] = new PipelineStageOpportunitiesData([
                 'stage_id' => $pipelineStage->getKey(),
@@ -50,9 +52,9 @@ class OpportunityAggregateService
         return $stageOpportunitiesCollection;
     }
 
-    public function calculateSummaryOfPipelineStage(PipelineStage $stage): PipelineStageSummaryData
+    public function calculateSummaryOfPipelineStage(PipelineStage $stage, Request $request): PipelineStageSummaryData
     {
-        $agg = $this->opportunityQueries->opportunitiesOfPipelineStageQuery($stage)
+        $agg = $this->opportunityQueries->opportunitiesOfPipelineStageQuery($stage, $request)
             ->selectRaw('count(0) as count')
             ->selectRaw('sum(base_opportunity_amount) as base_amount')
             ->toBase()

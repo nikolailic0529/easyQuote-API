@@ -30,6 +30,8 @@ use App\Models\Address;
 use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\ImportedAddress;
+use App\Models\ImportedContact;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelScrollCursor;
 use App\Services\Company\CompanyDataMapper;
@@ -185,6 +187,23 @@ class PullCompanyStrategy implements PullStrategy
 
             $newAccount = $this->dataMapper->mapImportedCompanyFromAccountEntity($entity, $contacts);
 
+            $this->connection->transaction(static function () use ($newAccount): void {
+                $newAccount->addresses->each(static function (ImportedAddress $address) {
+                    $address->owner?->save();
+                    $address->save();
+                });
+
+                $newAccount->contacts->each(static function (ImportedContact $contact) {
+                    $contact->owner?->save();
+                    $contact->save();
+                });
+
+                $newAccount->save();
+
+                $newAccount->addresses()->syncWithoutDetaching($newAccount->addresses);
+                $newAccount->contacts()->syncWithoutDetaching($newAccount->contacts);
+            });
+
             // Merge attributes when a model exists already.
             if (null !== $account) {
                 $this->dataMapper->mergeAttributesFrom($account, $newAccount);
@@ -200,7 +219,7 @@ class PullCompanyStrategy implements PullStrategy
                         $contact->push();
                     });
 
-                    $account->withoutTimestamps(static function (Company $company) use ($account): void {
+                    $account->withoutTimestamps(static function (Company $account): void {
                         $account->push();
 
                         $account->addresses()->sync($account->addresses);

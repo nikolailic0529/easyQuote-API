@@ -14,10 +14,10 @@ return new class extends Migration
      */
     public function up()
     {
-        DB::connection($this->getConnection())
-            ->statement(
-                'alter table custom_fields alter column is_not_deleted set invisible'
-            );
+//        DB::connection($this->getConnection())
+//            ->statement(
+//                'alter table custom_fields alter column is_not_deleted set invisible'
+//            );
     }
 
     /**
@@ -27,9 +27,9 @@ return new class extends Migration
      */
     public function down()
     {
-        DB::connection($this->getConnection())
-            ->statement(
-                'alter table custom_fields alter column is_not_deleted set visible'
-            );
+//        DB::connection($this->getConnection())
+//            ->statement(
+//                'alter table custom_fields alter column is_not_deleted set visible'
+//            );
     }
 };

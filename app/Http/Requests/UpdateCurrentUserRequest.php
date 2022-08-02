@@ -2,14 +2,12 @@
 
 namespace App\Http\Requests;
 
-use App\DTO\MissingValue;
-use App\DTO\SalesUnit\CreateSalesUnitRelationData;
+use App\DTO\Enum\DataTransferValueOption;
 use App\DTO\User\UpdateCurrentUserData;
 use App\Enum\CompanyType;
 use App\Models\Company;
 use App\Models\Data\Country;
 use App\Models\Data\Timezone;
-use App\Models\SalesUnit;
 use App\Models\Template\HpeContractTemplate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -44,9 +42,6 @@ class UpdateCurrentUserRequest extends FormRequest
                 Rule::exists(HpeContractTemplate::class, 'id')
                     ->withoutTrashed(),
             ],
-            'sales_units' => ['bail', 'array'],
-            'sales_units.*.id' => ['bail', 'uuid',
-                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
             'picture' => ['image', 'max:2048'],
             'delete_picture' => ['nullable', 'boolean'],
             'change_password' => ['nullable', 'boolean'],
@@ -89,26 +84,20 @@ class UpdateCurrentUserRequest extends FormRequest
     public function getUpdateCurrentProfileData(): UpdateCurrentUserData
     {
         return $this->updateCurrentProfileData ??= new UpdateCurrentUserData([
-            'first_name' => $this->input('first_name', new MissingValue()),
-            'middle_name' => $this->input('middle_name', new MissingValue()),
-            'last_name' => $this->input('last_name', new MissingValue()),
-            'phone' => $this->input('phone', new MissingValue()),
-            'timezone_id' => $this->input('timezone_id', new MissingValue()),
-            'country_id' => $this->input('country_id', new MissingValue()),
-            'sales_units' => $this->has('sales_units') ? $this->collect('sales_units')
-                ->map(static function (array $relation): CreateSalesUnitRelationData {
-                    return new CreateSalesUnitRelationData(['id' => $relation['id']]);
-                })
-                ->all()
-                : new MissingValue(),
-            'picture' => $this->file('picture', new MissingValue()),
-            'delete_picture' => $this->boolean('delete_picture', new MissingValue()),
-            'change_password' => $this->boolean('change_password', new MissingValue()),
-            'password' => $this->input('password', new MissingValue()),
-            'default_route' => $this->input('default_route', new MissingValue()),
+            'first_name' => $this->input('first_name', DataTransferValueOption::Miss),
+            'middle_name' => $this->input('middle_name', DataTransferValueOption::Miss),
+            'last_name' => $this->input('last_name', DataTransferValueOption::Miss),
+            'phone' => $this->input('phone', DataTransferValueOption::Miss),
+            'timezone_id' => $this->input('timezone_id', DataTransferValueOption::Miss),
+            'country_id' => $this->input('country_id', DataTransferValueOption::Miss),
+            'picture' => $this->file('picture', DataTransferValueOption::Miss),
+            'delete_picture' => $this->boolean('delete_picture', DataTransferValueOption::Miss),
+            'change_password' => $this->boolean('change_password', DataTransferValueOption::Miss),
+            'password' => $this->input('password', DataTransferValueOption::Miss),
+            'default_route' => $this->input('default_route', DataTransferValueOption::Miss),
             'recent_notifications_limit' => $this->has('recent_notifications_limit')
                 ? transform($this->input('recent_notifications_limit'), static fn(mixed $v): int => (int)$v)
-                : new MissingValue(),
+                : DataTransferValueOption::Miss,
         ]);
     }
 }
