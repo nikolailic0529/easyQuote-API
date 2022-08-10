@@ -53,6 +53,12 @@ return new class extends Migration {
                 ->where('custom_field_id', $data['id'])
                 ->delete();
 
+            DB::table('custom_fields')
+                ->insertOrIgnore([
+                    'id' => $data['id'],
+                    'field_name' => $data['field_name'],
+                ]);
+
             foreach ($data['field_values'] as $field) {
                 DB::table('custom_field_values')
                     ->insert([
@@ -62,7 +68,7 @@ return new class extends Migration {
                         'entity_order' => $field['entity_order'],
                         'custom_field_id' => $data['id'],
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ]);
             }
         });

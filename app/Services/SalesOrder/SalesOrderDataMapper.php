@@ -22,7 +22,6 @@ use App\Models\Address;
 use App\Models\Company;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
-use App\Models\Data\ExchangeRate;
 use App\Models\Image;
 use App\Models\Opportunity;
 use App\Models\Quote\WorldwideDistribution;
@@ -237,7 +236,9 @@ class SalesOrderDataMapper
         /** @var Vendor|null $firstVendor */
         $firstVendor = $firstDistributorQuote->vendors->first();
 
-        $exchangeRateValue = $this->getExchangeRateValueOfCurrency($quoteCurrency->code);
+        $exchangeRateValue = $this->exchangeRateService->getRateByCurrencyCode(
+            $quoteCurrency->code, now(), ManagesExchangeRates::FALLBACK_LATEST
+        );
 
         return new SubmitSalesOrderData([
             'addresses_data' => $addressesData,
@@ -320,30 +321,6 @@ class SalesOrderDataMapper
         }
 
         return $salesOrder->vat_type;
-    }
-
-    private function getExchangeRateValueOfCurrency(string $currencyCode): ?float
-    {
-        if ($currencyCode === $this->exchangeRateService->baseCurrency()) {
-            return 1.0;
-        }
-
-        $exchangeRateValue = ExchangeRate::query()
-            ->where('currency_code', $currencyCode)
-            ->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])
-            ->value('exchange_rate');
-
-        if (!is_null($exchangeRateValue)) {
-            return (float)$exchangeRateValue;
-        }
-
-        $rateData = $this->exchangeRateService->getRateDataOfCurrency($currencyCode, now());
-
-        if (!is_null($rateData)) {
-            return $rateData->exchange_rate;
-        }
-
-        return null;
     }
 
     private function mapPackSalesOrderToSubmitSalesOrderData(SalesOrder $salesOrder): SubmitSalesOrderData
@@ -458,7 +435,9 @@ class SalesOrderDataMapper
         /** @var WorldwideQuoteAsset $firstAsset */
         $firstAsset = $quote->assets->first();
 
-        $exchangeRateValue = $this->getExchangeRateValueOfCurrency($quoteCurrency->code);
+        $exchangeRateValue = $this->exchangeRateService->getRateByCurrencyCode(
+            $quoteCurrency->code, now(), ManagesExchangeRates::FALLBACK_LATEST
+        );
 
         return new SubmitSalesOrderData([
             'addresses_data' => $addressesData,

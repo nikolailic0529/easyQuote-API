@@ -105,6 +105,17 @@ return [
 
     'custom_fields' => [
 
+        'vendor_code_option_name' => [
+            'ARU' => 'Aruba',
+            'CIS' => 'Cisco',
+            'DEL' => 'Dell',
+            'FUJ' => 'Fujitsu',
+            'HPE' => 'HPE',
+            'IBM' => 'IBM',
+            'LEN' => 'Lenovo',
+            'VMW' => 'VM Ware',
+        ],
+
         'country_option_iso_3166_2' => [
             'Abu Dhabi' => 'AE',
             'Africa' => 'CF',

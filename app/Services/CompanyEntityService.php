@@ -207,27 +207,19 @@ class CompanyEntityService implements CauserAware
             $this->connection->transaction(function () use ($addresses, $data, $company, $addressesData, $contactsData, $latestUpdatedAtOfContactRelations) {
                 $addresses->each->save();
 
-                if ($latestUpdatedAtOfContactRelations?->greaterThan($company->{$company->getUpdatedAtColumn()})) {
+                $relationChanges = [
+                    'vendors' => $company->vendors()->sync($data->vendors),
+                    'addresses' => $company->addresses()->sync($addressesData),
+                    'contacts' => $company->contacts()->sync($contactsData),
+                ];
+
+                $relationsWereChanged = collect($relationChanges)->lazy()->flatten()->isNotEmpty();
+
+                if ($relationsWereChanged || $latestUpdatedAtOfContactRelations?->greaterThan($company->{$company->getUpdatedAtColumn()})) {
                     $company->updateTimestamps();
                 }
 
                 $company->save();
-
-                $relationChanges = [];
-
-                $relationChanges['vendors'] = $company->vendors()->sync($data->vendors);
-                $relationChanges['addresses'] = $company->addresses()->sync($addressesData);
-                $relationChanges['contacts'] = $company->contacts()->sync($contactsData);
-
-                $relationsWereChanged = collect($relationChanges)->contains(static function (array $changes): bool {
-                    foreach ($changes as $change) {
-                        if (count($change) > 0) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                });
 
                 if ($company->wasChanged() || $relationsWereChanged) {
                     $company->opportunities()->touch();

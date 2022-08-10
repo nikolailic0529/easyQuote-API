@@ -329,7 +329,7 @@ class CompanyDataMapper
             }
 
             [$addresses,
-                $contacts] = $this->mapImportedAddressesContactsFromContactRelations($entity, ...$contactRelations);
+                $contacts] = $this->mapImportedAddressesContactsFromContactRelations(...$contactRelations);
 
             $account->setRelation('addresses', $addresses);
             $account->setRelation('contacts', $contacts);
@@ -457,9 +457,9 @@ class CompanyDataMapper
         $company->contacts->push(...$newContactCollection);
         $company->addresses->push(...$newAddressCollection);
 
-        $defaultInvoiceAddress = $company->addresses->first(static function (Address $address): bool {
-            return $address->pivot?->is_default && AddressType::INVOICE === $address->address_type;
-        });
+        $defaultInvoiceAddress = $company->addresses
+            ->sortByDesc('pivot.is_default')
+            ->firstWhere('address_type', '===', AddressType::INVOICE);
 
         if (null === $defaultInvoiceAddress) {
             $company->addresses->push($defaultInvoiceAddress = tap(new Address(), static function (Address $address): void {
@@ -499,9 +499,9 @@ class CompanyDataMapper
         });
 
         $hwSwCountryMap = [
-          AddressType::HARDWARE => isset($another->hw_country_code)
-              ? Country::query()->where('iso_3166_2', $another->hw_country_code)->first()
-              : null,
+            AddressType::HARDWARE => isset($another->hw_country_code)
+                ? Country::query()->where('iso_3166_2', $another->hw_country_code)->first()
+                : null,
             AddressType::SOFTWARE => isset($another->sw_country_code)
                 ? Country::query()->where('iso_3166_2', $another->sw_country_code)->first()
                 : null,
@@ -516,25 +516,21 @@ class CompanyDataMapper
                     default => $address->country,
                 };
 
-                $address->country()->associate($country ?? $address->country);
+                if ($address->pivot?->is_default) {
+                    $address->country()->associate($country ?? $address->country);
+                }
             });
     }
 
-    private function mapImportedAddressesContactsFromContactRelations(AccountEntity         $entity,
-                                                                      ContactRelationEntity ...$entities): array
+    private function mapImportedAddressesContactsFromContactRelations(ContactRelationEntity ...$entities): array
     {
         $newAddresses = new Collection();
         $newContacts = new Collection();
 
-        $typeCountryMap = [
-            AddressType::HARDWARE => Arr::get($entity->customFields, 'cfHardwareCountry'),
-            AddressType::SOFTWARE => Arr::get($entity->customFields, 'cfSoftwareCountry'),
-        ];
-
         foreach ($entities as $contactRelation) {
             $owner = PipelinerClientEntityToUserProjector::from($contactRelation->contact->owner)();
 
-            $address = $this->mapImportedAddressFromContactRelationEntity($typeCountryMap, $contactRelation, $owner);
+            $address = $this->mapImportedAddressFromContactRelationEntity($contactRelation, $owner);
             $contact = $this->mapImportedContactFromContactRelationEntity($contactRelation, $owner);
 
             $newAddresses[] = $address;
@@ -544,14 +540,12 @@ class CompanyDataMapper
         return [$newAddresses, $newContacts];
     }
 
-    private function mapImportedAddressFromContactRelationEntity(array                 $typeCountryMap,
-                                                                 ContactRelationEntity $entity,
+    private function mapImportedAddressFromContactRelationEntity(ContactRelationEntity $entity,
                                                                  User                  $owner): ImportedAddress
     {
         return tap(new ImportedAddress(), function (ImportedAddress $address) use (
             $entity,
-            $owner,
-            $typeCountryMap
+            $owner
         ): void {
             $address->{$address->getKeyName()} = (string)Uuid::generate(4);
             $address->pl_reference = $entity->contact->id;
@@ -572,18 +566,12 @@ class CompanyDataMapper
             $address->state = $entity->contact->stateProvince;
             $address->state_code = $entity->contact->customFields['cfStateCode1'] ?? null;
 
-            if (isset($typeCountryMap[$address->address_type])) {
+            if (filled($entity->contact->country)) {
                 $address->country()->associate(
-                    Country::query()->where('iso_3166_2', $typeCountryMap[$address->address_type])->first()
+                    Country::query()->where('name', $entity->contact->country)->first()
                 );
             } else {
-                if (filled($entity->contact->country)) {
-                    $address->country()->associate(
-                        Country::query()->where('name', $entity->contact->country)->first()
-                    );
-                } else {
-                    $address->country()->disassociate();
-                }
+                $address->country()->disassociate();
             }
         });
     }
@@ -666,18 +654,10 @@ class CompanyDataMapper
 
     public function projectVendorsToCustomFields(Vendor ...$vendors): array
     {
-        $cfVendor = Collection::make($vendors)->map(function (Vendor $vendor): ?string {
-            static $shortCodeDict = [
-                'LEN' => 'Lenovo',
-                'IBM' => 'IBM',
-                'CIS' => 'Cisco',
-                'DEL' => 'Dell',
-                'HPE' => 'HPE',
-                'FUJ' => 'Fujitsu',
-                'VMW' => 'VM Ware',
-            ];
+        $mapping = config('pipeliner.custom_fields.vendor_code_option_name', []);
 
-            $optionName = (string)($shortCodeDict[$vendor->short_code] ?? $vendor->short_code);
+        $cfVendor = Collection::make($vendors)->map(function (Vendor $vendor) use ($mapping): ?string {
+            $optionName = (string)($mapping[$vendor->short_code] ?? $vendor->short_code);
 
             $dataEntity = $this->resolveDataEntityByOptionName(entityName: 'Account', apiName: 'cf_vendor2', optionName: $optionName);
 

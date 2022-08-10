@@ -169,7 +169,8 @@ class OpportunityDataMapper implements CauserAware
                 $account->flags |= ImportedCompany::IS_END_USER;
             }
 
-            [$newAddressDataOfCompany, $newContactDataOfCompany] = $this->mapImportedAddressesContactsFromAccount($accountData, $contacts);
+            [$newAddressDataOfCompany,
+                $newContactDataOfCompany] = $this->mapImportedAddressesContactsFromAccount($accountData, $contacts);
 
             $account->setRelation('addresses', $newAddressDataOfCompany);
             $account->setRelation('contacts', $newContactDataOfCompany);
@@ -378,7 +379,8 @@ class OpportunityDataMapper implements CauserAware
             return AccountCategory::RESELLER;
         }
 
-        $categoryDictionaryOfAccountData = Arr::only($accountData, ['distributor', 'business_partner', 'reseller', 'end_user']);
+        $categoryDictionaryOfAccountData = Arr::only($accountData, ['distributor', 'business_partner', 'reseller',
+            'end_user']);
 
         foreach ($categoryDictionaryOfAccountData as $key => $value) {
 
@@ -580,6 +582,7 @@ class OpportunityDataMapper implements CauserAware
             $opportunity->ranking = $entity->ranking;
             $opportunity->campaign_name = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfCampaignId'));
             $opportunity->competition_name = Arr::get($entity->customFields, 'cfCompetition');
+            $opportunity->customer_order_date = Arr::get($entity->customFields, 'cfCustOrderDate');
             $opportunity->notes = $entity->description;
 
 //            $opportunity->{$opportunity->getDeletedAtColumn()} = $opportunity->freshTimestamp();
@@ -655,6 +658,7 @@ class OpportunityDataMapper implements CauserAware
             'competition_name',
             'notes',
             'expected_order_date',
+            'customer_order_date',
         ];
 
         foreach ($toBeMergedAttributes as $attribute) {
@@ -858,6 +862,9 @@ class OpportunityDataMapper implements CauserAware
             'cfAdditionalHardware' => (bool)$opportunity->has_additional_hardware,
             'cfServiceCredits' => (bool)$opportunity->has_service_credits,
             'cfAccountManagerId' => $resolvedDataOfCustomFields['accountManager.user_fullname']?->id,
+            'cfCustOrderDate' => isset($opportunity->customer_order_date)
+                ? Carbon::parse($opportunity->customer_order_date)->toDateString()
+                : null,
         ];
 
         $purchasePriceIsEmpty = collect($customFields['cfPurchasePrice'])
@@ -916,7 +923,7 @@ class OpportunityDataMapper implements CauserAware
 
         return collect($field?->dataSet)
             ->first(static function (DataEntity $entity) use ($calcValue): bool {
-               return $entity->calcValue === $calcValue;
+                return $entity->calcValue === $calcValue;
             });
     }
 
@@ -1183,9 +1190,10 @@ class OpportunityDataMapper implements CauserAware
         }
 
         $contactRelationMap = $this->collectContactRelationInputsFromOpportunity($opportunity);
-        $updatedContactRelationsContainPrimaryContact = collect($contactRelationMap)->containsStrict(static function (CreateContactRelationInput $input): bool {
-            return $input->isPrimary;
-        });
+        $updatedContactRelationsContainPrimaryContact = collect($contactRelationMap)
+            ->containsStrict(static function (CreateContactRelationInput $input): bool {
+                return $input->isPrimary;
+            });
 
         $existingContactRelationMap = collect($oppEntity->contactRelations)
             ->mapWithKeys(static fn(ContactRelationEntity $rel): array => [$rel->contact->id => new CreateContactRelationInput(
@@ -1195,20 +1203,20 @@ class OpportunityDataMapper implements CauserAware
             ->all();
 
         $contactRelations = [
-//            ...$existingContactRelationMap,
+            ...$existingContactRelationMap,
             ...$contactRelationMap,
         ];
 
-        // Set the first contact relation as primary when nothing is set
-        if (!empty($contactRelations) && collect($contactRelations)->doesntContain('isPrimary', '===', true)) {
-            /** @var CreateContactRelationInput $headContactRelation */
-            $headContactRelation = head($contactRelations);
-
-            $contactRelations[$headContactRelation->contactId] = new CreateContactRelationInput(
-                contactId: $headContactRelation->contactId,
-                isPrimary: true
-            );
-        }
+//        // Set the first contact relation as primary when nothing is set
+//        if (!empty($contactRelations) && collect($contactRelations)->doesntContain('isPrimary', '===', true)) {
+//            /** @var CreateContactRelationInput $headContactRelation */
+//            $headContactRelation = head($contactRelations);
+//
+//            $contactRelations[$headContactRelation->contactId] = new CreateContactRelationInput(
+//                contactId: $headContactRelation->contactId,
+//                isPrimary: true
+//            );
+//        }
 
         $contactRelationsDiff = array_udiff_assoc($contactRelations, $existingContactRelationMap, function (mixed $a,
                                                                                                             mixed $b): int {
@@ -1219,7 +1227,6 @@ class OpportunityDataMapper implements CauserAware
             return $a <=> $b;
         });
 
-        /** @noinspection PhpParamsInspection */
         $contactRelationCollection = count($contactRelations) > 0 && (count($contactRelationsDiff) > 0 || count($contactRelations) !== count($existingContactRelationMap))
             ? new CreateContactRelationInputCollection(...array_values($contactRelations))
             : InputValueEnum::Miss;
@@ -1263,37 +1270,16 @@ class OpportunityDataMapper implements CauserAware
      */
     private function collectContactRelationInputsFromOpportunity(Opportunity $opportunity): array
     {
-        $contactRelations = [];
-        $primaryContactMatched = false;
-
-        $collectContactsFromAccount = static function (Company $account, ?Contact $primaryContact)
-        use (&$primaryContactMatched): array {
-            return $account
-                ->contacts
-                ->sortByDesc('pivot.is_default')
-                ->mapWithKeys(static function (Contact $contact) use ($primaryContact, &$primaryContactMatched): array {
-                    $input = new CreateContactRelationInput(
-                        contactId: $contact->pl_reference,
-                        isPrimary: false === $primaryContactMatched && $primaryContact?->is($contact),
-                    );
-
-                    $primaryContactMatched = $primaryContactMatched || $input->isPrimary;
-
-                    return [$contact->pl_reference => $input];
-                })->all();
-        };
-
-        if (null !== $opportunity->primaryAccount) {
-            $contactRelations += $collectContactsFromAccount($opportunity->primaryAccount, $opportunity->primaryAccountContact);
+        if (null === $opportunity->primaryAccountContact) {
+            return [];
         }
 
-        // Pipeliner doesn't allow to push the same account relation,
-        // even if it's used as non-primary account.
-        if (null !== $opportunity->endUser && $opportunity->endUser->isNot($opportunity->primaryAccount)) {
-            $contactRelations += $collectContactsFromAccount($opportunity->endUser, $opportunity->primaryAccountContact);
-        }
-
-        return $contactRelations;
+        return [
+            $opportunity->primaryAccountContact->pl_reference => new CreateContactRelationInput(
+                contactId: $opportunity->primaryAccountContact->pl_reference,
+                isPrimary: true,
+            ),
+        ];
     }
 
     public function mapPrimaryAccountFromImportedRow(array $row,

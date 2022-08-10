@@ -92,7 +92,7 @@ class CreateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'end_user_name' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'hardware_status' => [
                 'bail', 'string', 'max:191',

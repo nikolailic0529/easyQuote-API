@@ -36,9 +36,11 @@ class ContactEventHandler implements EventHandler
 
     private function touchOpportunityUsingContactId(string $contactId): void
     {
-        $touchingOpportunities = LazyCollection::make($this->oppIntegration->simpleScroll(filter: OpportunityFilterInput::new()->contactRelations(
-            LeadOpptyContactRelationFilterInput::new()->contactId(EntityFilterStringField::eq($contactId))
-        )))
+        $touchingOpportunities = LazyCollection::make(function () use ($contactId): \Generator {
+            yield from $this->oppIntegration->simpleScroll(filter: OpportunityFilterInput::new()->contactRelations(
+                LeadOpptyContactRelationFilterInput::new()->contactId(EntityFilterStringField::eq($contactId))
+            ));
+        })
             ->values()
             ->pluck('id');
 
@@ -49,9 +51,11 @@ class ContactEventHandler implements EventHandler
 
     private function touchAccountUsingContactId(string $contactId): void
     {
-        $touchingAccounts = LazyCollection::make($this->accIntegration->simpleScroll(filter: AccountFilterInput::new()->relatedEntities(
-            EntityFilterRelatedField::contact($contactId)
-        )))
+        $touchingAccounts = LazyCollection::make(function () use ($contactId): \Generator {
+            yield from $this->accIntegration->simpleScroll(filter: AccountFilterInput::new()->relatedEntities(
+                EntityFilterRelatedField::contact($contactId)
+            ));
+        })
             ->values()
             ->pluck('id');
 

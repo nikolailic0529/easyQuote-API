@@ -33,12 +33,12 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface               $connection,
-                                protected Client                            $client,
-                                protected PermissionBroker                  $permissionBroker,
+    public function __construct(protected ConnectionInterface $connection,
+                                protected Client $client,
+                                protected PermissionBroker $permissionBroker,
                                 protected ImportedAddressToAddressProjector $addressProjector,
                                 protected ImportedContactToContactProjector $contactProjector,
-                                protected ThumbnailService                  $thumbnailService)
+                                protected ThumbnailService $thumbnailService)
     {
     }
 
@@ -234,11 +234,13 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         $newAddresses = $newAddressMap->values();
         $newContacts = $newContactMap->values();
 
-        $defaultInvoiceAddress = $company->addresses->first(static function (Address $address): bool {
-            return $address->pivot->is_default && AddressType::INVOICE === $address->address_type;
-        });
+        $defaultInvoiceAddress = $company->addresses
+            ->sortByDesc('pivot.is_default')
+            ->firstWhere('address_type', '===', AddressType::INVOICE);
 
-        $defaultInvoiceAddress = tap($defaultInvoiceAddress ?? new Address(), static function (Address $address) use ($importedCompany): void {
+        $defaultInvoiceAddress = tap($defaultInvoiceAddress ?? new Address(), static function (Address $address) use (
+            $importedCompany
+        ): void {
             $address->address_type = AddressType::INVOICE;
             $address->address_1 = $importedCompany->address_1;
             $address->address_2 = $importedCompany->address_2;
@@ -250,6 +252,29 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
                 Country::query()->where('name', $importedCompany->country_name)->first()
             );
         });
+
+        $hwSwCountryMap = [
+            AddressType::HARDWARE => isset($importedCompany->hw_country_code)
+                ? Country::query()->where('iso_3166_2', $importedCompany->hw_country_code)->first()
+                : null,
+            AddressType::SOFTWARE => isset($importedCompany->sw_country_code)
+                ? Country::query()->where('iso_3166_2', $importedCompany->sw_country_code)->first()
+                : null,
+        ];
+
+        // Update HW & SW countries
+        $company->addresses
+            ->each(static function (Address $address) use ($hwSwCountryMap): void {
+                $country = match ($address->address_type) {
+                    AddressType::HARDWARE => $hwSwCountryMap[AddressType::HARDWARE],
+                    AddressType::SOFTWARE => $hwSwCountryMap[AddressType::SOFTWARE],
+                    default => $address->country,
+                };
+
+                if ($address->pivot?->is_default) {
+                    $address->country()->associate($country ?? $address->country);
+                }
+            });
 
         $this->connection->transaction(static function () use ($newAddresses, $defaultInvoiceAddress, $company): void {
             $company->addresses->each->push();

@@ -108,26 +108,44 @@ abstract class ExchangeRateService implements ManagesExchangeRates, LoggerAware
         return 1 / $exchangeRate;
     }
 
-    public function getBaseRateByCurrencyCode(string $currencyCode, ?DateTimeInterface $dateTime = null): float
+    public function getBaseRateByCurrencyCode(string             $currencyCode,
+                                              ?DateTimeInterface $dateTime = null,
+                                              int                $mode = 0): float
+    {
+        return 1 / $this->getRateByCurrencyCode($currencyCode, $dateTime, $mode);
+    }
+
+    public function getRateByCurrencyCode(string             $currencyCode,
+                                          ?DateTimeInterface $dateTime = null,
+                                          int                $mode = 0): float
     {
         if ($currencyCode === $this->baseCurrency()) {
             return 1;
         }
 
-        $exchangeRateValue = ExchangeRate::query()
+        /** @var ExchangeRate|null $exchangeRate */
+        $exchangeRate = ExchangeRate::query()
             ->where('currency_code', $currencyCode)
             ->where('base_currency', $this->baseCurrency())
-            ->orderBy('date', 'desc')
-            ->when(!is_null($dateTime), function (Builder $builder) use ($dateTime) {
+            ->orderByDesc('date')
+            ->when(null !== $dateTime, static function (Builder $builder) use ($dateTime): void {
                 $carbon = Carbon::createFromTimestamp($dateTime->getTimestamp());
 
                 $builder->whereBetween('date', [$carbon->clone()->startOfMonth(), $carbon->clone()->endOfMonth()]);
             })
-            ->value('exchange_rate');
+            ->firstOr(callback: function () use ($currencyCode, $mode): ?ExchangeRate {
+                if (($mode & static::FALLBACK_LATEST) === self::FALLBACK_LATEST) {
+                    return ExchangeRate::query()
+                        ->where('currency_code', $currencyCode)
+                        ->where('base_currency', $this->baseCurrency())
+                        ->latest('date')
+                        ->first();
+                }
 
-        $exchangeRateValue ??= 1;
+                return null;
+            });
 
-        return 1 / $exchangeRateValue;
+        return (float)($exchangeRate?->exchange_rate ?? 1);
     }
 
     public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float

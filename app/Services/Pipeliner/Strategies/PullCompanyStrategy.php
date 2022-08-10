@@ -158,6 +158,8 @@ class PullCompanyStrategy implements PullStrategy
             ->lazyById(1);
 
         $contactRelations = collect($options['contactRelations'] ?? [])
+            ->lazy()
+            ->filter(static fn(ContactRelationEntity $entity): bool => $entity->isPrimary)
             ->mapWithKeys(static function (ContactRelationEntity $entity): array {
                 return [
                     $entity->contact->id => $entity,
@@ -183,7 +185,7 @@ class PullCompanyStrategy implements PullStrategy
         $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 30);
 
         return $lock->block(30, function () use ($entity, $account, $contactRelations): Company {
-            $contacts = [...$this->collectContactRelationsFromAccountEntity($entity), ...$contactRelations];
+            $contacts = [...$contactRelations, ...$this->collectContactRelationsFromAccountEntity($entity)];
 
             $newAccount = $this->dataMapper->mapImportedCompanyFromAccountEntity($entity, $contacts);
 

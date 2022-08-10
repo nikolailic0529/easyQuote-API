@@ -108,8 +108,21 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
         $pendingCount = $totalCount = array_sum($counts);
 
-        $events->listen('progress', function () use ($totalCount, &$pendingCount): void {
+        $this->logger->debug("Total count of pending entities: $pendingCount.", [
+            'counts' => collect($counts)
+                ->mapWithKeys(static fn(int $count, string $class): array => [class_basename($class) => $count])
+                ->all(),
+        ]);
+
+        $events->listen('progress', function () use (&$totalCount, &$pendingCount): void {
             $pendingCount--;
+
+            // When the pending entities were added after synchronization start,
+            // the total count will be incremented.
+            if ($pendingCount < 0) {
+                $totalCount += abs($pendingCount);
+                $pendingCount = 0;
+            }
 
             $this->logger->debug("Progress, total pending count: $pendingCount");
 
@@ -124,7 +137,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         });
 
         $events->listen('skipped', function (): void {
-
             $arg = func_get_arg(0);
 
             if ($arg instanceof Opportunity) {
@@ -146,7 +158,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                     )
                 );
             }
-
         });
 
         $this->eventDispatcher->dispatch(
@@ -164,7 +175,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
                 $this->syncUsing($this->syncStrategies[$class], $events);
             }
-
         }
 
         $this->dataSyncStatus->disable();
@@ -177,7 +187,8 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
     #[ArrayShape(['applied' => "array[]"])]
     public function syncModel(Model $model): array
     {
-        $this->logger->info('Starting model syncing.', ['model_id' => $model->getKey(), 'model_type' => class_basename($model)]);
+        $this->logger->info('Starting model syncing.', ['model_id' => $model->getKey(),
+            'model_type' => class_basename($model)]);
 
         $this->prepareStrategies();
 
@@ -315,6 +326,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
     {
         if (null !== $model->pl_reference) {
             $strategy->syncByReference($model->pl_reference);
+            $model->refresh();
         }
     }
 
@@ -477,7 +489,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         }
 
         if (false === $updateErrorOccurred && null !== $lastSyncedModel) {
-
             if ($lastSyncedModel->usesTimestamps() === false) {
                 $this->logger->warning("Model doesn't support timestamps. Update log won't be persisted.");
             } else {

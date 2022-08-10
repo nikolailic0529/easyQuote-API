@@ -10,6 +10,8 @@ use DateTimeInterface;
 
 interface ManagesExchangeRates
 {
+    final const FALLBACK_LATEST = 1 << 0;
+
     /**
      * Get fresh rates data from an dedicated resource.
      *
@@ -73,9 +75,18 @@ interface ManagesExchangeRates
     /**
      * @param string $currencyCode
      * @param DateTimeInterface|null $dateTime
+     * @param int $mode
      * @return float
      */
-    public function getBaseRateByCurrencyCode(string $currencyCode, ?DateTimeInterface $dateTime = null): float;
+    public function getBaseRateByCurrencyCode(string $currencyCode, ?DateTimeInterface $dateTime = null, int $mode = 0): float;
+
+    /**
+     * @param string $currencyCode
+     * @param DateTimeInterface|null $dateTime
+     * @param int $mode
+     * @return float
+     */
+    public function getRateByCurrencyCode(string $currencyCode, ?DateTimeInterface $dateTime = null, int $mode = 0): float;
 
     /**
      * Format the request url with the given period.

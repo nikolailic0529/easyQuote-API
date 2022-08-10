@@ -2,11 +2,12 @@
 
 namespace App\Repositories\System\Failure;
 
-use App\Contracts\Repositories\System\FailureRepositoryInterface;
+use App\Contracts\Factories\FailureInterface;
+use App\Factories\Failure\FailureHelp;
 use Illuminate\Support\Collection;
-use File;
+use Illuminate\Support\Facades\File;
 
-class FailureRepository implements FailureRepositoryInterface
+class FailureRepository implements FailureInterface
 {
     protected static $reasonsPath;
 
@@ -27,18 +28,18 @@ class FailureRepository implements FailureRepositoryInterface
         $method = 'get' . ucfirst($name);
 
         if (!method_exists($this, $method)) {
-            return;
+            return null;
         }
 
         return $this->{$method}();
     }
 
-    public function helpFor(\Exception $exception): FailureHelp
+    public function helpFor(\Throwable $exception): FailureHelp
     {
         return FailureHelp::create($exception, $this->reasonsFor($exception), $this->resolvingFor($exception));
     }
 
-    public function reasonsFor(\Exception $exception): Collection
+    public function reasonsFor(\Throwable $exception): Collection
     {
         $class = get_class($exception);
         $found = $this->reasons->firstWhere('exception', '===', $class);
@@ -48,7 +49,7 @@ class FailureRepository implements FailureRepositoryInterface
         return $reasons;
     }
 
-    public function resolvingFor(\Exception $exception): Collection
+    public function resolvingFor(\Throwable $exception): Collection
     {
         $class = get_class($exception);
         $found = $this->resolving->firstWhere('exception', '===', $class);

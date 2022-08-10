@@ -3,6 +3,8 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Enum\Lock;
+use App\Events\Opportunity\OpportunityCreated;
+use App\Events\Opportunity\OpportunityUpdated;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerNoteIntegration;
@@ -33,6 +35,7 @@ use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +46,7 @@ class PullOpportunityStrategy implements PullStrategy
     use SalesUnitsAware;
 
     public function __construct(protected ConnectionInterface             $connection,
+                                protected EventDispatcher                 $eventDispatcher,
                                 protected PipelinerPipelineIntegration    $pipelineIntegration,
                                 protected PipelinerOpportunityIntegration $oppIntegration,
                                 protected PullCompanyStrategy             $pullCompanyStrategy,
@@ -103,13 +107,15 @@ class PullOpportunityStrategy implements PullStrategy
             /** @var Collection|Company[] $accounts */
             $accounts = Collection::make($entity->accountRelations)
                 ->map(function (LeadOpptyAccountRelationEntity $relationEntity) use ($entity): Company {
-                    return $this->pullCompanyStrategy->sync($relationEntity->account, contactRelations: $entity->contactRelations);
+                    return $this->pullCompanyStrategy->sync($relationEntity->account, contactRelations: $relationEntity->isPrimary ? $entity->contactRelations : []);
                 });
 
             $newOpportunity = $this->oppDataMapper->mapOpportunityFromOpportunityEntity($entity, $accounts);
 
             // Merge attributes when a model exists already.
             if (null !== $opportunity) {
+                $oldOpportunity = (new Opportunity())->setRawAttributes($opportunity->getRawOriginal());
+
                 $this->oppDataMapper->mergeAttributesFrom($opportunity, $newOpportunity);
 
                 $this->connection->transaction(static function () use ($opportunity): void {
@@ -120,6 +126,10 @@ class PullOpportunityStrategy implements PullStrategy
 
                 $this->syncRelationsOfOpportunityEntity($entity, $opportunity);
 
+                $this->eventDispatcher->dispatch(
+                    new OpportunityUpdated($opportunity, $oldOpportunity)
+                );
+
                 return $opportunity;
             }
 
@@ -128,6 +138,10 @@ class PullOpportunityStrategy implements PullStrategy
             });
 
             $this->syncRelationsOfOpportunityEntity($entity, $newOpportunity);
+
+            $this->eventDispatcher->dispatch(
+                new OpportunityCreated($newOpportunity)
+            );
 
             return $newOpportunity;
         });
