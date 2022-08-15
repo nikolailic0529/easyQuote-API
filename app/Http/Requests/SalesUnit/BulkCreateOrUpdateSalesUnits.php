@@ -5,7 +5,7 @@ namespace App\Http\Requests\SalesUnit;
 use App\DTO\SalesUnit\CreateOrUpdateSalesUnitData;
 use App\DTO\SalesUnit\CreateOrUpdateSalesUnitDataCollection;
 use App\Models\SalesUnit;
-use App\Rules\OneOf;
+use App\Rules\Count;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -22,12 +22,16 @@ class BulkCreateOrUpdateSalesUnits extends FormRequest
     public function rules(): array
     {
         return [
-            'sales_units' => ['bail', 'present', 'array'],
+            'sales_units' => ['bail', 'present', 'array',
+                (new Count())
+                    ->where('is_default', true)
+                    ->exactly(1)
+                    ->setExactMessage("Exactly :limit unit must be set as default.")
+            ],
             'sales_units.*.id' => ['bail', 'present', 'nullable', 'uuid',
                 Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
             'sales_units.*.unit_name' => ['bail', 'required', 'string', 'max:100'],
-            'sales_units.*.is_default' => ['bail', 'present', 'boolean',
-                new OneOf(true, message: 'Only one Sales Unit can be default.')],
+            'sales_units.*.is_default' => ['bail', 'present', 'boolean'],
             'sales_units.*.is_enabled' => ['bail', 'present', 'boolean'],
         ];
     }

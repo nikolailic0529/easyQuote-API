@@ -84,10 +84,6 @@ class SystemSettingSeeder extends Seeder
                 ->all();
         }
 
-        if (is_string($value) && Str::contains($value, 'CONST:')) {
-            return constant(Str::after($value, 'CONST:'));
-        }
-
         return $value;
     }
 

@@ -44,7 +44,7 @@
     },
     {
         "key": "password_expiry_notification",
-        "value": "CONST:UN_PWD_EXP",
+        "value": "7",
         "possible_values": "RANGE:7,30,{value} Days Before Expiration",
         "type": "integer",
         "is_read_only": false,

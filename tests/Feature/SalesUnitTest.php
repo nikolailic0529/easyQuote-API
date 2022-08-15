@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class SalesUnitTest extends TestCase
@@ -124,6 +125,39 @@ class SalesUnitTest extends TestCase
                 $this->assertSame($item[$attr], $itemFromResponse[$attr], $attr);
             }
         }
+    }
 
+    /**
+     * @depends testCanViewListOfSalesUnits
+     */
+    public function testCanSetExactlyOneSalesUnitAsDefault(array $response): void
+    {
+        $this->authenticateApi();
+
+        $data = collect($response)
+            ->take(2)
+            ->map(static fn($v) => [...$v, ...['is_default' => true]])
+            ->all();
+
+        $assertResponseInvalid = static function (TestResponse $response): void {
+            $response->assertUnprocessable()
+                ->assertInvalid(['sales_units' => 'Exactly 1 unit must be set as default.'], responseKey: 'Error.original');
+       };
+
+        $assertResponseInvalid($this->putJson('api/sales-units', ['sales_units' => $data]));
+
+        $data = collect($response)
+            ->take(2)
+            ->map(static fn($v) => [...$v, ...['is_default' => false]])
+            ->all();
+
+        $assertResponseInvalid($this->putJson('api/sales-units', ['sales_units' => $data]));
+
+        $data = collect($response)
+            ->take(2)
+            ->map(static fn($v) => [...$v, ...['is_default' => null]])
+            ->all();
+
+        $assertResponseInvalid($this->putJson('api/sales-units', ['sales_units' => $data]));
     }
 }
