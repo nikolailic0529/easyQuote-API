@@ -3,6 +3,7 @@
 namespace App\Services\Opportunity;
 
 use App\DTO\Opportunity\PipelineStageOpportunitiesData;
+use App\DTO\Opportunity\PipelineStageSummaryCollection;
 use App\DTO\Opportunity\PipelineStageSummaryData;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
@@ -52,18 +53,35 @@ class OpportunityAggregateService
         return $stageOpportunitiesCollection;
     }
 
+    public function calculateSummaryOfDefaultPipeline(Request $request): PipelineStageSummaryCollection
+    {
+        /** @var Pipeline $defaultPipeline */
+        $defaultPipeline = $this->pipelineQueries->explicitlyDefaultPipelinesQuery()->sole();
+
+        $collection = PipelineStageSummaryCollection::make();
+
+        foreach ($defaultPipeline->pipelineStages as $stage) {
+            $collection[] = $this->calculateSummaryOfPipelineStage($stage, $request);
+        }
+
+        return $collection;
+    }
+
     public function calculateSummaryOfPipelineStage(PipelineStage $stage, Request $request): PipelineStageSummaryData
     {
         $agg = $this->opportunityQueries->opportunitiesOfPipelineStageQuery($stage, $request)
-            ->selectRaw('count(0) as count')
+            ->leftJoin('opportunity_validation_results as ovr', 'ovr.opportunity_id', 'opportunities.id')
+            ->selectRaw('count(*) as count')
             ->selectRaw('sum(base_opportunity_amount) as base_amount')
+            ->selectRaw('sum(ovr.is_passed) as valid')
             ->toBase()
             ->first();
 
         return new PipelineStageSummaryData([
+            'stage_id' => $stage->getKey(),
             'total' => (int)$agg->count,
-            'valid' => (int)$agg->count,
-            'invalid' => 0,
+            'valid' => (int)$agg->valid,
+            'invalid' => (int)$agg->count - (int)$agg->valid,
             'base_amount' => round((float)$agg->base_amount, 2),
         ]);
     }

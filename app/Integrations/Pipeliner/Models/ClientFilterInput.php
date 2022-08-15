@@ -6,11 +6,6 @@ class ClientFilterInput extends BaseFilterInput
 {
     protected array $fields = [];
 
-    public static function new(): static
-    {
-        return new static();
-    }
-
     public function firstName(EntityFilterStringField $field): static
     {
         return $this->setField(__FUNCTION__, $field);

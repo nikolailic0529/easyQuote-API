@@ -334,7 +334,7 @@ class AppointmentDataMapper implements CauserAware
             }
 
             return new CreateAppointmentReminderInput(
-                ownerId: $appointment->reminder->owner?->pl_reference ?? '',
+                ownerId: $appointment->reminder->owner?->pl_reference ?? $appointment->owner->pl_reference ?? '',
                 endDateOffset: $appointment->reminder->start_date_offset,
                 snoozeDate: isset($appointment->reminder->snooze_date)
                     ? Carbon::instance($appointment->reminder->snooze_date)

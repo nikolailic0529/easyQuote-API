@@ -524,8 +524,10 @@ class OpportunityEntityService implements CauserAware
 
             $attributes = $data->except('create_suppliers', 'update_suppliers', 'recurrence')->toArray();
 
-            $convertToBase = function (float $value, ?string $fromCode): float {
+            $convertToBase = function (float $value, string|null|MissingValue $fromCode, ?string $originalFromCode): float {
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
+
+                $fromCode = $fromCode instanceof MissingValue ? $originalFromCode : $fromCode;
 
                 return $this->currencyConverter->convertCurrencies(
                     fromCode: $fromCode ?? $baseCurrency,
@@ -536,19 +538,19 @@ class OpportunityEntityService implements CauserAware
 
             if (!$data->opportunity_amount instanceof MissingValue) {
                 $attributes['base_opportunity_amount'] = isset($data->opportunity_amount)
-                    ? $convertToBase($data->opportunity_amount, $data->opportunity_amount_currency_code)
+                    ? $convertToBase($data->opportunity_amount, $data->opportunity_amount_currency_code, $opportunity->opportunity_amount_currency_code)
                     : null;
             }
 
             if (!$data->purchase_price instanceof MissingValue) {
                 $attributes['base_purchase_price'] = isset($data->purchase_price)
-                    ? $convertToBase($data->purchase_price, $data->purchase_price_currency_code)
+                    ? $convertToBase($data->purchase_price, $data->purchase_price_currency_code, $opportunity->purchase_price_currency_code)
                     : null;
             }
 
             if (!$data->list_price instanceof MissingValue) {
                 $attributes['base_list_price'] = isset($data->list_price)
-                    ? $convertToBase($data->list_price, $data->list_price_currency_code)
+                    ? $convertToBase($data->list_price, $data->list_price_currency_code, $opportunity->list_price_currency_code)
                     : null;
             }
 

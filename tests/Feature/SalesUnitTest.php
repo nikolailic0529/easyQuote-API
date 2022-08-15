@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Role;
+use App\Models\SalesUnit;
+use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
@@ -30,6 +33,37 @@ class SalesUnitTest extends TestCase
         $this->assertNotEmpty($response->json('data'));
 
         return $response->json('data');
+    }
+
+    /**
+     * Test an ability to filter assigned sales units to current user.
+     */
+    public function testCanFilterAssignedSalesUnits(): void
+    {
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory(2), relationship: 'salesUnits')
+            ->create();
+        $user->syncRoles(factory(Role::class)->create());
+
+        $this->authenticateApi($user);
+
+        $response = $this->get('api/sales-units/list?'.Arr::query([
+                'filter' => ['assigned_to_me' => "true"],
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'unit_name', 'is_default', 'is_enabled', 'created_at', 'updated_at'],
+                ],
+            ]);
+
+        $this->assertCount($user->salesUnits->count(), $response->json('data'));
+
+        foreach ($user->salesUnits as $unit) {
+            $this->assertContainsEquals($unit->getKey(), $response->json('data.*.id'));
+        }
     }
 
     /**

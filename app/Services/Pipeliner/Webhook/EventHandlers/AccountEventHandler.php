@@ -23,9 +23,11 @@ class AccountEventHandler implements EventHandler
             return;
         }
 
-        $touchingOpportunity = LazyCollection::make($this->oppIntegration->simpleScroll(filter: OpportunityFilterInput::new()->accountRelations(
-            LeadOpptyAccountRelationFilterInput::new()->accountId(EntityFilterStringField::eq($data->entity['id']))
-        )))
+        $touchingOpportunity = LazyCollection::make(function () use ($data): \Generator {
+            yield from $this->oppIntegration->simpleScroll(filter: OpportunityFilterInput::new()->accountRelations(
+                LeadOpptyAccountRelationFilterInput::new()->accountId(EntityFilterStringField::eq($data->entity['id']))
+            ));
+        })
             ->values()
             ->pluck('id');
 

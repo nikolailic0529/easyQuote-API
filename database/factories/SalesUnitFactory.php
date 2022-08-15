@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\SalesUnit;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 class SalesUnitFactory extends Factory
 {
@@ -12,7 +13,7 @@ class SalesUnitFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'unit_name' => Str::random(40)
         ];
     }
 }

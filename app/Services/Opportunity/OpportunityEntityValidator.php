@@ -27,7 +27,11 @@ class OpportunityEntityValidator
                 'endUser.addresses',
                 'endUser.contacts',
                 'endUser.vendors',
+
+                'opportunitySuppliers',
             ]);
+
+            $opportunity->is_contract_duration_checked = (bool)$opportunity->is_contract_duration_checked;
 
             $validator = $this->validatorFactory->make(data: $opportunity->toArray(), rules: $this->getRules(), messages: $this->getMessages());
 
@@ -41,20 +45,25 @@ class OpportunityEntityValidator
     {
         return [
             'primary_account' => ['bail', 'required'],
-            'primary_account.email' => ['exclude_without:primary_account', 'bail', 'required', 'email'],
+            'primary_account.email' => ['exclude_without:primary_account', 'bail', 'nullable', 'email:filter'],
             'primary_account.vat' => ['exclude_without:primary_account', 'bail', 'required_if:primary_account.vat_type,'.VAT::VAT_NUMBER],
             'primary_account.vendors' => ['exclude_without:primary_account', 'bail', 'required'],
             'primary_account.addresses' => ['exclude_without:primary_account', 'bail', 'required'],
             'primary_account.contacts' => ['exclude_without:primary_account', 'bail', 'required'],
 
             'primary_account_contact' => ['bail', 'required'],
-            'primary_account_contact.email' => ['exclude_without:primary_account_contact', 'bail', 'required', 'email'],
+            'primary_account_contact.email' => ['exclude_without:primary_account_contact', 'bail', 'required', 'email:filter'],
 
             'end_user' => ['bail', 'required'],
-            'end_user.email' => ['exclude_without:end_user', 'bail', 'required', 'email'],
+            'end_user.email' => ['exclude_without:end_user', 'bail', 'nullable', 'email:filter'],
             'end_user.vat' => ['exclude_without:end_user', 'bail', 'required_if:end_user.vat_type,'.VAT::VAT_NUMBER],
             'end_user.addresses' => ['exclude_without:end_user', 'bail', 'required'],
             'end_user.contacts' => ['exclude_without:end_user', 'bail', 'required'],
+
+            'contract_duration_months' => ['bail', 'required_if:is_contract_duration_checked,true'],
+            'opportunity_start_date' => ['bail', 'required_if:is_contract_duration_checked,false'],
+            'opportunity_end_date' => ['bail', 'required_if:is_contract_duration_checked,false'],
+            'opportunity_suppliers' => ['bail', 'array', 'min:1'],
         ];
     }
 
@@ -69,9 +78,9 @@ class OpportunityEntityValidator
             'primary_account.addresses.required' => 'Primary Account does not have any address.',
             'primary_account.contacts.required' => 'Primary Account does not have any contact.',
 
-            'primary_account_contact.required' => 'Primary Account Contact must be chosen.',
-            'primary_account_contact.email.required' => 'Primary Account Contact does not contain a valid email.',
-            'primary_account_contact.email.email' => 'Primary Account Contact does not contain a valid email.',
+            'primary_account_contact.required' => 'Primary Contact must be chosen.',
+            'primary_account_contact.email.required' => 'Primary Contact does not contain a valid email.',
+            'primary_account_contact.email.email' => 'Primary Contact does not contain a valid email.',
 
             'end_user.required' => 'End Customer must be chosen.',
             'end_user.email.required' => 'End Customer does not have a valid email.',
@@ -80,6 +89,11 @@ class OpportunityEntityValidator
             'end_user.addresses.required' => 'End Customer does not have any address.',
             'end_user.contacts.required' => 'End Customer does not have any contact.',
 
+            'contract_duration_months.required_if' => 'Support Duration must be selected.',
+            'opportunity_start_date.required_if' => 'Start Date must be selected.',
+            'opportunity_end_date.required_if' => 'End Date must be selected.',
+
+            'opportunity_suppliers.min' => 'At least :min Supplier must be added.',
         ];
     }
 }

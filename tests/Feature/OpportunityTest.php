@@ -13,6 +13,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
+use App\Models\OpportunityValidationResult;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
@@ -26,6 +27,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -169,13 +171,16 @@ class OpportunityTest extends TestCase
         $role->syncPermissions('view_opportunities');
 
         /** @var User $user */
-        $user = User::factory()->create();
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
 
         $user->syncRoles($role);
 
-        $opportunity = Opportunity::factory()->create([
-            'user_id' => $user->getKey(),
-        ]);
+        $opportunity = Opportunity::factory()
+            ->for($user->salesUnits->first())
+            ->for($user)
+            ->create();
 
         Opportunity::factory()->create();
 
@@ -188,12 +193,17 @@ class OpportunityTest extends TestCase
                     '*' => [
                         'id',
                         'user_id',
+                        'permissions',
                     ],
                 ],
             ]);
 
         $this->assertCount(1, $response->json('data'));
-        $this->assertSame($user->getKey(), $response->json('data.0.user_id'));
+
+        foreach ($response->json('data') as $item) {
+            $this->assertTrue($item['permissions']['view']);
+            $this->assertSame($user->getKey(), $item['user_id']);
+        }
     }
 
     /**
@@ -207,14 +217,18 @@ class OpportunityTest extends TestCase
         $role->syncPermissions('view_opportunities');
 
         /** @var User $user */
-        $user = User::factory()->create();
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
 
         $user->syncRoles($role);
 
-        $opportunity = Opportunity::factory()->create([
-            'user_id' => $user->getKey(),
-            'status' => 0 // lost
-        ]);
+        $opportunity = Opportunity::factory()
+            ->for($user)
+            ->for($user->salesUnits->first())
+            ->create([
+                'status' => 0 // lost
+            ]);
 
         Opportunity::factory()->create([
             'status' => 0,
@@ -302,9 +316,10 @@ class OpportunityTest extends TestCase
         $primaryAccount->vendors()->sync(Vendor::query()->limit(2)->get());
 
         /** @var Opportunity $opportunity */
-        $opportunity = Opportunity::factory()->create([
-            'primary_account_id' => $primaryAccount->getKey(),
-        ]);
+        $opportunity = Opportunity::factory()
+            ->for($primaryAccount, relationship: 'primaryAccount')
+            ->has(OpportunityValidationResult::factory(), relationship: 'validationResult')
+            ->create();
 
         factory(OpportunitySupplier::class, 2)->create(['opportunity_id' => $opportunity->getKey()]);
 
@@ -380,6 +395,11 @@ class OpportunityTest extends TestCase
 
                 "status",
                 "status_reason",
+
+                "validation_result" => [
+                    "is_passed",
+                    "messages",
+                ],
 
                 "base_list_price",
                 "base_purchase_price",
@@ -470,7 +490,8 @@ class OpportunityTest extends TestCase
             'is_contract_duration_checked' => false,
             'are_end_user_addresses_available' => true,
             'are_end_user_contacts_available' => true,
-            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where('is_default',
+                1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
 //        unset($data['pipeline_stage_id']);
@@ -684,7 +705,8 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 2,
-            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where('is_default',
+                1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
@@ -871,7 +893,8 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 2,
-            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where('is_default',
+                1)->sole()->pipelineStages->random()->qualifiedStageName,
             'recurrence' => [
                 'stage_id' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->getKey(),
                 'condition' => OpportunityRecurrenceConditionEnum::Lost->value | OpportunityRecurrenceConditionEnum::Won->value,
@@ -1114,7 +1137,8 @@ class OpportunityTest extends TestCase
             'is_contract_duration_checked' => false,
             'are_end_user_addresses_available' => true,
             'are_end_user_contacts_available' => true,
-            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where('is_default',
+                1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
 //        unset($data['pipeline_stage_id']);
@@ -1268,9 +1292,10 @@ class OpportunityTest extends TestCase
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
-        $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data = [
-            'customer_order_date' => $this->faker->dateTimeBetween('+1day', '+3day')->format('Y-m-d')
-        ])
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(),
+            $data = [
+                'customer_order_date' => $this->faker->dateTimeBetween('+1day', '+3day')->format('Y-m-d'),
+            ])
 //            ->dump()
             ->assertOk();
 
@@ -1355,7 +1380,8 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 60,
-            'sale_action_name' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where('is_default',
+                1)->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
@@ -1513,11 +1539,14 @@ class OpportunityTest extends TestCase
      */
     public function testCanBatchUploadOpportunities(): void
     {
-        $accountsDataFile = UploadedFile::fake()->createWithContent('Accounts-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent('Accounts-04042021.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('Contacts-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent('Contacts-04042021.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
 
         $this->authenticateApi();
 
@@ -1547,11 +1576,14 @@ class OpportunityTest extends TestCase
      */
     public function testCanBatchUploadOpportunitiesBy20211102(): void
     {
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
 
         $this->authenticateApi();
 
@@ -1587,11 +1619,14 @@ class OpportunityTest extends TestCase
             ->where('name', 'Foster and Partners')
             ->delete();
 
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-21012022.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-21012022.xlsx')));
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-21012022.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-21012022.xlsx')));
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx')));
 
         $this->authenticateApi();
 
@@ -1715,11 +1750,14 @@ class OpportunityTest extends TestCase
             ->where('name', 'Foster and Partners')
             ->delete();
 
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-23032022.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-23032022.xlsx')));
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-23032022.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-23032022.xlsx')));
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/opps-23032022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-23032022.xlsx')));
 
         $this->authenticateApi();
 
@@ -1821,7 +1859,8 @@ class OpportunityTest extends TestCase
      */
     public function testCanUploadOpportunitiesBy20220121WithoutAccountsAndContactsFile(): void
     {
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx')));
 
         $this->authenticateApi();
 
@@ -1857,7 +1896,8 @@ class OpportunityTest extends TestCase
             'type' => 'External',
         ]);
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/opps-25012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-25012022.xlsx')));
 
         $this->authenticateApi();
 
@@ -1930,7 +1970,8 @@ class OpportunityTest extends TestCase
      */
     public function testCanBatchUploadOpportunitiesWithoutAccountsDataFiles(): void
     {
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
 
         $this->authenticateApi();
 
@@ -1965,11 +2006,14 @@ class OpportunityTest extends TestCase
         $this->app['db.connection']->table('opportunities')->update(['deleted_at' => now()]);
         $this->app['db.connection']->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->update(['deleted_at' => now()]);
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
 
-        $accountsDataFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-data-pipeliner-export.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-data-pipeliner-export.xlsx')));
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
 
         /** @var Role $role */
         $role = factory(Role::class)->create();
@@ -2108,11 +2152,14 @@ class OpportunityTest extends TestCase
         $this->app['db.connection']->table('opportunities')->delete();
         $this->app['db.connection']->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->delete();
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/ops-17012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-17012022.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/ops-17012022.xlsx')));
 
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-17012022.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-17012022.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-17012022.xlsx')));
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-17012022.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-17012022.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-17012022.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-17012022.xlsx')));
 
         $otherUserCompany = Company::factory()->create([
             'user_id' => User::factory()->create()->getKey(),
@@ -2303,13 +2350,15 @@ class OpportunityTest extends TestCase
         $oppsWithQuote = [];
 
         foreach ($pipelineStagesResp->json('pipeline_stages') as $stage) {
-            Opportunity::factory()->count(2)->create([
-                'pipeline_id' => $pipelineStagesResp->json('id'),
-                'pipeline_stage_id' => $stage['id'],
-                'sale_action_name' => $stage['qualified_stage_name'],
+            Opportunity::factory()
+                ->has(OpportunityValidationResult::factory(), relationship: 'validationResult')
+                ->count(2)->create([
+                    'pipeline_id' => $pipelineStagesResp->json('id'),
+                    'pipeline_stage_id' => $stage['id'],
+                    'sale_action_name' => $stage['qualified_stage_name'],
 //                'primary_account_id' => Company::factory()->create()->getKey(),
 //                'primary_account_contact_id' => Contact::factory()->create()->getKey(),
-            ]);
+                ]);
 
             $oppsWithQuote[] = $oppWithQuote = Opportunity::factory()->create([
                 'pipeline_id' => $pipelineStagesResp->json('id'),
@@ -2369,6 +2418,10 @@ class OpportunityTest extends TestCase
                                 'id', 'first_name', 'last_name', 'phone', 'email',
                             ],
 
+                            'validation_result' => [
+                                'messages', 'is_passed',
+                            ],
+
                             'opportunity_start_date',
                             'opportunity_end_date',
                             'ranking',
@@ -2407,10 +2460,14 @@ class OpportunityTest extends TestCase
     {
         $this->app['db.connection']->table('opportunities')->delete();
 
-        $anotherUser = User::factory()->create();
+        $anotherUser = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
 
         /** @var User $currentUser */
-        $currentUser = User::factory()->create();
+        $currentUser = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
 
         /** @var Role $role */
         $role = factory(Role::class)->create();
@@ -2443,20 +2500,25 @@ class OpportunityTest extends TestCase
 
         $currentUserOpportunities = [];
 
+        $pipeline = Pipeline::query()->findOrFail($pipelineStagesResp->json('id'));
+
         foreach ($pipelineStagesResp->json('pipeline_stages') as $stage) {
-            Opportunity::factory()->create([
-                'user_id' => $anotherUser->getKey(),
-                'pipeline_id' => $pipelineStagesResp->json('id'),
-                'pipeline_stage_id' => $stage['id'],
-                'sale_action_name' => $stage['qualified_stage_name'],
-            ]);
+            $pipelineStage = $pipeline->pipelineStages->find($stage['id']);
+
+            Opportunity::factory()
+                ->for($anotherUser)
+                ->for($pipeline)
+                ->for($pipelineStage)
+                ->for($currentUser->salesUnits->first())
+                ->create();
 
             $currentUserOpportunities[$stage['id']] ??= [];
-            $currentUserOpportunities[$stage['id']][] = Opportunity::factory()->create([
-                'user_id' => $currentUser->getKey(),
-                'pipeline_id' => $pipelineStagesResp->json('id'),
-                'pipeline_stage_id' => $stage['id'],
-            ]);
+            $currentUserOpportunities[$stage['id']][] = Opportunity::factory()
+                ->for($currentUser)
+                ->for($pipeline)
+                ->for($pipelineStage)
+                ->for($currentUser->salesUnits->first())
+                ->create();
         }
 
         $response = $this->getJson('api/pipelines/default/stage-opportunity')
@@ -2629,7 +2691,18 @@ class OpportunityTest extends TestCase
             'stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
         ])
 //            ->dump()
-            ->assertNoContent();
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'stage_id',
+                        'total',
+                        'valid',
+                        'invalid',
+                        'base_amount',
+                    ],
+                ],
+            ]);
 
         $this->getJson("api/opportunities/{$opp->getKey()}")
 //            ->dump()

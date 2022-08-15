@@ -61,8 +61,6 @@ class QuoteTaskController extends Controller
      */
     public function showTemplate(Template $template): JsonResponse
     {
-        $this->authorize('view_quote_task_template');
-
         return response()->json($template);
     }
 

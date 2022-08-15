@@ -2,12 +2,14 @@
 
 namespace App\Listeners;
 
+use App\Services\Opportunity\ValidateOpportunityService;
 use App\Events\{Opportunity\OpportunityBatchFilesImported,
     Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
-    Opportunity\OpportunityUpdated};
+    Opportunity\OpportunityUpdated
+};
 use App\Jobs\IndexSearchableEntity;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
@@ -64,9 +66,10 @@ class OpportunityEventAuditor
         'sale_action_name',
     ];
 
-    public function __construct(protected Dispatcher      $dispatcher,
-                                protected ActivityLogger  $activityLogger,
-                                protected ChangesDetector $changesDetector)
+    public function __construct(protected Dispatcher                 $dispatcher,
+                                protected ActivityLogger             $activityLogger,
+                                protected ChangesDetector            $changesDetector,
+                                protected ValidateOpportunityService $validateOpportunityService)
     {
     }
 
@@ -125,7 +128,7 @@ class OpportunityEventAuditor
             ->log('updated');
     }
 
-    public function handleCreatedEvent(OpportunityCreated $event)
+    public function handleCreatedEvent(OpportunityCreated $event): void
     {
         $opportunity = $event->getOpportunity();
 
@@ -134,16 +137,19 @@ class OpportunityEventAuditor
             ->by($event->getCauser())
             ->withProperties(
                 $this->changesDetector->getAttributeValuesToBeLogged(
-                    $opportunity, static::$logModelAttributes)
+                    $opportunity,
+                    static::$logModelAttributes)
             )
             ->log('created');
+
+        $this->validateOpportunityService->performValidation($opportunity);
 
         $this->dispatcher->dispatch(
             new IndexSearchableEntity($opportunity)
         );
     }
 
-    public function handleUpdatedEvent(OpportunityUpdated $event)
+    public function handleUpdatedEvent(OpportunityUpdated $event): void
     {
         with($event, function (OpportunityUpdated $event) {
             $opportunity = $event->getOpportunity();
@@ -153,11 +159,14 @@ class OpportunityEventAuditor
                 ->by($event->getCauser())
                 ->withProperties(
                     $this->changesDetector->getAttributeValuesToBeLogged(
-                        $opportunity, static::$logModelAttributes,
+                        $opportunity,
+                        static::$logModelAttributes,
                         $this->changesDetector->getModelChanges($oldOpportunity, static::$logModelAttributes)
                     )
                 )
                 ->log('updated');
+
+            $this->validateOpportunityService->performValidation($opportunity);
         });
 
         $this->dispatcher->dispatch(
@@ -165,7 +174,7 @@ class OpportunityEventAuditor
         );
     }
 
-    public function handleDeletedEvent(OpportunityDeleted $event)
+    public function handleDeletedEvent(OpportunityDeleted $event): void
     {
         $opportunity = $event->getOpportunity();
 

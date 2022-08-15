@@ -18,7 +18,6 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class OpportunityQueries
 {
@@ -59,6 +58,7 @@ class OpportunityQueries
         $query = $model->newQuery()
             ->select([
                 'opportunities.id',
+                'opportunities.sales_unit_id',
                 'opportunities.user_id',
                 'opportunities.account_manager_id',
                 'companies.id as company_id',
@@ -78,13 +78,16 @@ class OpportunityQueries
             ->leftJoin('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'opportunities.contract_type_id');
             })
-            ->leftJoin($pipelineStageModel->getTable(), $pipelineStageModel->getQualifiedKeyName(), $model->pipelineStage()->getQualifiedForeignKeyName())
+            ->leftJoin($pipelineStageModel->getTable(),
+                $pipelineStageModel->getQualifiedKeyName(),
+                $model->pipelineStage()->getQualifiedForeignKeyName())
             ->leftJoin('users', function (JoinClause $join) {
                 $join->on('users.id', 'opportunities.account_manager_id');
             })
             ->leftJoin('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'opportunities.primary_account_id');
             })
+            ->with(['salesUnit:id,unit_name'])
             ->tap($this->scopeCurrentUser($request));
 
         return RequestQueryBuilder::for(
@@ -144,6 +147,8 @@ class OpportunityQueries
         $query = $this->opportunitiesOfPipelineStageQuery($pipelineStage, $request)
             ->select([
                 $opportunityModel->getQualifiedKeyName(),
+                $opportunityModel->salesUnit()->getQualifiedForeignKeyName(),
+                $opportunityModel->pipelineStage()->getQualifiedForeignKeyName(),
                 $opportunityModel->qualifyColumn('user_id'),
                 $opportunityModel->qualifyColumn('account_manager_id'),
                 $opportunityModel->qualifyColumn('primary_account_id'),
@@ -187,6 +192,8 @@ class OpportunityQueries
                 'endUser:id,name,phone,email',
                 'endUser.image',
                 'primaryAccountContact:id,first_name,last_name,phone,email',
+                'salesUnit:id,unit_name',
+                'validationResult:id,opportunity_id,messages,is_passed',
             ])
             ->leftJoin('users', function (JoinClause $join) {
                 $join->on('users.id', 'opportunities.account_manager_id');
@@ -232,31 +239,46 @@ class OpportunityQueries
                 Response::deny('The query cannot be performed without user authentication.')->authorize();
             }
 
-            $builder->unless($this->gate->allows('viewAnyOwnerEntities', Opportunity::class), function (Builder $builder) use
-            (
-                $user
-            ): void {
+            $builder->unless($this->gate->allows('viewAnyOwnerEntities', Opportunity::class),
+                function (Builder $builder) use ($user): void {
 
-                /** @var \Staudenmeir\LaravelCte\Query\Builder $builder */
+                    /** @var \Staudenmeir\LaravelCte\Query\Builder $builder */
 
-                $builder->withExpression('led_team_users',
-                    $user->ledTeamUsers()->getQuery()
-                        ->select($user->ledTeamUsers()->getModel()->getQualifiedKeyName())
-                        ->toBase()
-                );
+                    $builder->withExpression('led_team_users',
+                        $user->ledTeamUsers()->getQuery()
+                            ->select($user->ledTeamUsers()->getModel()->getQualifiedKeyName())
+                            ->toBase()
+                    );
 
-                $builder->where(static function (Builder $builder) use ($user): void {
-                    $builder
-                        ->where($builder->qualifyColumn('user_id'), $user->getKey())
-                        ->orWhere($builder->qualifyColumn('account_manager_id'), $user->getKey())
-                        ->orWhereIn($builder->qualifyColumn('user_id'), static function (BaseBuilder $builder) use ($user): void {
-                            $builder->select($user->ledTeamUsers()->getModel()->getKeyName())->from('led_team_users');
-                        })
-                        ->orWhereIn($builder->qualifyColumn('account_manager_id'), static function (BaseBuilder $builder) use ($user): void {
-                            $builder->select($user->ledTeamUsers()->getModel()->getKeyName())->from('led_team_users');
+                    $builder->withExpression('user_has_sales_units',
+                        $user->salesUnits()->getQuery()
+                            ->select($user->salesUnits()->getModel()->getQualifiedKeyName())
+                            ->toBase()
+                    );
+
+                    $builder->where(static function (Builder $builder) use ($user): void {
+                        $builder
+                            ->where($builder->qualifyColumn('user_id'), $user->getKey())
+                            ->orWhere($builder->qualifyColumn('account_manager_id'), $user->getKey())
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                static function (BaseBuilder $builder) use ($user): void {
+                                    $builder->select($user->ledTeamUsers()->getModel()->getKeyName())
+                                        ->from('led_team_users');
+                                })
+                            ->orWhereIn($builder->qualifyColumn('account_manager_id'),
+                                static function (BaseBuilder $builder) use ($user): void {
+                                    $builder->select($user->ledTeamUsers()->getModel()->getKeyName())
+                                        ->from('led_team_users');
+                                });
+                    })
+                        ->where(static function (Builder $builder) use ($user): void {
+                            $builder->whereIn($builder->qualifyColumn('sales_unit_id'),
+                                static function (BaseBuilder $builder) use ($user): void {
+                                    $builder->select($user->salesUnits()->getModel()->getKeyName())
+                                        ->from('user_has_sales_units');
+                                });
                         });
                 });
-            });
         };
     }
 }

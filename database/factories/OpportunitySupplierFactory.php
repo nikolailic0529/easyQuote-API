@@ -1,15 +1,22 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
 use App\Models\OpportunitySupplier;
-use Faker\Generator as Faker;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-$factory->define(OpportunitySupplier::class, function (Faker $faker) {
-    return [
-        'supplier_name' => $faker->company,
-        'country_name' => $faker->country,
-        'contact_name' => $faker->firstName,
-        'contact_email' => $faker->companyEmail,
-    ];
-});
+class OpportunitySupplierFactory extends Factory
+{
+    protected $model = OpportunitySupplier::class;
+
+    public function definition(): array
+    {
+        return [
+            'supplier_name' => $this->faker->company(),
+            'country_name' => $this->faker->country(),
+            'contact_name' => $this->faker->firstName(),
+            'contact_email' => $this->faker->companyEmail(),
+        ];
+    }
+}
+

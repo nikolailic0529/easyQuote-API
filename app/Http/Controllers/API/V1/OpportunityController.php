@@ -24,7 +24,11 @@ use App\Services\Exceptions\ValidationException;
 use App\Services\Opportunity\OpportunityAggregateService;
 use App\Services\Opportunity\OpportunityEntityService;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Http\{JsonResponse, Request, Resources\Json\AnonymousResourceCollection, Response};
+use Illuminate\Http\{JsonResponse,
+    Request,
+    Resources\Json\AnonymousResourceCollection,
+    Resources\Json\ResourceCollection,
+    Response};
 use Symfony\Component\HttpFoundation\Response as R;
 use Throwable;
 
@@ -38,7 +42,8 @@ class OpportunityController extends Controller
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateOpportunities(PaginateOpportunities $request, OpportunityQueries $queries): AnonymousResourceCollection
+    public function paginateOpportunities(PaginateOpportunities $request,
+                                          OpportunityQueries    $queries): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Opportunity::class);
 
@@ -55,7 +60,8 @@ class OpportunityController extends Controller
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateLostOpportunities(PaginateOpportunities $request, OpportunityQueries $queries): AnonymousResourceCollection
+    public function paginateLostOpportunities(PaginateOpportunities $request,
+                                              OpportunityQueries    $queries): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Opportunity::class);
 
@@ -72,7 +78,8 @@ class OpportunityController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function showOpportunitiesGroupedByPipelineStages(Request $request, OpportunityAggregateService $aggregateService): JsonResponse
+    public function showOpportunitiesGroupedByPipelineStages(Request                     $request,
+                                                             OpportunityAggregateService $aggregateService): JsonResponse
     {
         $this->authorize('viewAny', Opportunity::class);
 
@@ -227,13 +234,14 @@ class OpportunityController extends Controller
      * @param SetStageOfOpportunity $request
      * @param OpportunityEntityService $entityService
      * @param Opportunity $opportunity
-     * @return JsonResponse
+     * @return ResourceCollection
      * @throws ValidationException
      * @throws Throwable
      */
-    public function setStageOfOpportunity(SetStageOfOpportunity    $request,
-                                          OpportunityEntityService $entityService,
-                                          Opportunity              $opportunity): JsonResponse
+    public function setStageOfOpportunity(SetStageOfOpportunity       $request,
+                                          OpportunityEntityService    $entityService,
+                                          OpportunityAggregateService $aggregateService,
+                                          Opportunity                 $opportunity): ResourceCollection
     {
         $this->authorize('update', $opportunity);
 
@@ -244,7 +252,7 @@ class OpportunityController extends Controller
                 $request->getSetStageOfOpportunityData(),
             );
 
-        return response()->json(status: R::HTTP_NO_CONTENT);
+        return ResourceCollection::make($aggregateService->calculateSummaryOfDefaultPipeline($request));
     }
 
     /**

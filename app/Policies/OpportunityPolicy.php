@@ -6,16 +6,14 @@ use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 class OpportunityPolicy
 {
     use HandlesAuthorization;
 
-    protected UserTeamGate $userTeamGate;
-
-    public function __construct(UserTeamGate $userTeamGate)
+    public function __construct(protected UserTeamGate $userTeamGate)
     {
-        $this->userTeamGate = $userTeamGate;
     }
 
     /**
@@ -24,23 +22,27 @@ class OpportunityPolicy
      * @param \App\Models\User $user
      * @return mixed
      */
-    public function viewAny(User $user)
+    public function viewAny(User $user): Response
     {
         if ($user->can('view_opportunities')) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can view models of any owner.
      * @param User $user
-     * @return mixed
+     * @return Response
      */
-    public function viewAnyOwnerEntities(User $user)
+    public function viewAnyOwnerEntities(User $user): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
@@ -48,40 +50,42 @@ class OpportunityPolicy
      *
      * @param \App\Models\User $user
      * @param \App\Models\Opportunity $opportunity
-     * @return mixed
+     * @return Response
      */
-    public function view(User $user, Opportunity $opportunity)
+    public function view(User $user, Opportunity $opportunity): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
-
-//        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey() && $user->cant('view_opportunities')) {
-//            return $this->deny("You are an owner of the Opportunity, but you don't have permissions to view it. Contact with your Account Manager.");
-//        }
-//
-//        if ($user->getKey() === $opportunity->user()->getParentKey() && $user->cant('view_opportunity')) {
-//            return $this->deny("You are a creator of the Opportunity, but you don't have permissions to view it. Contact with your Account Manager.");
-//        }
 
         if ($user->cant('view_opportunities')) {
-            return $this->deny("You do not have permissions to view any Opportunity. Contact with your Account Manager.");
+            return $this->deny(__('access.cant_view', ['item' => 'opportunity']));
         }
 
-        return true;
+        if ($user->salesUnits->doesntContain($opportunity->salesUnit)) {
+            return $this->deny(__('access.only_assigned_units'));
+        }
+
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can create models.
      *
      * @param \App\Models\User $user
-     * @return mixed
+     * @return Response
      */
-    public function create(User $user)
+    public function create(User $user): Response
     {
-        if ($user->can('create_opportunities')) {
-            return true;
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
         }
+
+        if ($user->can('create_opportunities')) {
+            return $this->allow();
+        }
+
+        return $this->deny();
     }
 
     /**
@@ -89,35 +93,39 @@ class OpportunityPolicy
      *
      * @param \App\Models\User $user
      * @param \App\Models\Opportunity $opportunity
-     * @return mixed
+     * @return Response
      */
-    public function update(User $user, Opportunity $opportunity)
+    public function update(User $user, Opportunity $opportunity): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->cant('update_own_opportunities')) {
-            return $this->deny("You do not have permissions to update any Opportunity. Contact with your Account Manager.");
+            return $this->deny(__('access.cant_update', ['item' => 'opportunity']));
+        }
+
+        if ($user->salesUnits->doesntContain($opportunity->salesUnit)) {
+            return $this->deny(__('access.only_assigned_units'));
         }
 
         if ($user->getKey() === $opportunity->accountManager()->getParentKey()) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->getKey() === $opportunity->user()->getParentKey()) {
-            return true;
+            return $this->allow();
         }
 
         if ($this->userTeamGate->isUserLedByUser($opportunity->user()->getParentKey(), $user)) {
-            return true;
+            return $this->allow();
         }
 
         if ($this->userTeamGate->isUserLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
-            return true;
+            return $this->allow();
         }
 
-        return false;
+        return $this->deny();
     }
 
     /**
@@ -127,51 +135,42 @@ class OpportunityPolicy
      * @param \App\Models\Opportunity $opportunity
      * @return mixed
      */
-    public function delete(User $user, Opportunity $opportunity)
+    public function delete(User $user, Opportunity $opportunity): Response
     {
-        $ensureOpportunityDoesntHaveQuotes = function (Opportunity $opportunity) {
-            $quotesExist = value(function () use ($opportunity): bool {
-                if (!is_null($opportunity->quotes_exist)) {
+        $opportunityHasQuotes = !is_null($opportunity->quotes_exist)
+            ? (bool)$opportunity->quotes_exist
+            : $opportunity->worldwideQuotes()->exists();
 
-                    return (bool)$opportunity->quotes_exist;
-
-                }
-
-                return $opportunity->worldwideQuotes()->exists();
-            });
-
-
-            if ($quotesExist) {
-                return $this->deny('You can\'nt to delete the Opportunity. It\'s already attached to one or more Quotes.');
-            }
-
-            return true;
-        };
+        $opportunityHasQuotesMessage = __('access.cant_delete_because', ["item" => "the opportunity", "It's attached to one or more quotes."]);
 
         if ($user->hasRole(R_SUPER)) {
-            return $ensureOpportunityDoesntHaveQuotes($opportunity);
+            return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 
         if ($user->cant('delete_own_opportunities')) {
-            return $this->deny("You do not have permissions to delete any Opportunity. Contact with your Account Manager.");
+            return $this->deny(__('access.cant_delete', ['item' => 'any opportunity']));
+        }
+
+        if ($user->salesUnits->doesntContain($opportunity->salesUnit)) {
+            return $this->deny(__('access.only_assigned_units'));
         }
 
         if ($user->getKey() === $opportunity->accountManager()->getParentKey()) {
-            return $ensureOpportunityDoesntHaveQuotes($opportunity);
+            return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 
         if ($user->getKey() === $opportunity->user()->getParentKey()) {
-            return $ensureOpportunityDoesntHaveQuotes($opportunity);
+            return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 
         if ($this->userTeamGate->isUserLedByUser($opportunity->user()->getParentKey(), $user)) {
-            return $ensureOpportunityDoesntHaveQuotes($opportunity);
+            return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 
         if ($this->userTeamGate->isUserLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
-            return $ensureOpportunityDoesntHaveQuotes($opportunity);
+            return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 
-        return false;
+        return $this->deny();
     }
 }

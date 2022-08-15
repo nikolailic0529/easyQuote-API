@@ -5,7 +5,9 @@ namespace App\Models;
 use App\Models\Data\Country;
 use App\Models\Quote\WorldwideDistribution;
 use App\Traits\Uuid;
+use Database\Factories\OpportunitySupplierFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -27,9 +29,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class OpportunitySupplier extends Model
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): OpportunitySupplierFactory
+    {
+        return OpportunitySupplierFactory::new();
+    }
 
     public function opportunity(): BelongsTo
     {

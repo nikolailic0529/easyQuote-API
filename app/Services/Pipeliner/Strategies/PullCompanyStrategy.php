@@ -257,7 +257,7 @@ class PullCompanyStrategy implements PullStrategy
         return (new Company())->getMorphClass();
     }
 
-    private function iterateRelationsOfOpportunityEntity(AccountEntity $entity): \Generator
+    private function iterateRelationsOfAccountEntity(AccountEntity $entity): \Generator
     {
         $relations = [
             'notes' => fn() => $this->noteIntegration->scroll(filter: NoteFilterInput::new()->accountId(
@@ -284,7 +284,7 @@ class PullCompanyStrategy implements PullStrategy
 
     private function syncRelationsOfAccountEntity(AccountEntity $entity, Company $model): void
     {
-        $relations = $this->iterateRelationsOfOpportunityEntity($entity);
+        $relations = $this->iterateRelationsOfAccountEntity($entity);
 
         foreach ($relations as $relation => $item) {
             /** @var SyncStrategy $strategy */

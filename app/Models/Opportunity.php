@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\MessageBag;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -133,6 +134,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<int, Task>|Task[] $tasks
  * @property-read bool|null $quotes_exist
  * @property-read Collection<int,Attachment>|Attachment[] $attachments
+ * @property-read OpportunityValidationResult|null $validationResult
  */
 class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes
 {
@@ -294,6 +296,13 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
             name: 'attachable',
             relatedPivotKey: 'attachment_id'
         );
+    }
+
+    public function validationResult(): HasOne
+    {
+        return $this->hasOne(OpportunityValidationResult::class)->withDefault(static function (OpportunityValidationResult $result) {
+            $result->forceFill(['messages' => new MessageBag(), 'is_passed' => true]);
+        });
     }
 }
 
