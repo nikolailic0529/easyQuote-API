@@ -105,7 +105,7 @@ class Kernel extends ConsoleKernel
          */
         $schedule->command(UpdateExchangeRates::class)
             ->runInBackground()
-            ->emailOutputOnFailure(setting('failure_report_recipients')->all())
+            ->emailOutputOnFailure(setting('failure_report_recipients')->pluck('email')->all())
             ->{setting('exchange_rate_update_schedule')}();
     }
 

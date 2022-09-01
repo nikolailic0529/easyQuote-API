@@ -2,16 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 class PromotionalDiscountTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test can view paginated promotional discounts.
@@ -20,6 +18,8 @@ class PromotionalDiscountTest extends TestCase
      */
     public function testCanViewPaginatedPromotionalDiscounts()
     {
+        $this->authenticateApi();
+
         factory(PromotionalDiscount::class, 30)->create();
 
         $this->getJson("api/discounts/promotions")
@@ -58,6 +58,8 @@ class PromotionalDiscountTest extends TestCase
      */
     public function testCanCreatePromotionalDiscount()
     {
+        $this->authenticateApi();
+
         PromotionalDiscount::query()->delete();
 
         $attributes = factory(PromotionalDiscount::class)->raw();
@@ -85,6 +87,8 @@ class PromotionalDiscountTest extends TestCase
      */
     public function testCanUpdatePromotionalDiscount()
     {
+        $this->authenticateApi();
+
         PromotionalDiscount::query()->delete();
 
         $discount = factory(PromotionalDiscount::class)->create();
@@ -114,6 +118,8 @@ class PromotionalDiscountTest extends TestCase
      */
     public function testCanDeletePromotionalDiscount()
     {
+        $this->authenticateApi();
+
         PromotionalDiscount::query()->delete();
 
         $discount = factory(PromotionalDiscount::class)->create();
@@ -133,6 +139,8 @@ class PromotionalDiscountTest extends TestCase
      */
     public function testCanNotDeletePromotionalDiscountAttachedToWorldwidePackQuote()
     {
+        $this->authenticateApi();
+
         $discount = factory(PromotionalDiscount::class)->create();
 
         /** @var WorldwideQuote $quote */
@@ -161,6 +169,8 @@ class PromotionalDiscountTest extends TestCase
      */
     public function testCanActivatePromotional()
     {
+        $this->authenticateApi();
+
         PromotionalDiscount::query()->delete();
 
         $discount = factory(PromotionalDiscount::class)->create();
@@ -193,6 +203,8 @@ class PromotionalDiscountTest extends TestCase
      */
     public function testCanDeactivatePromotionalDiscount()
     {
+        $this->authenticateApi();
+
         PromotionalDiscount::query()->delete();
 
         $discount = factory(PromotionalDiscount::class)->create();

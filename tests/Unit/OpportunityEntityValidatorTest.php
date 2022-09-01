@@ -2,16 +2,20 @@
 
 namespace Tests\Unit;
 
+use App\Enum\AddressType;
+use App\Enum\ContactType;
 use App\Models\Address;
 use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Vendor;
 use App\Services\Opportunity\OpportunityEntityValidator;
-use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group opportunity
+ */
 class OpportunityEntityValidatorTest extends TestCase
 {
     /**
@@ -27,11 +31,32 @@ class OpportunityEntityValidatorTest extends TestCase
             ->has(OpportunitySupplier::factory())
             ->create();
 
+
         $opp->primaryAccount->vendors()->attach(factory(Vendor::class)->create());
-        $opp->primaryAccount->addresses()->attach(factory(Address::class)->create());
-        $opp->primaryAccount->contacts()->attach(Contact::factory()->create());
-        $opp->endUser->addresses()->attach(factory(Address::class)->create());
-        $opp->endUser->contacts()->attach(Contact::factory()->create());
+        $opp->primaryAccount->addresses()
+            ->attach(
+                Address::factory(2)->sequence(
+                    ['address_type' => AddressType::INVOICE],
+                    ['address_type' => AddressType::HARDWARE],
+                )->create(),
+                ['is_default' => true]
+            );
+        $opp->primaryAccount->contacts()->attach(
+            Contact::factory()->create(['contact_type' => ContactType::SOFTWARE]),
+            ['is_default' => true]
+        );
+        $opp->endUser->addresses()
+            ->attach(
+                Address::factory(2)->sequence(
+                    ['address_type' => AddressType::INVOICE],
+                    ['address_type' => AddressType::HARDWARE],
+                )->create(),
+                ['is_default' => true]
+            );
+        $opp->endUser->contacts()->attach(
+            Contact::factory()->create(['contact_type' => ContactType::SOFTWARE]),
+            ['is_default' => true]
+        );
 
         $this->assertEmpty($validator($opp)->getMessages());
     }

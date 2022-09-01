@@ -32,6 +32,13 @@ final class ImportedOpportunityData extends DataTransferObject
      *
      * @var string|null
      */
+    public ?string $sales_unit_id;
+
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string|null
+     */
     public ?string $contract_type_id;
 
     /**

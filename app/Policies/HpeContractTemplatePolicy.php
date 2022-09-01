@@ -92,7 +92,7 @@ class HpeContractTemplatePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($hpeContractTemplate->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($hpeContractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -122,7 +122,7 @@ class HpeContractTemplatePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($hpeContractTemplate->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($hpeContractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }

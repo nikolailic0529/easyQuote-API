@@ -20,6 +20,7 @@ class QuoteResource extends JsonResource
         /** @var BaseQuote|QuoteResource $this */
 
         $this->customer->loadMissing('addresses', 'contacts');
+        $countryCode = $this->customer->country->iso_3166_2;
 
         return [
             'pdf_file'                  => $this->when($this->customer->rfq, fn () => route('s4.pdf', ['rfq' => $this->customer->rfq])),
@@ -33,9 +34,9 @@ class QuoteResource extends JsonResource
                     'company_logo'          => $this->company->logo,
                     'vendor_name'           => $this->vendor->name,
                     'vendor_logo'           => $this->vendor->logo,
-                    'support_start'         => $this->when($this->isReview, $this->customer->support_start_date, $this->customer->support_start),
-                    'support_end'           => $this->when($this->isReview, $this->customer->support_end_date, $this->customer->support_end),
-                    'valid_until'           => $this->when($this->isReview, $this->customer->valid_until_date, $this->customer->valid_until),
+                    'support_start'         => $this->when($this->isReview, format('date', $this->customer->support_start, country: $countryCode), $this->customer->support_start),
+                    'support_end'           => $this->when($this->isReview, format('date', $this->customer->support_end, country: $countryCode), $this->customer->support_end),
+                    'valid_until'           => $this->when($this->isReview, format('date', $this->customer->valid_until, country: $countryCode), $this->customer->valid_until),
                     'quotation_number'      => $this->customer->rfq,
                     'service_levels'        => $this->when($this->isReview, $this->customer->service_levels_formatted, $this->customer->service_levels),
                     'list_price'            => $this->currencySymbol.' '.$this->asDecimal($this->totalPriceAfterMargin),
@@ -59,9 +60,12 @@ class QuoteResource extends JsonResource
                     'software_contact'      => $this->customer->softwareAddress->contact_name,
                     'software_phone'        => $this->customer->softwareAddress->contact_number,
                     'additional_details'    => $this->when($this->isMode(QT_TYPE_QUOTE), $this->additional_details),
-                    'coverage_period'       => $this->customer->coverage_period,
-                    'coverage_period_from'  => $this->when($this->isReview, $this->customer->support_start_date, $this->customer->support_start),
-                    'coverage_period_to'    => $this->when($this->isReview, $this->customer->support_end_date, $this->customer->support_end),
+                    'coverage_period'       => sprintf("%s to %s",
+                        format('date', $this->customer->support_start, country: $countryCode),
+                        format('date', $this->customer->support_end, country: $countryCode),
+                    ),
+                    'coverage_period_from'  => $this->when($this->isReview, format('date', $this->customer->support_start, country: $countryCode), $this->customer->support_start),
+                    'coverage_period_to'    => $this->when($this->isReview, format('date', $this->customer->support_end, country: $countryCode), $this->customer->support_end),
                     'rows_header'           => $this->when($this->isReview, $this->rowsHeaderToArray($this->systemHiddenFields), $this->rowsHeaderToArray()),
                     'rows'                  => MappedRow::collection(Collection::wrap($this->when($this->isReview, $this->renderableRows, $this->computableRows)))
                 ],
@@ -75,7 +79,10 @@ class QuoteResource extends JsonResource
                         'customer_name'     => $this->customer->name,
                         'support_start'     => $this->when($this->isReview, $this->customer->support_start_date, $this->customer->support_start),
                         'support_end'       => $this->when($this->isReview, $this->customer->support_end_date, $this->customer->support_end),
-                        'period'            => $this->customer->coverage_period,
+                        'period'            => sprintf("%s to %s",
+                            format('date', $this->customer->support_start, country: $countryCode),
+                            format('date', $this->customer->support_end, country: $countryCode),
+                        ),
                         'rows_header'       => $this->scheduleData->rowsHeaderToArray(),
                         'total_payments'    => $this->scheduleData->total_payments,
                         'data'              => $this->scheduleData->value

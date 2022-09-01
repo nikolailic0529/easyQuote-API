@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Contracts\SearchableEntity;
 use App\Traits\Uuid;
+use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -24,9 +26,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Team extends Model implements SearchableEntity
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): TeamFactory
+    {
+        return TeamFactory::new();
+    }
 
     public function businessDivision(): BelongsTo
     {

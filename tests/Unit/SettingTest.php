@@ -6,18 +6,18 @@ use App\Facades\Setting;
 use App\Models\System\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
  */
 class SettingTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use WithFaker, DatabaseTransactions;
 
     protected static array $assertableAttributes = [
         'id',
@@ -40,6 +40,8 @@ class SettingTest extends TestCase
      */
     public function testSettingListing()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson(url('api/settings'))->assertOk();
 
         $json = $response->json();
@@ -60,13 +62,16 @@ class SettingTest extends TestCase
      */
     public function testSettingsUpdating()
     {
+        $this->authenticateApi();
+
         $settings = SystemSetting::pluck('id', 'key');
 
         $attributes = [
             ['id' => $settings['base_currency'], 'value' => $this->faker->randomElement(['GBP', 'EUR'])],
             ['id' => $settings['password_expiry_notification'], 'value' => mt_rand(7, 30)],
             ['id' => $settings['notification_time'], 'value' => mt_rand(1, 3)],
-            ['id' => $settings['failure_report_recipients'], 'value' => User::inRandomOrder()->limit(10)->pluck('email')->all()],
+            ['id' => $settings['failure_report_recipients'],
+                'value' => User::inRandomOrder()->limit(10)->pluck('email')->all()],
             ['id' => $settings['google_recaptcha_enabled'], 'value' => $this->faker->boolean],
         ];
 
@@ -126,6 +131,8 @@ class SettingTest extends TestCase
 
     public function testFileUploadSizeSettingUpdating()
     {
+        $this->authenticateApi();
+
         $setting = Setting::findByKey('file_upload_size');
 
         $value = Collection::wrap($setting->possible_values)->min('value'); // 2 MB
@@ -136,9 +143,9 @@ class SettingTest extends TestCase
 
         $this->postJson(
             url('api/quotes/file'),
-            ['quote_file' => $file, 'file_type' => QFT_PL],
-            $this->authorizationHeader
-        )
+            ['quote_file' => $file, 'file_type' => QFT_PL])
+//            ->dump()
+            ->assertUnprocessable()
             ->assertJsonStructure([
                 'Error' => ['original' => ['quote_file']],
             ]);
@@ -152,9 +159,7 @@ class SettingTest extends TestCase
 
         $this->postJson(
             url('api/quotes/file'),
-            ['quote_file' => $file, 'file_type' => QFT_PL],
-            $this->authorizationHeader
-        )
+            ['quote_file' => $file, 'file_type' => QFT_PL])
             ->assertSuccessful()
             ->assertJsonMissingValidationErrors('quote_file');
     }

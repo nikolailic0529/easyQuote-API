@@ -13,14 +13,13 @@ use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
  */
 class AssetTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test can view assets listing.
@@ -29,6 +28,8 @@ class AssetTest extends TestCase
      */
     public function testCanViewAssetsListing()
     {
+        $this->authenticateApi();
+
         factory(Asset::class, 20)->create();
 
         $worldwideQuote = factory(WorldwideQuote::class)->create();
@@ -94,6 +95,8 @@ class AssetTest extends TestCase
      */
     public function testCanViewPaginatedAssetsOfBusinessDivisionOfUserTeam()
     {
+        $this->authenticateApi();
+
         /** @var Quote $rescueQuote */
         $rescueQuote = factory(Quote::class)->create();
 
@@ -180,6 +183,8 @@ class AssetTest extends TestCase
      */
     public function testCanCreateNewAsset()
     {
+        $this->authenticateApi();
+
         $attributes = factory(Asset::class)->raw();
 
         $this->getJson('api/assets/create')
@@ -236,6 +241,8 @@ class AssetTest extends TestCase
      */
     public function testCanUpdateAsset()
     {
+        $this->authenticateApi();
+
         /** @var Asset */
         $asset = factory(Asset::class)->create();
 
@@ -279,6 +286,8 @@ class AssetTest extends TestCase
      */
     public function testCanDeleteAsset()
     {
+        $this->authenticateApi();
+
         /** @var Asset */
         $asset = factory(Asset::class)->create();
 
@@ -294,6 +303,8 @@ class AssetTest extends TestCase
      */
     public function testCanCheckUniquenessOfAsset()
     {
+        $this->authenticateApi();
+
         $response = $this->postJson('api/assets/unique', [
             'vendor_id' => Vendor::query()->where('short_code', 'HPE')->value('id'),
             'serial_number' => Str::random(20),
@@ -325,6 +336,8 @@ class AssetTest extends TestCase
      */
     public function testCanViewCompaniesOfAsset()
     {
+        $this->authenticateApi();
+
         /** @var Asset $asset */
         $asset = factory(Asset::class)->create();
         /** @var Company $companyOfAsset */

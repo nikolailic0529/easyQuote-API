@@ -6,7 +6,7 @@ use App\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing, WithFakeUser};
+use Tests\Unit\Traits\{AssertsListing};
 use function data_set;
 use function factory;
 use function tap;
@@ -19,7 +19,7 @@ use const RSU_01;
  */
 class RoleTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing, DatabaseTransactions;
 
     /**
      * Test an ability to view a listing of existing roles.
@@ -28,6 +28,8 @@ class RoleTest extends TestCase
      */
     public function testCanViewListingOfRoles()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson('api/roles');
 
         $this->assertListing($response);
@@ -49,6 +51,8 @@ class RoleTest extends TestCase
      */
     public function testCanCreateNewRole()
     {
+        $this->authenticateApi();
+
         $attributes = factory(Role::class)->state('privileges')->raw();
 
         $this->postJson('api/roles', $attributes)
@@ -65,6 +69,8 @@ class RoleTest extends TestCase
      */
     public function testCanNotCreateNewRoleWithInvalidAttributes()
     {
+        $this->authenticateApi();
+
         $attributes = factory(Role::class)->state('privileges')->raw();
 
         data_set($attributes, 'privileges.0', Str::random(20));
@@ -82,6 +88,8 @@ class RoleTest extends TestCase
      */
     public function testCanUpdateExistingRole()
     {
+        $this->authenticateApi();
+
         $role = factory(Role::class)->create();
 
         $attributes = factory(Role::class)->state('privileges')->raw();
@@ -113,6 +121,8 @@ class RoleTest extends TestCase
      */
     public function testCanUpdateDirectPermissionsOfExistingRole()
     {
+        $this->authenticateApi();
+
         $role = factory(Role::class)->create();
 
         $attributes = factory(Role::class)->state('privileges')->raw();
@@ -212,6 +222,8 @@ class RoleTest extends TestCase
      */
     public function testCanNotUpdateSystemDefinedRole()
     {
+        $this->authenticateApi();
+
         $role = factory(Role::class)->create(['is_system' => true]);
 
         $attributes = factory(Role::class)->state('privileges')->raw();
@@ -230,6 +242,8 @@ class RoleTest extends TestCase
      */
     public function testCanDeleteExistingRole()
     {
+        $this->authenticateApi();
+
         $role = factory(Role::class)->create();
 
         $this->deleteJson("api/roles/".$role->getKey())
@@ -244,6 +258,8 @@ class RoleTest extends TestCase
      */
     public function testCanNotDeleteSystemDefinedRole()
     {
+        $this->authenticateApi();
+
         $role = factory(Role::class)->create(['is_system' => true]);
 
         $response = $this->deleteJson('api/roles/'.$role->getKey())->assertForbidden();
@@ -258,6 +274,8 @@ class RoleTest extends TestCase
      */
     public function testCanMarkRoleAsActive()
     {
+        $this->authenticateApi();
+
         $role = tap(factory(Role::class)->create(), function (Role $role) {
             $role->activated_at = null;
 
@@ -276,6 +294,8 @@ class RoleTest extends TestCase
      */
     public function testCanMarkRoleAsInactive()
     {
+        $this->authenticateApi();
+
         $role = tap(factory(Role::class)->create(), function (Role $role) {
             $role->activated_at = now();
 

@@ -10,7 +10,7 @@ class AuthenticatedUserResource extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return array
      */
     public function toArray($request)
@@ -45,9 +45,11 @@ class AuthenticatedUserResource extends JsonResource
 
             'privileges' => $this->privileges,
             'role_properties' => $this->role_properties,
-            'role_companies' => $this->when($this->role->relationLoaded('companies'), fn() => $this->role->companies->makeHidden('pivot')),
+            'role_companies' => $this->when($this->role->relationLoaded('companies'),
+                fn() => $this->role->companies->makeHidden('pivot')),
 
-            'company' => $this->whenLoaded('company'),
+//            'company' => $this->whenLoaded('company'),
+            'companies' => $this->whenLoaded('companies'),
             'hpe_contract_template' => $this->whenLoaded('hpeContractTemplate'),
 
             'build' => [

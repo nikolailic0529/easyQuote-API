@@ -7,6 +7,8 @@ use Spatie\DataTransferObject\DataTransferObject;
 
 final class PartialUpdateCompanyData extends DataTransferObject
 {
+    public string $sales_unit_id;
+
     public string $name;
 
     public ?UploadedFile $logo;

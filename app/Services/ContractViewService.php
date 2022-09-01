@@ -31,7 +31,10 @@ class ContractViewService implements ContractView
                 fn (Builder $query) => $query->whereIn('id', $contract->groupedRows()),
                 fn (Builder $query) => $query->where('is_selected', true)
             )
-            ->get();
+            ->get()
+            ->map(static function (mixed $row) use ($contract): mixed {
+                return data_set($row, 'country_iso_3166_2', $contract->customer?->country?->iso_3166_2);
+            });;
 
         $contract->computableRows = MappedRows::make($rows);
 

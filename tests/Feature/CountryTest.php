@@ -5,14 +5,13 @@ namespace Tests\Feature;
 use App\Models\Data\Country;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
  */
 class CountryTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to create a new country.
@@ -21,6 +20,8 @@ class CountryTest extends TestCase
      */
     public function testCanCreateCountry()
     {
+        $this->authenticateApi();
+
         $attributes = factory(Country::class)->raw();
 
         $this->postJson("api/countries/", $attributes)
@@ -43,6 +44,8 @@ class CountryTest extends TestCase
      */
     public function testCanUpdateCountry()
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
         $attributes = factory(Country::class)->raw();
@@ -67,6 +70,8 @@ class CountryTest extends TestCase
      */
     public function testCanNotUpdateSystemCountry()
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create(['is_system' => true]);
 
         $attributes = factory(Country::class)->raw();
@@ -82,6 +87,8 @@ class CountryTest extends TestCase
      */
     public function testCanDeleteCountry()
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
         $this->deleteJson("api/countries/".$country->getKey())
@@ -99,6 +106,8 @@ class CountryTest extends TestCase
      */
     public function testCanActivateCountry()
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
         $country->activated_at = null;
@@ -117,6 +126,8 @@ class CountryTest extends TestCase
      */
     public function testCanDeactivateCountry()
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
         $country->activated_at = now();

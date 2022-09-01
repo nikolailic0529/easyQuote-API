@@ -18,7 +18,6 @@ use Tests\TestCase;
 use Webpatser\Uuid\Uuid;
 
 /**
- * @group build
  * @group document-engine-impl
  */
 class DocumentEngineTest extends TestCase

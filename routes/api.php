@@ -122,6 +122,7 @@ Route::group(['prefix' => 'data'], function () {
     Route::get('countries', CountryController::class);
 });
 
+Route::patch('exchange-rates/refresh', [ExchangeRateController::class, 'refreshExchangeRates']);
 Route::post('exchange-rates/convert', [ExchangeRateController::class, 'convertCurrencies']);
 
 Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => [THROTTLE_RATE_01]], function () {

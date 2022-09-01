@@ -2,7 +2,10 @@
 
 namespace App\Queries;
 
+use App\Models\Team;
 use App\Models\User;
+use App\Queries\Pipeline\FilterFieldPipe;
+use App\Queries\Pipeline\FilterRelationPipe;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
@@ -17,12 +20,51 @@ class UserQueries
     {
     }
 
-    public function userListQuery(): Builder
+    public function userListQuery(Request $request = new Request()): Builder
     {
-        return User::query()
+        $model = new User();
+        /** @var Team $teamModel */
+        $teamModel = $model->team()->getModel();
+        $divisionModel = $teamModel->businessDivision()->getModel();
+
+        $builder = $model->newQuery()
             ->select([
-                'id', 'first_name', 'middle_name', 'last_name', 'email',
-            ]);
+                $model->getQualifiedKeyName(),
+                $model->team()->getQualifiedForeignKeyName(),
+                ...$model->qualifyColumns([
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'user_fullname',
+                    'email',
+                ]),
+                $model->getQualifiedCreatedAtColumn(),
+                $model->getQualifiedUpdatedAtColumn(),
+            ])
+            ->leftJoin(
+                $teamModel->getTable(),
+                $teamModel->getQualifiedKeyName(),
+                $model->team()->getQualifiedForeignKeyName()
+            )
+            ->leftJoin(
+                $divisionModel->getTable(),
+                $divisionModel->getQualifiedKeyName(),
+                $teamModel->businessDivision()->getQualifiedForeignKeyName(),
+            );
+
+        return RequestQueryBuilder::for(
+            $builder, $request
+        )
+            ->addCustomBuildQueryPipe(
+                new FilterFieldPipe('team_id', $model->team()->getQualifiedForeignKeyName()),
+                new FilterRelationPipe(
+                    'company_id',
+                    "{$model->companies()->getRelationName()}.{$model->companies()->getRelatedKeyName()}"
+                ),
+                new FilterFieldPipe('business_division_id', $divisionModel->getQualifiedKeyName()),
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function paginateUsersQuery(?Request $request = null): Builder

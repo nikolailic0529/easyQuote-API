@@ -240,44 +240,39 @@ class CompanyEntityService implements CauserAware
         });
     }
 
-    public function partiallyUpdateCompany(Company $company, PartialUpdateCompanyData $companyData): Company
+    public function partiallyUpdateCompany(Company $company, PartialUpdateCompanyData $data): Company
     {
-        return tap($company, function (Company $company) use ($companyData) {
+        return tap($company, function (Company $company) use ($data) {
             $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
                 $oldCompany->setRawAttributes($company->getRawOriginal());
                 $oldCompany->load(['addresses', 'contacts', 'vendors']);
             });
 
-            $company->name = $companyData->name;
-            $company->email = $companyData->email;
-            $company->phone = $companyData->phone;
-            $company->website = $companyData->website;
+            $company->forceFill((clone $data)->except('logo', 'delete_logo', 'addresses', 'contacts')->toArray());
 
-            $addressesData = with($companyData->addresses, static function (?array $addresses): ?array {
-
+            $addressesData = with($data->addresses, static function (?array $addresses): ?array {
                 if (is_null($addresses)) {
                     return null;
                 }
 
                 return collect($addresses)
-                    ->mapWithKeys(static fn(AttachCompanyAddressData $data) => [$data->id => ['is_default' => $data->is_default]])
+                    ->mapWithKeys(static fn(AttachCompanyAddressData $data
+                    ) => [$data->id => ['is_default' => $data->is_default]])
                     ->all();
-
             });
 
-            $contactsData = with($companyData->contacts, static function (?array $contacts): ?array {
-
+            $contactsData = with($data->contacts, static function (?array $contacts): ?array {
                 if (is_null($contacts)) {
                     return null;
                 }
 
                 return collect($contacts)
-                    ->mapWithKeys(static fn(AttachCompanyContactData $data) => [$data->id => ['is_default' => $data->is_default]])
+                    ->mapWithKeys(static fn(AttachCompanyContactData $data
+                    ) => [$data->id => ['is_default' => $data->is_default]])
                     ->all();
-
             });
 
-            $this->connection->transaction(function () use ($companyData, $company, $addressesData, $contactsData) {
+            $this->connection->transaction(function () use ($data, $company, $addressesData, $contactsData) {
                 $company->save();
 
                 if (!is_null($addressesData)) {
@@ -288,9 +283,9 @@ class CompanyEntityService implements CauserAware
                     $company->contacts()->sync($contactsData);
                 }
 
-                ThumbHelper::createLogoThumbnails($company, $companyData->logo);
+                ThumbHelper::createLogoThumbnails($company, $data->logo);
 
-                if ($companyData->delete_logo) {
+                if ($data->delete_logo) {
                     $company->image()->flushQueryCache()->delete();
                 }
             });

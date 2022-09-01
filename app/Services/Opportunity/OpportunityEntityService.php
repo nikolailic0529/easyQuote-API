@@ -3,23 +3,17 @@
 namespace App\Services\Opportunity;
 
 use App\Contracts\CauserAware;
-use App\Contracts\Services\PermissionBroker;
 use App\DTO\{MissingValue,
-    Opportunity\BatchOpportunityUploadResult,
-    Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
     Opportunity\CreateOpportunityRecurrenceData,
     Opportunity\CreateSupplierData,
-    Opportunity\ImportedOpportunityData,
     Opportunity\MarkOpportunityAsLostData,
     Opportunity\SetStageOfOpportunityData,
     Opportunity\UpdateOpportunityData,
-    Opportunity\UpdateSupplierData,
-    Opportunity\UploadOpportunityData};
+    Opportunity\UpdateSupplierData};
 use App\Enum\Lock;
 use App\Enum\OpportunityStatus;
-use App\Events\{Opportunity\OpportunityBatchFilesImported,
-    Opportunity\OpportunityCreated,
+use App\Events\{Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
@@ -28,14 +22,10 @@ use App\Models\Company;
 use App\Models\DateDay;
 use App\Models\DateMonth;
 use App\Models\DateWeek;
-use App\Models\ImportedCompany;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\RecurrenceType;
-use App\Models\User;
-use App\Queries\PipelineQueries;
-use App\Services\Company\ImportedCompanyToPrimaryAccountProjector;
 use App\Services\Exceptions\ValidationException;
 use App\Services\ExchangeRate\CurrencyConverter;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -44,8 +34,6 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\MessageBag;
-use Illuminate\Validation\Factory as ValidatorFactory;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
@@ -56,272 +44,17 @@ class OpportunityEntityService implements CauserAware
 
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface                      $connection,
-                                protected LockProvider                             $lockProvider,
-                                protected ValidatorInterface                       $validator,
-                                protected EventDispatcher                          $eventDispatcher,
-                                protected ValidatorFactory                         $validatorFactory,
-                                protected CurrencyConverter                        $currencyConverter,
-                                protected PipelineQueries                          $pipelineQueries,
-                                protected PermissionBroker                         $permissionBroker,
-                                protected OpportunityDataMapper                    $dataMapper,
-                                protected AccountOwnerResolver                     $accountOwnerResolver,
-                                protected ContractTypeResolver                     $contractTypeResolver,
-                                protected ImportedCompanyToPrimaryAccountProjector $accountProjector)
-    {
-    }
-
-    public function batchSaveOfImportedOpportunities(BatchSaveOpportunitiesData $data): void
-    {
-        $violations = $this->validator->validate($data);
-
-        if (count($violations)) {
-            throw new ValidationException($violations);
-        }
-
-        foreach ($data->opportunities as $opportunity) {
-            $this->finishSavingOfImportedOpportunity($opportunity);
-        }
-    }
-
-    public function finishSavingOfImportedOpportunity(Opportunity $opportunity): void
-    {
-        if (null !== $opportunity->importedPrimaryAccount) {
-            $primaryAccount = $this->associateOpportunityWithImportedPrimaryAccount($opportunity);
-
-            $this->associateOpportunityWithImportedPrimaryAccountContact($opportunity, $primaryAccount);
-        }
-
-        $this->connection->transaction(static fn() => $opportunity->restore());
-
-        $this->eventDispatcher->dispatch(
-            new OpportunityCreated($opportunity, $this->causer)
-        );
-    }
-
-    public function associateOpportunityWithImportedPrimaryAccount(Opportunity $opportunity): Company
-    {
-        $primaryAccount = ($this->accountProjector)($opportunity->importedPrimaryAccount);
-
-        if ((!$opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)
-                && !$opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_END_USER))
-            || $opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)
-        ) {
-            $opportunity->primaryAccount()->associate($primaryAccount);
-        }
-
-        if ($opportunity->importedPrimaryAccount->flags === 0 || $opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_RESELLER)) {
-            $opportunity->primaryAccount()->associate($primaryAccount);
-        }
-
-        if ($opportunity->importedPrimaryAccount->getFlag(ImportedCompany::IS_END_USER)) {
-            $opportunity->endUser()->associate($primaryAccount);
-        }
-
-        return $primaryAccount;
-    }
-
-    public function associateOpportunityWithImportedPrimaryAccountContact(Opportunity $opportunity,
-                                                                          Company     $primaryAccount): void
-    {
-        if (false === is_null($opportunity->importedPrimaryAccountContact)) {
-            $primaryContact = $primaryAccount
-                ->contacts()
-                ->where('first_name', $opportunity->importedPrimaryAccountContact->first_name)
-                ->where('last_name', $opportunity->importedPrimaryAccountContact->last_name)
-                ->first();
-
-            $opportunity->primaryAccountContact()->associate($primaryContact);
-        }
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected LockProvider $lockProvider,
+        protected ValidatorInterface $validator,
+        protected EventDispatcher $eventDispatcher,
+        protected CurrencyConverter $currencyConverter,
+    ) {
     }
 
     /**
-     * Perform batch Opportunity import.
-     *
-     * @param \App\DTO\Opportunity\UploadOpportunityData $data
-     * @param User $user
-     * @return BatchOpportunityUploadResult
-     * @throws \App\Services\Exceptions\ValidationException
-     * @throws \Throwable
-     */
-    public function batchImportOpportunities(UploadOpportunityData $data, User $user): BatchOpportunityUploadResult
-    {
-        $opportunitiesDataFileReader = (new OpportunityBatchFileReader(
-            $data->opportunities_file->getRealPath(),
-            $data->opportunities_file->getClientOriginalExtension()
-        ));
-
-        $opportunitiesFileName = $data->opportunities_file->getClientOriginalName();
-
-        $accountsDataFileReader = null;
-        $accountContactsFileReader = null;
-
-        if (!is_null($data->accounts_data_file)) {
-            $accountsDataFileReader = AccountsDataBatchFileReader::fromUploadedFile($data->accounts_data_file);
-        }
-
-        if (!is_null($data->account_contacts_file)) {
-            $accountContactsFileReader = AccountContactBatchFileReader::fromUploadedFile($data->account_contacts_file);
-        }
-
-        $accountsDataDictionary = [];
-        $accountContactsDictionary = [];
-
-        if (!is_null($accountsDataFileReader)) {
-            $accountsDataDictionary = iterator_to_array($accountsDataFileReader->getRows());
-        }
-
-        if (!is_null($accountContactsFileReader)) {
-            $accountContactsDictionary = value(static function () use ($accountContactsFileReader): array {
-                $dictionary = [];
-
-                foreach ($accountContactsFileReader->getRows() as $key => $row) {
-                    $dictionary[$key][] = $row;
-                }
-
-                return $dictionary;
-            });
-        }
-
-        $errors = (new MessageBag())
-            ->setFormat('Validation failure on :key row. :message');
-
-        $importedOpportunities = [];
-
-        foreach ($opportunitiesDataFileReader->getRows() as $i => $row) {
-            $rowFailures = (new ImportedOpportunityDataValidator($this->validatorFactory))(
-                row: $row,
-                accountsDataDictionary: $accountsDataDictionary,
-                accountContactsDataDictionary: $accountContactsDictionary
-            );
-
-            if ($rowFailures->isNotEmpty()) {
-                foreach ($rowFailures->all() as $error) {
-                    $errors->add($i + 1, $error);
-                }
-
-                continue;
-            }
-
-            $importedOpportunities[] = $this->importOpportunity($this->dataMapper->mapImportedOpportunityDataFromImportedRow(
-                row: $row,
-                accountsDataDictionary: $accountsDataDictionary,
-                accountContactsDataDictionary: $accountContactsDictionary,
-                user: $user
-            ));
-        }
-
-        $this->eventDispatcher->dispatch(
-            new OpportunityBatchFilesImported(
-                opportunitiesDataFile: $data->opportunities_file,
-                accountsDataFile: $data->account_contacts_file,
-                accountContactsFile: $data->account_contacts_file,
-            )
-        );
-
-        return new BatchOpportunityUploadResult([
-            'opportunities' => $importedOpportunities,
-            'errors' => $errors->all("File: '$opportunitiesFileName', Row :key: :message"),
-        ]);
-    }
-
-    /**
-     * @param ImportedOpportunityData $data
-     * @return Opportunity
-     * @throws ValidationException
-     * @throws \Throwable
-     */
-    public function importOpportunity(ImportedOpportunityData $data): Opportunity
-    {
-        $violations = $this->validator->validate($data);
-
-        if (count($violations)) {
-            throw new ValidationException($violations);
-        }
-
-        return tap(new Opportunity(), function (Opportunity $opportunity) use ($data) {
-            $opportunity->pipeline()->associate($data->pipeline_id);
-            $opportunity->pipelineStage()->associate($data->pipeline_stage_id);
-            $opportunity->user()->associate($data->user_id);
-            $opportunity->contractType()->associate($data->contract_type_id);
-            $opportunity->project_name = $data->project_name;
-            $opportunity->importedPrimaryAccount()->associate($data->imported_primary_account_id);
-            $opportunity->importedPrimaryAccountContact()->associate($data->imported_primary_account_contact_id);
-            $opportunity->accountManager()->associate($data->account_manager_id);
-            $opportunity->nature_of_service = $data->nature_of_service;
-            $opportunity->renewal_month = $data->renewal_month;
-            $opportunity->renewal_year = $data->renewal_year;
-            $opportunity->customer_status = $data->customer_status;
-            $opportunity->end_user_name = $data->end_user_name;
-            $opportunity->hardware_status = $data->hardware_status;
-            $opportunity->region_name = $data->region_name;
-            $opportunity->opportunity_start_date = $data->opportunity_start_date?->toDateString();
-            $opportunity->is_opportunity_start_date_assumed = $data->is_opportunity_start_date_assumed;
-            $opportunity->opportunity_end_date = $data->opportunity_end_date?->toDateString();
-            $opportunity->is_opportunity_end_date_assumed = $data->is_opportunity_end_date_assumed;
-            $opportunity->opportunity_closing_date = $data->opportunity_closing_date?->toDateString();
-            $opportunity->expected_order_date = $data->expected_order_date?->toDateString();
-            $opportunity->customer_order_date = $data->customer_order_date?->toDateString();
-            $opportunity->purchase_order_date = $data->purchase_order_date?->toDateString();
-            $opportunity->supplier_order_date = $data->supplier_order_date?->toDateString();
-            $opportunity->supplier_order_transaction_date = $data->supplier_order_transaction_date?->toDateString();
-            $opportunity->supplier_order_confirmation_date = $data->supplier_order_confirmation_date?->toDateString();
-            $opportunity->opportunity_amount = $data->opportunity_amount;
-            $opportunity->base_opportunity_amount = $data->base_opportunity_amount;
-            $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
-            $opportunity->purchase_price = $data->purchase_price;
-            $opportunity->base_purchase_price = $data->base_purchase_price;
-            $opportunity->purchase_price_currency_code = $data->purchase_price_currency_code;
-            $opportunity->estimated_upsell_amount = $data->estimated_upsell_amount;
-            $opportunity->estimated_upsell_amount_currency_code = $data->estimated_upsell_amount_currency_code;
-            $opportunity->list_price = $data->list_price;
-            $opportunity->base_list_price = $data->base_list_price;
-            $opportunity->list_price_currency_code = $data->list_price_currency_code;
-            $opportunity->personal_rating = $data->personal_rating;
-            $opportunity->margin_value = $data->margin_value;
-            $opportunity->service_level_agreement_id = $data->service_level_agreement_id;
-            $opportunity->sale_unit_name = $data->sale_unit_name;
-            $opportunity->drop_in = $data->drop_in;
-            $opportunity->lead_source_name = $data->lead_source_name;
-            $opportunity->has_higher_sla = $data->has_higher_sla;
-            $opportunity->is_multi_year = $data->is_multi_year;
-            $opportunity->has_additional_hardware = $data->has_additional_hardware;
-            $opportunity->remarks = $data->remarks;
-            $opportunity->sale_action_name = $data->sale_action_name;
-            $opportunity->ranking = $data->ranking;
-            $opportunity->campaign_name = $data->campaign_name;
-            $opportunity->competition_name = $data->competition_name;
-            $opportunity->notes = $data->notes;
-
-            $opportunity->{$opportunity->getDeletedAtColumn()} = $opportunity->freshTimestamp();
-
-            $this->connection->transaction(static function () use ($data, $opportunity): void {
-                $opportunity->save();
-
-                if (false === empty($data->create_suppliers)) {
-                    $suppliersData = array_map(static fn(CreateSupplierData $supplierData): array => [
-                        'id' => (string)Uuid::generate(4),
-                        'opportunity_id' => $opportunity->getKey(),
-                        'supplier_name' => $supplierData->supplier_name,
-                        'country_name' => $supplierData->country_name,
-                        'contact_name' => $supplierData->contact_name,
-                        'contact_email' => $supplierData->contact_email,
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                    ], $data->create_suppliers);
-
-                    OpportunitySupplier::query()->insert($suppliersData);
-                }
-            });
-
-            $opportunity->setAttribute('account_name', $opportunity->importedPrimaryAccount?->company_name);
-            $opportunity->setAttribute('account_manager_name', $opportunity->accountManager?->user_fullname);
-            $opportunity->setAttribute('opportunity_type', $opportunity->contractType?->type_short_name);
-        });
-    }
-
-    /**
-     * @param CreateOpportunityData $data
+     * @param  CreateOpportunityData  $data
      * @return Opportunity
      * @throws ValidationException
      * @throws \Throwable
@@ -432,27 +165,33 @@ class OpportunityEntityService implements CauserAware
             $opportunity->notes = $data->notes;
 
             $recurrence = isset($data->recurrence)
-                ? tap(new Opportunity\OpportunityRecurrence(), function (Opportunity\OpportunityRecurrence $recurrence) use
-                (
-                    $data,
-                    $opportunity
-                ): void {
-                    $recurrence->owner()->associate($this->causer);
-                    $recurrence->opportunity()->associate($opportunity);
-                    $recurrence->stage()->associate($data->recurrence->stage_id);
-                    $recurrence->type()->associate(RecurrenceType::query()->where('value', $data->recurrence->type)->sole());
-                    $recurrence->occur_every = $data->recurrence->occur_every;
-                    $recurrence->occurrences_count = $data->recurrence->occurrences_count;
-                    $recurrence->start_date = \Carbon\Carbon::instance($data->recurrence->start_date);
-                    $recurrence->end_date = isset($data->recurrence->end_date)
-                        ? Carbon::instance($data->recurrence->end_date)
-                        : null;
-                    $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
-                    $recurrence->month()->associate(DateMonth::query()->where('value', $data->recurrence->month)->sole());
-                    $recurrence->week()->associate(DateWeek::query()->where('value', $data->recurrence->week)->sole());
-                    $recurrence->day_of_week = $data->recurrence->day_of_week;
-                    $recurrence->condition = $data->recurrence->condition;
-                })
+                ? tap(new Opportunity\OpportunityRecurrence(),
+                    function (Opportunity\OpportunityRecurrence $recurrence) use (
+                        $data,
+                        $opportunity
+                    ): void {
+                        $recurrence->owner()->associate($this->causer);
+                        $recurrence->opportunity()->associate($opportunity);
+                        $recurrence->stage()->associate($data->recurrence->stage_id);
+                        $recurrence->type()->associate(RecurrenceType::query()
+                            ->where('value', $data->recurrence->type)
+                            ->sole());
+                        $recurrence->occur_every = $data->recurrence->occur_every;
+                        $recurrence->occurrences_count = $data->recurrence->occurrences_count;
+                        $recurrence->start_date = \Carbon\Carbon::instance($data->recurrence->start_date);
+                        $recurrence->end_date = isset($data->recurrence->end_date)
+                            ? Carbon::instance($data->recurrence->end_date)
+                            : null;
+                        $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
+                        $recurrence->month()->associate(DateMonth::query()
+                            ->where('value', $data->recurrence->month)
+                            ->sole());
+                        $recurrence->week()->associate(DateWeek::query()
+                            ->where('value', $data->recurrence->week)
+                            ->sole());
+                        $recurrence->day_of_week = $data->recurrence->day_of_week;
+                        $recurrence->condition = $data->recurrence->condition;
+                    })
                 : null;
 
             $this->connection->transaction(static function () use ($data, $opportunity, $recurrence): void {
@@ -462,7 +201,7 @@ class OpportunityEntityService implements CauserAware
 
                 if (false === empty($data->create_suppliers)) {
                     $suppliersData = array_map(static fn(CreateSupplierData $supplierData): array => [
-                        'id' => (string)Uuid::generate(4),
+                        'id' => (string) Uuid::generate(4),
                         'opportunity_id' => $opportunity->getKey(),
                         'supplier_name' => $supplierData->supplier_name,
                         'country_name' => $supplierData->country_name,
@@ -484,8 +223,8 @@ class OpportunityEntityService implements CauserAware
     }
 
     /**
-     * @param Opportunity $opportunity
-     * @param UpdateOpportunityData $data
+     * @param  Opportunity  $opportunity
+     * @param  UpdateOpportunityData  $data
      * @return Opportunity
      * @throws ValidationException
      * @throws \Throwable
@@ -524,7 +263,11 @@ class OpportunityEntityService implements CauserAware
 
             $attributes = $data->except('create_suppliers', 'update_suppliers', 'recurrence')->toArray();
 
-            $convertToBase = function (float $value, string|null|MissingValue $fromCode, ?string $originalFromCode): float {
+            $convertToBase = function (
+                float $value,
+                string|null|MissingValue $fromCode,
+                ?string $originalFromCode
+            ): float {
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 $fromCode = $fromCode instanceof MissingValue ? $originalFromCode : $fromCode;
@@ -538,19 +281,22 @@ class OpportunityEntityService implements CauserAware
 
             if (!$data->opportunity_amount instanceof MissingValue) {
                 $attributes['base_opportunity_amount'] = isset($data->opportunity_amount)
-                    ? $convertToBase($data->opportunity_amount, $data->opportunity_amount_currency_code, $opportunity->opportunity_amount_currency_code)
+                    ? $convertToBase($data->opportunity_amount, $data->opportunity_amount_currency_code,
+                        $opportunity->opportunity_amount_currency_code)
                     : null;
             }
 
             if (!$data->purchase_price instanceof MissingValue) {
                 $attributes['base_purchase_price'] = isset($data->purchase_price)
-                    ? $convertToBase($data->purchase_price, $data->purchase_price_currency_code, $opportunity->purchase_price_currency_code)
+                    ? $convertToBase($data->purchase_price, $data->purchase_price_currency_code,
+                        $opportunity->purchase_price_currency_code)
                     : null;
             }
 
             if (!$data->list_price instanceof MissingValue) {
                 $attributes['base_list_price'] = isset($data->list_price)
-                    ? $convertToBase($data->list_price, $data->list_price_currency_code, $opportunity->list_price_currency_code)
+                    ? $convertToBase($data->list_price, $data->list_price_currency_code,
+                        $opportunity->list_price_currency_code)
                     : null;
             }
 
@@ -563,34 +309,41 @@ class OpportunityEntityService implements CauserAware
             $recurrence = new MissingValue();
 
             if ($data->recurrence instanceof CreateOpportunityRecurrenceData) {
-                $recurrence = tap($opportunity->recurrence ?? new Opportunity\OpportunityRecurrence(), function (Opportunity\OpportunityRecurrence $recurrence) use
-                (
-                    $data,
-                    $opportunity
-                ): void {
-                    $recurrence->owner()->associate($this->causer);
-                    $recurrence->opportunity()->associate($opportunity);
-                    $recurrence->stage()->associate($data->recurrence->stage_id);
-                    $recurrence->type()->associate(RecurrenceType::query()->where('value', $data->recurrence->type)->sole());
-                    $recurrence->occur_every = $data->recurrence->occur_every;
-                    $recurrence->occurrences_count = $data->recurrence->occurrences_count;
-                    $recurrence->start_date = \Carbon\Carbon::instance($data->recurrence->start_date);
-                    $recurrence->end_date = isset($data->recurrence->end_date)
-                        ? Carbon::instance($data->recurrence->end_date)
-                        : null;
-                    $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
-                    $recurrence->month()->associate(DateMonth::query()->where('value', $data->recurrence->month)->sole());
-                    $recurrence->week()->associate(DateWeek::query()->where('value', $data->recurrence->week)->sole());
-                    $recurrence->day_of_week = $data->recurrence->day_of_week;
-                    $recurrence->condition = $data->recurrence->condition;
-                });
+                $recurrence = tap($opportunity->recurrence ?? new Opportunity\OpportunityRecurrence(),
+                    function (Opportunity\OpportunityRecurrence $recurrence) use (
+                        $data,
+                        $opportunity
+                    ): void {
+                        $recurrence->owner()->associate($this->causer);
+                        $recurrence->opportunity()->associate($opportunity);
+                        $recurrence->stage()->associate($data->recurrence->stage_id);
+                        $recurrence->type()->associate(RecurrenceType::query()
+                            ->where('value', $data->recurrence->type)
+                            ->sole());
+                        $recurrence->occur_every = $data->recurrence->occur_every;
+                        $recurrence->occurrences_count = $data->recurrence->occurrences_count;
+                        $recurrence->start_date = \Carbon\Carbon::instance($data->recurrence->start_date);
+                        $recurrence->end_date = isset($data->recurrence->end_date)
+                            ? Carbon::instance($data->recurrence->end_date)
+                            : null;
+                        $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
+                        $recurrence->month()->associate(DateMonth::query()
+                            ->where('value', $data->recurrence->month)
+                            ->sole());
+                        $recurrence->week()->associate(DateWeek::query()
+                            ->where('value', $data->recurrence->week)
+                            ->sole());
+                        $recurrence->day_of_week = $data->recurrence->day_of_week;
+                        $recurrence->condition = $data->recurrence->condition;
+                    });
             } elseif (null === $data->recurrence) {
                 $recurrence = null;
             }
 
             if (is_array($data->update_suppliers)) {
                 $supplierDataMap = collect($data->update_suppliers)
-                    ->mapWithKeys(static fn(UpdateSupplierData $supplier): array => [$supplier->supplier_id => $supplier]);
+                    ->mapWithKeys(static fn(UpdateSupplierData $supplier
+                    ): array => [$supplier->supplier_id => $supplier]);
 
                 $opportunity->opportunitySuppliers->each(static function (OpportunitySupplier $supplier) use (
                     $supplierDataMap
@@ -612,7 +365,7 @@ class OpportunityEntityService implements CauserAware
                     ->each(static function (CreateSupplierData $data) use ($opportunity): void {
                         $supplier = tap(new OpportunitySupplier(),
                             static function (OpportunitySupplier $supplier) use ($opportunity, $data): void {
-                                $supplier->{$supplier->getKeyName()} = (string)Uuid::generate(4);
+                                $supplier->{$supplier->getKeyName()} = (string) Uuid::generate(4);
                                 $supplier->opportunity_id = $opportunity->getKey();
                                 $supplier->supplier_name = $data->supplier_name;
                                 $supplier->country_name = $data->country_name;
@@ -647,8 +400,8 @@ class OpportunityEntityService implements CauserAware
     }
 
     /**
-     * @param Opportunity $opportunity
-     * @param SetStageOfOpportunityData $data
+     * @param  Opportunity  $opportunity
+     * @param  SetStageOfOpportunityData  $data
      * @return Opportunity
      * @throws ValidationException|\Throwable
      */
@@ -694,27 +447,21 @@ class OpportunityEntityService implements CauserAware
             });
 
             foreach ($oppsOfStage as $opp) {
-
                 $this->lockProvider->lock(
                     Lock::UPDATE_OPPORTUNITY($opp->getKey()),
                     10
                 )
                     ->block(30, function () use ($opp) {
-
                         $this->connection->transaction(static fn() => $opp->save());
-
                     });
-
             }
-
-
         });
 
 
     }
 
     /**
-     * @param Opportunity $opportunity
+     * @param  Opportunity  $opportunity
      */
     public function deleteOpportunity(Opportunity $opportunity): void
     {
@@ -735,8 +482,8 @@ class OpportunityEntityService implements CauserAware
     }
 
     /**
-     * @param Opportunity $opportunity
-     * @param MarkOpportunityAsLostData $data
+     * @param  Opportunity  $opportunity
+     * @param  MarkOpportunityAsLostData  $data
      */
     public function markOpportunityAsLost(Opportunity $opportunity, MarkOpportunityAsLostData $data): void
     {
@@ -798,7 +545,8 @@ class OpportunityEntityService implements CauserAware
             ->whereNotExists(static function (BaseBuilder $builder) use ($opportunityModel, $primaryAccount) {
                 $builder->selectRaw(1)
                     ->from($primaryAccount->contacts()->getTable())
-                    ->whereColumn($primaryAccount->contacts()->getQualifiedRelatedPivotKeyName(), $opportunityModel->primaryAccountContact()->getQualifiedForeignKeyName())
+                    ->whereColumn($primaryAccount->contacts()->getQualifiedRelatedPivotKeyName(),
+                        $opportunityModel->primaryAccountContact()->getQualifiedForeignKeyName())
                     ->where($primaryAccount->contacts()->getQualifiedForeignPivotKeyName(), $primaryAccount->getKey());
             })
             ->update([$opportunityModel->primaryAccountContact()->getForeignKeyName() => null]);
@@ -808,7 +556,6 @@ class OpportunityEntityService implements CauserAware
     {
         return tap($this, function () use ($causer) {
             $this->causer = $causer;
-            $this->accountProjector->setCauser($causer);
         });
     }
 }

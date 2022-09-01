@@ -77,7 +77,6 @@ class StoreCompanyRequest extends FormRequest
             ],
             'source' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
                 Rule::in(CompanySource::getValues()),
             ],

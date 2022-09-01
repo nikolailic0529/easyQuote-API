@@ -929,8 +929,7 @@ class OpportunityDataMapper implements CauserAware
 
     public function mapImportedOpportunityDataFromImportedRow(array $row,
                                                               array $accountsDataDictionary,
-                                                              array $accountContactsDataDictionary,
-                                                              User  $user): ImportedOpportunityData
+                                                              array $accountContactsDataDictionary): ImportedOpportunityData
     {
         $primaryAccount = $this->mapPrimaryAccountFromImportedRow(
             row: $row,
@@ -945,13 +944,15 @@ class OpportunityDataMapper implements CauserAware
 
         $saleActionName = OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::SALE_ACTION_NAME);
         $stageName = OpportunityDataMapper::resolveStageNameFromSaleAction($saleActionName);
-
         $pipelineStage = $pipeline->pipelineStages()->where('stage_name', $stageName)->first();
+
+        $unitName = OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::SALE_UNIT_NAME);
+        $unit = SalesUnit::query()->where('unit_name', $unitName)->first();
 
         return new ImportedOpportunityData([
             'pipeline_id' => $pipeline->getKey(),
             'pipeline_stage_id' => $pipelineStage?->getKey(),
-            'user_id' => $user->getKey(),
+            'sales_unit_id' => $unit?->getKey(),
             'contract_type_id' => ($this->contractTypeResolver)(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::CONTRACT_TYPE)),
             'account_manager_id' => ($this->accountOwnerResolver)(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::ACCOUNT_MANAGER))?->getKey(),
             'imported_primary_account_id' => $primaryAccount?->getKey(),
@@ -993,7 +994,7 @@ class OpportunityDataMapper implements CauserAware
             'competition_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::COMPETITION_NAME),
 
             'service_level_agreement_id' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::SERVICE_LEVEL_AGREEMENT_ID),
-            'sale_unit_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::SALE_UNIT_NAME),
+            'sale_unit_name' => $unitName,
             'drop_in' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::DROP_IN),
             'lead_source_name' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::LEAD_SOURCE_NAME),
             'has_higher_sla' => OpportunityDataMapper::getFlag(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::HAS_HIGHER_SLA, '')),

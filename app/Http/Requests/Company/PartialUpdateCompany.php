@@ -8,6 +8,7 @@ use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\QuoteFile\MappedRow;
+use App\Models\SalesUnit;
 use App\Models\WorldwideQuoteAsset;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,9 +31,11 @@ class PartialUpdateCompany extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
+            'sales_unit_id' => ['bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
             'name' => [
                 'required',
                 'string',
@@ -74,6 +77,7 @@ class PartialUpdateCompany extends FormRequest
     {
         return $this->companyData ??= with(true, function (): PartialUpdateCompanyData {
             return new PartialUpdateCompanyData([
+                'sales_unit_id' => $this->input('sales_unit_id'),
                 'name' => $this->input('name'),
                 'logo' => $this->file('logo'),
                 'delete_logo' => $this->boolean('delete_logo'),

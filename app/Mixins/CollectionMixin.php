@@ -8,6 +8,9 @@ use Illuminate\Support\{
     Collection
 };
 
+/**
+ * @mixin Collection
+ */
 class CollectionMixin
 {
     public function prioritize()

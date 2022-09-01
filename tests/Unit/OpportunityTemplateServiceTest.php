@@ -8,6 +8,9 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group opportunity
+ */
 class OpportunityTemplateServiceTest extends TestCase
 {
     /**

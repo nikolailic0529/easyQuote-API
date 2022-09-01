@@ -2,17 +2,23 @@
 
 namespace Tests\Feature;
 
+use App\Enum\CompanyType;
+use App\Models\BusinessDivision;
+use App\Models\Company;
 use App\Models\Data\Timezone;
 use App\Models\Role;
 use App\Models\SalesUnit;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
  * @group build
+ * @group user
  */
 class UserTest extends TestCase
 {
@@ -94,8 +100,11 @@ class UserTest extends TestCase
                 'picture',
                 'privileges',
                 'sales_units' => [
-                    '*' => ['id', 'unit_name',]
-                ]
+                    '*' => ['id', 'unit_name',],
+                ],
+                'companies' => [
+                    '*' => ['id', 'name'],
+                ],
             ]);
     }
 
@@ -114,7 +123,10 @@ class UserTest extends TestCase
             'last_name' => $lastName = preg_replace('/[^[:alpha:]]/', '', $this->faker->lastName),
             'timezone_id' => Timezone::query()->get()->random()->getKey(),
             'team_id' => $teamKey = UT_EPD_WW,
-            'sales_units' => SalesUnit::query()->get()->random(2)->map(static fn (SalesUnit $unit) => ['id' => $unit->getKey()]),
+            'sales_units' => SalesUnit::query()->get()->random(2)->map(
+                static fn(SalesUnit $unit) => ['id' => $unit->getKey()]
+            ),
+            'companies' => Company::factory()->count(2)->create(['type' => CompanyType::INTERNAL])->map->only('id'),
             'role_id' => Role::query()->get()->random()->getKey(),
         ])
 //            ->dump()
@@ -129,38 +141,29 @@ class UserTest extends TestCase
                 'middle_name',
                 'last_name',
                 'team' => [
-                    'id', 'team_name'
+                    'id', 'team_name',
                 ],
                 'team_id',
                 'sales_units' => [
-                    '*' => ['id', 'unit_name',]
-                ]
+                    '*' => ['id', 'unit_name',],
+                ],
             ])
             ->assertJsonFragment([
                 'first_name' => $firstName,
                 'middle_name' => $middleName,
                 'last_name' => $lastName,
                 'team_id' => $teamKey,
-            ]);
+            ])
+            ->assertJsonCount(count($data['sales_units']), 'sales_units')
+            ->assertJsonCount(count($data['companies']), 'companies');
 
         foreach ($data['sales_units'] as $unit) {
             $this->assertContains($unit['id'], $response->json('sales_units.*.id'));
         }
-    }
 
-    /**
-     * Test an ability to update an email of an existing user.
-     *
-     * @return void
-     */
-    public function testCanNotUpdateEmailOfUser()
-    {
-        $this->authenticateApi();
-
-        $user = User::factory()->create();
-
-        $this->patchJson("api/users/".$user->getKey(), ['email' => $this->faker->unique()->safeEmail])
-            ->assertForbidden();
+        foreach ($data['companies'] as $company) {
+            $this->assertContains($company['id'], $response->json('companies.*.id'));
+        }
     }
 
     /**
@@ -179,7 +182,7 @@ class UserTest extends TestCase
         $response = $this->getJson('api/users/'.$user->getKey())
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -191,7 +194,7 @@ class UserTest extends TestCase
         $response = $this->getJson('api/users/'.$user->getKey())
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertNotEmpty($response->json('activated_at'));
@@ -213,7 +216,7 @@ class UserTest extends TestCase
         $response = $this->getJson('api/users/'.$user->getKey())
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertNotEmpty($response->json('activated_at'));
@@ -225,7 +228,7 @@ class UserTest extends TestCase
         $response = $this->getJson('api/users/'.$user->getKey())
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -279,7 +282,7 @@ class UserTest extends TestCase
                 'roles' => [
                     '*' => [
                         'id', 'name',
-                    ]
+                    ],
                 ],
                 'countries' => [
                     '*' => [
@@ -290,14 +293,86 @@ class UserTest extends TestCase
                         'currency_code', 'flag',
                         'created_at',
                         'updated_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'timezones' => [
                     '*' => [
                         'id', 'text', 'value',
-                    ]
-                ]
+                    ],
+                ],
             ]);
+    }
+
+    /**
+     * Test an ability to filter list of users.
+     */
+    public function testCanFilterListOfUsers(): void
+    {
+        $this->authenticateApi();
+
+        $userFromTeam = User::factory()->for(Team::factory())->create();
+
+        $r = $this->getJson('api/users/list?'.Arr::query([
+                'filter[team_id]' => $userFromTeam->team->getKey(),
+            ]))
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                    'team_id',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'email',
+                    'created_at',
+                ],
+            ]);
+
+        $r->assertJsonCount(1);
+        $this->assertContains($userFromTeam->getKey(), $r->json('*.id'));
+
+        $userFromTeamWithBusinessDivision = User::factory()->for(Team::factory()->for(BusinessDivision::query()
+            ->first()))->create();
+
+        $r = $this->getJson('api/users/list?'.Arr::query([
+                'filter[business_division_id]' => $userFromTeamWithBusinessDivision->team->businessDivision->getKey(),
+            ]))
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                    'team_id',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'email',
+                    'created_at',
+                ],
+            ]);
+
+        $r->assertJsonCount(1);
+        $this->assertContains($userFromTeamWithBusinessDivision->getKey(), $r->json('*.id'));
+
+        $userFromCompany = User::factory()->hasAttached(Company::factory())->create();
+
+        $r = $this->getJson('api/users/list?'.Arr::query([
+                'filter[company_id]' => $userFromCompany->companies->first()->getKey(),
+            ]))
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                    'team_id',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'email',
+                    'created_at',
+                ],
+            ]);
+
+        $r->assertJsonCount(1);
+        $this->assertContains($userFromCompany->getKey(), $r->json('*.id'));
     }
 }

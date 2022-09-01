@@ -2,16 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 class SnDiscountTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test can view paginated special negotiation discounts.
@@ -20,6 +18,8 @@ class SnDiscountTest extends TestCase
      */
     public function testCanViewPaginatedSpecialNegotiationDiscounts()
     {
+        $this->authenticateApi();
+
         factory(SND::class, 30)->create();
 
         $this->getJson("api/discounts/snd")
@@ -57,6 +57,8 @@ class SnDiscountTest extends TestCase
      */
     public function testCanCreateSpecialNegotiationDiscount()
     {
+        $this->authenticateApi();
+
         SND::query()->delete();
 
         $attributes = factory(SND::class)->raw();
@@ -83,6 +85,8 @@ class SnDiscountTest extends TestCase
      */
     public function testCanUpdateSpecialNegotiationDiscount()
     {
+        $this->authenticateApi();
+
         SND::query()->delete();
 
         $discount = factory(SND::class)->create();
@@ -111,6 +115,8 @@ class SnDiscountTest extends TestCase
      */
     public function testCanDeleteSpecialNegotiationDiscount()
     {
+        $this->authenticateApi();
+
         SND::query()->delete();
 
         $discount = factory(SND::class)->create();
@@ -130,11 +136,13 @@ class SnDiscountTest extends TestCase
      */
     public function testCanNotDeleteSpecialNegotiationDiscountAttachedToWorldwidePackQuote()
     {
+        $this->authenticateApi();
+
         $discount = factory(SND::class)->create();
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $quote->activeVersion->snDiscount()->associate($discount)->save();
@@ -145,10 +153,11 @@ class SnDiscountTest extends TestCase
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([
-                'message'
+                'message',
             ]);
 
-        $this->assertStringStartsWith('You can not delete the special negotiation discount', $response->json('message'));
+        $this->assertStringStartsWith('You can not delete the special negotiation discount',
+            $response->json('message'));
     }
 
     /**
@@ -158,6 +167,8 @@ class SnDiscountTest extends TestCase
      */
     public function testCanActivateSpecialNegotiationDiscount()
     {
+        $this->authenticateApi();
+
         SND::query()->delete();
 
         $discount = factory(SND::class)->create();
@@ -190,6 +201,8 @@ class SnDiscountTest extends TestCase
      */
     public function testCanDeactivateSpecialNegotiationDiscount()
     {
+        $this->authenticateApi();
+
         SND::query()->delete();
 
         $discount = factory(SND::class)->create();

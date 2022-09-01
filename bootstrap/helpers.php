@@ -165,6 +165,21 @@ if (!function_exists('format')) {
     }
 }
 
+if (!function_exists('format')) {
+    /**
+     * Format the given value using the standard formatter.
+     *
+     * @param string $formatter
+     * @param mixed $value
+     * @param mixed ...$parameters
+     * @return mixed
+     */
+    function format(string $formatter, mixed $value, mixed ...$parameters): mixed
+    {
+        return app('formatter')->format($formatter, $value, ...$parameters);
+    }
+}
+
 if (!function_exists('coalesce_blank')) {
 
     /**

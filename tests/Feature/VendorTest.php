@@ -6,14 +6,14 @@ use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing, WithFakeUser};
+use Tests\Unit\Traits\{AssertsListing};
 
 /**
  * @group build
  */
 class VendorTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing, DatabaseTransactions;
 
     /**
      * Test Vendor Listing.
@@ -22,6 +22,8 @@ class VendorTest extends TestCase
      */
     public function testCanViewPaginatedVendors()
     {
+        $this->authenticateApi();
+
         $this->getJson('api/vendors')
             ->assertOk()
             ->assertJsonStructure([
@@ -63,6 +65,8 @@ class VendorTest extends TestCase
      */
     public function testCanViewVendorsList()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson('api/vendors/list')
 //            ->dump()
             ->assertOk()
@@ -85,6 +89,8 @@ class VendorTest extends TestCase
      */
     public function testCanCreateVendor()
     {
+        $this->authenticateApi();
+
         $attributes = factory(Vendor::class)->state('countries')->raw();
 
         $this->postJson(url('api/vendors'), $attributes)
@@ -101,6 +107,8 @@ class VendorTest extends TestCase
      */
     public function testCanUpdateVendor()
     {
+        $this->authenticateApi();
+
         $vendor = factory(Vendor::class)->create();
 
         $attributes = factory(Vendor::class)->state('countries')->raw();
@@ -122,6 +130,8 @@ class VendorTest extends TestCase
      */
     public function testCanActivateVendor()
     {
+        $this->authenticateApi();
+
         $vendor = tap(factory(Vendor::class)->create())->deactivate();
 
         $this->putJson(url("api/vendors/activate/{$vendor->id}"))
@@ -143,6 +153,8 @@ class VendorTest extends TestCase
      */
     public function testCanDeactivateVendor()
     {
+        $this->authenticateApi();
+
         $vendor = tap(factory(Vendor::class)->create())->activate();
 
         $this->putJson(url("api/vendors/deactivate/{$vendor->id}"))
@@ -164,6 +176,8 @@ class VendorTest extends TestCase
      */
     public function testCanDeleteVendor()
     {
+        $this->authenticateApi();
+
         $vendor = factory(Vendor::class)->create();
 
         $this->deleteJson(url("api/vendors/{$vendor->id}"))
@@ -181,6 +195,8 @@ class VendorTest extends TestCase
      */
     public function testCanViewVendor()
     {
+        $this->authenticateApi();
+
         $vendor = factory(Vendor::class)->create();
 
         $this->getJson('api/vendors/'.$vendor->getKey())

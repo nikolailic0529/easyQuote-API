@@ -6,7 +6,6 @@ use App\Models\Company;
 use App\Models\Data\Country;
 use App\Models\Role;
 use App\Models\Team;
-use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
 use App\Models\User;
 use App\Models\Vendor;
@@ -14,14 +13,13 @@ use App\Services\Auth\UserTeamGate;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithFakeUser};
 
 /**
  * @group build
  */
 class QuoteTemplateTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to view paginated templates listing.
@@ -30,6 +28,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanViewPaginatedTemplatesListing()
     {
+        $this->authenticateApi();
+
         QuoteTemplate::query()->delete();
 
         factory(QuoteTemplate::class, 30)->create()
@@ -89,6 +89,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanViewTemplate()
     {
+        $this->authenticateApi();
+
         $quoteTemplate = factory(QuoteTemplate::class)->create();
 
         $this->getJson("api/templates/".$quoteTemplate->getKey())
@@ -124,6 +126,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanCreateTemplate()
     {
+        $this->authenticateApi();
+
         $attributes = factory(QuoteTemplate::class)->raw([
             'countries' => Country::limit(2)->pluck('id')->all(),
             'vendors' => Vendor::limit(2)->pluck('id')->all(),
@@ -270,6 +274,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanUpdateQuoteTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['form_data' => ['TEMPLATE_SCHEMA']]);
 
         $attributes = factory(QuoteTemplate::class)->raw([
@@ -308,6 +314,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanNotUpdateMasterTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
 
         $attributes = factory(QuoteTemplate::class)->raw([
@@ -326,6 +334,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanCopyTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
 
         $response = $this->putJson("api/templates/copy/".$template->getKey(), [])->assertOk();
@@ -347,6 +357,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanDeleteTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create();
 
         $this->deleteJson("api/templates/".$template->getKey(), [])
@@ -363,6 +375,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanNotDeleteMasterTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
 
         $this->deleteJson("api/templates/".$template->getKey(), [])
@@ -377,6 +391,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanActivateTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['activated_at' => null]);
 
         $this->putJson("api/templates/activate/".$template->getKey(), [])
@@ -398,6 +414,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanDeactivateTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['activated_at' => now()]);
 
         $this->putJson("api/templates/deactivate/".$template->getKey(), [])
@@ -419,6 +437,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanViewTemplateSchema()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create([
             'business_division_id' => BD_WORLDWIDE,
         ]);
@@ -440,6 +460,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanUpdateQuoteTemplateOwnedByLedTeamUser(): void
     {
+        $this->authenticateApi();
+
         /** @var Role $role */
         $role = factory(Role::class)->create();
 
@@ -495,6 +517,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanDeleteQuoteTemplateOwnedByLedTeamUser(): void
     {
+        $this->authenticateApi();
+
         /** @var Role $role */
         $role = factory(Role::class)->create();
 

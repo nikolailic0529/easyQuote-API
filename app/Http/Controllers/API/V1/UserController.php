@@ -4,10 +4,10 @@ namespace App\Http\Controllers\API\V1;
 
 use App\Casts\UserGrantedPermission;
 use App\Contracts\Repositories\{UserRepositoryInterface as UserRepository,};
+use App\DTO\Invitation\CreateInvitationData;
+use App\DTO\User\UpdateUserData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\{Collaboration\CompleteInvitationRequest,
-    Collaboration\InviteUserRequest,
-    Collaboration\UpdateUserRequest,
     StoreResetPasswordRequest,
     User\ListByRoles,
     User\ShowForm};
@@ -37,8 +37,8 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @param Request $request
-     * @param UserQueries $userQueries
+     * @param  Request  $request
+     * @param  UserQueries  $userQueries
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -54,21 +54,24 @@ class UserController extends Controller
     }
 
     /**
-     * Display a list of users.
+     * Show list of users.
+     * Allowed filters: team_id, business_division_id
      *
+     * @param  Request  $request
+     * @param  UserQueries  $queries
      * @return JsonResponse
      */
-    public function list(): JsonResponse
+    public function list(Request $request, UserQueries $queries): JsonResponse
     {
         return response()->json(
-            $this->userRepository->list()
+            $queries->userListQuery($request)->get()
         );
     }
 
     /**
      * Display an exclusive listing of users.
      *
-     * @param Request $request
+     * @param  Request  $request
      * @return JsonResponse
      */
     public function exclusiveList(Request $request): JsonResponse
@@ -81,14 +84,15 @@ class UserController extends Controller
     /**
      * Display a listing of users with specific roles.
      *
-     * @param ListByRoles $request
+     * @param  ListByRoles  $request
      * @return JsonResponse
      */
     public function listByRoles(ListByRoles $request): JsonResponse
     {
         $resource = $this->userRepository->findByRoles(
             $request->roles,
-            fn(Builder $q) => $q->withCasts(['granted_level' => UserGrantedPermission::class.':'.$request->granted_module])
+            fn(Builder $q
+            ) => $q->withCasts(['granted_level' => UserGrantedPermission::class.':'.$request->granted_module])
         );
 
         return response()->json(
@@ -99,7 +103,7 @@ class UserController extends Controller
     /**
      * Data for creating a new Role.
      *
-     * @param ShowForm $request
+     * @param  ShowForm  $request
      * @return JsonResponse
      */
     public function showUserFormData(ShowForm $request): JsonResponse
@@ -112,7 +116,7 @@ class UserController extends Controller
     /**
      * Show the existing User entity.
      *
-     * @param User $user
+     * @param  User  $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -128,17 +132,18 @@ class UserController extends Controller
     /**
      * Create a new invitation entity and send the invitation email.
      *
-     * @param InviteUserRequest $request
-     * @param InvitationEntityService $invitationEntityService
+     * @param  CreateInvitationData  $data
+     * @param  InvitationEntityService  $invitationEntityService
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function inviteUser(InviteUserRequest       $request,
-                               InvitationEntityService $invitationEntityService): JsonResponse
-    {
+    public function inviteUser(
+        CreateInvitationData $data,
+        InvitationEntityService $invitationEntityService
+    ): JsonResponse {
         $this->authorize('create', User::class);
 
-        $invitation = $invitationEntityService->createInvitation($request->getCreateInvitationData());
+        $invitation = $invitationEntityService->createInvitation($data);
 
         return response()->json(
             $invitation,
@@ -147,21 +152,22 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update user.
      *
-     * @param UpdateUserRequest $request
-     * @param UserEntityService $service
-     * @param User $user
+     * @param  UpdateUserData  $data
+     * @param  UserEntityService  $service
+     * @param  User  $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function updateUser(UpdateUserRequest $request,
-                               UserEntityService $service,
-                               User              $user): JsonResponse
-    {
+    public function updateUser(
+        UpdateUserData $data,
+        UserEntityService $service,
+        User $user
+    ): JsonResponse {
         $this->authorize('updateProfile', $user);
 
-        $service->updateUser($user, $request->getUpdateUserData());
+        $service->updateUser($user, $data);
 
         return response()->json($user);
     }
@@ -169,7 +175,7 @@ class UserController extends Controller
     /**
      * Delete the specified User entity.
      *
-     * @param User $user
+     * @param  User  $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -185,7 +191,7 @@ class UserController extends Controller
     /**
      * Mark as active the specified User entity.
      *
-     * @param User $user
+     * @param  User  $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -201,7 +207,7 @@ class UserController extends Controller
     /**
      * Mark as inactive the specified User entity.
      *
-     * @param User $user
+     * @param  User  $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -217,8 +223,8 @@ class UserController extends Controller
     /**
      * Perform password reset of the specified User entity.
      *
-     * @param StoreResetPasswordRequest $request
-     * @param User $user
+     * @param  StoreResetPasswordRequest  $request
+     * @param  User  $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -234,7 +240,7 @@ class UserController extends Controller
     /**
      * Mark as logged out the specified User entity.
      *
-     * @param User $user
+     * @param  User  $user
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -250,15 +256,16 @@ class UserController extends Controller
     /**
      * Register a new user entity.
      *
-     * @param CompleteInvitationRequest $request
-     * @param UserEntityService $userEntityService
-     * @param Invitation $invitation
+     * @param  CompleteInvitationRequest  $request
+     * @param  UserEntityService  $userEntityService
+     * @param  Invitation  $invitation
      * @return JsonResponse
      */
-    public function registerUser(CompleteInvitationRequest $request,
-                                 UserEntityService         $userEntityService,
-                                 Invitation                $invitation): JsonResponse
-    {
+    public function registerUser(
+        CompleteInvitationRequest $request,
+        UserEntityService $userEntityService,
+        Invitation $invitation
+    ): JsonResponse {
         return response()->json(
             $userEntityService->registerUser(invitation: $invitation, userData: $request->getRegisterUserData()),
             Response::HTTP_CREATED,

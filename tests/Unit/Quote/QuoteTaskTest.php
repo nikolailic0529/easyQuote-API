@@ -11,29 +11,33 @@ use App\Events\Task\{TaskCreated, TaskDeleted, TaskUpdated,};
 use App\Listeners\TaskEventSubscriber;
 use App\Models\Data\Timezone;
 use App\Models\Quote\Quote;
+use App\Models\SalesUnit;
 use App\Models\Task\Task;
 use App\Models\Task\TaskRecurrence;
 use App\Models\Task\TaskReminder;
 use App\Models\User;
 use App\Notifications\Task\RevokedInvitationFromTaskNotification as RevokedNotification;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\{Carbon, Facades\Event, Facades\Notification};
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing, WithFakeQuote, WithFakeUser,};
+use Tests\Unit\Traits\{AssertsListing,};
 
 /**
  * @group build
  */
 class QuoteTaskTest extends TestCase
 {
-    use AssertsListing, WithFakeUser, WithFakeQuote, DatabaseTransactions;
+    use WithFaker, AssertsListing, DatabaseTransactions;
 
     /**
      * Test can view paginated tasks of a quote.
      */
     public function testCanViewPaginatedTasksOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->create();
 
         $response = $this->getJson('api/quotes/tasks/'.$quote->getKey());
 
@@ -45,6 +49,8 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanViewTaskOfQuote(): void
     {
+        $this->authenticateApi();
+
         $quote = factory(Quote::class)->create();
 
         /** @var Task $task */
@@ -104,7 +110,9 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanCreateTaskForQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->create();
         Event::fake(TaskCreated::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
@@ -128,6 +136,10 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanCreateTaskForQuoteWithReminder(): void
     {
+        $this->markTestSkipped('TaskReminder factory to be created');
+
+        $this->authenticateApi();
+
         /** @var User $user */
         $user = $this->app['auth']->user();
 
@@ -228,6 +240,10 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanUpdateTaskForQuoteWithReminder(): void
     {
+        $this->markTestSkipped('TaskReminder factory to be created');
+
+        $this->authenticateApi();
+
         /** @var User $user */
         $user = $this->app['auth']->user();
 
@@ -289,6 +305,8 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanUnsetReminderFromTaskForQuote(): void
     {
+        $this->authenticateApi();
+
         $quote = factory(Quote::class)->create();
         /** @var Task $task */
         $task = Task::factory()->create();
@@ -312,6 +330,8 @@ class QuoteTaskTest extends TestCase
         $this->assertNotNull($response->json('reminder'));
 
         $this->patchJson('api/quotes/tasks/'.$quote->getKey().'/'.$task->getKey(), [
+            'sales_unit_id' => SalesUnit::factory()->create()->getKey(),
+            'activity_type' => 'Task',
             'name' => $task->name,
             'content' => $task->content,
             'expiry_date' => $task->expiry_date->format('Y-m-d H:i:s'),
@@ -337,6 +357,8 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanCreateTaskForQuoteWithRecurrence(): void
     {
+        $this->authenticateApi();
+
         /** @var User $user */
         $user = $this->app['auth']->user();
 
@@ -347,6 +369,8 @@ class QuoteTaskTest extends TestCase
         $task = Task::factory()->raw();
 
         $data = [
+            'activity_type' => 'Task',
+            'sales_unit_id' => SalesUnit::factory()->create()->getKey(),
             'name' => $task['name'],
             'content' => $task['content'],
             'expiry_date' => $task['expiry_date'],
@@ -454,6 +478,8 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanUpdateTaskForQuoteWithRecurrence(): void
     {
+        $this->authenticateApi();
+
         /** @var User $user */
         $user = $this->app['auth']->user();
 
@@ -465,6 +491,8 @@ class QuoteTaskTest extends TestCase
         $taskAttrs = Task::factory()->raw();
 
         $data = [
+            'activity_type' => 'Task',
+            'sales_unit_id' => SalesUnit::factory()->create()->getKey(),
             'name' => $taskAttrs['name'],
             'content' => $taskAttrs['content'],
             'expiry_date' => $taskAttrs['expiry_date'],
@@ -540,6 +568,8 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanUnsetRecurrenceFromTaskForQuote(): void
     {
+        $this->authenticateApi();
+
         $quote = factory(Quote::class)->create();
         /** @var Task $task */
         $task = Task::factory()->create();
@@ -561,6 +591,8 @@ class QuoteTaskTest extends TestCase
         $this->assertNotNull($response->json('recurrence'));
 
         $this->patchJson('api/quotes/tasks/'.$quote->getKey().'/'.$task->getKey(), [
+            'activity_type' => 'Task',
+            'sales_unit_id' => SalesUnit::factory()->create()->getKey(),
             'name' => $task->name,
             'content' => $task->content,
             'expiry_date' => $task->expiry_date->format('Y-m-d H:i:s'),
@@ -586,7 +618,9 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanCreateTaskForQuoteWithoutRelationsToUsers(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
         $attributes = Task::factory()->raw();
 
         $this->postJson('api/quotes/tasks/'.$quote->getKey(), $attributes)
@@ -599,7 +633,9 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanUpdateTaskOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
         Event::fake(TaskUpdated::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
@@ -627,7 +663,10 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanRemoveRelationsToUsersFromTaskOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
+
         Notification::fake();
         /** @var Task $task */
         $task = Task::factory()
@@ -656,7 +695,9 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanDeleteTaskOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
         Event::fake(TaskDeleted::class);
 
         Event::hasListeners(TaskEventSubscriber::class);

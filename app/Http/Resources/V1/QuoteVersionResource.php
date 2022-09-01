@@ -79,7 +79,7 @@ class QuoteVersionResource extends JsonResource
                 'name' => $this->activeVersionOrCurrent->customer->name,
                 'rfq' => $this->activeVersionOrCurrent->customer->rfq,
                 'valid_until' => $this->activeVersionOrCurrent->customer->valid_until,
-                'valid_until_ui' => $this->activeVersionOrCurrent->customer->valid_until_ui,
+                'valid_until_ui' => $this->activeVersionOrCurrent->customer->valid_until->format(config('date.format_ui')),
                 'support_start' => $this->activeVersionOrCurrent->customer->support_start,
                 'support_end' => $this->activeVersionOrCurrent->customer->support_end,
                 'payment_terms' => $this->activeVersionOrCurrent->customer->payment_terms,

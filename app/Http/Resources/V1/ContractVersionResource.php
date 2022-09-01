@@ -71,7 +71,7 @@ class ContractVersionResource extends JsonResource
                 'name'                                  => $this->customer->name,
                 'rfq'                                   => $this->customer->rfq,
                 'valid_until'                           => $this->customer->valid_until,
-                'valid_until_ui'                        => $this->customer->valid_until_ui,
+                'valid_until_ui'                        => $this->customer->valid_until->format(config('date.format_ui')),
                 'support_start'                         => $this->customer->support_start,
                 'support_end'                           => $this->customer->support_end,
                 'payment_terms'                         => $this->customer->payment_terms,

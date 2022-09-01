@@ -7,7 +7,6 @@ use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Response;
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithClientCredentials, WithFakeQuote, WithFakeQuoteFile, WithFakeUser};
 use function factory;
 use function now;
 
@@ -18,7 +17,7 @@ use function now;
  */
 class S4RfqRequestTest extends TestCase
 {
-    use WithClientCredentials, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to request an existing active submitted quote by RFQ number.
@@ -27,6 +26,8 @@ class S4RfqRequestTest extends TestCase
      */
     public function testCanRequestExistingActiveSubmittedQuote(): void
     {
+        $this->authenticateAsClient();
+
         $quoteFile = factory(QuoteFile::class)->create();
 
         /** @var Quote $quote */
@@ -36,7 +37,7 @@ class S4RfqRequestTest extends TestCase
             'distributor_file_id' => $quoteFile->getKey()
         ]);
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq, $this->clientAuthHeader)
+        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
             ->assertOk()
             ->assertJsonStructure([
                 'price_list_file',
@@ -55,6 +56,8 @@ class S4RfqRequestTest extends TestCase
      */
     public function testCanNotRequestDeletedActiveSubmittedQuote(): void
     {
+        $this->authenticateAsClient();
+
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
             'submitted_at' => now(),
@@ -63,7 +66,7 @@ class S4RfqRequestTest extends TestCase
 
         $quote->delete();
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq, $this->clientAuthHeader)
+        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -74,6 +77,8 @@ class S4RfqRequestTest extends TestCase
      */
     public function testCanNotRequestExistingActiveDraftedQuote(): void
     {
+        $this->authenticateAsClient();
+
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
             'submitted_at' => null,
@@ -82,7 +87,7 @@ class S4RfqRequestTest extends TestCase
 
         $quote->delete();
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq, $this->clientAuthHeader)
+        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -93,13 +98,15 @@ class S4RfqRequestTest extends TestCase
      */
     public function testCanNotRequestExistingInactiveDraftedQuote(): void
     {
+        $this->authenticateAsClient();
+
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
             'submitted_at' => null,
             'activated_at' => null,
         ]);
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq, $this->clientAuthHeader)
+        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -110,6 +117,8 @@ class S4RfqRequestTest extends TestCase
      */
     public function testCanNotRequestExistingInactiveSubmittedQuote(): void
     {
+        $this->authenticateAsClient();
+
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
             'submitted_at' => now(),
@@ -119,7 +128,7 @@ class S4RfqRequestTest extends TestCase
         $quote->activated_at = null;
         $quote->save();
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq, $this->clientAuthHeader)
+        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -130,6 +139,8 @@ class S4RfqRequestTest extends TestCase
      */
     public function testCanRequestPriceListFileOfExistingActiveSubmittedQuote()
     {
+        $this->authenticateAsClient();
+
         $quoteFile = factory(QuoteFile::class)->create();
 
         /** @var Quote $quote */
@@ -139,7 +150,7 @@ class S4RfqRequestTest extends TestCase
             'distributor_file_id' => $quoteFile->getKey()
         ]);
 
-        $this->get("/api/s4/quotes/{$quote->customer->rfq}/pdf", $this->clientAuthHeader)
+        $this->get("/api/s4/quotes/{$quote->customer->rfq}/pdf")
             ->assertOk()
             ->assertHeader('content-disposition')
             ->assertHeader('content-type', 'application/pdf');

@@ -2,36 +2,65 @@
 
 namespace App\DTO\User;
 
-use App\DTO\Enum\DataTransferValueOption;
+use App\Models\Data\Country;
+use App\Models\Data\Timezone;
+use App\Models\Template\HpeContractTemplate;
 use Illuminate\Http\UploadedFile;
-use Spatie\DataTransferObject\DataTransferObject;
+use Spatie\LaravelData\Attributes\Validation\Nullable;
+use Spatie\LaravelData\Optional;
+use Illuminate\Validation\Rule as BaseRule;
+use Spatie\LaravelData\Attributes\Validation\Image;
+use Spatie\LaravelData\Attributes\Validation\Max;
+use Spatie\LaravelData\Attributes\Validation\Min;
+use Spatie\LaravelData\Attributes\Validation\RequiredIf;
+use Spatie\LaravelData\Attributes\Validation\Rule;
+use Spatie\LaravelData\Data;
+use Symfony\Component\Validator\Constraints\Uuid;
 
-final class UpdateCurrentUserData extends DataTransferObject
+final class UpdateCurrentUserData extends Data
 {
-    /** @var string|\App\DTO\Enum\DataTransferValueOption */
-    public string|DataTransferValueOption $first_name = DataTransferValueOption::Miss;
-    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
-    public string|DataTransferValueOption|null $middle_name = DataTransferValueOption::Miss;
-    /** @var string|\App\DTO\Enum\DataTransferValueOption */
-    public string|DataTransferValueOption $last_name = DataTransferValueOption::Miss;
-    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
-    public string|DataTransferValueOption|null $phone = DataTransferValueOption::Miss;
-    /** @var string|\App\DTO\Enum\DataTransferValueOption */
-    public string|DataTransferValueOption $timezone_id = DataTransferValueOption::Miss;
-    /** @var string|\App\DTO\Enum\DataTransferValueOption */
-    public string|DataTransferValueOption $country_id = DataTransferValueOption::Miss;
-    /** @var \App\DTO\SalesUnit\CreateSalesUnitRelationData[]|\App\DTO\Enum\DataTransferValueOption */
-    public array|DataTransferValueOption $sales_units = DataTransferValueOption::Miss;
-    /** @var \Illuminate\Http\UploadedFile|\App\DTO\Enum\DataTransferValueOption|null */
-    public UploadedFile|DataTransferValueOption|null $picture = DataTransferValueOption::Miss;
-    /** @var bool|\App\DTO\Enum\DataTransferValueOption */
-    public bool|DataTransferValueOption $delete_picture = DataTransferValueOption::Miss;
-    /** @var bool|\App\DTO\Enum\DataTransferValueOption */
-    public bool|DataTransferValueOption $change_password = DataTransferValueOption::Miss;
-    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
-    public string|DataTransferValueOption|null $password = DataTransferValueOption::Miss;
-    /** @var string|\App\DTO\Enum\DataTransferValueOption|null */
-    public string|DataTransferValueOption|null $default_route = DataTransferValueOption::Miss;
-    /** @var int|\App\DTO\Enum\DataTransferValueOption */
-    public int|DataTransferValueOption $recent_notifications_limit = DataTransferValueOption::Miss;
+    public function __construct(
+        #[Min(2), Rule('alpha_spaces')]
+        public string|Optional $first_name,
+        #[Rule('alpha_spaces'), Nullable]
+        public string|Optional|null $middle_name,
+        #[Min(2), Rule('alpha_spaces')]
+        public string|Optional $last_name,
+        #[Min(4), Rule('phone'), Nullable]
+        public string|Optional|null $phone,
+        #[Uuid]
+        public string|Optional $timezone_id,
+        #[Uuid]
+        public string|Optional $country_id,
+        #[Uuid]
+        public string|Optional|null $hpe_contract_template_id,
+        #[Image, Max(2048)]
+        public UploadedFile|Optional $picture,
+        public bool|Optional $delete_picture,
+        public bool|Optional $change_password,
+        #[RequiredIf('change_password', true)]
+        public string|Optional|null $password,
+        #[RequiredIf('change_password', true)]
+        public string|Optional|null $current_password,
+        public string|Optional|null $default_route,
+        #[Min(1), Max(30)]
+        public int|Optional $recent_notifications_limit
+    ) {
+    }
+
+    public static function rules(...$args): array
+    {
+        return [
+            'timezone_id' => [
+                BaseRule::exists(Timezone::class, 'id'),
+            ],
+            'country_id' => [
+                BaseRule::exists(Country::class, 'id')->withoutTrashed(),
+            ],
+            'hpe_contract_template_id' => [
+                'nullable',
+                BaseRule::exists(HpeContractTemplate::class, 'id')->withoutTrashed(),
+            ],
+        ];
+    }
 }

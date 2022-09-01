@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Webpatser\Uuid\Uuid;
@@ -70,18 +71,17 @@ class SystemSettingSeeder extends Seeder
 
     protected function resolveSettingValue(string $key, $value)
     {
-        if (is_array($value)) {
-            return json_encode($value, true);
-        }
-
-        if ($key === 'failure_report_recipients') {
-
+        if ('failure_report_recipients' === $key) {
             return $this->container['db.connection']
                 ->table('users')
                 ->whereNull('deleted_at')
-                ->whereIn('email', $value)
+                ->whereIn('email', Arr::wrap($value))
                 ->pluck('id')
-                ->all();
+                ->toJson();
+        }
+
+        if (is_array($value)) {
+            return json_encode($value);
         }
 
         return $value;

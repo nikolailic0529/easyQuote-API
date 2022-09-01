@@ -92,7 +92,7 @@ class ContractTemplatePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($contractTemplate->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($contractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -122,7 +122,7 @@ class ContractTemplatePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($contractTemplate->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($contractTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }

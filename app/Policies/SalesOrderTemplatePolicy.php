@@ -89,7 +89,7 @@ class SalesOrderTemplatePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($salesOrderTemplate->user()->getParentKey(), $user)) {
+            if ($this->userTeamGate->isLedByUser($salesOrderTemplate->user()->getParentKey(), $user)) {
                 return true;
             }
 
@@ -129,7 +129,7 @@ class SalesOrderTemplatePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($salesOrderTemplate->user()->getParentKey(), $user)) {
+            if ($this->userTeamGate->isLedByUser($salesOrderTemplate->user()->getParentKey(), $user)) {
                 return true;
             }
 

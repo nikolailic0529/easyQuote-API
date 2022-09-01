@@ -1,5 +1,16 @@
 <?php
 
 return [
-    'date_format' => 'd/m/Y',
+
+    'date' => [
+
+        'default' => 'd/m/Y',
+
+        'country_format' => [
+            'US' => 'm/d/Y',
+            'CA' => 'm/d/Y',
+        ],
+
+    ],
+
 ];

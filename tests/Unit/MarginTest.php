@@ -3,22 +3,19 @@
 namespace Tests\Unit;
 
 use App\Models\Data\Country;
-use App\Models\Vendor;
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeUser,
-    AssertsListing,
-};
 use App\Models\Quote\Margin\CountryMargin;
+use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use Tests\TestCase;
+use Tests\Unit\Traits\{AssertsListing,};
 
 /**
  * @group build
  */
 class MarginTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing, DatabaseTransactions;
 
     protected array $truncatableTables = [
         'country_margins'
@@ -31,6 +28,8 @@ class MarginTest extends TestCase
      */
     public function testMarginListing()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson(url('api/margins'));
 
         $this->assertListing($response);
@@ -52,6 +51,8 @@ class MarginTest extends TestCase
      */
     public function testMarginCreating()
     {
+        $this->authenticateApi();
+
         $attributes = factory(CountryMargin::class)->raw();
 
         $keys = array_diff(array_keys($attributes), ['user_id']);
@@ -68,6 +69,8 @@ class MarginTest extends TestCase
      */
     public function testMarginCreatingWithValueGreaterThan100()
     {
+        $this->authenticateApi();
+
         $attributes = factory(CountryMargin::class)->raw(['value' => 150]);
 
         $this->postJson(url('api/margins'), $attributes)
@@ -84,6 +87,8 @@ class MarginTest extends TestCase
      */
     public function testMarginCreatingWithCountryNonRelatedToVendor()
     {
+        $this->authenticateApi();
+
         $vendor = factory(Vendor::class)->create();
 
         $country = Country::query()->whereNotIn('id', $vendor->countries->pluck('id'))->first();
@@ -102,6 +107,8 @@ class MarginTest extends TestCase
      */
     public function testMarginUpdating()
     {
+        $this->authenticateApi();
+
         $margin = factory(CountryMargin::class)->create();
 
         $attributes = factory(CountryMargin::class)->raw();
@@ -120,6 +127,8 @@ class MarginTest extends TestCase
      */
     public function testMarginActivating()
     {
+        $this->authenticateApi();
+
         $margin = tap(factory(CountryMargin::class)->create())->deactivate();
 
         $this->putJson(url("api/margins/activate/{$margin->id}"))
@@ -135,6 +144,8 @@ class MarginTest extends TestCase
      */
     public function testMarginDeactivating()
     {
+        $this->authenticateApi();
+
         $margin = tap(factory(CountryMargin::class)->create())->activate();
 
         $this->putJson(url("api/margins/deactivate/{$margin->id}"))
@@ -151,6 +162,8 @@ class MarginTest extends TestCase
      */
     public function testMarginDeleting()
     {
+        $this->authenticateApi();
+
         $margin = factory(CountryMargin::class)->create();
 
         $this->deleteJson(url("api/margins/{$margin->id}"))

@@ -2,32 +2,29 @@
 
 namespace App\Services\User;
 
-use App\DTO\Enum\DataTransferValueOption;
 use App\DTO\Invitation\RegisterUserData;
-use App\DTO\MissingValue;
 use App\DTO\User\UpdateCurrentUserData;
 use App\DTO\User\UpdateUserData;
 use App\Models\Collaboration\Invitation;
+use App\Models\Company;
 use App\Models\Role;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Image\ThumbnailService;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Http\Response;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class UserEntityService
 {
-    public function __construct(protected ConnectionInterface $connection,
-                                protected Hasher              $hasher,
-                                protected ValidatorInterface  $validator,
-                                protected ThumbnailService    $thumbnailService)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected Hasher $hasher,
+        protected ValidatorInterface $validator,
+        protected ThumbnailService $thumbnailService
+    ) {
     }
 
     public function registerUser(Invitation $invitation, RegisterUserData $userData): User
@@ -44,6 +41,7 @@ class UserEntityService
             $user->email = $invitation->email;
             $user->team()->associate($invitation->team()->getParentKey());
             $user->setRelation('salesUnits', $invitation->salesUnits()->get());
+            $user->setRelation('companies', $invitation->companies()->get());
 
             $user->first_name = $userData->first_name;
             $user->middle_name = $userData->middle_name;
@@ -55,6 +53,7 @@ class UserEntityService
             $this->connection->transaction(static function () use ($invitation, $user): void {
                 $user->save();
                 $user->salesUnits()->attach($user->salesUnits);
+                $user->companies()->attach($user->companies);
                 $user->syncRoles($invitation->role);
             });
 
@@ -67,9 +66,11 @@ class UserEntityService
     public function updateCurrentUser(User $user, UpdateCurrentUserData $data): User
     {
         return tap($user, function (User $user) use ($data): void {
-            if ($data->picture instanceof \SplFileInfo && false === $data->delete_picture) {
-                $this->thumbnailService->createResizedImageFor($data->picture, $user, ['width' => 120,
-                    'height' => 120]);
+            if ($data->picture instanceof \SplFileInfo && true !== $data->delete_picture) {
+                $this->thumbnailService->createResizedImageFor($data->picture, $user, [
+                    'width' => 120,
+                    'height' => 120,
+                ]);
 
                 $user->image()->flushQueryCache();
                 $user->load('image');
@@ -79,44 +80,17 @@ class UserEntityService
                 $user->load('image');
             }
 
-            $attrMap = [];
-            $attrMap['first_name'] = $data->first_name;
-            $attrMap['middle_name'] = $data->middle_name;
-            $attrMap['last_name'] = $data->last_name;
-            $attrMap['phone'] = $data->phone;
+            $user->forceFill($data->only(
+                'first_name', 'middle_name', 'last_name', 'phone',
+                'timezone_id', 'country_id', 'hpe_contract_template_id'
+            )->all());
 
-            foreach ($attrMap as $attr => $value) {
-                if ($value !== DataTransferValueOption::Miss) {
-                    $user->$attr = $value;
-                }
-            }
-
-            $relationMap = [];
-            $relationMap[$user->timezone()->getRelationName()] = $data->timezone_id;
-            $relationMap[$user->country()->getRelationName()] = $data->country_id;
-            $relationMap[$user->salesUnits()->getRelationName()] = $data->sales_units;
-
-            foreach ($relationMap as $rel => $value) {
-                $relation = $user->$rel();
-
-                if ($value !== DataTransferValueOption::Miss) {
-                    if ($relation instanceof BelongsTo) {
-                        $relation->associate($value);
-                    } elseif ($relation instanceof BelongsToMany) {
-                        $user->setRelation($relation->getRelationName(), $relation->getRelated()->newQuery()->whereKey(data_get($value, '*.id'))->get());
-                    } else {
-                        throw new \RuntimeException("Unexpected relation.");
-                    }
-                }
-            }
-
-            if ($data->change_password) {
+            if (true === $data->change_password) {
                 $user->password = $this->hasher->make($data->password);
             }
 
             $this->connection->transaction(static function () use ($user): void {
                 $user->save();
-                $user->salesUnits()->sync($user->salesUnits);
             });
         });
     }
@@ -124,19 +98,19 @@ class UserEntityService
     public function updateUser(User $user, UpdateUserData $data): User
     {
         return tap($user, function (User $user) use ($data): void {
-            $user->first_name = $data->first_name;
-            $user->middle_name = $data->middle_name;
-            $user->last_name = $data->last_name;
-            $user->phone = $data->phone;
-            $user->timezone()->associate($data->timezone_id);
-            $user->setRelation('salesUnits', SalesUnit::query()->whereKey(data_get($data->sales_units, '*.id'))->get());
-            $user->team()->associate($data->team_id);
-
+            $user->forceFill($data->except('sales_units', 'companies', 'role_id')->all());
+            $user->setRelation('salesUnits',
+                SalesUnit::query()->findMany($data->sales_units->toCollection()->pluck('id'))
+            );
+            $user->setRelation('companies',
+                Company::query()->findMany($data->companies->toCollection()->pluck('id'))
+            );
             $role = Role::query()->findOrFail($data->role_id);
 
             $this->connection->transaction(static function () use ($user, $role): void {
                 $user->save();
                 $user->salesUnits()->sync($user->salesUnits);
+                $user->companies()->sync($user->companies);
                 $user->syncRoles($role);
             });
         });

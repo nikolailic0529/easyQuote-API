@@ -106,7 +106,6 @@ class UpdateCompanyRequest extends FormRequest
             'delete_logo' => 'boolean',
             'category' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
                 new Enum(CompanyCategoryEnum::class),
             ],

@@ -12,14 +12,13 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\Unit\Traits\AssertsListing;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
  */
 class HpeContractTemplateTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing, DatabaseTransactions;
 
     protected static array $assertableAttributes = ['id', 'name', 'company_id', 'vendor_id', 'currency_id', 'form_data', 'data_headers', 'countries'];
 
@@ -30,6 +29,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanViewPaginatedHpeContractTemplates()
     {
+        $this->authenticateApi();
+
         $this->getJson(url("api/hpe-contract-templates"))->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -88,6 +89,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanCreateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $attributes = factory(HpeContractTemplate::class)->raw([
             'countries' => Country::limit(2)->pluck('id')->all(),
         ]);
@@ -116,6 +119,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanUpdateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
 
         $attributes = factory(HpeContractTemplate::class)->raw();
@@ -142,6 +147,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanActivateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
         $template->activated_at = null;
         $template->save();
@@ -162,6 +169,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanDeactivateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
         $template->activated_at = now();
         $template->save();
@@ -182,6 +191,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanDeleteHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
 
         $this->deleteJson('api/hpe-contract-templates/'.$template->getKey())
@@ -196,6 +207,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanUpdateHpeContractTemplateOwnedByLedTeamUser(): void
     {
+        $this->authenticateApi();
+
         /** @var Role $role */
         $role = factory(Role::class)->create();
 
@@ -251,6 +264,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanDeleteHpeContractTemplateOwnedByLedTeamUser(): void
     {
+        $this->authenticateApi();
+
         /** @var Role $role */
         $role = factory(Role::class)->create();
 

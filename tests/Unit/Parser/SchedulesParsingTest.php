@@ -4,8 +4,8 @@ namespace Tests\Unit\Parser;
 
 use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 
 /**
  * @group build
@@ -21,7 +21,7 @@ class SchedulesParsingTest extends ParsingTest
      */
     public function testAustriaSchedulesProcessing()
     {
-        $this->processFilesByCountry('Austria');
+        $this->processFilesFromDir('Austria');
     }
 
     /**
@@ -31,7 +31,7 @@ class SchedulesParsingTest extends ParsingTest
      */
     public function testFranceSchedulesProcessing()
     {
-        $this->processFilesByCountry('France');
+        $this->processFilesFromDir('France');
     }
 
     /**
@@ -41,7 +41,7 @@ class SchedulesParsingTest extends ParsingTest
      */
     public function testUnitedKingdomSchedulesProcessing()
     {
-        $this->processFilesByCountry('UK');
+        $this->processFilesFromDir('UK');
     }
 
     /**
@@ -51,7 +51,7 @@ class SchedulesParsingTest extends ParsingTest
      */
     public function testUnitedStatesSchedulesProcessing()
     {
-        $this->processFilesByCountry('USA');
+        $this->processFilesFromDir('USA');
     }
 
     /**
@@ -61,24 +61,24 @@ class SchedulesParsingTest extends ParsingTest
      */
     public function testNederlandSchedulesProcessing()
     {
-        $this->processFilesByCountry('Nederland');
+        $this->processFilesFromDir('Nederland');
     }
 
-    protected function filesType(): string
+    protected function fileType(): string
     {
         return QFT_PS;
     }
 
     protected function filesDirPath(): string
     {
-        return 'tests/Unit/Data/schedule-files-test';
+        return base_path('tests/Unit/Data/schedule-files-test');
     }
 
     protected function performFileAssertions(QuoteFile $quoteFile): void
     {
-        $this->assertTrue(filled($quoteFile->scheduleData->value), $this->message($quoteFile));
+        $this->assertTrue(filled($quoteFile->scheduleData->value), $quoteFile->original_file_path);
 
-        $map = Collection::wrap($this->getMappingAttribute('data', $quoteFile->original_file_name))
+        $map = Collection::wrap($this->resolveAttributeFromAssertMapping('data', $quoteFile->original_file_name))
             ->keyBy('from');
 
         $this->assertInstanceOf(Collection::class, $quoteFile->scheduleData->value);
@@ -93,8 +93,8 @@ class SchedulesParsingTest extends ParsingTest
         });
     }
 
-    protected function mapping(): Collection
+    protected function assertionMapping(): Collection
     {
-        return collect(json_decode(file_get_contents('tests/Unit/Data/schedule-files-test/mapping.json'), true));
+        return collect(json_decode(file_get_contents(base_path('tests/Unit/Data/schedule-files-test/mapping.json')), true));
     }
 }

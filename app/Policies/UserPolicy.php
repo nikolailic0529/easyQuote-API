@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
-use App\Http\Requests\Collaboration\UpdateUserRequest;
 
 class UserPolicy
 {
@@ -55,7 +54,6 @@ class UserPolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\User  $collaborator
-     * @param  \App\Http\Requests\Collaboration\UpdateUserRequest $request
      * @return mixed
      */
     public function updateProfile(User $user, User $collaborator)
@@ -72,7 +70,6 @@ class UserPolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\User  $collaborator
-     * @param  \App\Http\Requests\Collaboration\UpdateUserRequest $request
      * @return mixed
      */
     public function update(User $user, User $collaborator)

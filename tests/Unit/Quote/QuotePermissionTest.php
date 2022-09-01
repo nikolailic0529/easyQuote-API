@@ -2,29 +2,16 @@
 
 namespace Tests\Unit\Quote;
 
-use Tests\TestCase;
 use App\Events\NotificationCreated;
-use App\Models\{
-    Role,
-    User,
-};
-use App\Notifications\{
-    GrantedQuoteAccess,
-    RevokedQuoteAccess,
-};
+use App\Models\{Quote\Quote, Role, User};
+use App\Notifications\{GrantedQuoteAccess, RevokedQuoteAccess,};
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\{
-    Event,
-    Notification,
-};
-use Tests\Unit\Traits\{
-    WithFakeQuote,
-    WithFakeUser,
-};
+use Illuminate\Support\Facades\{Event, Notification,};
+use Tests\TestCase;
 
 class QuotePermissionTest extends TestCase
 {
-    use WithFakeQuote, WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test authorized users listing.
@@ -33,9 +20,12 @@ class QuotePermissionTest extends TestCase
      */
     public function testQuoteAuthorizedUsersListing()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
 
-        $this->getJson(url('api/quotes/permissions/' . $quote->id))->assertOk();
+        /** @noinspection PhpParamsInspection */
+        $quote = Quote::factory()->for(auth()->user())->create();
+
+        $this->getJson(url('api/quotes/permissions/'.$quote->id))->assertOk();
     }
 
     /**
@@ -45,10 +35,13 @@ class QuotePermissionTest extends TestCase
      */
     public function testGrantQuotePermissions()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        /** @noinspection PhpParamsInspection */
+        $quote = Quote::factory()->for(auth()->user())->create();
 
         Event::fake([
-            NotificationCreated::class
+            NotificationCreated::class,
         ]);
 
         Notification::fake();
@@ -56,15 +49,17 @@ class QuotePermissionTest extends TestCase
         /** System default role which does not have access to all quotes. */
         $role = Role::whereName('Sales Manager')->first();
 
-        $authorizableUsers = factory(User::class, 5)->create(['role_id' => $role->id]);
+        $usersWithQuotePermissions = User::factory(5)->create();
+        $usersWithQuotePermissions->each->syncRoles($role);
 
-        $this->putJson(url('api/quotes/permissions/' . $quote->id), ['users' => $authorizableUsers->pluck('id')->toArray()])
+        $this->putJson(url('api/quotes/permissions/'.$quote->id),
+            ['users' => $usersWithQuotePermissions->pluck('id')->toArray()])
             ->assertOk()
             ->assertExactJson([true]);
 
-        Notification::assertSentTo($authorizableUsers, GrantedQuoteAccess::class);
+        Notification::assertSentTo($usersWithQuotePermissions, GrantedQuoteAccess::class);
 
-        Event::assertDispatchedTimes(NotificationCreated::class, $authorizableUsers->count());
+        Event::assertDispatchedTimes(NotificationCreated::class, $usersWithQuotePermissions->count());
     }
 
     /**
@@ -74,33 +69,39 @@ class QuotePermissionTest extends TestCase
      */
     public function testRevokeQuotePermissions()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        /** @noinspection PhpParamsInspection */
+        $quote = Quote::factory()->for(auth()->user())->create();
+
         /** System default role which does not have access to all quotes. */
         $role = Role::whereName('Sales Manager')->first();
 
-        $authorizableUsers = factory(User::class, 5)->create(['role_id' => $role->id]);
+        $usersWithQuotePermissions = User::factory(5)->create();
+        $usersWithQuotePermissions->each->syncRoles($role);
 
         $permission = app('quote.state')->getQuotePermission($quote, ['read', 'update']);
 
         /** Grant quote permissions to newly created users. */
-        app('user.repository')->syncUsersPermission($authorizableUsers->pluck('id')->toArray(), $permission);
+        app('user.repository')->syncUsersPermission($usersWithQuotePermissions->pluck('id')->toArray(), $permission);
 
-        $authorizableUsers->each(fn (User $user) => $this->assertTrue($user->hasPermissionTo($permission)));
+        $usersWithQuotePermissions->each(fn(User $user) => $this->assertTrue($user->hasPermissionTo($permission)));
 
         Event::fake([
-            NotificationCreated::class
+            NotificationCreated::class,
         ]);
 
         Notification::fake();
 
-        $unuathorizableUsers = $authorizableUsers->splice(0, 2);
+        $usersWithRevokedQuotePermissions = $usersWithQuotePermissions->splice(0, 2);
 
-        $this->putJson(url('api/quotes/permissions/' . $quote->id), ['users' => $authorizableUsers->pluck('id')->toArray()])
+        $this->putJson(url('api/quotes/permissions/'.$quote->id),
+            ['users' => $usersWithQuotePermissions->pluck('id')->toArray()])
             ->assertOk()
             ->assertExactJson([true]);
 
-        Notification::assertSentTo($unuathorizableUsers, RevokedQuoteAccess::class);
+        Notification::assertSentTo($usersWithRevokedQuotePermissions, RevokedQuoteAccess::class);
 
-        Event::assertDispatchedTimes(NotificationCreated::class, $unuathorizableUsers->count());
+        Event::assertDispatchedTimes(NotificationCreated::class, $usersWithRevokedQuotePermissions->count());
     }
 }

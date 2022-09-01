@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1;
 
+use App\Models\Customer\Customer;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class CustomerRepositoryResource extends JsonResource
@@ -14,14 +15,16 @@ class CustomerRepositoryResource extends JsonResource
      */
     public function toArray($request)
     {
+        /** @var self|Customer $this */
+
         return [
-            'id'            => $this->id,
-            'name'          => $this->name,
-            'rfq'           => $this->rfq,
-            'valid_until'   => $this->valid_until_date,
-            'support_start' => $this->support_start_date,
-            'support_end'   => $this->support_end_date,
-            'created_at'    => optional($this->created_at)->format(config('date.format_time'))
+            'id' => $this->getKey(),
+            'name' => $this->name,
+            'rfq' => $this->rfq,
+            'valid_until' => format('date', $this->valid_until),
+            'support_start' => format('date', $this->support_start),
+            'support_end' => format('date', $this->support_end),
+            'created_at' => $this->created_at?->format(config('date.format_time')),
         ];
     }
 }

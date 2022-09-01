@@ -2,20 +2,17 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeUser,
-    AssertsListing
-};
 use App\Models\System\Notification;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
+use Tests\Unit\Traits\{AssertsListing};
 
 /**
  * @group build
  */
 class NotificationTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing, DatabaseTransactions;
 
     /**
      * Test Notification listing.
@@ -24,6 +21,8 @@ class NotificationTest extends TestCase
      */
     public function testNotificationListing()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson(url('api/notifications'));
 
         $this->assertListing($response);
@@ -45,6 +44,8 @@ class NotificationTest extends TestCase
      */
     public function testLatestNotificationListing()
     {
+        $this->authenticateApi();
+
         $this->getJson(url('api/notifications/latest'))
             ->assertOk()
             ->assertJsonStructure(['data', 'total']);
@@ -57,6 +58,8 @@ class NotificationTest extends TestCase
      */
     public function testNotificationDeleting()
     {
+        $this->authenticateApi();
+
         $notification = $this->createFakeNotification();
 
         $this->deleteJson(url("api/notifications/{$notification->id}"))
@@ -73,6 +76,8 @@ class NotificationTest extends TestCase
      */
     public function testNotificationDeletingAll()
     {
+        $this->authenticateApi();
+
         $this->createFakeNotification();
 
         $this->deleteJson(url('api/notifications'))
@@ -96,6 +101,8 @@ class NotificationTest extends TestCase
      */
     public function testNotificationReading()
     {
+        $this->authenticateApi();
+
         $notification = $this->createFakeNotification();
 
         $this->putJson(url("api/notifications/{$notification->id}"))
@@ -107,6 +114,8 @@ class NotificationTest extends TestCase
 
     public function testNotificationReadingAll()
     {
+        $this->authenticateApi();
+
         $this->createFakeNotification();
 
         $this->putJson(url('api/notifications'))
@@ -123,10 +132,10 @@ class NotificationTest extends TestCase
     protected function createFakeNotification(): Notification
     {
         return notification()
-            ->for($this->user)
+            ->for($this->app['auth']->user())
             ->message('Test Notification')
             ->url(ui_route('users.profile'))
-            ->subject($this->user)
+            ->subject($this->app['auth']->user())
             ->push();
     }
 }

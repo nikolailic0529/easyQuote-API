@@ -14,14 +14,13 @@ use App\Services\Auth\UserTeamGate;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithFakeUser};
 
 /**
  * @group build
  */
 class ContractTemplateTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test Template listing.
@@ -30,6 +29,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testTemplateListing()
     {
+        $this->authenticateApi();
+
         $this->getJson("api/contract-templates")
             ->assertOk()
             ->assertJsonStructure([
@@ -167,6 +168,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanViewContractTemplate()
     {
+        $this->authenticateApi();
+
         $contractTemplate = factory(ContractTemplate::class)->create();
 
         $this->getJson('api/contract-templates/'.$contractTemplate->getKey())
@@ -205,6 +208,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanCreateContractTemplate()
     {
+        $this->authenticateApi();
+
         $attributes = factory(ContractTemplate::class)->raw([
             'countries' => Country::limit(2)->pluck('id')->all(),
             'name' => Str::random(40),
@@ -232,6 +237,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanUpdateContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(ContractTemplate::class)->create();
 
         $attributes = factory(ContractTemplate::class)->raw([
@@ -262,6 +269,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanCopyContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(ContractTemplate::class)->create();
 
         $response = $this->putJson("api/contract-templates/copy/".$template->getKey(), [])->assertOk();
@@ -290,6 +299,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanDeleteContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(ContractTemplate::class)->create();
 
         $this->deleteJson("api/contract-templates/".$template->getKey(), [])
@@ -307,6 +318,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanActivateContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(ContractTemplate::class)->create();
         $template->activated_at = null;
         $template->save();
@@ -330,6 +343,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanDeactivateContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(ContractTemplate::class)->create();
         $template->activated_at = now();
         $template->save();
@@ -372,6 +387,8 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanViewTemplateSchema()
     {
+        $this->authenticateApi();
+
         $template = factory(ContractTemplate::class)->create();
 
         $this->getJson("api/contract-templates/designer/".$template->getKey())

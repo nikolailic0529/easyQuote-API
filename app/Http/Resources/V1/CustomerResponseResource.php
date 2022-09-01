@@ -25,7 +25,7 @@ class CustomerResponseResource extends JsonResource
             'quotation_valid_until' => Carbon::parse($this->getRawOriginal('valid_until'))->format('m/d/Y'),
             'support_start_date'    => Carbon::parse($this->getRawOriginal('support_start'))->format('m/d/Y'),
             'support_end_date'      => Carbon::parse($this->getRawOriginal('support_end'))->format('m/d/Y'),
-            'country'               => $this->country_code,
+            'country'               => $this->country->iso_3166_2,
             'country_id'            => $this->country_id,
             'service_levels'        => isset($this->service_levels) ? $this->service_levels->toArray() : [],
             'invoicing_terms'       => $this->invoicing_terms,

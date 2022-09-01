@@ -9,6 +9,7 @@ use Illuminate\Support\LazyCollection;
 class Count implements Rule
 {
     protected LazyCollection $filter;
+    protected array $data = [];
     protected ?int $min = null;
     protected ?int $max = null;
     protected ?int $exactly = null;
@@ -20,20 +21,44 @@ class Count implements Rule
 
     public function __construct()
     {
-        $this->filter = LazyCollection::empty();
+        $this->filter = LazyCollection::make(function (): \Generator {
+            yield from $this->data;
+        });
     }
 
     public function where($key, $operator = null, $value = null): static
     {
-        return tap($this, function () use ($key, $operator, $value): void {
-            $this->filter->where($key, $operator, $value);
+        $args = func_get_args();
+
+        return tap($this, function () use ($args): void {
+            $this->filter = $this->filter->where(...$args);
         });
     }
 
     public function whereStrict($key, $value = null): static
     {
-        return tap($this, function () use ($key, $value): void {
-            $this->filter->whereStrict($key, $value);
+        $args = func_get_args();
+
+        return tap($this, function () use ($args): void {
+            $this->filter = $this->filter->whereStrict(...$args);
+        });
+    }
+
+    public function whereIn($key, $values, $strict = false): static
+    {
+        $args = func_get_args();
+
+        return tap($this, function () use ($args): void {
+            $this->filter = $this->filter->whereIn(...$args);
+        });
+    }
+
+    public function whereInStrict($key, $values): static
+    {
+        $args = func_get_args();
+
+        return tap($this, function () use ($args): void {
+            $this->filter = $this->filter->whereInStrict(...$args);
         });
     }
 
@@ -64,7 +89,9 @@ class Count implements Rule
 
         $exactlyOptionEnabled = $this->min === $this->max;
 
-        $count = $this->filter->merge($value)->count();
+        $this->data = $value;
+
+        $count = $this->filter->count();
 
         if (null !== $this->max && $count > $this->max) {
             $this->violatedOption = $exactlyOptionEnabled ? CountOption::Exactly : CountOption::Max;

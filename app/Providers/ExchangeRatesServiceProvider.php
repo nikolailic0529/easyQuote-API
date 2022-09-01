@@ -18,7 +18,7 @@ class ExchangeRatesServiceProvider extends ServiceProvider implements Deferrable
      */
     public function register()
     {
-        $this->app->singleton(ManagesExchangeRates::class, ER_SERVICE_CLASS);
+        $this->app->bind(ManagesExchangeRates::class, ER_SERVICE_CLASS);
 
         $this->app->bind(RateFileRepository::class, function (Application $app) {
             $diskName = $this->app['config']->get('exchange-rates.disk');

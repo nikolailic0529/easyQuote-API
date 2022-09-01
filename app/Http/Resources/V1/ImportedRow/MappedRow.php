@@ -2,9 +2,9 @@
 
 namespace App\Http\Resources\V1\ImportedRow;
 
-use Arr;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Enumerable;
+use Illuminate\Support\Arr;
 
 class MappedRow extends JsonResource
 {
@@ -36,8 +36,8 @@ class MappedRow extends JsonResource
             'product_no'                => $this->when(Arr::has($row, 'product_no'), fn () => blank($this->product_no) ? ND_01 : $this->product_no),
             'serial_no'                 => $this->when(Arr::has($row, 'serial_no'), fn () => blank($this->serial_no) ? ND_01 : $this->serial_no),
             'description'               => $this->when(Arr::has($row, 'description'), fn () => blank($this->description) ? ND_01 : $this->description),
-            'date_from'                 => $this->when(Arr::has($row, 'date_from'), fn () => $this->date_from),
-            'date_to'                   => $this->when(Arr::has($row, 'date_to'), fn () => $this->date_to),
+            'date_from'                 => $this->when(Arr::has($row, 'date_from'), fn () => format('date', $this->date_from, country: Arr::get($row, 'country_iso_3166_2'), fromFormat: 'd/m/Y')),
+            'date_to'                   => $this->when(Arr::has($row, 'date_to'), fn () => format('date', $this->date_to, country: Arr::get($row, 'country_iso_3166_2'), fromFormat: 'd/m/Y')),
             'qty'                       => $this->when(Arr::has($row, 'qty'), fn () => (int) (blank($this->qty) ? 1 : $this->qty)),
             'price'                     => $this->when(Arr::has($row, 'price'), fn () => $this->price),
             'system_handle'             => $this->when(Arr::has($row, 'system_handle'), fn () => blank($this->system_handle) ? ND_01 : $this->system_handle),

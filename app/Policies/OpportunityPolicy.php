@@ -117,11 +117,11 @@ class OpportunityPolicy
             return $this->allow();
         }
 
-        if ($this->userTeamGate->isUserLedByUser($opportunity->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($opportunity->user()->getParentKey(), $user)) {
             return $this->allow();
         }
 
-        if ($this->userTeamGate->isUserLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
             return $this->allow();
         }
 
@@ -163,11 +163,11 @@ class OpportunityPolicy
             return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 
-        if ($this->userTeamGate->isUserLedByUser($opportunity->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($opportunity->user()->getParentKey(), $user)) {
             return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 
-        if ($this->userTeamGate->isUserLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
             return $opportunityHasQuotes ? $this->deny($opportunityHasQuotesMessage) : $this->allow();
         }
 

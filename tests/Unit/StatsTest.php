@@ -13,16 +13,16 @@ use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithFakeUser};
 
 /**
  * @group build
  */
 class StatsTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use WithFaker, DatabaseTransactions;
 
 //    /**
 //     * Test stats calculation.
@@ -43,6 +43,8 @@ class StatsTest extends TestCase
      */
     public function testQuotesStatsByLocation()
     {
+        $this->authenticateApi();
+
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
@@ -58,6 +60,8 @@ class StatsTest extends TestCase
      */
     public function testQuotesOnMap()
     {
+        $this->authenticateApi();
+
         /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
@@ -87,6 +91,8 @@ class StatsTest extends TestCase
      */
     public function testAssetsOnMap()
     {
+        $this->authenticateApi();
+
         /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
@@ -118,6 +124,8 @@ class StatsTest extends TestCase
      */
     public function testCustomersOnMap()
     {
+        $this->authenticateApi();
+
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
@@ -145,6 +153,8 @@ class StatsTest extends TestCase
      */
     public function testAggregatesSummaryOfCustomers()
     {
+        $this->authenticateApi();
+
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
@@ -175,6 +185,8 @@ class StatsTest extends TestCase
      */
     public function testAggregatesSummaryOfQuotes()
     {
+        $this->authenticateApi();
+
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
 

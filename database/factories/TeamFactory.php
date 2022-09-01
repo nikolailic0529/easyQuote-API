@@ -1,13 +1,20 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
 use App\Models\Team;
-use Faker\Generator as Faker;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-$factory->define(Team::class, function (Faker $faker) {
-    return [
-        'team_name' => $faker->text(191),
-        'monthly_goal_amount' => null,
-    ];
-});
+class TeamFactory extends Factory
+{
+    protected $model = Team::class;
+
+    public function definition(): array
+    {
+        return [
+            'team_name' => $this->faker->text(191),
+            'monthly_goal_amount' => null,
+        ];
+    }
+}
+

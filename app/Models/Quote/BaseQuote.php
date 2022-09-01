@@ -4,7 +4,8 @@ namespace App\Models\Quote;
 
 use App\Casts\GroupDescription;
 use App\Contracts\{ActivatableInterface, HasOwnNotes, HasOrderedScope, SearchableEntity};
-use App\Models\{Data\Currency,
+use App\Models\{Customer\Customer,
+    Data\Currency,
     Note\Note,
     Quote\Margin\CountryMargin,
     QuoteFile\ImportedRow,
@@ -58,6 +59,7 @@ use Illuminate\Support\Traits\Tappable;
  * @property-read Vendor|null $vendor
  * @property-read QuoteFile $priceList
  * @property-read Note|null $note
+ * @property-read Customer $customer
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity, HasOwnNotes
 {
@@ -216,9 +218,9 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
             'customer_name' => $this->customer->name,
             'customer_rfq' => $this->customer->rfq,
-            'customer_valid_until' => $this->customer->quotation_valid_until,
-            'customer_support_start' => $this->customer->support_start_date,
-            'customer_support_end' => $this->customer->support_end_date,
+            'customer_valid_until' => $this->customer->valid_until?->toDateString(),
+            'customer_support_start' => $this->customer->support_start?->toDateString(),
+            'customer_support_end' => $this->customer->support_end?->toDateString(),
             'customer_source' => $this->customer->source,
 
             'user_fullname' => optional($this->user)->fullname,

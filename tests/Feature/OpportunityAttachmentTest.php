@@ -10,6 +10,7 @@ use Tests\TestCase;
 
 /**
  * @group build
+ * @group opportunity
  */
 class OpportunityAttachmentTest extends TestCase
 {

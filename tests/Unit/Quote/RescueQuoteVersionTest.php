@@ -9,14 +9,13 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithFakeQuote, WithFakeUser};
 
 /**
  * @group build
  */
 class RescueQuoteVersionTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test a new Version creating when non-author user is editing a Quote.
@@ -25,7 +24,9 @@ class RescueQuoteVersionTest extends TestCase
      */
     public function testVersionCreatingByNonAuthor()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
 
         $this->updateQuoteStateFromNewUser($quote);
 
@@ -40,9 +41,11 @@ class RescueQuoteVersionTest extends TestCase
      */
     public function testVersionCreatingByAuthor()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
 
-        $state = $this->makeGenericQuoteAttributes();
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
+
+        $state = Quote::factory()->raw();
         $state['quote_id'] = $quote->id;
 
         $this->postJson(url('api/quotes/state'), $state);
@@ -58,7 +61,9 @@ class RescueQuoteVersionTest extends TestCase
      */
     public function testVersionCreatingFromDifferentCausers()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
 
         $expectedVersionsCount = 3;
 
@@ -76,7 +81,9 @@ class RescueQuoteVersionTest extends TestCase
      */
     public function testVersionSet()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
 
         $this->updateQuoteStateFromNewUser($quote);
 
@@ -98,7 +105,9 @@ class RescueQuoteVersionTest extends TestCase
      */
     public function testVersionDeleting()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
 
         $this->updateQuoteStateFromNewUser($quote);
 
@@ -118,9 +127,11 @@ class RescueQuoteVersionTest extends TestCase
      */
     public function testVersionUpdatingWithNewAttributes()
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
 
-        $user = tap($this->createUser(), fn ($user) => $this->actingAs($user, 'api'));
+        $quote = Quote::factory()->for($this->app['auth']->user())->create();
+
+        $this->authenticateApi();
 
         $state = transform(static::makeState(), fn ($state) => Arr::set($state, 'quote_id', $quote->id));
 
@@ -133,7 +144,7 @@ class RescueQuoteVersionTest extends TestCase
 
         $resource = QuoteVersionResource::make($quote->refresh())->resolve();
 
-        foreach (Arr::dot($state['quote_data']) as $attribute => $value) {
+        foreach (Arr::except(Arr::dot($state['quote_data']), 'additional_notes') as $attribute => $value) {
 
             $this->assertEquals($value, Arr::get($resource, $attribute), $attribute);
 
@@ -148,14 +159,16 @@ class RescueQuoteVersionTest extends TestCase
 
     protected function updateQuoteStateFromNewUser(Quote $quote): void
     {
-        $state = $this->makeGenericQuoteAttributes();
+        $state = Quote::factory()->raw();
         $state['quote_id'] = $quote->id;
 
-        $this->be($this->createUser(), 'api');
+        $originalUser = $this->app['auth']->user();
+
+        $this->authenticateApi();
 
         $this->postJson(url('api/quotes/state'), $state);
 
-        $this->be($this->user);
+        $this->authenticateApi($originalUser);
     }
 
     protected static function makeState(): array

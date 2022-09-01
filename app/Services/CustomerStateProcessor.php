@@ -31,12 +31,12 @@ class CustomerStateProcessor implements CustomerState
             $customer = tap(new Customer, function (Customer $customer) use ($data) {
                 $customer->forceFill([
                     'int_company_id' => $data->int_company_id,
-                    'customer_name' => $data->customer_name,
-                    'rfq_number' => $data->rfq_number,
+                    'name' => $data->customer_name,
+                    'rfq' => $data->rfq_number,
                     'sequence_number' => $data->sequence_number,
                     'source' => Customer::EQ_SOURCE,
                     'service_levels' => $data->service_levels,
-                    'quotation_valid_until' => $data->quotation_valid_until->toDateString(),
+                    'valid_until' => $data->quotation_valid_until->toDateString(),
                     'support_start' => $data->support_start_date->toDateString(),
                     'support_end' => $data->support_end_date->toDateString(),
                     'invoicing_terms' => $data->invoicing_terms,
@@ -70,12 +70,12 @@ class CustomerStateProcessor implements CustomerState
             tap($customer, function (Customer $customer) use ($data) {
                 $customer->forceFill([
                     'int_company_id' => $data->int_company_id,
-                    'customer_name' => $data->customer_name,
-                    'rfq_number' => $data->rfq_number,
+                    'name' => $data->customer_name,
+                    'rfq' => $data->rfq_number,
                     'sequence_number' => $data->sequence_number,
                     'source' => Customer::EQ_SOURCE,
                     'service_levels' => $data->service_levels,
-                    'quotation_valid_until' => $data->quotation_valid_until->toDateString(),
+                    'valid_until' => $data->quotation_valid_until->toDateString(),
                     'support_start' => $data->support_start_date->toDateString(),
                     'support_end' => $data->support_end_date->toDateString(),
                     'invoicing_terms' => $data->invoicing_terms,

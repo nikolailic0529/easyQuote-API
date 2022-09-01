@@ -3,28 +3,37 @@
 namespace App\Services\Auth;
 
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class UserTeamGate
 {
-    protected array $ledTeamUserCache = [];
-
-    public function isUserLedByUser(?string $ledUserKey, User $user): bool
+    public function isLedByUser(Model|string|null $ledUser, User $teamLeader): bool
     {
-        if (is_null($ledUserKey)) {
+        if (is_null($ledUser)) {
             return false;
         }
 
-        $ledTeamUserDictionary = $this->getLedTeamUserDictionary($user);
+        if ($ledUser instanceof Model) {
+            $ledUser = $ledUser->getKey();
+        }
 
-        return isset($ledTeamUserDictionary[$ledUserKey]);
-    }
+        $ledUsersMap = once(function () use ($teamLeader): Collection {
+            if ($teamLeader->relationLoaded('ledTeamUsers')) {
+                return $teamLeader->ledTeamUsers
+                    ->mapWithKeys(static function (User $user): array {
+                        return [$user->getKey() => true];
+                    });
+            }
 
-    private function getLedTeamUserDictionary(User $user): array
-    {
-        return $this->ledTeamUserCache[$user->getKey()] ??= value(static function () use ($user): array {
-            $userKeys = $user->ledTeamUsers()->pluck($user->ledTeamUsers()->getQualifiedForeignKeyName())->all();
-
-            return array_fill_keys($userKeys, true);
+            return $teamLeader->ledTeamUsers()
+                ->pluck($teamLeader->ledTeamUsers()->getModel()->getQualifiedKeyName())
+                ->mapWithKeys(static function (string $id): array {
+                    return [$id => true];
+                });
         });
+
+        return $ledUsersMap[$ledUser] ?? false;
     }
+
 }

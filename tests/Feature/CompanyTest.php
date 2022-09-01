@@ -15,21 +15,23 @@ use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Role;
 use App\Models\SalesOrder;
+use App\Models\SalesUnit;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing, WithFakeUser};
+use Tests\Unit\Traits\{AssertsListing};
 
 /**
  * @group build
  */
 class CompanyTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use WithFaker, AssertsListing, DatabaseTransactions;
 
     /**
      * Test an ability to view paginated companies listing.
@@ -38,6 +40,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewPaginatedCompaniesListing()
     {
+        $this->authenticateApi();
+
         $this->getJson('api/companies')
 //            ->dump()
             ->assertOk()
@@ -112,12 +116,58 @@ class CompanyTest extends TestCase
     }
 
     /**
+     * Test an ability to view paginated companies limited by scope of current user.
+     */
+    public function testCanViewPaginatedCompaniesLimitedByScopeOfCurrentUser(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_companies');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->syncRoles($role);
+
+        $this->authenticateApi($user);
+
+        $company = Company::factory()
+            ->for($user->salesUnits->first())
+            ->for($user)
+            ->create();
+
+        $companyOfDifferentSalesUnit = Company::factory()
+            ->for(SalesUnit::factory())
+            ->for($user)
+            ->create();
+
+        $response = $this->getJson('api/companies')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id']
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertContains($company->getKey(), $response->json('data.*.id'));
+    }
+
+    /**
      * Test an ability to view paginated companies filtered by category.
      *
      * @return void
      */
     public function testCanViewExternalCompaniesFilteredByCategory()
     {
+        $this->authenticateApi();
+
         $categories = [
             'End User',
             'Reseller',
@@ -158,6 +208,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewCompanyFormData()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson('api/companies/create')
 //            ->dump()
             ->assertOk()
@@ -202,6 +254,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewCompanyFormDataFromOpportunityScreen()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson('api/companies/create')
 //            ->dump()
             ->assertOk()
@@ -242,6 +296,8 @@ class CompanyTest extends TestCase
      */
     public function testCanCreateCompany()
     {
+        $this->authenticateApi();
+
         $attributes = Company::factory()->raw();
 
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
@@ -259,6 +315,8 @@ class CompanyTest extends TestCase
      */
     public function testCanNotCreateCompanyWithNonUniqueName(): void
     {
+        $this->authenticateApi();
+
         $existingCompany = Company::factory()->create();
 
         $attributes = Company::factory()->raw([
@@ -282,6 +340,8 @@ class CompanyTest extends TestCase
      */
     public function testCanCreateCompanyWithoutVatAttributes()
     {
+        $this->authenticateApi();
+
         $attributes = Company::factory()->raw();
 
         unset($attributes['vat']);
@@ -304,6 +364,8 @@ class CompanyTest extends TestCase
      */
     public function testCanNotCreateCompanyWithExistingVatCode()
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
 
         $attributes = Company::factory()->raw(['vat' => $company->vat]);
@@ -322,6 +384,8 @@ class CompanyTest extends TestCase
      */
     public function testCanUpdateCompany(): void
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
 
         $newAttributes = Company::factory()->raw([
@@ -421,6 +485,8 @@ class CompanyTest extends TestCase
      */
     public function testCanNotChangeSourceOfCompanyWithFrozenSourceFlag(): void
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create([
             'flags' => Company::FROZEN_SOURCE,
@@ -457,6 +523,8 @@ class CompanyTest extends TestCase
      */
     public function testCanDetachUsedAddressesFromCompany()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 
@@ -506,17 +574,20 @@ class CompanyTest extends TestCase
 
     /**
      * Test an ability to update an existing company.
-     *
-     * @return void
      */
-    public function testCanPartiallyUpdateCompany()
+    public function testCanPartiallyUpdateCompany(): void
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
-        $company = Company::factory()->create();
+        $company = Company::factory()->create([
+            'name' => Str::random(100),
+        ]);
 
         $company->addresses()->attach(factory(Address::class)->create());
 
         $newAttributes = [
+            'sales_unit_id' => SalesUnit::factory()->create()->getKey(),
             'name' => $company->name,
             'email' => $this->faker->safeEmail(),
             'phone' => $this->faker->e164PhoneNumber(),
@@ -604,6 +675,8 @@ class CompanyTest extends TestCase
      */
     public function testCanUpdateCompanyContact()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 
@@ -675,6 +748,8 @@ class CompanyTest extends TestCase
      */
     public function testCanActivateCompany()
     {
+        $this->authenticateApi();
+
         $company = tap(Company::factory()->create(), function (Company $company) {
 
             $company->activated_at = null;
@@ -717,6 +792,8 @@ class CompanyTest extends TestCase
      */
     public function testCanDeactivateCompany()
     {
+        $this->authenticateApi();
+
         $company = tap(Company::factory()->create(), function (Company $company) {
 
             $company->activated_at = now();
@@ -759,6 +836,8 @@ class CompanyTest extends TestCase
      */
     public function testCanDeleteCompany()
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
 
         $this->deleteJson("api/companies/".$company->getKey(), [])
@@ -773,6 +852,8 @@ class CompanyTest extends TestCase
      */
     public function testCanNotDeleteCompanyAttachedToOpportunityAsPrimaryAccount()
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
 
         $opportunity = Opportunity::factory()->create([
@@ -796,6 +877,8 @@ class CompanyTest extends TestCase
      */
     public function testCanNotDeleteSystemDefinedCompany()
     {
+        $this->authenticateApi();
+
         $systemCompany = Company::factory()->create(['flags' => Company::SYSTEM]);
 
         $this->deleteJson("api/companies/".$systemCompany->getKey(), [])
@@ -812,6 +895,8 @@ class CompanyTest extends TestCase
      */
     public function testCanUpdateDefaultCompanyVendor()
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
         $company->vendors()->sync($vendor = factory(Vendor::class)->create());
 
@@ -833,6 +918,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewDefaultCompanyVendorOnFirstImportStep()
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
         $company->vendors()->sync($vendor = factory(Vendor::class)->create());
 
@@ -852,6 +939,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewPrioritizedCompanyOnFirstImportStep()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create([
             'short_code' => Str::random(3),
@@ -879,6 +968,8 @@ class CompanyTest extends TestCase
      */
     public function testCanUpdateDefaultCompanyCountry()
     {
+        $this->authenticateApi();
+
         $vendor = factory(Vendor::class)->create();
 
         $company = Company::factory()->create();
@@ -909,6 +1000,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewDefaultCompanyCountryOnFirstImportStep()
     {
+        $this->authenticateApi();
+
         $vendor = factory(Vendor::class)->create();
 
         $company = Company::factory()->create();
@@ -951,6 +1044,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfOpportunitiesOfCompany()
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
 
         Opportunity::factory()->count(10)->create([
@@ -992,6 +1087,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfQuotesOfCompany()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 
@@ -1069,6 +1166,8 @@ class CompanyTest extends TestCase
 
     public function testCanViewListOfQuotesOfCompanyWithoutSuperPermissions()
     {
+        $this->authenticateApi();
+
         /** @var Role $role */
         $role = factory(Role::class)->create();
 
@@ -1170,6 +1269,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfSalesOrdersOfCompany()
     {
+        $this->authenticateApi();
+
         $company = Company::factory()->create();
 
         /** @var SalesOrder $salesOrderOfCustomer */
@@ -1225,6 +1326,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfUnifiedNotesOfCompany()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 
@@ -1300,6 +1403,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfAssetsOfCompany()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 
@@ -1347,6 +1452,8 @@ class CompanyTest extends TestCase
      */
     public function testCanViewListOfAttachmentsOfCompany()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 
@@ -1441,6 +1548,8 @@ class CompanyTest extends TestCase
      */
     public function testCanCreateNewAttachmentForCompany()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 
@@ -1490,6 +1599,8 @@ class CompanyTest extends TestCase
      */
     public function testCanDeleteAttachmentOfCompany()
     {
+        $this->authenticateApi();
+
         /** @var Company $company */
         $company = Company::factory()->create();
 

@@ -3,6 +3,8 @@
 namespace App\Models\Collaboration;
 
 use App\Contracts\SearchableEntity;
+use App\Models\Company;
+use App\Models\ModelHasCompanies;
 use App\Models\ModelHasSalesUnits;
 use App\Models\Role;
 use App\Models\SalesUnit;
@@ -27,6 +29,7 @@ use Illuminate\Support\Str;
  * @property-read User|null $user
  * @property-read Role|null $role
  * @property-read Collection<int, SalesUnit> $salesUnits
+ * @property-read Collection<int, Company> $companies
  */
 class Invitation extends Model implements SearchableEntity
 {
@@ -90,7 +93,22 @@ class Invitation extends Model implements SearchableEntity
 
     public function salesUnits(): MorphToMany
     {
-        return $this->morphToMany(related: SalesUnit::class, name: 'model', table: (new ModelHasSalesUnits())->getTable());
+        return $this->morphToMany(
+            related: SalesUnit::class,
+            name: 'model',
+            table: (new ModelHasSalesUnits())->getTable()
+        )
+            ->using(ModelHasSalesUnits::class);
+    }
+
+    public function companies(): MorphToMany
+    {
+        return $this->morphToMany(
+            related: Company::class,
+            name: 'model',
+            table: (new ModelHasCompanies())->getTable()
+        )
+            ->using(ModelHasCompanies::class);
     }
 
     public function user(): BelongsTo
@@ -105,7 +123,7 @@ class Invitation extends Model implements SearchableEntity
      */
     public function getUrlAttribute(): string
     {
-        return (string)Str::of($this->host)->finish('/')->finish('signup/')->append($this->invitation_token);
+        return (string) Str::of($this->host)->finish('/')->finish('signup/')->append($this->invitation_token);
     }
 
     public function getUserEmailAttribute()

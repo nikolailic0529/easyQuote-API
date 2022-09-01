@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Support\{
     Facades\Storage,
     Facades\File,

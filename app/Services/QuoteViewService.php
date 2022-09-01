@@ -226,7 +226,10 @@ class QuoteViewService implements QuoteView
     {
         $rows = $this->quoteQueries
             ->mappedSelectedRowsQuery($quote, true)
-            ->get();
+            ->get()
+            ->map(static function (mixed $row) use ($quote): mixed {
+                return data_set($row, 'country_iso_3166_2', $quote->customer?->country?->iso_3166_2);
+            });
 
         $quote->computableRows = MappedRows::make($rows);
     }

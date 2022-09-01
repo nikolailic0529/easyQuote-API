@@ -8,6 +8,9 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Webpatser\Uuid\Uuid;
 
+/**
+ * @group opportunity
+ */
 class OpportunityFormTest extends TestCase
 {
     use DatabaseTransactions;

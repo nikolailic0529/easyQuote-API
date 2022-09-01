@@ -17,6 +17,17 @@ class DateFormatter implements Formatter
             return '';
         }
 
-        return Carbon::parse($value)->format($this->config->get('formatters.date_format'));
+        $format = $this->config->get('formatters.date.default');
+        $countryFormatMap = $this->config->get('formatters.date.country_format', []);
+
+        $format = isset($parameters['country'])
+            ? ($countryFormatMap[$parameters['country']] ?? $format)
+            : $format;
+
+        $fromFormat = $parameters['fromFormat'] ?? null;
+
+        $dateInstance = isset($fromFormat) ? Carbon::createFromFormat($fromFormat, $value) : Carbon::parse($value);
+
+        return $dateInstance->format($format);
     }
 }

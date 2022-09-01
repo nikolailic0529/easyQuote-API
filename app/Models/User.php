@@ -65,9 +65,11 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read string|null $user_fullname
  * @property-read Team|null $team
  * @property-read Collection<int, SalesUnit> $salesUnits
+ * @property-read Collection<int, Company> $companies
  * @property-read Collection<int, Permission>|Permission[] $permissions
  * @property-read Timezone $timezone
  * @property-read Image|null $image
+ * @property-read Collection<int, User> $ledTeamUsers
  */
 class User extends Model implements
     ActivatableInterface,
@@ -169,7 +171,42 @@ class User extends Model implements
         return UserFactory::new();
     }
 
-    public function companies(): HasManyDeep
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    public function ledTeams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'team_team_leader', 'team_leader_id');
+    }
+
+    public function ledTeamUsers(): HasManyDeep
+    {
+        return $this->hasManyDeepFromRelations($this->ledTeams(), (new Team())->users());
+    }
+
+    public function salesUnits(): MorphToMany
+    {
+        return $this->morphToMany(
+            related: SalesUnit::class,
+            name: 'model',
+            table: (new ModelHasSalesUnits())->getTable()
+        )
+            ->using(ModelHasSalesUnits::class);
+    }
+
+    public function companies(): MorphToMany
+    {
+        return $this->morphToMany(
+            related: Company::class,
+            name: 'model',
+            table: (new ModelHasCompanies())->getTable()
+        )
+            ->using(ModelHasCompanies::class);
+    }
+
+    public function companiesThroughRoles(): HasManyDeep
     {
         return $this->hasManyDeep(
             Company::class,
@@ -249,8 +286,10 @@ class User extends Model implements
 
     public function toSearchArray(): array
     {
-        return Arr::except($this->toArray(), ['email_verified_at', 'must_change_password', 'timezone_id', 'role_id',
-            'picture']);
+        return Arr::except($this->toArray(), [
+            'email_verified_at', 'must_change_password', 'timezone_id', 'role_id',
+            'picture',
+        ]);
     }
 
     public function getItemNameAttribute()
@@ -282,26 +321,6 @@ class User extends Model implements
         }
 
         return asset('storage/'.$this->image->original_image);
-    }
-
-    public function team(): BelongsTo
-    {
-        return $this->belongsTo(Team::class);
-    }
-
-    public function ledTeams(): BelongsToMany
-    {
-        return $this->belongsToMany(Team::class, 'team_team_leader', 'team_leader_id');
-    }
-
-    public function ledTeamUsers(): HasManyDeep
-    {
-        return $this->hasManyDeepFromRelations($this->ledTeams(), (new Team())->users());
-    }
-
-    public function salesUnits(): MorphToMany
-    {
-        return $this->morphToMany(related: SalesUnit::class, name: 'model', table: (new ModelHasSalesUnits())->getTable());
     }
 
     public function isActive(): bool

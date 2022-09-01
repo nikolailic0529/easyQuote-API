@@ -2,23 +2,26 @@
 
 namespace Tests\Unit\User;
 
-use App\Models\SalesUnit;
+use App\Http\Middleware\PerformUserActivity;
+use App\Models\Data\Country;
+use App\Models\Data\Timezone;
+use App\Models\Template\HpeContractTemplate;
 use App\Models\User;
 use App\Services\User\UserActivityService;
+use Faker\Generator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
+ * @group user
  */
 class AuthTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
-
-    protected bool $dontAuthenticate = true;
+    use WithFaker, DatabaseTransactions;
 
     protected static array $assertableAttributes = ['email', 'password', 'local_ip'];
 
@@ -74,8 +77,10 @@ class AuthTest extends TestCase
     {
         $user = tap(User::factory()->create())->deactivate();
 
-        $credentials = ['email' => $user->email, 'password' => 'password', 'local_ip' => '192.168.99.99',
-            'g_recaptcha' => Str::random()];
+        $credentials = [
+            'email' => $user->email, 'password' => 'password', 'local_ip' => '192.168.99.99',
+            'g_recaptcha' => Str::random(),
+        ];
 
         $response = $this->postJson(url('/api/auth/signin'), $credentials)->assertStatus(422);
 
@@ -114,12 +119,16 @@ class AuthTest extends TestCase
      */
     public function testLogoutDueInactivity()
     {
+        $this->authenticateApi();
+
+        $this->withMiddleware(PerformUserActivity::class);
+
         /** @var \App\Services\User\UserActivityService $activityService */
         $activityService = $this->app[UserActivityService::class];
 
-        $activityService->updateActivityTimeOfUser($this->user, now()->subHour());
+        $activityService->updateActivityTimeOfUser($this->app['auth']->user(), now()->subHour());
 
-        $this->authenticate()->getJson(url('api/auth/user'))
+        $this->getJson('api/auth/user')
             ->assertUnauthorized()
             ->assertExactJson([
                 'ErrorCode' => 'LO_00',
@@ -128,7 +137,7 @@ class AuthTest extends TestCase
             ]);
 
         $this->assertFalse(
-            $this->user->tokens()->where('revoked', false)->exists()
+            $this->app['auth']->user()->tokens()->where('revoked', false)->exists()
         );
     }
 
@@ -137,21 +146,33 @@ class AuthTest extends TestCase
      *
      * @return void
      */
-    public function testCurrentUserRetrieving()
+    public function testCanViewCurrentUser()
     {
-        $this->authenticate();
+        $this->authenticateApi();
 
-        $this->getJson(url('api/auth/user'))
+        $this->getJson('api/auth/user')
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in',
-                'role_id', 'role_name', 'privileges',
+                'id',
+                'email',
+                'first_name',
+                'middle_name',
+                'last_name',
+                'default_route',
+                'already_logged_in',
+                'role_id',
+                'role_name',
+                'privileges',
+                'companies' => [
+                    '*' => ['id', 'name']
+                ]
             ]);
     }
 
     public function testCanDeleteCurrentUserPicture(): void
     {
-        $this->authenticate();
+        $this->authenticateApi();
 
         $response = $this->getJson('api/auth/user')
 //            ->dump()
@@ -194,26 +215,20 @@ class AuthTest extends TestCase
 
     /**
      * Test an ability to update current user.
+     *
+     * @dataProvider currentUserDataProvider
      */
-    public function testCanUpdateCurrentUser(): void
+    public function testCanUpdateCurrentUser(\Closure $getData): void
     {
-        $this->authenticate();
+        $data = $getData();
 
-        $response = $this->getJson('api/auth/user')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'sales_units' => [
-                    '*' => ['id', 'unit_name'],
-                ],
-            ]);
+        $this->authenticateApi();
 
-        $this->postJson('api/auth/user', $data = [
-            'first_name' => $this->faker->firstName(),
-            'last_name' => $this->faker->lastName(),
-        ])
+        $response = $this->postJson('api/auth/user', $data)
 //            ->dump()
             ->assertOk();
+
+        $response->assertOk();
 
         $response = $this->getJson('api/auth/user')
 //            ->dump()
@@ -226,8 +241,103 @@ class AuthTest extends TestCase
                 ],
             ]);
 
-        foreach ($data as $attr => $value) {
+        foreach (Arr::except($data,
+            ['password', 'current_password', 'change_password', 'delete_picture']) as $attr => $value) {
             $this->assertSame($value, $response->json($attr));
         }
+    }
+
+    protected function currentUserDataProvider(): \Generator
+    {
+        yield 'update first_name & last_name' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'first_name' => $faker->firstName(),
+                    'last_name' => $faker->lastName(),
+                ];
+            },
+        ];
+
+        yield 'update middle_name' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'middle_name' => $faker->firstName(),
+                ];
+            },
+        ];
+
+        yield 'update phone' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'phone' => $faker->e164PhoneNumber(),
+                ];
+            },
+        ];
+
+        yield 'update timezone_id' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'timezone_id' => Timezone::query()->get()->random()->getKey(),
+                ];
+            },
+        ];
+
+        yield 'update country_id' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'country_id' => Country::query()->get()->random()->getKey(),
+                ];
+            },
+        ];
+
+        yield 'update hpe_contract_template_id' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'hpe_contract_template_id' => factory(HpeContractTemplate::class)->create()->getKey(),
+                ];
+            },
+        ];
+
+        yield 'set null hpe_contract_template_id' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'hpe_contract_template_id' => null,
+                ];
+            },
+        ];
+
+        yield 'delete picture' => [
+            function () {
+                return [
+                    'delete_picture' => true,
+                ];
+            },
+        ];
+
+        yield 'change password' => [
+            function () {
+                $faker = app(Generator::class);
+
+                return [
+                    'change_password' => true,
+                    'current_password' => 'password',
+                    'password' => $faker->password(),
+                ];
+            },
+        ];
     }
 }

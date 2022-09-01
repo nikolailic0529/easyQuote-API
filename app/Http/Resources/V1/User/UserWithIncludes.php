@@ -24,6 +24,7 @@ class UserWithIncludes extends JsonResource
             'team' => $this->team,
 
             'sales_units' => $this->salesUnits,
+            'companies' => $this->companies,
 
             'email' => $this->email,
             'first_name' => $this->first_name,

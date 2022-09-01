@@ -8,6 +8,9 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
+/**
+ * @group opportunity
+ */
 class OpportunityNoteTest extends TestCase
 {
     use DatabaseTransactions, WithFaker;

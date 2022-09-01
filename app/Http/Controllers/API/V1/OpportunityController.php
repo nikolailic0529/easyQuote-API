@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\DTO\Opportunity\ImportFilesData;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Opportunities\BatchUpload;
 use App\Http\Requests\Opportunity\{BatchSave,
     CreateOpportunity,
     MarkOpportunityAsLost,
@@ -23,7 +23,9 @@ use App\Queries\OpportunityQueries;
 use App\Services\Exceptions\ValidationException;
 use App\Services\Opportunity\OpportunityAggregateService;
 use App\Services\Opportunity\OpportunityEntityService;
+use App\Services\Opportunity\OpportunityImportService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Http\{JsonResponse,
     Request,
     Resources\Json\AnonymousResourceCollection,
@@ -37,14 +39,15 @@ class OpportunityController extends Controller
     /**
      * Paginate existing opportunities with the status 'OK'.
      *
-     * @param PaginateOpportunities $request
-     * @param OpportunityQueries $queries
+     * @param  PaginateOpportunities  $request
+     * @param  OpportunityQueries  $queries
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateOpportunities(PaginateOpportunities $request,
-                                          OpportunityQueries    $queries): AnonymousResourceCollection
-    {
+    public function paginateOpportunities(
+        PaginateOpportunities $request,
+        OpportunityQueries $queries
+    ): AnonymousResourceCollection {
         $this->authorize('viewAny', Opportunity::class);
 
         $resource = $queries->paginateOkOpportunitiesQuery($request)->apiPaginate();
@@ -55,14 +58,15 @@ class OpportunityController extends Controller
     /**
      * Paginate existing opportunities with the status 'LOST'.
      *
-     * @param PaginateOpportunities $request
-     * @param OpportunityQueries $queries
+     * @param  PaginateOpportunities  $request
+     * @param  OpportunityQueries  $queries
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateLostOpportunities(PaginateOpportunities $request,
-                                              OpportunityQueries    $queries): AnonymousResourceCollection
-    {
+    public function paginateLostOpportunities(
+        PaginateOpportunities $request,
+        OpportunityQueries $queries
+    ): AnonymousResourceCollection {
         $this->authorize('viewAny', Opportunity::class);
 
         $resource = $queries->paginateLostOpportunitiesQuery($request)->apiPaginate();
@@ -73,14 +77,15 @@ class OpportunityController extends Controller
     /**
      * Show opportunity entities grouped by their pipeline stages.
      *
-     * @param Request $request
-     * @param OpportunityAggregateService $aggregateService
+     * @param  Request  $request
+     * @param  OpportunityAggregateService  $aggregateService
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function showOpportunitiesGroupedByPipelineStages(Request                     $request,
-                                                             OpportunityAggregateService $aggregateService): JsonResponse
-    {
+    public function showOpportunitiesGroupedByPipelineStages(
+        Request $request,
+        OpportunityAggregateService $aggregateService
+    ): JsonResponse {
         $this->authorize('viewAny', Opportunity::class);
 
         return response()->json(
@@ -92,30 +97,34 @@ class OpportunityController extends Controller
     /**
      * Paginate opportunities of the pipeline stage.
      *
-     * @param Request $request
-     * @param OpportunityQueries $queries
-     * @param PipelineStage $stage
+     * @param  Request  $request
+     * @param  OpportunityQueries  $queries
+     * @param  PipelineStage  $stage
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateOpportunitiesOfPipelineStage(Request                     $request,
-                                                         OpportunityAggregateService $aggregateService,
-                                                         OpportunityQueries          $queries,
-                                                         PipelineStage               $stage): AnonymousResourceCollection
-    {
+    public function paginateOpportunitiesOfPipelineStage(
+        Request $request,
+        OpportunityAggregateService $aggregateService,
+        OpportunityQueries $queries,
+        PipelineStage $stage
+    ): AnonymousResourceCollection {
         $this->authorize('viewAny', Opportunity::class);
 
         $pagination = $queries->paginateOpportunitiesOfPipelineStageQuery($stage, $request)->apiPaginate();
 
         $summary = $aggregateService->calculateSummaryOfPipelineStage($stage, $request);
 
-        return OpportunityOfStage::collection($pagination)->additional(['meta' => $summary->except('total')->toArray()]);
+        return OpportunityOfStage::collection($pagination)->additional([
+            'meta' => $summary->except('total')
+                ->toArray(),
+        ]);
     }
 
     /**
      * Show the specified Opportunity.
      *
-     * @param Opportunity $opportunity
+     * @param  Opportunity  $opportunity
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -132,8 +141,8 @@ class OpportunityController extends Controller
     /**
      * Create a new opportunity.
      *
-     * @param CreateOpportunity $request
-     * @param OpportunityEntityService $service
+     * @param  CreateOpportunity  $request
+     * @param  OpportunityEntityService  $service
      * @return JsonResponse
      * @throws ValidationException
      * @throws AuthorizationException
@@ -158,22 +167,22 @@ class OpportunityController extends Controller
     /**
      * Batch upload the opportunities.
      *
-     * @param BatchUpload $request
-     * @param OpportunityEntityService $service
+     * @param  Guard  $guard
+     * @param  ImportFilesData  $data
+     * @param  OpportunityImportService  $service
      * @return JsonResponse
-     * @throws ValidationException
-     * @throws Throwable
+     * @throws AuthorizationException
      */
-    public function batchUploadOpportunities(BatchUpload $request, OpportunityEntityService $service): JsonResponse
-    {
+    public function batchUploadOpportunities(
+        Guard $guard,
+        ImportFilesData $data,
+        OpportunityImportService $service
+    ): JsonResponse {
         $this->authorize('create', Opportunity::class);
 
         $result = $service
-            ->setCauser($request->user())
-            ->batchImportOpportunities(
-                $request->getImportOpportunityData(),
-                $request->user()
-            );
+            ->setCauser($guard->user())
+            ->import($data);
 
         return response()->json(UploadedOpportunities::make($result), R::HTTP_CREATED);
     }
@@ -181,19 +190,19 @@ class OpportunityController extends Controller
     /**
      * Batch save the uploaded opportunities.
      *
-     * @param BatchSave $request
-     * @param OpportunityEntityService $service
+     * @param  BatchSave  $request
+     * @param  OpportunityImportService  $service
      * @return Response
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function batchSaveOpportunities(BatchSave $request, OpportunityEntityService $service): Response
+    public function batchSaveOpportunities(BatchSave $request, OpportunityImportService $service): Response
     {
         $this->authorize('create', Opportunity::class);
 
         $service
             ->setCauser($request->user())
-            ->batchSaveOfImportedOpportunities($request->getBatchSaveData());
+            ->saveImported($request->getBatchSaveData());
 
         return response()->noContent();
     }
@@ -201,18 +210,19 @@ class OpportunityController extends Controller
     /**
      * Update the specified opportunity.
      *
-     * @param UpdateOpportunity $request
-     * @param Opportunity $opportunity
-     * @param OpportunityEntityService $service
+     * @param  UpdateOpportunity  $request
+     * @param  Opportunity  $opportunity
+     * @param  OpportunityEntityService  $service
      * @return JsonResponse
      * @throws ValidationException
      * @throws AuthorizationException
      * @throws Throwable
      */
-    public function updateOpportunity(UpdateOpportunity        $request,
-                                      OpportunityEntityService $service,
-                                      Opportunity              $opportunity): JsonResponse
-    {
+    public function updateOpportunity(
+        UpdateOpportunity $request,
+        OpportunityEntityService $service,
+        Opportunity $opportunity
+    ): JsonResponse {
         $this->authorize('update', $opportunity);
 
         $resource = $service
@@ -231,18 +241,19 @@ class OpportunityController extends Controller
     /**
      * Update stage of the specified opportunity.
      *
-     * @param SetStageOfOpportunity $request
-     * @param OpportunityEntityService $entityService
-     * @param Opportunity $opportunity
+     * @param  SetStageOfOpportunity  $request
+     * @param  OpportunityEntityService  $entityService
+     * @param  Opportunity  $opportunity
      * @return ResourceCollection
      * @throws ValidationException
      * @throws Throwable
      */
-    public function setStageOfOpportunity(SetStageOfOpportunity       $request,
-                                          OpportunityEntityService    $entityService,
-                                          OpportunityAggregateService $aggregateService,
-                                          Opportunity                 $opportunity): ResourceCollection
-    {
+    public function setStageOfOpportunity(
+        SetStageOfOpportunity $request,
+        OpportunityEntityService $entityService,
+        OpportunityAggregateService $aggregateService,
+        Opportunity $opportunity
+    ): ResourceCollection {
         $this->authorize('update', $opportunity);
 
         $entityService
@@ -258,16 +269,17 @@ class OpportunityController extends Controller
     /**
      * Delete the specified opportunity.
      *
-     * @param Request $request
-     * @param Opportunity $opportunity
-     * @param OpportunityEntityService $service
+     * @param  Request  $request
+     * @param  Opportunity  $opportunity
+     * @param  OpportunityEntityService  $service
      * @return Response
      * @throws AuthorizationException
      */
-    public function destroyOpportunity(Request                  $request,
-                                       OpportunityEntityService $service,
-                                       Opportunity              $opportunity): Response
-    {
+    public function destroyOpportunity(
+        Request $request,
+        OpportunityEntityService $service,
+        Opportunity $opportunity
+    ): Response {
         $this->authorize('delete', $opportunity);
 
         $service
@@ -280,16 +292,17 @@ class OpportunityController extends Controller
     /**
      * Mark the specified opportunity entity as lost.
      *
-     * @param MarkOpportunityAsLost $request
-     * @param Opportunity $opportunity
-     * @param OpportunityEntityService $service
+     * @param  MarkOpportunityAsLost  $request
+     * @param  Opportunity  $opportunity
+     * @param  OpportunityEntityService  $service
      * @return Response
      * @throws AuthorizationException
      */
-    public function markOpportunityAsLost(MarkOpportunityAsLost    $request,
-                                          OpportunityEntityService $service,
-                                          Opportunity              $opportunity): Response
-    {
+    public function markOpportunityAsLost(
+        MarkOpportunityAsLost $request,
+        OpportunityEntityService $service,
+        Opportunity $opportunity
+    ): Response {
         $this->authorize('update', $opportunity);
 
         $service
@@ -302,16 +315,17 @@ class OpportunityController extends Controller
     /**
      * Mark the specified opportunity as not lost.
      *
-     * @param Request $request
-     * @param Opportunity $opportunity
-     * @param OpportunityEntityService $service
+     * @param  Request  $request
+     * @param  Opportunity  $opportunity
+     * @param  OpportunityEntityService  $service
      * @return Response
      * @throws AuthorizationException
      */
-    public function markOpportunityAsNotLost(Request                  $request,
-                                             OpportunityEntityService $service,
-                                             Opportunity              $opportunity): Response
-    {
+    public function markOpportunityAsNotLost(
+        Request $request,
+        OpportunityEntityService $service,
+        Opportunity $opportunity
+    ): Response {
         $this->authorize('update', $opportunity);
 
         $service
@@ -324,16 +338,17 @@ class OpportunityController extends Controller
     /**
      * List appointments linked to opportunity.
      *
-     * @param Request $request
-     * @param AppointmentQueries $appointmentQueries
-     * @param Opportunity $opportunity
+     * @param  Request  $request
+     * @param  AppointmentQueries  $appointmentQueries
+     * @param  Opportunity  $opportunity
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showAppointmentsOfOpportunity(Request            $request,
-                                                  AppointmentQueries $appointmentQueries,
-                                                  Opportunity        $opportunity): AnonymousResourceCollection
-    {
+    public function showAppointmentsOfOpportunity(
+        Request $request,
+        AppointmentQueries $appointmentQueries,
+        Opportunity $opportunity
+    ): AnonymousResourceCollection {
         $this->authorize('view', $opportunity);
 
         $resource = $appointmentQueries->listAppointmentsLinkedToQuery($opportunity, $request)->get();

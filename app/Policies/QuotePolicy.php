@@ -59,7 +59,7 @@ class QuotePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -108,7 +108,7 @@ class QuotePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -142,7 +142,7 @@ class QuotePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -248,7 +248,7 @@ class QuotePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -283,7 +283,7 @@ class QuotePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }

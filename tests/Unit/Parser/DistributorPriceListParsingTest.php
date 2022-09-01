@@ -2,15 +2,14 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Services\DocumentReaders\Models\Row;
-use App\Contracts\Services\{ManagesDocumentProcessors, PdfParserInterface, WordParserInterface};
-use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFileFormat};
+use App\Contracts\Services\{PdfParserInterface, WordParserInterface};
+use App\Models\{QuoteFile\QuoteFileFormat};
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentProcessor\EasyQuote\EqExcelPriceListProcessor;
 use App\Services\DocumentReaders\ExcelPriceListReader;
+use App\Services\DocumentReaders\Models\Row;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Collection, Facades\File, Facades\Storage, Str};
-use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /**

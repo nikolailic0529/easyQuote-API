@@ -34,10 +34,19 @@ use Tests\TestCase;
 /**
  * Class OpportunityTest
  * @group worldwide
+ * @group opportunity
  */
 class OpportunityTest extends TestCase
 {
     use DatabaseTransactions, WithFaker;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->getConnection()->table('opportunities')->delete();
+        $this->getConnection()->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM);
+    }
 
     /**
      * Test an ability to view paginated opportunities.
@@ -46,10 +55,9 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        Opportunity::factory()->count(30)
-            ->create([
-                'user_id' => $this->app['auth.driver']->id(),
-            ]);
+        Opportunity::factory()->count(10)
+            ->for($this->app['auth.driver']->user())
+            ->create();
 
         $this->getJson('api/opportunities')
 //            ->dump()
@@ -1536,89 +1544,10 @@ class OpportunityTest extends TestCase
 
     /**
      * Test an ability to batch upload the opportunities from a file.
-     */
-    public function testCanBatchUploadOpportunities(): void
-    {
-        $accountsDataFile = UploadedFile::fake()->createWithContent('Accounts-04042021.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
-
-        $accountContactsFile = UploadedFile::fake()->createWithContent('Contacts-04042021.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
-
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
-
-        $this->authenticateApi();
-
-        $response = $this->postJson('api/opportunities/upload', [
-            'opportunities_file' => $opportunitiesFile,
-            'accounts_data_file' => $accountsDataFile,
-            'account_contacts_file' => $accountContactsFile,
-        ])
-//            ->dump()
-            ->assertCreated()
-            ->assertJsonStructure([
-                'opportunities' => [
-                    '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
-                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
-                        'sale_action_name', 'campaign_name',
-                    ],
-                ],
-                'errors',
-            ]);
-
-        $this->assertEmpty($response->json('errors'));
-    }
-
-    /**
-     * Test an ability to batch upload the opportunities from a file.
-     */
-    public function testCanBatchUploadOpportunitiesBy20211102(): void
-    {
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
-
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
-
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
-
-        $this->authenticateApi();
-
-        $response = $this->postJson('api/opportunities/upload', [
-            'opportunities_file' => $opportunitiesFile,
-            'accounts_data_file' => $accountsDataFile,
-            'account_contacts_file' => $accountContactsFile,
-        ])
-//            ->dump()
-            ->assertCreated()
-            ->assertJsonStructure([
-                'opportunities' => [
-                    '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
-                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
-                        'sale_action_name', 'campaign_name',
-                    ],
-                ],
-                'errors',
-            ]);
-
-        $this->assertEmpty($response->json('errors'));
-    }
-
-    /**
-     * Test an ability to batch upload the opportunities from a file.
      * The new fields added: Reseller(yes/no), End User(yes/no), Vendor(Lenovo, IBM).
      */
     public function testCanUploadOpportunitiesBy20220121(): void
     {
-        $this->app['db.connection']
-            ->table('companies')
-            ->where('name', 'Foster and Partners')
-            ->delete();
-
         $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx',
             file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-21012022.xlsx')));
 
@@ -1745,11 +1674,6 @@ class OpportunityTest extends TestCase
      */
     public function testCanUploadOpportunitiesBy20220323(): void
     {
-        $this->app['db.connection']
-            ->table('companies')
-            ->where('name', 'Foster and Partners')
-            ->delete();
-
         $accountsDataFile = UploadedFile::fake()->createWithContent('accounts.xlsx',
             file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-23032022.xlsx')));
 
@@ -1795,6 +1719,10 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertJsonStructure([
                 'id',
+                'sales_unit' => [
+                    'id',
+                    'unit_name',
+                ],
                 'primary_account' => [
                     'id', 'name',
                     'vendors' => [
@@ -1815,6 +1743,8 @@ class OpportunityTest extends TestCase
                     'id', 'first_name', 'last_name',
                 ],
             ]);
+
+        $this->assertSame('Worldwide', $response->json('sales_unit.unit_name'));
 
         $this->assertSame('Foster and Partners', $response->json('primary_account.name'));
         $this->assertSame('Foster and Partners', $response->json('end_user.name'));
@@ -1886,11 +1816,6 @@ class OpportunityTest extends TestCase
      */
     public function testCanUploadOpportunitiesBy20220125(): void
     {
-        $this->app['db.connection']
-            ->table('companies')
-            ->where('name', 'AT Company 5')
-            ->delete();
-
         $existingCompany = Company::factory()->create([
             'name' => 'AT Company 5',
             'type' => 'External',
@@ -1997,161 +1922,12 @@ class OpportunityTest extends TestCase
     }
 
     /**
-     * Test an ability to batch upload and save the opportunities from a file.
-     *
-     * @return void
-     */
-    public function testCanBatchSaveOpportunities(): void
-    {
-        $this->app['db.connection']->table('opportunities')->update(['deleted_at' => now()]);
-        $this->app['db.connection']->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->update(['deleted_at' => now()]);
-
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
-
-        $accountsDataFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-data-pipeliner-export.xlsx')));
-
-        $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
-
-        /** @var Role $role */
-        $role = factory(Role::class)->create();
-
-        $role->syncPermissions([
-            'view_opportunities',
-            'create_opportunities',
-            'update_own_opportunities',
-            'delete_own_opportunities',
-        ]);
-
-        /** @var User $user */
-        $user = User::factory()->create();
-
-        $this->authenticateApi($user);
-
-        $response = $this->postJson('api/opportunities/upload', [
-            'opportunities_file' => $opportunitiesFile,
-            'accounts_data_file' => $accountsDataFile,
-            'account_contacts_file' => $accountContactsFile,
-        ])
-//            ->dump()
-            ->assertCreated()
-            ->assertJsonStructure([
-                'opportunities' => [
-                    '*' => [
-                        'id', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
-                    ],
-                ],
-                'errors',
-            ]);
-
-        $keys = $response->json('opportunities.*.id');
-
-        // Ensure that uploaded opportunities don't exist on the main listing.
-        $response = $this->getJson('api/opportunities')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => ['id'],
-                ],
-            ]);
-
-        $keysOnListing = $response->json('data.*.id');
-
-        $this->assertEmpty($keysOnListing);
-
-        $this->patchJson('api/opportunities/save', [
-            'opportunities' => $keys,
-        ])
-//            ->dump()
-            ->assertNoContent();
-
-        $keysOnListing = [];
-        $page = 1;
-
-        // Assert that uploaded opportunities don't exist on the main listing.
-        do {
-            $response = $this->getJson('api/opportunities?page='.$page)
-                ->assertOk()
-                ->assertJsonStructure([
-                    'data' => [
-                        '*' => ['id'],
-                    ],
-                ]);
-
-            $keysOnListing = array_merge($keysOnListing, $response->json('data.*.id'));
-
-            $page++;
-        } while (null !== $response->json('links.next'));
-
-        $this->assertCount(count($keys), $keysOnListing);
-
-        $response = $this->getJson('api/opportunities')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => ['id'],
-                ],
-            ]);
-
-        // Assert that user has permissions for a newly created company.
-        $opportunityWithCompany = collect($response->json('data'))->whereNotNull('company_id')->first();
-
-        $this->assertNotNull($opportunityWithCompany);
-
-        $companyResponse = $this->getJson('api/companies/'.$opportunityWithCompany['company_id'])
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'id',
-                'addresses' => [
-                    '*' => ['id', 'user_id'],
-                ],
-                'contacts' => [
-                    '*' => ['id', 'user_id'],
-                ],
-                'permissions' => [
-                    'view',
-                    'update',
-                    'delete',
-                ],
-            ]);
-
-        $this->assertTrue($companyResponse->json('permissions.view'));
-        $this->assertTrue($companyResponse->json('permissions.update'));
-        $this->assertTrue($companyResponse->json('permissions.delete'));
-
-        foreach ($companyResponse->json('addresses.*.user_id') as $ownerID) {
-            if (null === $ownerID) {
-                continue;
-            }
-
-            $this->assertSame($user->getKey(), $ownerID);
-        }
-
-        foreach ($companyResponse->json('contacts.*.user_id') as $ownerID) {
-            if (null === $ownerID) {
-                continue;
-            }
-
-            $this->assertSame($user->getKey(), $ownerID);
-        }
-    }
-
-
-    /**
      * Test an ability to see matched own primary account in imported opportunity,
      * when multiple companies are present with the same name owned by different users.
      *
      */
     public function testCanSeeMatchedOwnPrimaryAccountInImportedOpportunity(): void
     {
-        $this->app['db.connection']->table('opportunities')->delete();
-        $this->app['db.connection']->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->delete();
-
         $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-17012022.xlsx',
             file_get_contents(base_path('tests/Feature/Data/opportunity/ops-17012022.xlsx')));
 
@@ -2324,8 +2100,6 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $this->app['db.connection']->table('opportunities')->delete();
-
         $pipelineStagesResp = $this->getJson('api/pipelines/default')
 //            ->dump()
             ->assertOk()
@@ -2458,8 +2232,6 @@ class OpportunityTest extends TestCase
      */
     public function testCanViewOwnOpportunitiesGroupedByPipelineStages(): void
     {
-        $this->app['db.connection']->table('opportunities')->delete();
-
         $anotherUser = User::factory()
             ->hasAttached(SalesUnit::factory())
             ->create();

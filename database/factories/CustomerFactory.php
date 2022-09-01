@@ -11,13 +11,13 @@ $factory->define(Customer::class, function (Faker $faker) {
     $country = Country::inRandomOrder()->first();
 
     return [
-        'rfq_number'            => $faker->regexify('/[A-Z0-9]{20}/'),
-        'support_start_date'    => now()->startOfDay(),
-        'support_end_date'      => now()->addYears(2)->startOfDay(),
-        'quotation_valid_until' => now()->addYears(2)->startOfDay(),
-        'customer_name'         => $faker->company,
-        'invoicing_terms'       => $faker->sentence,
-        'country_id'            => $country->id
+        'rfq' => $faker->regexify('/[A-Z0-9]{20}/'),
+        'support_start' => now()->startOfDay(),
+        'support_end' => now()->addYears(2)->startOfDay(),
+        'valid_until' => now()->addYears(2)->startOfDay(),
+        'name' => $faker->company,
+        'invoicing_terms' => $faker->sentence,
+        'country_id' => $country->id,
     ];
 });
 
@@ -29,13 +29,13 @@ $factory->state(Customer::class, 'request', function (Faker $faker) {
     $country = Country::inRandomOrder()->first();
 
     return [
-        'rfq_number'            => $faker->regexify('/[A-Z0-9]{20}/'),
-        'support_start_date'    => now()->startOfDay()->format('Y-m-d'),
-        'support_end_date'      => now()->addYears(2)->startOfDay()->format('Y-m-d'),
+        'rfq_number' => $faker->regexify('/[A-Z0-9]{20}/'),
+        'support_start_date' => now()->startOfDay()->format('Y-m-d'),
+        'support_end_date' => now()->addYears(2)->startOfDay()->format('Y-m-d'),
         'quotation_valid_until' => now()->addYears(2)->startOfDay()->format('m/d/Y'),
-        'customer_name'         => $faker->company,
-        'invoicing_terms'       => $faker->sentence,
-        'country'               => $country->code
+        'customer_name' => $faker->company,
+        'invoicing_terms' => $faker->sentence,
+        'country' => $country->code,
     ];
 });
 

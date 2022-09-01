@@ -6,10 +6,12 @@ use App\Enum\CompanyType;
 use App\Http\Query\Company\FilterCompanyCategory;
 use App\Models\Asset;
 use App\Models\Company;
+use App\Models\Opportunity;
 use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -76,9 +78,7 @@ class CompanyQueries
             ->withCasts([
                 'total_quoted_value' => 'decimal:2',
             ])
-            ->when($this->gate->denies('viewAnyOwnerEntities', Company::class), function (Builder $builder) use ($user) {
-                $builder->whereBelongsTo($user);
-            })
+            ->tap($this->scopeCurrentUser($request))
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -198,5 +198,52 @@ class CompanyQueries
             ->when(false === empty($sources), function (Builder $builder) use ($sources) {
                 $builder->whereIn('source', $sources);
             });
+    }
+
+    protected function scopeCurrentUser(Request $request): callable
+    {
+        return function (Builder $builder) use ($request): void {
+            /** @var User|null $user */
+            $user = $request->user();
+
+            if (null === $user) {
+                Response::deny('The query cannot be performed without user authentication.')->authorize();
+            }
+
+            $builder->unless($this->gate->allows('viewAnyOwnerEntities', Opportunity::class),
+                function (Builder $builder) use ($user): void {
+
+                    /** @var \Staudenmeir\LaravelCte\Query\Builder $builder */
+
+                    $builder->withExpression('led_team_users',
+                        $user->ledTeamUsers()->getQuery()
+                            ->select($user->ledTeamUsers()->getModel()->getQualifiedKeyName())
+                            ->toBase()
+                    );
+
+                    $builder->withExpression('user_has_sales_units',
+                        $user->salesUnits()->getQuery()
+                            ->select($user->salesUnits()->getModel()->getQualifiedKeyName())
+                            ->toBase()
+                    );
+
+                    $builder->where(static function (Builder $builder) use ($user): void {
+                        $builder
+                            ->where($builder->qualifyColumn('user_id'), $user->getKey())
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                static function (BaseBuilder $builder) use ($user): void {
+                                    $builder->select($user->ledTeamUsers()->getModel()->getKeyName())
+                                        ->from('led_team_users');
+                                });
+                    })
+                        ->where(static function (Builder $builder) use ($user): void {
+                            $builder->whereIn($builder->qualifyColumn('sales_unit_id'),
+                                static function (BaseBuilder $builder) use ($user): void {
+                                    $builder->select($user->salesUnits()->getModel()->getKeyName())
+                                        ->from('user_has_sales_units');
+                                });
+                        });
+                });
+        };
     }
 }

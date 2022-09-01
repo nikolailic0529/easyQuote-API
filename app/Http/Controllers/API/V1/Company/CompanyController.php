@@ -60,7 +60,7 @@ class CompanyController extends Controller
     {
         $this->authorize('viewAny', Company::class);
 
-        $pagination = $request->transformCompaniesQuery($queries->paginateCompaniesQuery($request))->apiPaginate();
+        $pagination = $queries->paginateCompaniesQuery($request)->apiPaginate();
 
         return \App\Http\Resources\V1\Company\CompanyCollection::make($pagination);
     }
@@ -347,7 +347,7 @@ class CompanyController extends Controller
 
         $resource = $service
             ->setCauser($request->user())
-            ->partiallyUpdateCompany(company: $company, companyData: $request->getUpdateCompanyData());
+            ->partiallyUpdateCompany(company: $company, data: $request->getUpdateCompanyData());
 
         return response()->json(
             CompanyWithIncludes::make($resource),

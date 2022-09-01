@@ -2,20 +2,21 @@
 
 namespace Tests\Feature;
 
-use App\Models\{Collaboration\Invitation, Role, User};
+use App\Enum\CompanyType;
+use App\Models\{Collaboration\Invitation, Company, Role, SalesUnit, User};
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Facades\Auth, Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithFakeUser,};
 use function factory;
 use const IE_01;
 
 /**
  * @group build
+ * @group user
  */
 class InvitationTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to view listing of invitations.
@@ -24,18 +25,23 @@ class InvitationTest extends TestCase
      */
     public function testCanViewListingOfInvitations()
     {
-        $this->getJson('api/invitations', $this->authorizationHeader)
+        $this->authenticateApi();
+
+        $this->getJson('api/invitations')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'user_id', 'role_id', 'role_name', 'invitation_token', 'host', 'created_at', 'expires_at', 'is_expired',
+                        'id', 'user_id', 'role_id', 'role_name', 'invitation_token', 'host', 'created_at', 'expires_at',
+                        'is_expired',
                     ],
                 ],
             ]);
 
-        $this->getJson('api/invitations?'.http_build_query(['search' => Str::random(10), 'order_by_created_at' => 'asc', 'order_by_name' => 'desc']))
+        $this->getJson('api/invitations?'.http_build_query([
+                'search' => Str::random(10), 'order_by_created_at' => 'asc', 'order_by_name' => 'desc',
+            ]))
             ->assertOk();
     }
 
@@ -44,18 +50,47 @@ class InvitationTest extends TestCase
      *
      * @return void
      */
-    public function testCanCreateNewInvitation()
+    public function testCanCreateNewInvitation(): void
     {
-        $this->postJson('api/users', [
+        $this->authenticateApi();
+
+        $r = $this->postJson('api/users', $data = [
             'role_id' => factory(Role::class)->create()->getKey(),
             'host' => 'http://localhost',
             'email' => Str::random(40).'@email.com',
+            'sales_units' => SalesUnit::factory(2)->create()->map->only('id'),
+            'companies' => Company::factory(2)->create(['type' => CompanyType::INTERNAL])->map->only('id'),
         ])
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
-                'id', 'email', 'host', 'role_id', 'user_id', 'invitation_token', 'expires_at', 'created_at', 'role_name', 'url',
-            ]);
+                'id',
+                'email',
+                'host',
+                'role_id',
+                'user_id',
+                'invitation_token',
+                'role_name',
+                'url',
+                'sales_units' => [
+                    '*' => ['id'],
+                ],
+                'companies' => [
+                    '*' => ['id'],
+                ],
+                'expires_at',
+                'created_at',
+            ])
+            ->assertJsonCount(count($data['sales_units']), 'sales_units')
+            ->assertJsonCount(count($data['companies']), 'companies');
+
+        foreach ($data['sales_units'] as $item) {
+            $this->assertContains($item['id'], $r->json('sales_units.*.id'));
+        }
+
+        foreach ($data['companies'] as $item) {
+            $this->assertContains($item['id'], $r->json('companies.*.id'));
+        }
     }
 
     /**
@@ -65,6 +100,8 @@ class InvitationTest extends TestCase
      */
     public function testCanRegisterAsUserUserByInvitation()
     {
+        $this->authenticateApi();
+
         /** @var Invitation $invitation */
         $invitation = factory(Invitation::class)->create([
             'role_id' => factory(Role::class)->create()->getKey(),
@@ -126,6 +163,8 @@ class InvitationTest extends TestCase
      */
     public function testCanCancelInvitation()
     {
+        $this->authenticateApi();
+
         $invitation = factory(Invitation::class)->create([
             'role_id' => factory(Role::class)->create()->getKey(),
         ]);
@@ -154,6 +193,8 @@ class InvitationTest extends TestCase
      */
     public function testCanDeleteInvitation()
     {
+        $this->authenticateApi();
+
         $invitation = factory(Invitation::class)->create([
             'role_id' => factory(Role::class)->create()->getKey(),
         ]);

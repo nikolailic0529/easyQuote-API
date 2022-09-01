@@ -6,6 +6,7 @@ use App\DTO\ExchangeRate\ExchangeRateCollection;
 use App\DTO\ExchangeRate\ExchangeRateData;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
+use App\Services\ExchangeRate\Exceptions\ExchangeRateProviderException;
 use Carbon\Carbon;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Http\Client\RequestException;
@@ -23,7 +24,7 @@ class HMRCRates extends ExchangeRateService
 
     /**
      * @inheritDoc
-     * @throws RequestException
+     * @throws ExchangeRateProviderException
      */
     public function getRatesData(\DateTimeInterface $dateTime): ExchangeRateCollection
     {
@@ -31,17 +32,13 @@ class HMRCRates extends ExchangeRateService
 
         $url = $this->buildRequestUrl($dateTime);
 
-        $response = Http::get($url);
-
-        if ($response->status() === Response::HTTP_NOT_FOUND) {
-            $this->logger->warning("No data found.");
-
-            return new ExchangeRateCollection([]);
+        try {
+            $xml = Http::get($url)->throw()->body();
+        } catch (RequestException $e) {
+            throw ExchangeRateProviderException::unavailable(previous: $e);
         }
 
-        $response->throw();
-
-        return $this->parseRatesData($response->body(), $dateTime);
+        return $this->parseRatesData($xml, $dateTime);
     }
 
     /**

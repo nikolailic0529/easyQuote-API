@@ -2,86 +2,89 @@
 
 namespace Tests\Unit\Parser;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeQuote,
-    WithFakeQuoteFile,
-    WithFakeUser
-};
-use App\Models\{
-    QuoteFile\QuoteFile
-};
-use App\Services\QuoteFileService;
 use App\Contracts\Services\ManagesDocumentProcessors;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use App\Models\{QuoteFile\QuoteFile};
+use App\Services\QuoteFileService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Finder\SplFileInfo;
+use Tests\TestCase;
 
-/**
- * @property ManagesDocumentProcessors $parser
- */
 abstract class ParsingTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, DatabaseTransactions;
-
-    public function message(QuoteFile $quoteFile)
+    protected function createQuoteFilesFromDir(string $dir): Collection
     {
-        $exception = filled($quoteFile->exception) ? "with Exception: {$quoteFile->exception}" : "without Exception";
-
-        return "Parsing is failed {$exception} on \nFile: {$quoteFile->original_file_path}";
-    }
-
-    protected function fakeQuoteFiles(string $country)
-    {
-        $quote = $this->createQuote($this->user);
-
         Storage::persistentFake();
 
-        $quoteFiles = collect($this->filesList($country))->map(function ($file) use ($country) {
-            Storage::putFileAs('', $file->getRealPath(), $file->getFilename());
+        return collect($this->listFilesInDir($dir))
+            ->map(function ($file) use ($dir): QuoteFile {
+                Storage::putFileAs('', $file->getRealPath(), $file->getFilename());
 
-            Storage::assertExists($file->getFilename());
+                Storage::assertExists($file->getFilename());
 
-            return tap(new QuoteFile([
-                'user_id'              => $this->user->getKey(),
-                'original_file_path'   => $file->getFilename(),
-                'quote_file_format_id' => $this->determineFileFormat($file),
-                'file_type'            => $this->filesType(),
-                'pages'                => $this->app[QuoteFileService::class]->countPages($file->getRealPath()),
-                'imported_page'        => $this->getMappingAttribute('page', $file->getFilename()),
-                'original_file_name'   => $file->getFilename(),
-            ]))->save();
-        });
+                return tap(new QuoteFile([
+                    'original_file_path' => $file->getFilename(),
+                    'quote_file_format_id' => $this->resolveFormatIdOfFile($file),
+                    'file_type' => $this->fileType(),
+                    'pages' => $this->app[QuoteFileService::class]->countPages($file->getRealPath()),
+                    'imported_page' => $this->resolveAttributeFromAssertMapping('page', $file->getFilename()),
+                    'original_file_name' => $file->getFilename(),
+                ]))->save();
+            });
+    }
 
-        return $quoteFiles;
+    protected function resolveFormatIdOfFile(\SplFileInfo $file): string
+    {
+        $extensions = collect($file->getExtension());
+
+        if ($extensions->containsStrict('txt')) {
+            $extensions->push('csv');
+        }
+
+        return $this->app['db.connection']
+            ->table('quote_file_formats')
+            ->whereIn('extension', $extensions)
+            ->value('id');
     }
 
     /**
-     * Process Files by specified Country.
+     * Process files from directory.
      *
+     * @param string $dir
      * @return void
      */
-    protected function processFilesByCountry(string $country)
+    protected function processFilesFromDir(string $dir): void
     {
-        $quoteFiles = $this->fakeQuoteFiles($country);
+        $quoteFiles = $this->createQuoteFilesFromDir($dir);
 
-        $quoteFiles->each(function ($quoteFile) use ($country) {
-            $this->parser->forwardProcessor($quoteFile);
+        $quoteFiles->each(function ($quoteFile) use ($dir) {
+            $this->app[ManagesDocumentProcessors::class]->forwardProcessor($quoteFile);
             $this->performFileAssertions($quoteFile);
         });
     }
 
-    protected function filesList(string $country)
+    /**
+     * @param string $dir
+     * @return SplFileInfo[]
+     */
+    protected function listFilesInDir(string $dir): array
     {
-        $filesPath = "{$this->filesDirPath()}/{$country}";
+        $dir = ltrim($dir, DIRECTORY_SEPARATOR);
+        $filesPath = rtrim($this->filesDirPath(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$dir;
 
         return File::files($filesPath);
     }
 
-    protected function getMappingAttribute(string $attribute, string $filename)
+    protected function resolveAttributeFromAssertMapping(string $attribute, string $filename): mixed
     {
-        return data_get($this->mapping()->collapse()->keyBy('filename')->get($filename), $attribute);
+        $fileMapping = $this->assertionMapping()
+            ->collapse()
+            ->lazy()
+            ->where('filename', $filename)
+            ->first();
+
+        return data_get($fileMapping, $attribute);
     }
 
     /**
@@ -89,7 +92,7 @@ abstract class ParsingTest extends TestCase
      *
      * @return \Illuminate\Support\Collection
      */
-    abstract protected function mapping(): Collection;
+    abstract protected function assertionMapping(): Collection;
 
     /**
      * Specified Directory with Files.
@@ -103,7 +106,7 @@ abstract class ParsingTest extends TestCase
      *
      * @return string
      */
-    abstract protected function filesType(): string;
+    abstract protected function fileType(): string;
 
     /**
      * Perform specified assertions on each parsed file.

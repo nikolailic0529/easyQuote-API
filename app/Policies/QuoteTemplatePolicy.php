@@ -94,7 +94,7 @@ class QuoteTemplatePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($quoteTemplate->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($quoteTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -124,7 +124,7 @@ class QuoteTemplatePolicy
             return true;
         }
 
-        if ($this->userTeamGate->isUserLedByUser($quoteTemplate->user()->getParentKey(), $user)) {
+        if ($this->userTeamGate->isLedByUser($quoteTemplate->user()->getParentKey(), $user)) {
             return true;
         }
     }

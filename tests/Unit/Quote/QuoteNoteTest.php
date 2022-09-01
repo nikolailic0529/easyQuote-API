@@ -3,17 +3,17 @@
 namespace Tests\Unit\Quote;
 
 use App\Models\Note\Note;
+use App\Models\Quote\Quote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithFakeQuote, WithFakeUser,};
 
 /**
  * @group build
  */
 class QuoteNoteTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to view paginated notes of quote.
@@ -22,7 +22,9 @@ class QuoteNoteTest extends TestCase
      */
     public function testCanViewPaginatedNotesOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->create();
 
         Note::factory()
             ->hasAttached($quote, relationship: 'rescueQuotesHaveNote')
@@ -62,7 +64,9 @@ class QuoteNoteTest extends TestCase
      */
     public function testCanCreateNoteForQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->create();
 
         $data = Note::factory()->raw();
         $data['text'] = Arr::pull($data, 'note');
@@ -84,7 +88,9 @@ class QuoteNoteTest extends TestCase
      */
     public function testCanUpdateNoteOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->create();
 
         $note = Note::factory()
             ->hasAttached($quote, relationship: 'rescueQuotesHaveNote')
@@ -111,7 +117,9 @@ class QuoteNoteTest extends TestCase
      */
     public function testCanDeleteNoteOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
+
+        $quote = Quote::factory()->create();
 
         $note = Note::factory()
             ->hasAttached($quote, relationship: 'rescueQuotesHaveNote')

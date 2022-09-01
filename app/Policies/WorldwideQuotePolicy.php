@@ -76,7 +76,7 @@ class WorldwideQuotePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+            if ($this->userTeamGate->isLedByUser($ownerKeyOfEntity, $user)) {
                 return true;
             }
 
@@ -131,7 +131,7 @@ class WorldwideQuotePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+            if ($this->userTeamGate->isLedByUser($ownerKeyOfEntity, $user)) {
                 return true;
             }
 
@@ -178,7 +178,7 @@ class WorldwideQuotePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+            if ($this->userTeamGate->isLedByUser($ownerKeyOfEntity, $user)) {
                 return true;
             }
 
@@ -225,7 +225,7 @@ class WorldwideQuotePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+            if ($this->userTeamGate->isLedByUser($ownerKeyOfEntity, $user)) {
                 return true;
             }
 
@@ -263,7 +263,7 @@ class WorldwideQuotePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+            if ($this->userTeamGate->isLedByUser($ownerKeyOfEntity, $user)) {
                 return true;
             }
 
@@ -334,7 +334,7 @@ class WorldwideQuotePolicy
                 return true;
             }
 
-            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+            if ($this->userTeamGate->isLedByUser($ownerKeyOfEntity, $user)) {
                 return true;
             }
 

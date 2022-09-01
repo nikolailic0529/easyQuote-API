@@ -4,9 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Customer\Customer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Carbon, Str};
+use Illuminate\Support\{Arr, Carbon, Str};
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithClientCredentials,};
 use function factory;
 use function now;
 
@@ -17,7 +16,7 @@ use function now;
  */
 class S4RfqPostTest extends TestCase
 {
-    use WithClientCredentials, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to post a new RFQ with valid data.
@@ -26,6 +25,8 @@ class S4RfqPostTest extends TestCase
      */
     public function testCanPostNewRfqWithValidData(): void
     {
+        $this->authenticateAsClient();
+
         $response = $this->postJson('api/s4/quotes', $rfqData = [
             'quotation_valid_until' => now()->addYear()->format('m/d/Y'),
             'customer_name' => Str::random(),
@@ -52,7 +53,7 @@ class S4RfqPostTest extends TestCase
             'invoicing_terms' => 'UP_FRONT',
             'rfq_number' => Str::random(20),
 
-        ], headers: $this->clientAuthHeader)
+        ])
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -96,11 +97,54 @@ class S4RfqPostTest extends TestCase
      */
     public function testCanPostRfqWithoutAddressData(): void
     {
-        $attributes = factory(Customer::class)->state('request')->raw();
+        $attributes = Arr::only(factory(Customer::class)->state('request')->raw(), [
+            'customer_name',
+            'rfq_number',
+            'quotation_valid_until',
+            'support_start_date',
+            'support_end_date',
+            'country',
+            'service_levels',
+            'invoicing_terms',
+            'addresses',
+        ]);
+        $this->authenticateAsClient();
 
-        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
+        $r = $this->postJson('/api/s4/quotes', $attributes)
             ->assertSuccessful()
-            ->assertJsonStructure(array_keys($attributes));
+            ->assertJsonStructure([
+                'customer_name',
+                'rfq_number',
+                'quotation_valid_until',
+                'support_start_date',
+                'support_end_date',
+                'country',
+                'country_id',
+                'service_levels',
+                'invoicing_terms',
+                'addresses' => [
+                    '*' => [
+                        'address_type',
+                        'address_1',
+                        'address_2',
+                        'country_code',
+                        'city',
+                        'state',
+                        'post_code',
+                        'contact_name',
+                        'contact_number',
+                        'contact_email',
+                    ]
+                ],
+            ]);
+
+        $attributes['quotation_valid_until'] = Carbon::parse($attributes['quotation_valid_until'])->format('m/d/Y');
+        $attributes['support_start_date'] = Carbon::parse($attributes['support_start_date'])->format('m/d/Y');
+        $attributes['support_end_date'] = Carbon::parse($attributes['support_end_date'])->format('m/d/Y');
+
+        foreach ($attributes as $attr => $value) {
+            $r->assertJsonPath($attr, $value);
+        }
     }
 
     /**
@@ -110,9 +154,11 @@ class S4RfqPostTest extends TestCase
      */
     public function testCanNotPostRfqWithInvalidNumber(): void
     {
+        $this->authenticateAsClient();
+
         $attributes = factory(Customer::class)->state('request')->raw(['rfq_number' => Str::random(40)]);
 
-        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
+        $this->postJson('/api/s4/quotes', $attributes)
             ->assertStatus(422);
     }
 
@@ -123,13 +169,15 @@ class S4RfqPostTest extends TestCase
      */
     public function testCanNotPostRfqWithDuplicatedNumber(): void
     {
+        $this->authenticateAsClient();
+
         $customer = factory(Customer::class)->create();
 
         $attributes = factory(Customer::class)->state('request')->raw([
             'rfq_number' => $customer->rfq,
         ]);
 
-        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
+        $this->postJson('/api/s4/quotes', $attributes)
             ->assertStatus(422);
     }
 
@@ -140,16 +188,62 @@ class S4RfqPostTest extends TestCase
      */
     public function testCanPostRfqForDeletedNumber(): void
     {
+        $this->authenticateAsClient();
+
         $customer = factory(Customer::class)->create();
 
         $customer->delete();
 
         $this->assertSoftDeleted($customer);
 
-        $attributes = factory(Customer::class)->state('request')->raw(['rfq_number' => $customer->rfq]);
+        $attributes = Arr::only(factory(Customer::class)->state('request')->raw([
+            'rfq_number' => $customer->rfq
+        ]), [
+            'customer_name',
+            'rfq_number',
+            'quotation_valid_until',
+            'support_start_date',
+            'support_end_date',
+            'country',
+            'service_levels',
+            'invoicing_terms',
+            'addresses',
+        ]);
 
-        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
+        $r = $this->postJson('/api/s4/quotes', $attributes)
             ->assertOk()
-            ->assertJsonStructure(array_keys($attributes));
+            ->assertJsonStructure([
+                'customer_name',
+                'rfq_number',
+                'quotation_valid_until',
+                'support_start_date',
+                'support_end_date',
+                'country',
+                'country_id',
+                'service_levels',
+                'invoicing_terms',
+                'addresses' => [
+                    '*' => [
+                        'address_type',
+                        'address_1',
+                        'address_2',
+                        'country_code',
+                        'city',
+                        'state',
+                        'post_code',
+                        'contact_name',
+                        'contact_number',
+                        'contact_email',
+                    ]
+                ],
+            ]);
+
+        $attributes['quotation_valid_until'] = Carbon::parse($attributes['quotation_valid_until'])->format('m/d/Y');
+        $attributes['support_start_date'] = Carbon::parse($attributes['support_start_date'])->format('m/d/Y');
+        $attributes['support_end_date'] = Carbon::parse($attributes['support_end_date'])->format('m/d/Y');
+
+        foreach ($attributes as $attr => $value) {
+            $r->assertJsonPath($attr, $value);
+        }
     }
 }
