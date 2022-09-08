@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\V1\Setting;
 
+use App\Models\System\SystemSetting;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin SystemSetting
+ */
 class SettingResource extends JsonResource
 {
     /**
@@ -15,7 +19,7 @@ class SettingResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
+            'id' => $this->getKey(),
             'key' => $this->key,
             'value' => $this->value,
             'possible_values' => $this->possible_values,

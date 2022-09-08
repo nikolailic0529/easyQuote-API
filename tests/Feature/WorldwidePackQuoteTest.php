@@ -1279,6 +1279,7 @@ class WorldwidePackQuoteTest extends TestCase
     /**
      * Test an ability to view the preview data of an existing pack quote.
      *
+     * @group worldwide-preview
      * @return void
      */
     public function testCanViewPackQuotePreviewData()
@@ -1359,6 +1360,13 @@ class WorldwidePackQuoteTest extends TestCase
                     'payment_schedule_page_schema',
                     'last_page_schema',
                     'template_assets',
+                    'headers' => [
+                        'total',
+                        'total_price',
+                        'sub_total',
+                        'total_including_tax',
+                        'grand_total',
+                    ],
                 ],
 
                 'quote_summary' => [

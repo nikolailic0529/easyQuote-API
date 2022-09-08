@@ -304,7 +304,8 @@ class WorldwideQuoteDataMapper
 
     public function getTemplateData(WorldwideQuote $quote, bool $useLocalAssets = false): TemplateData
     {
-        $templateSchema = $quote->activeVersion->quoteTemplate->form_data;
+        $tpl = $quote->activeVersion->quoteTemplate;
+        $templateSchema = $tpl->form_data;
 
         return tap(new TemplateData([
             'first_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['first_page'] ?? []),
@@ -312,6 +313,7 @@ class WorldwideQuoteDataMapper
             'payment_schedule_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['payment_schedule'] ?? []),
             'last_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['last_page'] ?? []),
             'template_assets' => $this->getTemplateAssets($quote, $useLocalAssets),
+            'headers' => $tpl->data_headers->pluck('value', 'key')->all(),
         ]), function (TemplateData $templateData) {
 
             foreach ($templateData->first_page_schema as $templateElement) {

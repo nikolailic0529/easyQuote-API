@@ -3,6 +3,7 @@
         "key": "parser.default_separator",
         "value": "Tab",
         "type": "string",
+        "field_type": "textbox",
         "is_read_only": false,
         "section": "global"
     },
@@ -10,6 +11,7 @@
         "key": "parser.default_page",
         "value": 2,
         "type": "integer",
+        "field_type": "textbox",
         "is_read_only": false,
         "section": "global"
     },
@@ -17,36 +19,15 @@
         "key": "base_currency",
         "value": "GBP",
         "type": "string",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "section": "global",
-        "possible_values": [
-            {
-                "label": "GBP (British Pound Sterling)",
-                "value": "GBP"
-            },
-            {
-                "label": "EUR (Euro)",
-                "value": "EUR"
-            },
-            {
-                "label": "USD (US Dollar)",
-                "value": "USD"
-            },
-            {
-                "label": "AUD (Australian Dollar)",
-                "value": "AUD"
-            },
-            {
-                "label": "CAD (Canadian Dollar)",
-                "value": "CAD"
-            }
-        ]
+        "section": "global"
     },
     {
         "key": "password_expiry_notification",
         "value": "7",
-        "possible_values": "RANGE:7,30,{value} Days Before Expiration",
         "type": "integer",
+        "field_type": "dropdown",
         "is_read_only": false,
         "section": "global"
     },
@@ -54,28 +35,15 @@
         "key": "notification_time",
         "value": 1,
         "type": "integer",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "section": "global",
-        "possible_values": [
-            {
-                "label": "1 Week Before Closing Date",
-                "value": 1
-            },
-            {
-                "label": "2 Weeks Before Closing Date",
-                "value": 2
-            },
-            {
-                "label": "3 Weeks Before Closing Date",
-                "value": 3
-            }
-        ]
+        "section": "global"
     },
     {
         "key": "failure_report_recipients",
         "value": ["fakhar.anwar@supportwarehouse.com"],
-        "possible_values": "\\App\\Models\\User:email as label,id as value",
         "type": "array",
+        "field_type": "multiselect",
         "is_read_only": false,
         "section": "global"
     },
@@ -83,52 +51,23 @@
         "key": "price_calculation_duration",
         "value": "day",
         "type": "string",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "section": "global",
-        "possible_values": [
-            {
-                "label": "Day",
-                "value": "day"
-            },
-            {
-                "label": "Month",
-                "value": "month"
-            },
-            {
-                "label": "Quarterly",
-                "value": "quarterly"
-            },
-            {
-                "label": "Yearly",
-                "value": "yearly"
-            }
-        ]
+        "section": "global"
     },
     {
         "key": "file_upload_size",
         "value": 2,
         "type": "integer",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "section": "global",
-        "possible_values": [
-            {
-                "label": "2 MB",
-                "value": 2
-            },
-            {
-                "label": "5 MB",
-                "value": 5
-            },
-            {
-                "label": "10 MB",
-                "value": 10
-            }
-        ]
+        "section": "global"
     },
     {
         "key": "google_recaptcha_enabled",
         "value": true,
         "type": "boolean",
+        "field_type": "checkbox",
         "is_read_only": false,
         "section": "global"
     },
@@ -136,6 +75,7 @@
         "key": "use_legacy_doc_parsing_method",
         "value": false,
         "type": "boolean",
+        "field_type": "checkbox",
         "is_read_only": false,
         "section": "global"
     },
@@ -143,47 +83,39 @@
         "key": "supported_file_types",
         "value": ["CSV", "PDF", "XLSX", "DOCX"],
         "type": "array",
+        "field_type": "label",
         "is_read_only": true,
         "section": "global"
+    },
+    {
+        "key": "mail_limit",
+        "value": "15000",
+        "type": "integer",
+        "field_type": "textbox",
+        "is_readonly": false,
+        "section": "mail"
     },
     {
         "key": "exchange_rate_provider",
         "value": "HMRC",
         "type": "string",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "section": "exchange_rates",
-        "possible_values": [
-            {
-                "label": "HMRC",
-                "value": "HMRC"
-            }
-        ]
+        "section": "exchange_rates"
     },
     {
         "key": "exchange_rate_update_schedule",
         "value": "monthly",
         "type": "string",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "section": "exchange_rates",
-        "possible_values": [
-            {
-                "label": "Monthly",
-                "value": "monthly"
-            },
-            {
-                "label": "Weekly",
-                "value": "weekly"
-            },
-            {
-                "label": "Daily",
-                "value": "daily"
-            }
-        ]
+        "section": "exchange_rates"
     },
     {
         "key": "default_exchange_rate_margin",
         "value": 7,
         "type": "float",
+        "field_type": "textbox",
         "is_read_only": false,
         "section": "exchange_rates",
         "validation": {
@@ -195,6 +127,7 @@
         "key": "exchange_rates_update",
         "value": "2019-11-17 09:28:19",
         "type": "datetime",
+        "field_type": "label",
         "is_read_only": true,
         "section": "exchange_rates",
         "label_format": "Last Update was done :value"
@@ -203,22 +136,23 @@
         "key": "maintenance_start_time",
         "value": 5,
         "type": "integer",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "possible_values": "RANGE:1,30,in {value} minute(s) from now",
         "section": "maintenance"
     },
     {
         "key": "maintenance_end_time",
         "value": 5,
         "type": "integer",
+        "field_type": "dropdown",
         "is_read_only": false,
-        "possible_values": "RANGE:1,120,5,{value} minutes",
         "section": "maintenance"
     },
     {
         "key": "maintenance_message",
         "value": "We are running routine maintenance in 5 minutes, the server will not be available during maintenance. Thanks.",
         "type": "string",
+        "field_type": "textbox",
         "is_read_only": false,
         "section": "maintenance"
     }

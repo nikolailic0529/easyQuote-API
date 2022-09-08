@@ -173,6 +173,7 @@ return [
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
+        App\Providers\MailServiceProvider::class,
         App\Providers\HelperServiceProvider::class,
 
         App\Providers\EntityServiceProvider::class,

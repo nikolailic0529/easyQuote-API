@@ -14,7 +14,12 @@ use App\Traits\{Activatable,
     Systemable,
     Uuid
 };
-use Illuminate\Database\Eloquent\{Model, Relations\BelongsToMany, Relations\MorphToMany, SoftDeletes,};
+use Database\Factories\RoleFactory;
+use Illuminate\Database\Eloquent\{Factories\HasFactory,
+    Model,
+    Relations\BelongsToMany,
+    Relations\MorphToMany,
+    SoftDeletes};
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Spatie\Permission\{Contracts\Role as RoleContract,
@@ -44,7 +49,8 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         SoftDeletes,
         Activatable,
         Systemable,
-        LogsActivity;
+        LogsActivity,
+        HasFactory;
 
     protected $fillable = [
         'name', 'guard_name', 'is_system',
@@ -98,6 +104,11 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         }
 
         return static::query()->create($attributes);
+    }
+
+    protected static function newFactory(): RoleFactory
+    {
+        return RoleFactory::new();
     }
 
     /**

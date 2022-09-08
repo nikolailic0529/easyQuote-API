@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Repositories\CountryRepository;
 use Illuminate\Cache\CacheManager;
+use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,13 @@ class CacheServiceProvider extends ServiceProvider
         $this->app->singleton(LockProvider::class, function () {
             return $this->app['cache']->driver()->getStore();
         });
+
+        $this->app->singleton('rate-limiter.persistent', function ($app) {
+            return new RateLimiter($app->make('cache')->driver(
+                $app['config']->get('database')
+            ));
+        });
+
     }
 
     /**

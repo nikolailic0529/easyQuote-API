@@ -23,14 +23,14 @@ class SettingCollection extends ResourceCollection
         }
 
         $collection = $collection->groupBy('section')->map(fn ($section) => SettingResource::collection($section));
-        
+
         $collection = $collection->replace(['maintenance' => optional($collection->get('maintenance'))->keyBy('key')]);
 
         return $collection;
     }
 
     /** @return $this */
-    public function only(string ...$keys)
+    public function only(string ...$keys): static
     {
         $this->onlyKeys = $keys;
 

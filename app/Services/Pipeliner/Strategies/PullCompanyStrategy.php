@@ -213,12 +213,13 @@ class PullCompanyStrategy implements PullStrategy
                 $this->connection->transaction(static function () use ($account): void {
                     $account->addresses->each(static function (Address $address): void {
                         $address->user?->save();
-                        $address->push();
+                        $address->save();
                     });
 
                     $account->contacts->each(static function (Contact $contact): void {
                         $contact->user?->save();
-                        $contact->push();
+                        $contact->address?->save();
+                        $contact->save();
                     });
 
                     $account->withoutTimestamps(static function (Company $account): void {

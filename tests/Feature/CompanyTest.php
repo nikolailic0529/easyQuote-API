@@ -742,6 +742,101 @@ class CompanyTest extends TestCase
     }
 
     /**
+     * Test an ability to detach address from company.
+     *
+     * @return void
+     */
+    public function testCanDetachAddressFromCompany(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Company $company */
+        $company = Company::factory()
+            ->hasAttached(Address::factory(2))
+            ->create();
+
+        $this->getJson("api/companies/{$company->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'addresses' => [
+                    '*' => [
+                        'id',
+                    ]
+                ]
+            ])
+            ->assertJsonCount(2, 'addresses');
+
+        $detachableAddress = $company->addresses->first();
+
+        $this->patchJson("api/companies/{$company->getKey()}/addresses/{$detachableAddress->getKey()}/detach")
+//            ->dump()
+            ->assertNoContent();
+
+        $r = $this->getJson("api/companies/{$company->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'addresses' => [
+                    '*' => [
+                        'id',
+                    ]
+                ]
+            ])
+            ->assertJsonCount(1, 'addresses');
+
+        $this->assertNotSame($detachableAddress->getKey(), $r->json('addresses.0.id'));
+    }
+
+
+    /**
+     * Test an ability to detach contact from company.
+     *
+     * @return void
+     */
+    public function testCanDetachContactFromCompany(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Company $company */
+        $company = Company::factory()
+            ->hasAttached(Contact::factory(2))
+            ->create();
+
+        $this->getJson("api/companies/{$company->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'contacts' => [
+                    '*' => [
+                        'id',
+                    ]
+                ]
+            ])
+            ->assertJsonCount(2, 'contacts');
+
+        $detachableContact = $company->contacts->first();
+
+        $this->patchJson("api/companies/{$company->getKey()}/contacts/{$detachableContact->getKey()}/detach")
+//            ->dump()
+            ->assertNoContent();
+
+        $r = $this->getJson("api/companies/{$company->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'contacts' => [
+                    '*' => [
+                        'id',
+                    ]
+                ]
+            ])
+            ->assertJsonCount(1, 'contacts');
+
+        $this->assertNotSame($detachableContact->getKey(), $r->json('contacts.0.id'));
+    }
+
+    /**
      * Test an ability to activate an existing company.
      *
      * @return void

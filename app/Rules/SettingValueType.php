@@ -2,24 +2,16 @@
 
 namespace App\Rules;
 
-use App\Http\Requests\System\UpdateManySystemSettingsRequest;
+use App\Models\System\SystemSetting;
+use App\Services\Settings\SettingsDataProviderService;
+use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 
-class SettingValueType implements Rule
+class SettingValueType implements Rule, DataAwareRule
 {
-    /** @var \App\Http\Requests\System\UpdateManySystemSettingsRequest */
-    protected UpdateManySystemSettingsRequest $request;
-
-    /**
-     * Create a new rule instance.
-     *
-     * @return void
-     */
-    public function __construct(UpdateManySystemSettingsRequest $request)
-    {
-        $this->request = $request;
-    }
+    protected array $data = [];
 
     /**
      * Determine if the validation rule passes.
@@ -28,19 +20,45 @@ class SettingValueType implements Rule
      * @param  mixed  $value
      * @return bool
      */
-    public function passes($attribute, $value)
+    public function passes($attribute, $value): bool
     {
-        $setting = $this->request->findPresentSetting($attribute);
+        $leadingAttributePath = static::resolveLeadingAttributePath($attribute);
 
-        if (!is_null($setting->possible_values)) {
+        if (array_key_exists($leadingAttributePath, $this->data) === false) {
+            return false;
+        }
+
+        $propertyId = Arr::get($this->data, "$leadingAttributePath.id");
+
+        if (is_scalar($propertyId) === false) {
+            return false;
+        }
+
+        /** @var SystemSetting $settingsProperty */
+        $settingsProperty = SystemSetting::query()->find($propertyId);
+
+        if (null === $settingsProperty) {
+            return false;
+        }
+
+        $possibleValues = app(SettingsDataProviderService::class)
+            ->resolvePossibleValuesForSettingsProperty($settingsProperty);
+
+        // Ignore when possible values are set
+        if ($possibleValues !== null) {
             return true;
         }
 
-        $rule = $this->translateTypeRule($setting->type);
+        $rule = $this->resolveValidationRulesForType($settingsProperty->type);
 
-        $validator = Validator::make(compact('value'), ['value' => $rule]);
+        $validator = Validator::make(['value' => $value], ['value' => $rule]);
 
         return $validator->passes();
+    }
+
+    protected static function resolveLeadingAttributePath(string $attribute): string
+    {
+        return implode('.', explode('.', $attribute, -1));
     }
 
     /**
@@ -48,28 +66,22 @@ class SettingValueType implements Rule
      *
      * @return string
      */
-    public function message()
+    public function message(): string
     {
-        return 'The given Setting value is invalid.';
+        return 'The given value for settings property has invalid type.';
     }
 
-    protected function translateTypeRule(string $type)
+    protected function resolveValidationRulesForType(string $type): array
     {
-        $rules = [];
+        return match ($type) {
+            'float', 'integer' => ['min:0', 'numeric'],
+            'boolean' => ['boolean'],
+            default => [],
+        };
+    }
 
-        switch ($type) {
-            case 'float':
-            case 'integer':
-                $rules = ['min:0', 'numeric'];
-                break;
-            case 'boolean':
-                $rules = ['boolean'];
-                break;
-            default:
-                $rules = [];
-                break;
-        }
-
-        return $rules;
+    public function setData($data): void
+    {
+        $this->data = $data;
     }
 }

@@ -2,28 +2,15 @@
 
 namespace App\Http\Requests\System;
 
+use App\Models\System\SystemSetting;
+use App\Rules\{SettingValue, SettingValueType};
 use Illuminate\Foundation\Http\FormRequest;
-use App\Rules\{
-    SettingValue,
-    SettingValueType
-};
 use Illuminate\Validation\Rule;
-use Str;
 
 class UpdateManySystemSettingsRequest extends FormRequest
 {
     /** @var \Illuminate\Database\Eloquent\Collection */
     public $presentSystemSettings;
-
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -37,28 +24,21 @@ class UpdateManySystemSettingsRequest extends FormRequest
                 'required',
                 'string',
                 'uuid',
-                Rule::exists('system_settings', 'id')->where('is_read_only', false)
+                Rule::exists(SystemSetting::class, 'id')
+                    ->where('is_read_only', false),
             ],
             '*.value' => [
                 'required',
-                new SettingValue($this),
-                new SettingValueType($this)
-            ]
+                new SettingValue(),
+                new SettingValueType(),
+            ],
         ];
     }
 
-    public function findPresentSetting(string $attribute)
-    {
-        $key = Str::before($attribute, '.value');
-        $id = $this->input($key.'.id');
-
-        return $this->presentSystemSettings->firstWhere('id', $id);
-    }
-
-    public function messages()
+    public function messages(): array
     {
         return [
-            '*.value.required' => 'Values for the Settings must be present.'
+            '*.value.required' => 'Values for the Settings must be present.',
         ];
     }
 

@@ -95,7 +95,7 @@ class WorldwideQuoteExporter
     private function iterateTemplateDataPages(TemplateData $templateData): \Generator
     {
         foreach ($templateData as $page => $elements) {
-            if ('template_assets' === $page) {
+            if (in_array($page, ['template_assets', 'headers'])) {
                 continue;
             }
 
@@ -177,6 +177,7 @@ class WorldwideQuoteExporter
                             'sub_total_value' => $previewData->quote_summary->sub_total_value,
                             'total_value_including_tax' => $previewData->quote_summary->total_value_including_tax,
                             'grand_total_value' => $previewData->quote_summary->grand_total_value,
+                            'headers' => $previewData->template_data->headers,
                         ])->render();
                     } elseif (is_scalar($value)) {
                         $control->value = $value;
@@ -213,6 +214,7 @@ class WorldwideQuoteExporter
                             'sub_total_value' => $previewData->quote_summary->sub_total_value,
                             'total_value_including_tax' => $previewData->quote_summary->total_value_including_tax,
                             'grand_total_value' => $previewData->quote_summary->grand_total_value,
+                            'headers' => $previewData->template_data->headers,
                         ])->render();
                     } elseif (is_scalar($value)) {
                         $control->value = $value;
@@ -405,6 +407,7 @@ class WorldwideQuoteExporter
                             'sub_total_value' => $previewData->quote_summary->sub_total_value,
                             'total_value_including_tax' => $previewData->quote_summary->total_value_including_tax,
                             'grand_total_value' => $previewData->quote_summary->grand_total_value,
+                            'headers' => $previewData->template_data->headers,
                         ])->render();
                     } elseif (is_scalar($value)) {
                         $control->value = $value;

@@ -15,6 +15,7 @@ use App\Listeners\{AddressEventAuditor,
     CompanyEventAuditor,
     CompanyNoteAuditor,
     ContactEventAuditor,
+    MailEventRateLimitingSubscriber,
     SyncCustomFieldValuesInPipeliner,
     DocumentMappingSyncSubscriber,
     ExchangeRatesListener,
@@ -94,6 +95,8 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $subscribe = [
+
+        MailEventRateLimitingSubscriber::class,
 
         TaskEventSubscriber::class,
 

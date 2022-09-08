@@ -27,4 +27,9 @@ final class TemplateData extends DataTransferObject
     public array $last_page_schema;
 
     public TemplateAssets $template_assets;
+
+    /**
+     * @var array<string, string>
+     */
+    public array $headers = [];
 }

@@ -18,6 +18,8 @@ return [
         'maintenance_message'           => 'Maintenance Message',
         'google_recaptcha_enabled'      => 'Google Recaptcha Enabled',
         'use_legacy_doc_parsing_method' => 'Legacy Document Parsing',
+        'mail_limit'                    => 'Monthly Mail Limit',
+        'remaining_mail_limit'          => 'Remaining Mail Limit',
     ],
     'supported_file_types' => [
         'pdf' => [

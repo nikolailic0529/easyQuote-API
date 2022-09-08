@@ -8,7 +8,39 @@ use Illuminate\Database\Eloquent\{Collection, Model,};
 use Illuminate\Support\Str;
 
 /**
- * @property string|null $key
+ * App\Models\System\SystemSetting
+ *
+ * @property string $key
+ * @property string $type
+ * @property bool $is_read_only
+ * @property string $id
+ * @property string $section
+ * @property mixed|null $value
+ * @property int $order
+ * @property mixed|null $possible_values
+ * @property array|null $validation
+ * @property string|null $label_format
+ * @property string $field_type
+ * @property-read Collection|\App\Models\System\Activity[] $activities
+ * @property-read int|null $activities_count
+ * @property-read mixed $field_title
+ * @property-read string $item_name
+ * @property-read mixed $label
+ * @property-read mixed $log_value
+ * @property-read string $value_cache_key
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting query()
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereIsReadOnly($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereKey($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereLabelFormat($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereOrder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting wherePossibleValues($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereSection($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereValidation($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|SystemSetting whereValue($value)
  */
 class SystemSetting extends Model
 {
@@ -26,7 +58,6 @@ class SystemSetting extends Model
 
     protected $casts = [
         'value' => ConditionalCast::class,
-        'possible_values' => 'array',
         'validation' => 'array',
         'is_read_only' => 'boolean'
     ];
@@ -46,31 +77,6 @@ class SystemSetting extends Model
     protected static $submitEmptyLogs = false;
 
     protected static $recordEvents = ['updated'];
-
-    public function getPossibleValuesAttribute($value)
-    {
-        if (!is_array($value)) {
-            $value = json_decode($value, true);
-        }
-
-        if (is_string($value)) {
-            if (isset(static::$cachedValues[$value])) {
-                return static::$cachedValues[$value];
-            }
-
-            $model = app(Str::before($value, ':'));
-            $columns = Str::contains($value, ':') ? explode(',', Str::after($value, ':')) : ['*'];
-
-            return static::$cachedValues[$value] = $model->get($columns);
-        }
-
-        return $value;
-    }
-
-    public function getFlattenPossibleValuesAttribute()
-    {
-        return collect($this->possible_values)->pluck('value')->toArray();
-    }
 
     public function valueToString()
     {
@@ -103,21 +109,6 @@ class SystemSetting extends Model
     public function getFieldTitleAttribute()
     {
         return __('setting.titles.'.$this->getRawOriginal('key'));
-    }
-
-    public function getFieldTypeAttribute(): string
-    {
-        if ($this->is_read_only) {
-            return 'label';
-        } elseif ($this->possible_values instanceof Collection) {
-            return 'multiselect';
-        } elseif (is_iterable($this->possible_values)) {
-            return 'dropdown';
-        } elseif ($this->type === 'boolean') {
-            return 'checkbox';
-        }
-
-        return 'textbox';
     }
 
     public function getValueCacheKeyAttribute(): string

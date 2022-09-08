@@ -21,18 +21,24 @@
 
     @endforeach
     <tr>
-        <td class="text-right" colspan="3">Sub Total:</td>
+        <td class="text-right" colspan="3">
+            {{ rtrim($headers['sub_total'] ?? 'Sub Total', ':') }}:
+        </td>
         <td>{{ $sub_total_value }}</td>
     </tr>
 
     @unless($sub_total_value === $total_value_including_tax)
     <tr>
-        <td class="text-right" colspan="3">Total (inc. tax):</td>
+        <td class="text-right" colspan="3">
+            {{ rtrim($headers['total_including_tax'] ?? 'Total (inc. tax)', ':') }}:
+        </td>
         <td>{{ $total_value_including_tax }}</td>
     </tr>
     @endunless
     <tr>
-        <td class="text-right" colspan="3">Grand Total:</td>
+        <td class="text-right" colspan="3">
+            {{ rtrim($headers['grand_total'] ?? 'Grand Total', ':') }}:
+        </td>
         <td>{{ $grand_total_value }}</td>
     </tr>
     </tbody>

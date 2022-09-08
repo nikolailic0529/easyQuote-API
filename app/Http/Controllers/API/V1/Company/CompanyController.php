@@ -23,6 +23,7 @@ use App\Http\Resources\{V1\Appointment\AppointmentListResource,
     V1\Opportunity\OpportunityList,
     V1\SalesOrder\SalesOrderOfCompany,
     V1\UnifiedQuote\UnifiedQuoteOfCompany};
+use App\Models\Address;
 use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
@@ -51,8 +52,8 @@ class CompanyController extends Controller
     /**
      * Display a listing of the Companies.
      *
-     * @param \App\Http\Requests\Company\PaginateCompanies $request
-     * @param \App\Queries\CompanyQueries $queries
+     * @param  \App\Http\Requests\Company\PaginateCompanies  $request
+     * @param  \App\Queries\CompanyQueries  $queries
      * @return CompanyCollection
      * @throws AuthorizationException
      */
@@ -68,7 +69,7 @@ class CompanyController extends Controller
     /**
      * Data for creating a new Company.
      *
-     * @param ShowCompanyFormData $request
+     * @param  ShowCompanyFormData  $request
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -84,7 +85,7 @@ class CompanyController extends Controller
     /**
      * Display a listing of the existing external companies.
      *
-     * @param CompanyQueries $queries
+     * @param  CompanyQueries  $queries
      * @return JsonResponse
      */
     public function getExternal(CompanyQueries $queries): JsonResponse
@@ -97,8 +98,8 @@ class CompanyController extends Controller
     /**
      * Paginate existing external companies.
      *
-     * @param Request $request
-     * @param CompanyQueries $queries
+     * @param  Request  $request
+     * @param  CompanyQueries  $queries
      * @return AnonymousResourceCollection
      */
     public function paginateExternalCompanies(Request $request, CompanyQueries $queries): AnonymousResourceCollection
@@ -113,7 +114,7 @@ class CompanyController extends Controller
     /**
      * Display a listing of all internal companies.
      *
-     * @param CompanyQueries $queries
+     * @param  CompanyQueries  $queries
      * @return JsonResponse
      */
     public function showListOfInternalCompanies(CompanyQueries $queries): JsonResponse
@@ -126,8 +127,8 @@ class CompanyController extends Controller
     /**
      * Display a listing of companies with related countries.
      *
-     * @param Request $request
-     * @param CompanyQueries $queries
+     * @param  Request  $request
+     * @param  CompanyQueries  $queries
      * @return JsonResponse
      */
     public function showInternalCompaniesWithCountries(Request $request, CompanyQueries $queries): JsonResponse
@@ -140,14 +141,15 @@ class CompanyController extends Controller
     /**
      * Store a newly created Company in storage.
      *
-     * @param StoreCompanyRequest $request
-     * @param CompanyEntityService $service
+     * @param  StoreCompanyRequest  $request
+     * @param  CompanyEntityService  $service
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function storeCompany(StoreCompanyRequest  $request,
-                                 CompanyEntityService $service): JsonResponse
-    {
+    public function storeCompany(
+        StoreCompanyRequest $request,
+        CompanyEntityService $service
+    ): JsonResponse {
         $this->authorize('create', Company::class);
 
         $resource = $service
@@ -163,7 +165,7 @@ class CompanyController extends Controller
     /**
      * Display the specified Company.
      *
-     * @param Company $company
+     * @param  Company  $company
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -179,16 +181,17 @@ class CompanyController extends Controller
     /**
      * Show a list of opportunity entities of the specified company entity.
      *
-     * @param PaginateOpportunities $request
-     * @param OpportunityQueries $opportunityQueries
-     * @param Company $company
+     * @param  PaginateOpportunities  $request
+     * @param  OpportunityQueries  $opportunityQueries
+     * @param  Company  $company
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showOpportunitiesOfCompany(PaginateOpportunities $request,
-                                               OpportunityQueries    $opportunityQueries,
-                                               Company               $company): AnonymousResourceCollection
-    {
+    public function showOpportunitiesOfCompany(
+        PaginateOpportunities $request,
+        OpportunityQueries $opportunityQueries,
+        Company $company
+    ): AnonymousResourceCollection {
 
         $this->authorize('view', $company);
 
@@ -202,18 +205,19 @@ class CompanyController extends Controller
     /**
      * Show a list of unified quote entities of the specified company entity.
      *
-     * @param Request $request
-     * @param Company $company
-     * @param UnifiedQuoteQueries $unifiedQuoteQueries
-     * @param UnifiedQuoteDataMapper $quoteDataMapper
+     * @param  Request  $request
+     * @param  Company  $company
+     * @param  UnifiedQuoteQueries  $unifiedQuoteQueries
+     * @param  UnifiedQuoteDataMapper  $quoteDataMapper
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showQuotesOfCompany(Request                $request,
-                                        UnifiedQuoteQueries    $unifiedQuoteQueries,
-                                        UnifiedQuoteDataMapper $quoteDataMapper,
-                                        Company                $company): AnonymousResourceCollection
-    {
+    public function showQuotesOfCompany(
+        Request $request,
+        UnifiedQuoteQueries $unifiedQuoteQueries,
+        UnifiedQuoteDataMapper $quoteDataMapper,
+        Company $company
+    ): AnonymousResourceCollection {
         $this->authorize('view', $company);
 
         $entities = $unifiedQuoteQueries->listOfCompanyQuotesQuery(company: $company, request: $request)->get();
@@ -226,16 +230,17 @@ class CompanyController extends Controller
     /**
      * Show a list of sales order entities of the specified company entity.
      *
-     * @param Request $request
-     * @param SalesOrderQueries $salesOrderQueries
-     * @param Company $company
+     * @param  Request  $request
+     * @param  SalesOrderQueries  $salesOrderQueries
+     * @param  Company  $company
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showSalesOrdersOfCompany(Request           $request,
-                                             SalesOrderQueries $salesOrderQueries,
-                                             Company           $company): AnonymousResourceCollection
-    {
+    public function showSalesOrdersOfCompany(
+        Request $request,
+        SalesOrderQueries $salesOrderQueries,
+        Company $company
+    ): AnonymousResourceCollection {
         $this->authorize('view', $company);
 
         $resource = $salesOrderQueries->listOfCompanySalesOrdersQuery(company: $company, request: $request)->get();
@@ -246,18 +251,19 @@ class CompanyController extends Controller
     /**
      * Show a list of unified note entities of the specified company entity.
      *
-     * @param Request $request
-     * @param UnifiedNoteQueries $unifiedNoteQueries
-     * @param UnifiedNoteDataMapper $unifiedNoteDataMapper
-     * @param Company $company
+     * @param  Request  $request
+     * @param  UnifiedNoteQueries  $unifiedNoteQueries
+     * @param  UnifiedNoteDataMapper  $unifiedNoteDataMapper
+     * @param  Company  $company
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showUnifiedNotesOfCompany(Request               $request,
-                                              UnifiedNoteQueries    $unifiedNoteQueries,
-                                              UnifiedNoteDataMapper $unifiedNoteDataMapper,
-                                              Company               $company): AnonymousResourceCollection
-    {
+    public function showUnifiedNotesOfCompany(
+        Request $request,
+        UnifiedNoteQueries $unifiedNoteQueries,
+        UnifiedNoteDataMapper $unifiedNoteDataMapper,
+        Company $company
+    ): AnonymousResourceCollection {
         $this->authorize('view', $company);
 
         $collection = $unifiedNoteQueries->listOfCompanyNotesQuery($company)->get();
@@ -268,16 +274,17 @@ class CompanyController extends Controller
     /**
      * Show a list of asset entities of the specified company entity.
      *
-     * @param Request $request
-     * @param AssetQueries $assetQueries
-     * @param Company $company
+     * @param  Request  $request
+     * @param  AssetQueries  $assetQueries
+     * @param  Company  $company
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showAssetsOfCompany(Request      $request,
-                                        AssetQueries $assetQueries,
-                                        Company      $company): AnonymousResourceCollection
-    {
+    public function showAssetsOfCompany(
+        Request $request,
+        AssetQueries $assetQueries,
+        Company $company
+    ): AnonymousResourceCollection {
         $this->authorize('view', $company);
 
         $resource = $assetQueries->listOfCompanyAssetsQuery($company)->get();
@@ -288,16 +295,17 @@ class CompanyController extends Controller
     /**
      * List appointments linked to company.
      *
-     * @param Request $request
-     * @param AppointmentQueries $appointmentQueries
-     * @param Company $company
+     * @param  Request  $request
+     * @param  AppointmentQueries  $appointmentQueries
+     * @param  Company  $company
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showAppointmentsOfCompany(Request            $request,
-                                              AppointmentQueries $appointmentQueries,
-                                              Company            $company): AnonymousResourceCollection
-    {
+    public function showAppointmentsOfCompany(
+        Request $request,
+        AppointmentQueries $appointmentQueries,
+        Company $company
+    ): AnonymousResourceCollection {
         $this->authorize('view', $company);
 
         $resource = $appointmentQueries->listAppointmentsLinkedToQuery($company, $request)->get();
@@ -308,16 +316,17 @@ class CompanyController extends Controller
     /**
      * Update the specified Company in storage.
      *
-     * @param UpdateCompanyRequest $request
-     * @param Company $company
-     * @param CompanyEntityService $service
+     * @param  UpdateCompanyRequest  $request
+     * @param  Company  $company
+     * @param  CompanyEntityService  $service
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function updateCompany(UpdateCompanyRequest $request,
-                                  CompanyEntityService $service,
-                                  Company              $company): JsonResponse
-    {
+    public function updateCompany(
+        UpdateCompanyRequest $request,
+        CompanyEntityService $service,
+        Company $company
+    ): JsonResponse {
         $this->authorize('update', $company);
 
         $resource = $service
@@ -333,16 +342,17 @@ class CompanyController extends Controller
     /**
      * Partially update the specified Company entity.
      *
-     * @param PartialUpdateCompany $request
-     * @param CompanyEntityService $service
-     * @param Company $company
+     * @param  PartialUpdateCompany  $request
+     * @param  CompanyEntityService  $service
+     * @param  Company  $company
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function partiallyUpdateCompany(PartialUpdateCompany $request,
-                                           CompanyEntityService $service,
-                                           Company              $company): JsonResponse
-    {
+    public function partiallyUpdateCompany(
+        PartialUpdateCompany $request,
+        CompanyEntityService $service,
+        Company $company
+    ): JsonResponse {
         $this->authorize('update', $company);
 
         $resource = $service
@@ -358,18 +368,19 @@ class CompanyController extends Controller
     /**
      * Update a Contact of the Company.
      *
-     * @param UpdateCompanyContact $request
-     * @param Company $company
-     * @param Contact $contact
-     * @param CompanyEntityService $service
+     * @param  UpdateCompanyContact  $request
+     * @param  Company  $company
+     * @param  Contact  $contact
+     * @param  CompanyEntityService  $service
      * @return JsonResponse
      * @throws \Throwable
      */
-    public function updateCompanyContact(UpdateCompanyContact $request,
-                                         CompanyEntityService $service,
-                                         Company              $company,
-                                         Contact              $contact): JsonResponse
-    {
+    public function updateCompanyContact(
+        UpdateCompanyContact $request,
+        CompanyEntityService $service,
+        Company $company,
+        Contact $contact
+    ): JsonResponse {
         $this->authorize('update', $company);
 
         $result = $service
@@ -382,19 +393,64 @@ class CompanyController extends Controller
         );
     }
 
+
+    /**
+     * Detach address from company.
+     *
+     * @param  CompanyEntityService  $service
+     * @param  Company  $company
+     * @param  Address  $address
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function detachAddressFromCompany(
+        CompanyEntityService $service,
+        Company $company,
+        Address $address
+    ): Response {
+        $this->authorize('update', $company);
+
+        $service->detachAddressFromCompany($company, $address);
+
+        return response()->noContent();
+    }
+
+
+    /**
+     * Detach contact from company.
+     *
+     * @param  CompanyEntityService  $service
+     * @param  Company  $company
+     * @param  Contact  $contact
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function detachContactFromCompany(
+        CompanyEntityService $service,
+        Company $company,
+        Contact $contact
+    ): Response {
+        $this->authorize('update', $company);
+
+        $service->detachContactFromCompany($company, $contact);
+
+        return response()->noContent();
+    }
+
     /**
      * Show a list of existing attachments of the company entity.
      *
-     * @param AttachmentQueries $attachmentQueries
-     * @param UnifiedAttachmentDataMapper $dataMapper
-     * @param Company $company
+     * @param  AttachmentQueries  $attachmentQueries
+     * @param  UnifiedAttachmentDataMapper  $dataMapper
+     * @param  Company  $company
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showAttachmentsOfCompany(AttachmentQueries           $attachmentQueries,
-                                             UnifiedAttachmentDataMapper $dataMapper,
-                                             Company                     $company): AnonymousResourceCollection
-    {
+    public function showAttachmentsOfCompany(
+        AttachmentQueries $attachmentQueries,
+        UnifiedAttachmentDataMapper $dataMapper,
+        Company $company
+    ): AnonymousResourceCollection {
         $this->authorize('view', $company);
 
         $collection = $attachmentQueries->listOfCompanyUnifiedAttachmentsQuery($company)->get();
@@ -407,16 +463,17 @@ class CompanyController extends Controller
     /**
      * Store a new attachment for the company entity.
      *
-     * @param CreateAttachment $request
-     * @param AttachmentEntityService $entityService
-     * @param Company $company
+     * @param  CreateAttachment  $request
+     * @param  AttachmentEntityService  $entityService
+     * @param  Company  $company
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function storeAttachmentForCompany(CreateAttachment        $request,
-                                              AttachmentEntityService $entityService,
-                                              Company                 $company): JsonResponse
-    {
+    public function storeAttachmentForCompany(
+        CreateAttachment $request,
+        AttachmentEntityService $entityService,
+        Company $company
+    ): JsonResponse {
         $this->authorize('view', $company);
 
         $resource = $entityService->createAttachmentForEntity(
@@ -434,16 +491,17 @@ class CompanyController extends Controller
     /**
      * Delete the specified attachment of the company entity.
      *
-     * @param AttachmentEntityService $entityService
-     * @param Company $company
-     * @param Attachment $attachment
+     * @param  AttachmentEntityService  $entityService
+     * @param  Company  $company
+     * @param  Attachment  $attachment
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function deleteAttachmentOfCompany(AttachmentEntityService $entityService,
-                                              Company                 $company,
-                                              Attachment              $attachment): JsonResponse
-    {
+    public function deleteAttachmentOfCompany(
+        AttachmentEntityService $entityService,
+        Company $company,
+        Attachment $attachment
+    ): JsonResponse {
         $this->authorize('view', $company);
 
         $entityService->deleteAttachment($attachment, $company);
@@ -454,16 +512,17 @@ class CompanyController extends Controller
     /**
      * Remove the specified Company from storage.
      *
-     * @param DeleteCompany $request
-     * @param CompanyEntityService $service
-     * @param Company $company
+     * @param  DeleteCompany  $request
+     * @param  CompanyEntityService  $service
+     * @param  Company  $company
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function destroyCompany(DeleteCompany        $request,
-                                   CompanyEntityService $service,
-                                   Company              $company): JsonResponse
-    {
+    public function destroyCompany(
+        DeleteCompany $request,
+        CompanyEntityService $service,
+        Company $company
+    ): JsonResponse {
         $this->authorize('delete', $company);
 
         $service
@@ -479,15 +538,16 @@ class CompanyController extends Controller
     /**
      * Activate the specified Company from storage.
      *
-     * @param Company $company
-     * @param CompanyEntityService $service
+     * @param  Company  $company
+     * @param  CompanyEntityService  $service
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function markAsActiveCompany(Request              $request,
-                                        CompanyEntityService $service,
-                                        Company              $company): JsonResponse
-    {
+    public function markAsActiveCompany(
+        Request $request,
+        CompanyEntityService $service,
+        Company $company
+    ): JsonResponse {
         $this->authorize('update', $company);
 
         $service
@@ -503,16 +563,17 @@ class CompanyController extends Controller
     /**
      * Deactivate the specified Company from storage.
      *
-     * @param Request $request
-     * @param CompanyEntityService $service
-     * @param Company $company
+     * @param  Request  $request
+     * @param  CompanyEntityService  $service
+     * @param  Company  $company
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function markAsInactiveCompany(Request              $request,
-                                          CompanyEntityService $service,
-                                          Company              $company): JsonResponse
-    {
+    public function markAsInactiveCompany(
+        Request $request,
+        CompanyEntityService $service,
+        Company $company
+    ): JsonResponse {
         $this->authorize('update', $company);
 
         $service

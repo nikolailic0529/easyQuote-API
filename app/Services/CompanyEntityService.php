@@ -29,25 +29,29 @@ class CompanyEntityService implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected LoggerInterface     $logger,
-                                protected ValidatorInterface  $validator,
-                                protected ConnectionInterface $connection,
-                                protected LockProvider        $lockProvider,
-                                protected EventDispatcher     $eventDispatcher)
-    {
+    public function __construct(
+        protected LoggerInterface $logger,
+        protected ValidatorInterface $validator,
+        protected ConnectionInterface $connection,
+        protected LockProvider $lockProvider,
+        protected EventDispatcher $eventDispatcher
+    ) {
     }
 
     /**
      * Update a contact of the company.
      *
-     * @param Company $company
-     * @param Contact $contact
-     * @param UpdateCompanyContactData $contactData
+     * @param  Company  $company
+     * @param  Contact  $contact
+     * @param  UpdateCompanyContactData  $contactData
      * @return Contact
      * @throws \Throwable
      */
-    public function updateCompanyContact(Company $company, Contact $contact, UpdateCompanyContactData $contactData): Contact
-    {
+    public function updateCompanyContact(
+        Company $company,
+        Contact $contact,
+        UpdateCompanyContactData $contactData
+    ): Contact {
         return tap($contact, function (Contact $contact) use ($contactData, $company) {
             $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
                 $oldCompany->setRawAttributes($company->getRawOriginal());
@@ -120,7 +124,13 @@ class CompanyEntityService implements CauserAware
             }
 
             // TODO: add company locking.
-            $this->connection->transaction(function () use ($addresses, $data, $company, $addressesData, $contactsData) {
+            $this->connection->transaction(function () use (
+                $addresses,
+                $data,
+                $company,
+                $addressesData,
+                $contactsData
+            ) {
                 $addresses->each->save();
 
                 $company->save();
@@ -193,7 +203,12 @@ class CompanyEntityService implements CauserAware
             }
 
             /** @var ?Carbon $latestUpdatedAtOfContactRelations */
-            $latestUpdatedAtOfContactRelations = value(static function () use ($contacts, $addresses, $addressModel, $contactModel): ?Carbon {
+            $latestUpdatedAtOfContactRelations = value(static function () use (
+                $contacts,
+                $addresses,
+                $addressModel,
+                $contactModel
+            ): ?Carbon {
                 $max = collect([
                     $addresses->max($addressModel->getUpdatedAtColumn()),
                     $contacts->max($contactModel->getUpdatedAtColumn()),
@@ -204,7 +219,14 @@ class CompanyEntityService implements CauserAware
             });
 
             // TODO: add company locking.
-            $this->connection->transaction(function () use ($addresses, $data, $company, $addressesData, $contactsData, $latestUpdatedAtOfContactRelations) {
+            $this->connection->transaction(function () use (
+                $addresses,
+                $data,
+                $company,
+                $addressesData,
+                $contactsData,
+                $latestUpdatedAtOfContactRelations
+            ) {
                 $addresses->each->save();
 
                 $relationChanges = [
@@ -288,6 +310,42 @@ class CompanyEntityService implements CauserAware
                 if ($data->delete_logo) {
                     $company->image()->flushQueryCache()->delete();
                 }
+            });
+
+            $this->eventDispatcher->dispatch(
+                new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
+            );
+        });
+    }
+
+    public function detachAddressFromCompany(Company $company, Address $address): Company
+    {
+        return tap($company, function (Company $company) use ($address): void {
+            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+                $oldCompany->setRawAttributes($company->getRawOriginal());
+                $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            });
+
+            $this->connection->transaction(static function () use ($company, $address) {
+                $company->addresses()->detach($address);
+            });
+
+            $this->eventDispatcher->dispatch(
+                new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
+            );
+        });
+    }
+
+    public function detachContactFromCompany(Company $company, Contact $contact): Company
+    {
+        return tap($company, function (Company $company) use ($contact): void {
+            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+                $oldCompany->setRawAttributes($company->getRawOriginal());
+                $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            });
+
+            $this->connection->transaction(static function () use ($company, $contact) {
+                $company->contacts()->detach($contact);
             });
 
             $this->eventDispatcher->dispatch(

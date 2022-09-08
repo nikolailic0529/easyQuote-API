@@ -25,4 +25,9 @@ class WebhookEntityService
             $this->connection->transaction(static fn () => $webhook->save());
         });
     }
+
+    public function deleteWebhook(PipelinerWebhook $webhook): void
+    {
+        $this->connection->transaction(static fn () => $webhook->delete());
+    }
 }

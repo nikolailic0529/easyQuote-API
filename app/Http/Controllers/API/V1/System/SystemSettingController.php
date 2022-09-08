@@ -9,6 +9,8 @@ use App\Http\Resources\V1\Setting\PublicSettingCollection;
 use App\Http\Resources\V1\Setting\SettingCollection;
 use App\Models\System\SystemSetting;
 use App\Queries\SystemSettingQueries;
+use App\Services\Settings\DynamicSettingsProviders\DynamicSettingsProviderCollection;
+use App\Services\Settings\SettingsDataProviderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,13 +24,21 @@ class SystemSettingController extends Controller
     /**
      * List system settings.
      *
-     * @param SystemSettingQueries $queries
+     * @param  SystemSettingQueries  $queries
+     * @param  SettingsDataProviderService  $service
+     * @param  DynamicSettingsProviderCollection  $dynamicSettings
      * @return JsonResponse
      */
-    public function index(SystemSettingQueries $queries): JsonResponse
-    {
+    public function index(
+        SystemSettingQueries $queries,
+        SettingsDataProviderService $service,
+        DynamicSettingsProviderCollection $dynamicSettings
+    ): JsonResponse {
         $collection = SettingCollection::make(
-            $queries->listSystemSettingsQuery()->get()
+            $service->hydratePossibleValuesOfSettings(
+                $queries->listSystemSettingsQuery()->get()
+            )
+            ->merge($dynamicSettings->toCollection())
         );
 
         return response()->json($collection);
@@ -37,8 +47,8 @@ class SystemSettingController extends Controller
     /**
      * List exposed system settings.
      *
-     * @param Request $request
-     * @param SystemSettingQueries $queries
+     * @param  Request  $request
+     * @param  SystemSettingQueries  $queries
      * @return JsonResponse
      */
     public function showPublicSettings(Request $request, SystemSettingQueries $queries): JsonResponse
@@ -53,7 +63,7 @@ class SystemSettingController extends Controller
     /**
      * Show system setting.
      *
-     * @param SystemSetting $setting
+     * @param  SystemSetting  $setting
      * @return JsonResponse
      */
     public function show(SystemSetting $setting): JsonResponse
@@ -64,8 +74,8 @@ class SystemSettingController extends Controller
     /**
      * Update system setting.
      *
-     * @param UpdateSystemSettingRequest $request
-     * @param SystemSetting $setting
+     * @param  UpdateSystemSettingRequest  $request
+     * @param  SystemSetting  $setting
      * @return JsonResponse
      */
     public function update(UpdateSystemSettingRequest $request, SystemSetting $setting): JsonResponse
@@ -78,7 +88,7 @@ class SystemSettingController extends Controller
     /**
      * Bulk update system settings.
      *
-     * @param UpdateManySystemSettingsRequest $request
+     * @param  UpdateManySystemSettingsRequest  $request
      * @return JsonResponse
      */
     public function updateMany(UpdateManySystemSettingsRequest $request): JsonResponse

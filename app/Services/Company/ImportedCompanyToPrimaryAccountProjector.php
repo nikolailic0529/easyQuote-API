@@ -291,12 +291,14 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         $this->connection->transaction(static function () use ($newContacts, $company): void {
             $company->contacts->each(static function (Contact $contact): void {
                 $contact->user?->save();
+                $contact->address?->save();
                 $contact->save();
             });
 
             if ($newContacts->isNotEmpty()) {
                 $newContacts->each(static function (Contact $contact): void {
                     $contact->user?->save();
+                    $contact->address?->save();
                     $contact->save();
                 });
 

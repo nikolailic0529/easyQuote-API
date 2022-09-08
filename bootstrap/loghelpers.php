@@ -2,6 +2,7 @@
 
 use App\Facades\Failure;
 use App\Mail\FailureReportMail;
+use App\Services\Mail\Exceptions\MailRateLimitException;
 use Illuminate\Support\Facades\Mail;
 
 if (!function_exists('customlog')) {
@@ -29,8 +30,12 @@ if (!function_exists('report_failure')) {
 
         $failure = Failure::helpFor($exception);
 
-        Mail::send(new FailureReportMail($failure, setting('failure_report_recipients')));
-
-        customlog(['ErrorCode' => 'UNE_01'], ['ErrorDetails' => $failure->message]);
+        try {
+            Mail::send(new FailureReportMail($failure, setting('failure_report_recipients')));
+        } catch (MailRateLimitException $e) {
+            logger()->error('Could not report failure to email report due to exceeding mail limit', [
+                'ErrorDetails' => $e->getMessage()
+            ]);
+        }
     }
 }

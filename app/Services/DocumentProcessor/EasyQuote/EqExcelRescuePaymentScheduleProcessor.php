@@ -4,39 +4,54 @@ namespace App\Services\DocumentProcessor\EasyQuote;
 
 use App\Contracts\Services\ProcessesQuoteFile;
 use App\Enum\Lock;
-use App\Imports\ImportExcelSchedule;
 use App\Models\QuoteFile\QuoteFile;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
+use App\Models\QuoteFile\ScheduleData;
+use App\Services\DocumentProcessor\EasyQuote\Parsers\ExcelPaymentScheduleParser;
+use App\Services\DocumentProcessor\EasyQuote\Parsers\Exceptions\PaymentScheduleParserException;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Support\Facades\Storage;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
-use Throwable;
 
 class EqExcelRescuePaymentScheduleProcessor implements ProcessesQuoteFile
 {
+    public function __construct(
+        protected ConnectionResolverInterface $connectionResolver,
+        protected LockProvider $lockProvider,
+        protected ExcelPaymentScheduleParser $paymentScheduleParser,
+    ) {
+    }
+
     public function process(QuoteFile $quoteFile): void
     {
-        $lock = Cache::lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
-        $lock->block(30);
-
-        DB::beginTransaction();
-
         try {
-            $quoteFile->scheduleData()->forceDelete();
-
-            (new ImportExcelSchedule($quoteFile))->import(Storage::path($quoteFile->original_file_path));
-
-            $quoteFile->markAsHandled();
-
-            DB::commit();
-        } catch (Throwable $e) {
-            DB::rollBack();
-
-            throw $e;
-        } finally {
-            $lock->release();
+            $data = $this->paymentScheduleParser->parse(
+                new \SplFileInfo(Storage::path($quoteFile->original_file_path)),
+                $quoteFile->imported_page,
+            );
+        } catch (PaymentScheduleParserException $e) {
+            return;
         }
+
+        $scheduleData = tap($quoteFile->scheduleData()->getRelated()->newInstance(),
+            static function (ScheduleData $model) use ($data, $quoteFile): void {
+                $model->quoteFile()->associate($quoteFile);
+                $model->value = $data->toArray();
+            });
+
+        $quoteFile->handled_at = now();
+
+        $this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10)
+            ->block(30, function () use ($quoteFile, $scheduleData) {
+                $this->connectionResolver->connection()
+                    ->transaction(static function () use ($scheduleData, $quoteFile): void {
+                        $quoteFile->scheduleData()->forceDelete();
+                        $quoteFile->save();
+
+                        $scheduleData->save();
+                    });
+            });
     }
 
     public static function getProcessorUuid(): UuidInterface

@@ -21,10 +21,14 @@ class Handler extends ExceptionHandler
         \Illuminate\Auth\Access\AuthorizationException::class,
         \Illuminate\Database\Eloquent\ModelNotFoundException::class,
         \Illuminate\Validation\ValidationException::class,
-        \League\OAuth2\Server\Exception\OAuthServerException::class
+        \League\OAuth2\Server\Exception\OAuthServerException::class,
     ];
 
-    protected $dontReportMail = [];
+    protected array $dontReportMail = [
+        \Illuminate\Http\Client\RequestException::class,
+        \GuzzleHttp\Exception\RequestException::class,
+        \App\Services\Mail\Exceptions\MailRateLimitException::class,
+    ];
 
     /**
      * A list of the inputs that are never flashed for validation exceptions.

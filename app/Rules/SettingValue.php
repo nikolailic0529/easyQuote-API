@@ -2,23 +2,15 @@
 
 namespace App\Rules;
 
-use App\Http\Requests\System\UpdateManySystemSettingsRequest;
+use App\Models\System\SystemSetting;
+use App\Services\Settings\SettingsDataProviderService;
+use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Support\Arr;
 
-class SettingValue implements Rule
+class SettingValue implements Rule, DataAwareRule
 {
-    /** @var \App\Http\Requests\System\UpdateManySystemSettingsRequest */
-    protected UpdateManySystemSettingsRequest $request;
-
-    /**
-     * Create a new rule instance.
-     *
-     * @return void
-     */
-    public function __construct(UpdateManySystemSettingsRequest $request)
-    {
-        $this->request = $request;
-    }
+    protected array $data = [];
 
     /**
      * Determine if the validation rule passes.
@@ -27,23 +19,46 @@ class SettingValue implements Rule
      * @param  mixed  $value
      * @return bool
      */
-    public function passes($attribute, $value)
+    public function passes($attribute, $value): bool
     {
-        $setting = $this->request->findPresentSetting($attribute);
+        $leadingAttributePath = static::resolveLeadingAttributePath($attribute);
 
-        if (is_null($setting) || $setting->is_read_only) {
+        if (array_key_exists($leadingAttributePath, $this->data) === false) {
             return false;
         }
 
-        if (is_null($setting->possibleValues)) {
+        $propertyId = Arr::get($this->data, "$leadingAttributePath.id");
+
+        if (is_scalar($propertyId) === false) {
+            return false;
+        }
+
+        /** @var SystemSetting $settingsProperty */
+        $settingsProperty = SystemSetting::query()->find($propertyId);
+
+        if (null === $settingsProperty || $settingsProperty->is_read_only) {
+            return false;
+        }
+
+        $possibleValues = app(SettingsDataProviderService::class)
+            ->resolvePossibleValuesForSettingsProperty($settingsProperty);
+
+        if (null === $possibleValues) {
             return true;
         }
 
+        $flattenPossibleValues = Arr::pluck($possibleValues, 'value');
+
         if (is_array($value)) {
-            return blank(array_diff($value, $setting->flattenPossibleValues));
+            return blank(array_diff($value, $flattenPossibleValues));
         }
 
-        return isset(array_flip($setting->flattenPossibleValues)[$value]);
+        return in_array($value, $flattenPossibleValues, true);
+    }
+
+    protected static function resolveLeadingAttributePath(string $attribute): string
+    {
+        return implode('.', explode('.', $attribute, -1));
     }
 
     /**
@@ -51,8 +66,13 @@ class SettingValue implements Rule
      *
      * @return string
      */
-    public function message()
+    public function message(): string
     {
-        return SS_INV_01;
+        return 'The given value of settings property is invalid.';
+    }
+
+    public function setData($data): void
+    {
+        $this->data = $data;
     }
 }

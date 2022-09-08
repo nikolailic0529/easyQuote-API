@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Opportunity;
+use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
 use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -123,6 +124,18 @@ class OpportunityPolicy
 
         if ($this->userTeamGate->isLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
             return $this->allow();
+        }
+
+        // Allow the user to update an opportunity when the user can update any quote associated with it.
+        if (!isset($opportunity->quotes_exist) || $opportunity->quotes_exist) {
+            $userCanUpdateAnyQuoteOfOpportunity = $opportunity->worldwideQuotes
+                ->contains(static function (WorldwideQuote $quote) use ($user): bool {
+                    return $user->can('update', $quote);
+                });
+
+            if ($userCanUpdateAnyQuoteOfOpportunity) {
+                return $this->allow();
+            }
         }
 
         return $this->deny();

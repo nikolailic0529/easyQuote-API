@@ -14,6 +14,7 @@ use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\OpportunityValidationResult;
+use App\Models\Permission;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
@@ -21,13 +22,13 @@ use App\Models\Role;
 use App\Models\SalesUnit;
 use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
+use App\Models\Team;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -1290,6 +1291,92 @@ class OpportunityTest extends TestCase
     }
 
     /**
+     * Test an ability to update an existing opportunity when the user can update any quote associated with it.
+     */
+    public function testCanUpdateOpportunityWhenUserCanUpdateAnyQuoteAssociatedWithIt(): void
+    {
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(Team::factory(), relationship: 'ledTeams')
+            ->hasAttached(Role::factory()->hasAttached(
+                Permission::query()
+                    ->whereIn('name', [
+                        "update_assets",
+                        "update_own_opportunities",
+                        "view_own_ww_quotes",
+                        "view_companies",
+                        "create_contacts",
+                        "download_ww_quote_payment_schedule",
+                        "view_own_sales_orders",
+                        "download_ww_quote_pdf",
+                        "download_quote_schedule",
+                        "view_addresses",
+                        "view_countries",
+                        "create_assets",
+                        "view_opportunities",
+                        "create_ww_quote_files",
+                        "view_promo_discounts",
+                        "create_opportunities",
+                        "download_quote_price",
+                        "view_own_ww_quote_files",
+                        "create_sales_orders",
+                        "download_contract_pdf",
+                        "view_discounts",
+                        "create_companies",
+                        "download_sales_order_pdf",
+                        "download_hpe_contract_pdf",
+                        "view_contacts",
+                        "update_own_ww_quotes",
+                        "view_prepay_discounts",
+                        "view_assets",
+                        "create_ww_quotes",
+                        "update_addresses",
+                        "view_vendors",
+                        "download_quote_pdf",
+                        "download_ww_quote_distributor_file",
+                        "create_countries",
+                        "create_addresses",
+                        "create_vendors",
+                        "update_companies",
+                        "update_own_ww_quote_files",
+                        "update_countries",
+                        "view_activities",
+                        "view_multiyear_discounts",
+                        "view_margins",
+                        "handle_own_ww_quote_files",
+                        "update_contacts",
+                        "view_sn_discounts",
+                        "update_vendors",
+                        "update_own_sales_orders",
+                    ])
+                    ->get()
+            )->state(['name' => 'WW Account Managers']))
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->forgetCachedPermissions();
+        $user->roles->first()->forgetCachedPermissions();
+
+        /** @var WorldwideQuote $quote */
+        $quote = WorldwideQuote::factory()
+            ->for(
+                $quoteOwner = User::factory()
+                    ->hasAttached($user->roles->first())
+                    ->for($user->ledTeams->first(), 'team')
+                    ->create()
+                , 'user'
+            )
+            ->for(
+                Opportunity::factory()
+                    ->for($user->salesUnits->first())
+            )
+            ->create();
+
+        $this->assertTrue($user->can('update', $quote));
+        $this->assertTrue($user->can('update', $quote->opportunity));
+    }
+
+    /**
      * Test an ability to partially update an existing opportunity.
      */
     public function testCanPartiallyUpdateOpportunity(): void
@@ -1597,8 +1684,10 @@ class OpportunityTest extends TestCase
                         '*' => ['id', 'name', 'short_code',],
                     ],
                     'addresses' => [
-                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
-                            'country_id'],
+                        '*' => [
+                            'id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
+                            'country_id',
+                        ],
                     ],
                     'contacts' => [
                         '*' => ['id', 'contact_type', 'first_name', 'last_name'],
@@ -1729,8 +1818,10 @@ class OpportunityTest extends TestCase
                         '*' => ['id', 'name', 'short_code',],
                     ],
                     'addresses' => [
-                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
-                            'country_id'],
+                        '*' => [
+                            'id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
+                            'country_id',
+                        ],
                     ],
                     'contacts' => [
                         '*' => ['id', 'contact_type', 'first_name', 'last_name'],
@@ -1756,7 +1847,9 @@ class OpportunityTest extends TestCase
         $this->assertSame('1tFEnogc3tRACoEy', $response->json('primary_account.vat'));
         $this->assertSame('VAT Number', $response->json('primary_account.vat_type'));
 
-        $addressOfPrimaryAccountByType = collect($response->json('primary_account.addresses'))->groupBy('address_type')->all();
+        $addressOfPrimaryAccountByType = collect($response->json('primary_account.addresses'))
+            ->groupBy('address_type')
+            ->all();
 
         $this->assertArrayHasKey('Invoice', $addressOfPrimaryAccountByType);
         $this->assertArrayHasKey('Hardware', $addressOfPrimaryAccountByType);
@@ -1862,8 +1955,10 @@ class OpportunityTest extends TestCase
                         '*' => ['id', 'name', 'short_code',],
                     ],
                     'addresses' => [
-                        '*' => ['id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
-                            'country_id'],
+                        '*' => [
+                            'id', 'address_type', 'address_1', 'city', 'state', 'post_code', 'address_2',
+                            'country_id',
+                        ],
                     ],
                     'contacts' => [
                         '*' => ['id', 'contact_type', 'first_name', 'last_name'],

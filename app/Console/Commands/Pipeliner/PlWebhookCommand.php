@@ -2,14 +2,11 @@
 
 namespace App\Console\Commands\Pipeliner;
 
-use App\Integrations\Pipeliner\Enum\EventEnum;
-use App\Integrations\Pipeliner\GraphQl\PipelinerWebhookEntityIntegration;
-use App\Integrations\Pipeliner\Models\CreateWebhookInput;
 use App\Integrations\Pipeliner\Models\WebhookEntity;
-use App\Services\Pipeliner\Webhook\WebhookEntityService;
+use App\Services\Pipeliner\Webhook\WebhookRegistrarService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputOption;
 
 class PlWebhookCommand extends Command
 {
@@ -55,38 +52,16 @@ class PlWebhookCommand extends Command
         return self::SUCCESS;
     }
 
-    protected function registerWebhook(PipelinerWebhookEntityIntegration $integration, WebhookEntityService $webhookService): void
+    protected function registerWebhook(WebhookRegistrarService $service): void
     {
         $url = $this->ask('Url', route('pipeliner.webhook'));
 
-        $input = new CreateWebhookInput(
-            url: $url,
-            events: [
-                EventEnum::AccountUpdate,
-                EventEnum::ContactAccountRelationAll,
-                EventEnum::ContactUpdate,
-                EventEnum::TaskCreate,
-                EventEnum::TaskUpdate,
-                EventEnum::TaskDelete,
-                EventEnum::AppointmentCreate,
-                EventEnum::AppointmentUpdate,
-                EventEnum::AppointmentDelete,
-                EventEnum::OpportunityDocumentLinked,
-                EventEnum::AccountDocumentLinked,
-            ],
-            insecureSsl: true,
-            signature: Str::uuid(),
-            options: json_encode(config('pipeliner.webhook.options') ?? '{}')
-        );
-
-        $webhook = $integration->create($input);
-
-        $webhookService->createWebhookFromPipelinerEntity($webhook);
+        $webhook = $service->registerWebhook($url);
 
         $this->outputWebhook($webhook);
     }
 
-    protected function removeWebhook(PipelinerWebhookEntityIntegration $integration): void
+    protected function removeWebhook(WebhookRegistrarService $service): void
     {
         $webhookId = $this->argument('webhook-id');
 
@@ -94,16 +69,19 @@ class PlWebhookCommand extends Command
             throw new \InvalidArgumentException("Webhook id must be provided.");
         }
 
-        $integration->delete($webhookId);
+        $service->deleteWebhook($webhookId);
 
         $this->info("Webhook `$webhookId` removed.");
     }
 
-    protected function listWebhooks(PipelinerWebhookEntityIntegration $integration): void
+    protected function listWebhooks(WebhookRegistrarService $service): void
     {
-        $webhooks = $integration->getAll();
+        $webhooks = $service->getWebhooks(
+            $this->option('local') ? WebhookRegistrarService::LOCAL_ONLY : 0
+        );
 
-        collect($webhooks)
+        $webhooks
+            ->lazy()
             ->sortBy(static function (WebhookEntity $webhook): int {
                 return $webhook->created->getTimestamp();
             })
@@ -113,7 +91,7 @@ class PlWebhookCommand extends Command
     private function outputWebhook(WebhookEntity $entity): void
     {
         $this->getOutput()->horizontalTable(
-            ['Id', 'Url', 'Events', 'Insecure SSL', 'Signature', 'Options', 'Created'],
+            ['Id', 'Url', 'Events', 'Insecure SSL', 'Signature', 'Options', 'Created', 'Is Deleted'],
             [
                 [
                     'id' => $entity->id,
@@ -123,6 +101,7 @@ class PlWebhookCommand extends Command
                     'signature' => $entity->signature,
                     'options' => json_encode($entity->options),
                     'created' => $entity->created->format('Y-m-d H:i:s'),
+                    'isDeleted' => $entity->isDeleted ? '<bg=bright-red;fg=white> true </>' : '<bg=green;fg=white> false </>',
                 ],
             ],
         );
@@ -142,8 +121,17 @@ class PlWebhookCommand extends Command
     protected function getArguments(): array
     {
         return [
-            new InputArgument('action', mode: InputArgument::REQUIRED, description: 'The command action (register,remove,list)'),
-            new InputArgument('webhook-id', mode: InputArgument::OPTIONAL, description: 'The webhook id for remove action'),
+            new InputArgument('action', mode: InputArgument::REQUIRED,
+                description: 'The command action (register,remove,list)'),
+            new InputArgument('webhook-id', mode: InputArgument::OPTIONAL,
+                description: 'The webhook id for remove action'),
+        ];
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            new InputOption('local', mode: InputOption::VALUE_NEGATABLE, description: "Whether to list only local webhooks")
         ];
     }
 }

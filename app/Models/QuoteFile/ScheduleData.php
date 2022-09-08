@@ -11,6 +11,9 @@ use Illuminate\Database\Eloquent\{
     SoftDeletes,
 };
 
+/**
+ * @property array $value
+ */
 class ScheduleData extends Model
 {
     use Uuid, BelongsToQuoteFile, SoftDeletes;
