@@ -5,6 +5,7 @@ namespace App\Queries;
 use App\DTO\WorldwideQuote\AssetsLookupData;
 use App\Enum\QuoteStatus;
 use App\Models\Company;
+use App\Models\Opportunity;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
@@ -12,20 +13,25 @@ use App\Models\User;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
+use App\Queries\Scopes\CurrentUserScope;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Auth\Access\Response;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class WorldwideQuoteQueries
 {
-    public function __construct(protected ConnectionResolverInterface $connection,
-                                protected Elasticsearch $elasticsearch)
+    public function __construct(protected readonly ConnectionResolverInterface $connectionResolver,
+                                protected readonly Elasticsearch $elasticsearch,
+                                protected readonly Gate $gate)
     {
     }
 
@@ -65,9 +71,9 @@ class WorldwideQuoteQueries
 
         return $this->listingQuery($request)
             ->addSelect([
-                'has_distributor_files' => $this->connection->query()
+                'has_distributor_files' => $this->connectionResolver->connection()->query()
                     ->selectRaw('exists ('.$distributorFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
-                'has_schedule_files' => $this->connection->query()
+                'has_schedule_files' => $this->connectionResolver->connection()->query()
                     ->selectRaw('exists ('.$scheduleFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
             ])
             ->whereNull('worldwide_quotes.submitted_at');
@@ -89,6 +95,7 @@ class WorldwideQuoteQueries
                 'worldwide_quotes.user_id',
                 'worldwide_quotes.opportunity_id',
                 'worldwide_quotes.contract_type_id',
+                'opportunities.sales_unit_id',
 
                 'sales_orders.id as sales_order_id',
                 'sales_orders.submitted_at as sales_order_submitted_at',
@@ -133,6 +140,7 @@ class WorldwideQuoteQueries
                 'opportunities.is_contract_duration_checked',
                 'opportunities.contract_duration_months',
             ])
+            ->tap(CurrentUserScope::from($request, $this->gate))
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -195,9 +203,9 @@ class WorldwideQuoteQueries
         return $this->listingQuery($request)
             ->addSelect([
 
-                'has_distributor_files' => $this->connection->connection()->query()
+                'has_distributor_files' => $this->connectionResolver->connection()->query()
                     ->selectRaw('exists ('.$distributorFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
-                'has_schedule_files' => $this->connection->connection()->query()
+                'has_schedule_files' => $this->connectionResolver->connection()->query()
                     ->selectRaw('exists ('.$scheduleFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
             ])
             ->whereNotNull('worldwide_quotes.submitted_at');

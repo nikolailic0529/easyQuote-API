@@ -6,8 +6,9 @@ use App\Integrations\Pipeliner\Enum\InputValueEnum;
 
 class CreateSalesUnitInput extends BaseInput
 {
-    public function __construct(public readonly string                $name,
-                                public readonly string|InputValueEnum $parentId = InputValueEnum::Miss)
-    {
+    public function __construct(
+        public readonly string $name,
+        public readonly string|InputValueEnum $parentId = InputValueEnum::Miss
+    ) {
     }
 }

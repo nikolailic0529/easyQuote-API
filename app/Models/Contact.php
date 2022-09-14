@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Contracts\HasImagesDirectory;
 use App\Contracts\HasOwnAppointments;
 use App\Contracts\LinkedToAppointments;
+use App\Contracts\ProvidesIdForHumans;
 use App\Contracts\SearchableEntity;
 use App\Enum\GenderEnum;
 use App\Models\Appointment\Appointment;
@@ -46,7 +47,7 @@ use Intervention\Image\ImageManagerStatic;
  * @property-read User|null $user
  * @property-read SalesUnit|null $salesUnit
  */
-class Contact extends Model implements HasImagesDirectory, SearchableEntity, LinkedToAppointments, HasOwnAppointments
+class Contact extends Model implements HasImagesDirectory, SearchableEntity, LinkedToAppointments, HasOwnAppointments, ProvidesIdForHumans
 {
     use Uuid, SoftDeletes, Searchable, Activatable, HasFactory;
 
@@ -206,5 +207,10 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity, Lin
         }
 
         return true;
+    }
+
+    public function getIdForHumans(): string
+    {
+        return trim("$this->first_name $this->last_name");
     }
 }

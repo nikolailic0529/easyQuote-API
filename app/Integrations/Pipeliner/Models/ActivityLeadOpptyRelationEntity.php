@@ -4,9 +4,10 @@ namespace App\Integrations\Pipeliner\Models;
 
 class ActivityLeadOpptyRelationEntity
 {
-    public function __construct(public readonly string $id,
-                                public readonly string $leadOpptyId)
-    {
+    public function __construct(
+        public readonly string $id,
+        public readonly string $leadOpptyId
+    ) {
     }
 
     public static function fromArray(array $array): static

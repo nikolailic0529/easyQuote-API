@@ -2,13 +2,18 @@
 
 namespace App\Integrations\Pipeliner\Models;
 
-class BaseInputCollection implements \Iterator, \Countable, \JsonSerializable
+use ArrayIterator;
+use Countable;
+use Iterator;
+use JsonSerializable;
+
+class BaseInputCollection implements Iterator, Countable, JsonSerializable
 {
-    protected readonly \ArrayIterator $iterator;
+    protected readonly ArrayIterator $iterator;
 
     public function __construct(BaseInput ...$collection)
     {
-        $this->iterator = new \ArrayIterator($collection);
+        $this->iterator = new ArrayIterator($collection);
     }
 
     public function current(): mixed

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\Mail\Exceptions\MailRateLimitException;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,7 +30,11 @@ class StopMaintenance implements ShouldQueue
 
         MaintenanceCompleted::dispatch();
 
-        app(Users::class)->cursor()->each(fn (User $user) => $user->notify(new MaintenanceFinished));
+        try {
+            app(Users::class)->cursor()->each(static fn (User $user) => $user->notify(new MaintenanceFinished));
+        } catch (MailRateLimitException $e) {
+            report($e);
+        }
 
         slack()
             ->title('Maintenance')

@@ -8,9 +8,12 @@ use App\Jobs\CreateNotification;
 use App\Models\System\Notification;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Traits\Conditionable;
 
 class PendingNotification
 {
+    use Conditionable;
+
     public function __construct(protected NotificationFactory $factory,
                                 protected Notification        $notification)
     {

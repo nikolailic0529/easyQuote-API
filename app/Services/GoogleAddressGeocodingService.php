@@ -39,6 +39,10 @@ class GoogleAddressGeocodingService implements AddressGeocoder, LoggerAware
      */
     public function geocodeAddressLocations(): void
     {
+        if (!config('geocoder.enabled')) {
+            return;
+        }
+
         $cursor = Address::query()
             ->whereNull('location_id')
             ->lazyById();
@@ -53,7 +57,7 @@ class GoogleAddressGeocodingService implements AddressGeocoder, LoggerAware
             $this->performAddressGeocoding($address);
         }
 
-        $this->logger->info('Geocoding of address locations has been completed.', ['geocodeFailures' => $this->notFoundAddresses]);
+        $this->logger->info('Geocoding of address locations has been completed.', ['geocodeFailuresCount' => count($this->notFoundAddresses)]);
     }
 
     /**

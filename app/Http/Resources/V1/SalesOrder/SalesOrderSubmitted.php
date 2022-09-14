@@ -5,6 +5,9 @@ namespace App\Http\Resources\V1\SalesOrder;
 use App\Models\SalesOrder;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin SalesOrder
+ */
 class SalesOrderSubmitted extends JsonResource
 {
     /**
@@ -23,6 +26,7 @@ class SalesOrderSubmitted extends JsonResource
             'contract_type_id' => $this->contract_type_id,
             'worldwide_quote_id' => $this->worldwide_quote_id,
             'opportunity_id' => $this->opportunity_id,
+            'sales_unit_id' => $this->sales_unit_id,
             'order_number' => $this->order_number,
             'order_date' => $this->order_date,
             'status' => $this->status,

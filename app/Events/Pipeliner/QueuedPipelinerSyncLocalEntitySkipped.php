@@ -2,7 +2,6 @@
 
 namespace App\Events\Pipeliner;
 
-use App\Models\Opportunity;
 use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -10,15 +9,18 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Throwable;
 
 final class QueuedPipelinerSyncLocalEntitySkipped implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public readonly Opportunity $opportunity,
-                                public readonly ?Model      $causer,
-                                public readonly string      $correlationId)
-    {
+    public function __construct(
+        public readonly Model $model,
+        public readonly ?Model $causer,
+        public readonly string $correlationId,
+        public readonly ?Throwable $e,
+    ) {
     }
 
     public function broadcastOn(): array
@@ -39,7 +41,7 @@ final class QueuedPipelinerSyncLocalEntitySkipped implements ShouldBroadcastNow
     {
         return [
             'correlation_id' => $this->correlationId,
-            'opportunity_id' => $this->opportunity->getKey(),
+            'model_id' => $this->model->getKey(),
         ];
     }
 }

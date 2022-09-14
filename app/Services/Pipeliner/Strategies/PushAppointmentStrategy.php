@@ -23,6 +23,7 @@ class PushAppointmentStrategy implements PushStrategy
                                 protected PipelinerAppointmentIntegration $appointmentIntegration,
                                 protected PushSalesUnitStrategy           $pushSalesUnitStrategy,
                                 protected PushClientStrategy              $pushClientStrategy,
+                                protected PushAttachmentStrategy          $pushAttachmentStrategy,
                                 protected AppointmentDataMapper           $dataMapper,
                                 protected LockProvider                    $lockProvider)
     {
@@ -70,6 +71,8 @@ class PushAppointmentStrategy implements PushStrategy
             $this->pushSalesUnitStrategy->sync($model->salesUnit);
         }
 
+        $this->pushAttachmentsOfAppointment($model);
+
         if (null === $model->pl_reference) {
             $input = $this->dataMapper->mapPipelinerCreateAppointmentInput($model);
 
@@ -86,6 +89,13 @@ class PushAppointmentStrategy implements PushStrategy
             $input = $this->dataMapper->mapPipelinerUpdateAppointmentInput($model, $entity);
 
             $this->appointmentIntegration->update($input);
+        }
+    }
+
+    public function pushAttachmentsOfAppointment(Appointment $appointment): void
+    {
+        foreach ($appointment->attachments as $attachment) {
+            $this->pushAttachmentStrategy->sync($attachment);
         }
     }
 

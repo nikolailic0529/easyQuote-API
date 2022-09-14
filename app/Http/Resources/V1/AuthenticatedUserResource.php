@@ -45,8 +45,6 @@ class AuthenticatedUserResource extends JsonResource
 
             'privileges' => $this->privileges,
             'role_properties' => $this->role_properties,
-            'role_companies' => $this->when($this->role->relationLoaded('companies'),
-                fn() => $this->role->companies->makeHidden('pivot')),
 
 //            'company' => $this->whenLoaded('company'),
             'companies' => $this->whenLoaded('companies'),

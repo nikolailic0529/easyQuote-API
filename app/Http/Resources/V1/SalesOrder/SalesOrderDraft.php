@@ -5,6 +5,9 @@ namespace App\Http\Resources\V1\SalesOrder;
 use App\Models\SalesOrder;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin SalesOrder
+ */
 class SalesOrderDraft extends JsonResource
 {
     /**
@@ -15,14 +18,13 @@ class SalesOrderDraft extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var SalesOrder|SalesOrderDraft $this */
-
         return [
             'id' => $this->getKey(),
             'user_id' => $this->user_id,
             'contract_type_id' => $this->contract_type_id,
             'worldwide_quote_id' => $this->worldwide_quote_id,
             'opportunity_id' => $this->opportunity_id,
+            'sales_unit_id' => $this->sales_unit_id,
             'order_number' => $this->order_number,
             'customer_name' => $this->customer_name,
             'company_name' => $this->company_name,

@@ -3,6 +3,7 @@
 namespace App\Models\Appointment;
 
 use App\Contracts\HasOwner;
+use App\Contracts\ProvidesIdForHumans;
 use App\Enum\AppointmentTypeEnum;
 use App\Models\Attachment;
 use App\Models\Company;
@@ -67,7 +68,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Collection<int, Company> $companiesHaveAppointment Companies have appointment
  * @property-read Collection<int, Opportunity> $opportunitiesHaveAppointment Opportunities have appointment
  */
-class Appointment extends Model implements HasOwner
+class Appointment extends Model implements HasOwner, ProvidesIdForHumans
 {
     use Uuid, SoftDeletes, HasFactory, HasTimestamps;
 
@@ -230,5 +231,10 @@ class Appointment extends Model implements HasOwner
     protected function inviteesCanEdit(): Attribute
     {
         return Attribute::get(fn(): bool => $this->getFlag(self::INVITEES_CAN_EDIT));
+    }
+
+    public function getIdForHumans(): string
+    {
+        return $this->subject;
     }
 }

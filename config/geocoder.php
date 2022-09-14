@@ -2,6 +2,8 @@
 
 return [
 
+    'enabled' => env('GOOGLE_MAPS_GEOCODING_ENABLED', true),
+
     /*
      * The api key used when sending Geocoding requests to Google.
      */

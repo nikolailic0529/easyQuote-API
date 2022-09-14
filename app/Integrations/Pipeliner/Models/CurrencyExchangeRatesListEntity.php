@@ -2,14 +2,17 @@
 
 namespace App\Integrations\Pipeliner\Models;
 
+use DateTimeImmutable;
+
 class CurrencyExchangeRatesListEntity
 {
-    public function __construct(public readonly string             $id,
-                                public readonly \DateTimeImmutable $validFrom,
-                                public readonly \DateTimeImmutable $created,
-                                public readonly \DateTimeImmutable $modified,
-                                public readonly int                $revision)
-    {
+    public function __construct(
+        public readonly string $id,
+        public readonly DateTimeImmutable $validFrom,
+        public readonly DateTimeImmutable $created,
+        public readonly DateTimeImmutable $modified,
+        public readonly int $revision
+    ) {
     }
 
     public static function fromArray(array $array): static

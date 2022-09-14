@@ -6,10 +6,11 @@ use App\Integrations\Pipeliner\Enum\InputValueEnum;
 
 final class CreateDataInput extends BaseInput
 {
-    public function __construct(public readonly string               $dataSetId,
-                                public readonly string               $optionName,
-                                public readonly int                  $sortOrder,
-                                public readonly InputValueEnum|float $calcValue = InputValueEnum::Miss)
-    {
+    public function __construct(
+        public readonly string $dataSetId,
+        public readonly string $optionName,
+        public readonly int $sortOrder,
+        public readonly InputValueEnum|float $calcValue = InputValueEnum::Miss
+    ) {
     }
 }

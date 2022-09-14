@@ -3,14 +3,18 @@
 namespace App\Integrations\Pipeliner\Models;
 
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
+use ArrayIterator;
+use Countable;
+use Iterator;
+use JsonSerializable;
 
-class ValidationLevelCollection implements \Iterator, \Countable, \JsonSerializable
+class ValidationLevelCollection implements Iterator, Countable, JsonSerializable
 {
-    protected readonly \ArrayIterator $iterator;
+    protected readonly ArrayIterator $iterator;
 
     public function __construct(ValidationLevel ...$validationLevels)
     {
-        $this->iterator = new \ArrayIterator($validationLevels);
+        $this->iterator = new ArrayIterator($validationLevels);
     }
 
     public static function from(ValidationLevel ...$validationLevels): static

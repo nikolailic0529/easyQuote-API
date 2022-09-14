@@ -2,14 +2,19 @@
 
 namespace App\Models;
 
+use App\Contracts\HasSalesUnit;
 use App\Contracts\SearchableEntity;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Template\SalesOrderTemplate;
 use App\Traits\Uuid;
+use Database\Factories\SalesOrderFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * Class SalesOrder
@@ -40,11 +45,16 @@ use Illuminate\Support\Carbon;
  * @property string|null $status_reason
  * @property string|null $failure_reason
  */
-class SalesOrder extends Model implements SearchableEntity
+class SalesOrder extends Model implements SearchableEntity, HasSalesUnit
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, HasRelationships, HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): SalesOrderFactory
+    {
+        return SalesOrderFactory::new();
+    }
 
     public function user(): BelongsTo
     {
@@ -54,6 +64,11 @@ class SalesOrder extends Model implements SearchableEntity
     public function worldwideQuote(): BelongsTo
     {
         return $this->belongsTo(WorldwideQuote::class);
+    }
+
+    public function salesUnit(): HasOneDeep
+    {
+        return $this->hasOneDeepFromRelations($this->worldwideQuote(), (new WorldwideQuote())->salesUnit());
     }
 
     public function salesOrderTemplate(): BelongsTo

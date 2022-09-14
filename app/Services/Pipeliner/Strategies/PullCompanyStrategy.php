@@ -8,6 +8,7 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerNoteIntegration;
+use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerPipelineIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
 use App\Integrations\Pipeliner\Models\AccountEntity;
@@ -21,8 +22,11 @@ use App\Integrations\Pipeliner\Models\ContactAccountRelationFilterInput;
 use App\Integrations\Pipeliner\Models\ContactFilterInput;
 use App\Integrations\Pipeliner\Models\ContactRelationEntity;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
+use App\Integrations\Pipeliner\Models\LeadOpptyAccountRelationFilterInput;
 use App\Integrations\Pipeliner\Models\NoteEntity;
 use App\Integrations\Pipeliner\Models\NoteFilterInput;
+use App\Integrations\Pipeliner\Models\OpportunityEntity;
+use App\Integrations\Pipeliner\Models\OpportunityFilterInput;
 use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
 use App\Integrations\Pipeliner\Models\TaskEntity;
 use App\Integrations\Pipeliner\Models\TaskFilterInput;
@@ -32,6 +36,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\ImportedAddress;
 use App\Models\ImportedContact;
+use App\Models\Opportunity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelScrollCursor;
 use App\Services\Company\CompanyDataMapper;
@@ -39,6 +44,7 @@ use App\Services\Company\ImportedCompanyToPrimaryAccountProjector;
 use App\Services\Opportunity\OpportunityEntityService;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
+use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use DateTimeInterface;
@@ -46,29 +52,32 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
-class PullCompanyStrategy implements PullStrategy
+class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyEntities
 {
     use SalesUnitsAware;
 
-    public function __construct(protected ConnectionInterface                      $connection,
-                                protected PipelinerPipelineIntegration             $pipelineIntegration,
-                                protected PipelinerAccountIntegration              $accountIntegration,
-                                protected PipelinerContactIntegration              $contactIntegration,
-                                protected PipelinerNoteIntegration                 $noteIntegration,
-                                protected PipelinerAppointmentIntegration          $appointmentIntegration,
-                                protected PipelinerTaskIntegration                 $taskIntegration,
-                                protected PullNoteStrategy                         $pullNoteStrategy,
-                                protected PullAppointmentStrategy                  $pullAppointmentStrategy,
-                                protected PullAttachmentStrategy                   $pullAttachmentStrategy,
-                                protected PullTaskStrategy                         $pullTaskStrategy,
-                                protected OpportunityEntityService                 $entityService,
-                                protected CompanyDataMapper                        $dataMapper,
-                                protected ImportedCompanyToPrimaryAccountProjector $accountProjector,
-                                protected LockProvider                             $lockProvider)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected PipelinerPipelineIntegration $pipelineIntegration,
+        protected PipelinerAccountIntegration $accountIntegration,
+        protected PipelinerOpportunityIntegration $opportunityIntegration,
+        protected PipelinerContactIntegration $contactIntegration,
+        protected PipelinerNoteIntegration $noteIntegration,
+        protected PipelinerAppointmentIntegration $appointmentIntegration,
+        protected PipelinerTaskIntegration $taskIntegration,
+        protected PullNoteStrategy $pullNoteStrategy,
+        protected PullAppointmentStrategy $pullAppointmentStrategy,
+        protected PullAttachmentStrategy $pullAttachmentStrategy,
+        protected PullTaskStrategy $pullTaskStrategy,
+        protected OpportunityEntityService $entityService,
+        protected CompanyDataMapper $dataMapper,
+        protected ImportedCompanyToPrimaryAccountProjector $accountProjector,
+        protected LockProvider $lockProvider
+    ) {
     }
 
     /**
@@ -142,7 +151,7 @@ class PullCompanyStrategy implements PullStrategy
     }
 
     /**
-     * @param AccountEntity $entity
+     * @param  AccountEntity  $entity
      * @return Company
      */
     public function sync(object $entity, mixed ...$options): Model
@@ -174,7 +183,8 @@ class PullCompanyStrategy implements PullStrategy
         $syncedAccount = null;
 
         foreach ($accounts as $account) {
-            $syncedAccount = $this->performSync(entity: $entity, account: $account, contactRelations: $contactRelations);
+            $syncedAccount = $this->performSync(entity: $entity, account: $account,
+                contactRelations: $contactRelations);
         }
 
         return $syncedAccount;
@@ -267,9 +277,10 @@ class PullCompanyStrategy implements PullStrategy
             'tasks' => fn() => $this->taskIntegration->scroll(filter: TaskFilterInput::new()->accountRelations(
                 ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
             ), first: 100),
-            'appointments' => fn() => $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()->accountRelations(
-                ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
-            ), first: 100),
+            'appointments' => fn() => $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()
+                ->accountRelations(
+                    ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
+                ), first: 100),
         ];
 
         foreach ($relations as $relation => $callback) {
@@ -331,9 +342,12 @@ class PullCompanyStrategy implements PullStrategy
 
     private function isStrategyYetToBeAppliedTo(string $plReference, string|\DateTimeInterface $modified): bool
     {
-        $model = Company::query()
+        $companyModel = new Company();
+
+        $model = $companyModel->newQuery()
             ->where('pl_reference', $plReference)
             ->withTrashed()
+            ->select([$companyModel->getKeyName()])
             ->first();
 
         // Assume the strategy as not applied, if the model doesn't exist yet.
@@ -345,7 +359,7 @@ class PullCompanyStrategy implements PullStrategy
 
         return $syncStrategyLogModel->newQuery()
             ->whereMorphedTo('model', $model)
-            ->where('strategy_name', (string)StrategyNameResolver::from($this))
+            ->where('strategy_name', (string) StrategyNameResolver::from($this))
             ->where($syncStrategyLogModel->getUpdatedAtColumn(), '>=', $modified)
             ->doesntExist();
     }
@@ -367,8 +381,10 @@ class PullCompanyStrategy implements PullStrategy
         return $entity instanceof Company;
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => DateTimeInterface::class,
-        'modified' => DateTimeInterface::class])]
+    #[ArrayShape([
+        'id' => 'string', 'revision' => 'int', 'created' => DateTimeInterface::class,
+        'modified' => DateTimeInterface::class,
+    ])]
     public function getMetadata(string $reference): array
     {
         $entity = $this->accountIntegration->getById($reference);
@@ -379,5 +395,87 @@ class PullCompanyStrategy implements PullStrategy
             'created' => $entity->created,
             'modified' => $entity->modified,
         ];
+    }
+
+    public function resolveHigherHierarchyEntities(mixed $entity): iterable
+    {
+        if (!$entity instanceof AccountEntity) {
+            throw new \TypeError(
+                sprintf("Entity must be an instance of [%s], given [%s].", AccountEntity::class,
+                is_object($entity) ? $entity::class : gettype($entity))
+            );
+        }
+
+        return LazyCollection::make(function () use ($entity): \Generator {
+            $unitFilter = SalesUnitFilterInput::new()->name(EntityFilterStringField::eq(
+                ...collect($this->getSalesUnits())->pluck('unit_name')
+            ));
+
+            yield from $this->opportunityIntegration
+                ->scroll(
+                    filter: OpportunityFilterInput::new()
+                        ->accountRelations(
+                            LeadOpptyAccountRelationFilterInput::new()
+                                ->accountId(EntityFilterStringField::eq($entity->id))
+                        )
+                        ->unit($unitFilter)
+                );
+
+            $opportunityModel = new Opportunity();
+
+            /** @var iterable<Company> $companiesOfReference */
+            $companiesOfReference = Company::query()
+                ->where('pl_reference', $entity->id)
+                ->with(['opportunities' => function (Relation $relation) use ($opportunityModel): void {
+                    $relation->select([
+                        $opportunityModel->getKeyName(),
+                        $opportunityModel->salesUnit()->getForeignKeyName(),
+                        'pl_reference',
+                        $opportunityModel->primaryAccount()->getForeignKeyName(),
+                        $opportunityModel->endUser()->getForeignKeyName(),
+                    ]);
+
+                    $relation->whereIn(
+                        $opportunityModel->salesUnit()->getForeignKeyName(),
+                        Collection::make($this->salesUnits)->modelKeys()
+                    );
+                }, 'opportunitiesWhereEndUser' => function (Relation $relation) use ($opportunityModel): void {
+                    $relation->select([
+                        $opportunityModel->getKeyName(),
+                        $opportunityModel->salesUnit()->getForeignKeyName(),
+                        'pl_reference',
+                        $opportunityModel->primaryAccount()->getForeignKeyName(),
+                        $opportunityModel->endUser()->getForeignKeyName(),
+                    ]);
+
+                    $relation->whereIn(
+                        $opportunityModel->salesUnit()->getForeignKeyName(),
+                        Collection::make($this->salesUnits)->modelKeys()
+                    );
+                }])
+                ->lazy(1);
+
+            foreach ($companiesOfReference as $company) {
+                $oppIds = LazyCollection::make(function () use ($company): \Generator {
+                    yield from $company->opportunities;
+                    yield from $company->opportunitiesWhereEndUser;
+                })
+                    ->pluck('pl_reference')
+                    ->unique()
+                    ->values();
+
+                if ($oppIds->isNotEmpty()) {
+                    yield from $this->opportunityIntegration->getByIds(...$oppIds->all());
+                }
+            }
+        })
+            ->unique(static function (OpportunityEntity $opportunityEntity): string {
+                return $opportunityEntity->id;
+            });
+    }
+
+    public function getByReference(string $reference): AccountEntity
+    {
+        return $this->accountIntegration->getById($reference);
     }
 }

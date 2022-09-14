@@ -6,11 +6,17 @@ use JetBrains\PhpStorm\Pure;
 
 class DataEntity
 {
-    public function __construct(public readonly string $id,
-                                public readonly string $optionName,
-                                public readonly float  $calcValue,
-                                public readonly ?array $allowedBy)
+    public function __construct(
+        public readonly string $id,
+        public readonly string $optionName,
+        public readonly float $calcValue,
+        public readonly ?array $allowedBy
+    ) {
+    }
+
+    public static function tryFromArray(?array $array): ?static
     {
+        return isset($array) ? static::fromArray($array) : null;
     }
 
     #[Pure]
@@ -22,10 +28,5 @@ class DataEntity
             calcValue: $array['calcValue'],
             allowedBy: $array['allowedBy'] ?? null
         );
-    }
-
-    public static function tryFromArray(?array $array): ?static
-    {
-        return isset($array) ? static::fromArray($array) : null;
     }
 }

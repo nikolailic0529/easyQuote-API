@@ -15,7 +15,7 @@ return [
 
         'options' => [
             'skip_keys' => [
-                'easyQuote-integration',
+                'eq_integration',
             ],
         ],
 

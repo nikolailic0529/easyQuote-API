@@ -6,21 +6,32 @@ use App\Integrations\Pipeliner\Enum\DateDayEnum;
 use App\Integrations\Pipeliner\Enum\DateMonthEnum;
 use App\Integrations\Pipeliner\Enum\DateWeekEnum;
 use App\Integrations\Pipeliner\Enum\RecurrenceTypeEnum;
+use DateTimeImmutable;
 use Illuminate\Support\Carbon;
 
 class TaskRecurrenceEntity
 {
-    public function __construct(public readonly string $id,
-                                public readonly RecurrenceTypeEnum $type,
-                                public readonly DateDayEnum $day,
-                                public readonly DateWeekEnum $week,
-                                public readonly DateMonthEnum $month,
-                                public readonly int $dayOfWeek,
-                                public readonly int $occurEvery,
-                                public readonly int $occurrencesCount,
-                                public readonly \DateTimeImmutable $startDate,
-                                public readonly ?\DateTimeImmutable $endDate)
+    public function __construct(
+        public readonly string $id,
+        public readonly RecurrenceTypeEnum $type,
+        public readonly DateDayEnum $day,
+        public readonly DateWeekEnum $week,
+        public readonly DateMonthEnum $month,
+        public readonly int $dayOfWeek,
+        public readonly int $occurEvery,
+        public readonly int $occurrencesCount,
+        public readonly DateTimeImmutable $startDate,
+        public readonly ?DateTimeImmutable $endDate
+    ) {
+    }
+
+    public static function tryFromArray(?array $array): ?static
     {
+        if (is_null($array)) {
+            return null;
+        }
+
+        return static::fromArray($array);
     }
 
     public static function fromArray(array $array): static
@@ -39,16 +50,7 @@ class TaskRecurrenceEntity
         );
     }
 
-    public static function tryFromArray(?array $array): ?static
-    {
-        if (is_null($array)) {
-            return null;
-        }
-
-        return static::fromArray($array);
-    }
-
-    private static function parseDateTime(?string $dateTimeStr): ?\DateTimeImmutable
+    private static function parseDateTime(?string $dateTimeStr): ?DateTimeImmutable
     {
         if (is_null($dateTimeStr)) {
             return null;

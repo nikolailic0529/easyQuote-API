@@ -92,4 +92,9 @@ class PullAttachmentStrategy implements PullStrategy
     {
         return $entity instanceof Attachment;
     }
+
+    public function getByReference(string $reference): object
+    {
+        throw new PipelinerSyncException("Unsupported get by reference.");
+    }
 }

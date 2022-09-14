@@ -196,4 +196,9 @@ class PullTaskStrategy implements PullStrategy
             'modified' => $entity->modified,
         ];
     }
+
+    public function getByReference(string $reference): TaskEntity
+    {
+        return $this->taskIntegration->getById($reference);
+    }
 }

@@ -7,6 +7,9 @@ use App\Models\User;
 use Carbon\CarbonInterval;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin WorldwideQuote
+ */
 class SubmittedWorldwideQuote extends JsonResource
 {
     /**
@@ -17,8 +20,6 @@ class SubmittedWorldwideQuote extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var WorldwideQuote|WorldwideQuoteDraft $this */
-
         /** @var User $user */
         $user = $request->user();
 
@@ -26,6 +27,7 @@ class SubmittedWorldwideQuote extends JsonResource
             'id' => $this->getKey(),
             'user_id' => $this->user_id,
             'opportunity_id' => $this->opportunity_id,
+            'sales_unit_id' => $this->sales_unit_id,
             'type_name' => $this->type_name,
             'company_id' => $this->company_id,
 

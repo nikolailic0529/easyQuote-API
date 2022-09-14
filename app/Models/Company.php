@@ -10,6 +10,7 @@ use App\Contracts\{ActivatableInterface,
     HasOwnNotes,
     LinkedToAppointments,
     LinkedToTasks,
+    ProvidesIdForHumans,
     SearchableEntity,
     WithLogo};
 use App\Builders\CompanyBuilder;
@@ -79,6 +80,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property Collection<int, Address>|Address[] $addresses
  * @property Collection<int, Contact>|Contact[] $contacts
  * @property-read Collection<int, Opportunity>|Opportunity[] $opportunities
+ * @property-read Collection<int, Opportunity>|Opportunity[] $opportunitiesWhereEndUser
  * @property-read Collection<int, WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
  * @property-read Collection<int, Task>|Task[] $tasks
  * @property-read Collection<int, Appointment>|Appointment[] $ownAppointments
@@ -89,7 +91,18 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property-read User|null $user
  * @property-read SalesUnit|null $salesUnit
  */
-class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes
+class Company extends Model implements
+    HasImagesDirectory,
+    WithLogo,
+    ActivatableInterface,
+    HasOrderedScope,
+    SearchableEntity,
+    HasOwner,
+    LinkedToAppointments,
+    HasOwnAppointments,
+    LinkedToTasks,
+    HasOwnNotes,
+    ProvidesIdForHumans
 {
     use Uuid,
         Multitenantable,
@@ -420,5 +433,10 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
             table: (new ModelHasNotes())->getTable(),
             relatedPivotKey: 'note_id',
         )->using(ModelHasNotes::class);
+    }
+
+    public function getIdForHumans(): string
+    {
+        return $this->name;
     }
 }

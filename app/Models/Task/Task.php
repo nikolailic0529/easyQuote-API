@@ -2,6 +2,7 @@
 
 namespace App\Models\Task;
 
+use App\Contracts\ProvidesIdForHumans;
 use App\Enum\Priority;
 use App\Enum\TaskTypeEnum;
 use App\Models\Attachment;
@@ -57,7 +58,7 @@ use function config;
  * @property-read Collection<int, Contact>|Contact[] $contacts
  * @property-read Collection<int, Opportunity>|Opportunity[] $opportunities
  */
-class Task extends Model
+class Task extends Model implements ProvidesIdForHumans
 {
     public const TASKABLES = [Quote::class];
 
@@ -153,5 +154,10 @@ class Task extends Model
     public function getExpiryDateFormattedAttribute()
     {
         return $this->expiry_date?->format(config('date.format_12h'));
+    }
+
+    public function getIdForHumans(): string
+    {
+        return $this->name;
     }
 }

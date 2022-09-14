@@ -223,4 +223,9 @@ class PullAppointmentStrategy implements PullStrategy
             'modified' => $entity->modified,
         ];
     }
+
+    public function getByReference(string $reference): object
+    {
+        return $this->appointmentIntegration->getById($reference);
+    }
 }

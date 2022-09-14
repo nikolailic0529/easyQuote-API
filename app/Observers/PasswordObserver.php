@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Notifications\PasswordChanged;
+use App\Services\Mail\Exceptions\MailRateLimitException;
 use Illuminate\Database\Eloquent\Model;
 
 class PasswordObserver
@@ -44,7 +45,11 @@ class PasswordObserver
             return;
         }
 
-        $model->notify(new PasswordChanged);
+        try {
+            $model->notify(new PasswordChanged);
+        } catch (MailRateLimitException $e) {
+            report($e);
+        }
 
         notification()
             ->for($model)

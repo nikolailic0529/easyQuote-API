@@ -7,6 +7,7 @@ use App\Contracts\HasOwner;
 use App\Contracts\HasOwnNotes;
 use App\Contracts\LinkedToAppointments;
 use App\Contracts\LinkedToTasks;
+use App\Contracts\ProvidesIdForHumans;
 use App\Contracts\SearchableEntity;
 use App\Enum\OpportunityStatus;
 use App\Models\Appointment\Appointment;
@@ -136,7 +137,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<int,Attachment>|Attachment[] $attachments
  * @property-read OpportunityValidationResult|null $validationResult
  */
-class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes
+class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes, ProvidesIdForHumans
 {
     use Uuid, SoftDeletes, HasRelationships, HasFactory, HasTimestamps;
 
@@ -303,6 +304,11 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
         return $this->hasOne(OpportunityValidationResult::class)->withDefault(static function (OpportunityValidationResult $result) {
             $result->forceFill(['messages' => new MessageBag(), 'is_passed' => true]);
         });
+    }
+
+    public function getIdForHumans(): string
+    {
+        return $this->project_name;
     }
 }
 

@@ -4,6 +4,7 @@ namespace App\Models\Quote;
 
 use App\Contracts\HasOwnNotes;
 use App\Contracts\HasOwnAppointments;
+use App\Contracts\HasSalesUnit;
 use App\Contracts\LinkedToAppointments;
 use App\Contracts\LinkedToTasks;
 use App\Contracts\SearchableEntity;
@@ -19,6 +20,7 @@ use App\Models\Note\ModelHasNotes;
 use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\SalesOrder;
+use App\Models\SalesUnit;
 use App\Models\Task\Task;
 use App\Models\User;
 use App\Models\WorldwideQuoteAsset;
@@ -33,9 +35,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
@@ -66,7 +71,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<Attachment>|Attachment[] $attachments
  * @property-read bool|null $sales_order_exists
  */
-class WorldwideQuote extends Model implements SearchableEntity, LinkedToTasks, LinkedToAppointments, HasOwnAppointments, HasOwnNotes
+class WorldwideQuote extends Model implements SearchableEntity, LinkedToTasks, LinkedToAppointments, HasOwnAppointments, HasOwnNotes, HasSalesUnit
 {
     use Uuid, SoftDeletes, HasRelationships, HasFactory;
 
@@ -115,6 +120,18 @@ class WorldwideQuote extends Model implements SearchableEntity, LinkedToTasks, L
         return $this->belongsTo(Opportunity::class)->withTrashed();
     }
 
+    public function salesUnit(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            related: SalesUnit::class,
+            through: Opportunity::class,
+            firstKey: (new Opportunity())->getKeyName(),
+            secondKey: (new SalesUnit())->getKeyName(),
+            localKey: $this->opportunity()->getForeignKeyName(),
+            secondLocalKey: (new Opportunity())->salesUnit()->getForeignKeyName(),
+        );
+    }
+
     public function versions(): HasMany
     {
         return $this->hasMany(WorldwideQuoteVersion::class);
@@ -139,7 +156,6 @@ class WorldwideQuote extends Model implements SearchableEntity, LinkedToTasks, L
             ]
         );
     }
-
 
     public function referencedContactPivotsOfPrimaryAccount(): HasManyThrough
     {

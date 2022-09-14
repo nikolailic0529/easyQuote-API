@@ -13,20 +13,24 @@ use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Opportunity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelUpdateLog;
 use App\Models\SalesUnit;
 use App\Services\Company\CompanyDataMapper;
 use App\Services\Pipeliner\PipelinerAccountLookupService;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
+use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
+use App\Services\User\DefaultUserResolver;
+use Generator;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\LazyCollection;
 
-class PushCompanyStrategy implements PushStrategy
+class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyEntities
 {
     use SalesUnitsAware;
 
@@ -35,6 +39,7 @@ class PushCompanyStrategy implements PushStrategy
                                 protected PipelinerAccountIntegration   $accountIntegration,
                                 protected PipelinerContactIntegration   $contactIntegration,
                                 protected CompanyDataMapper             $dataMapper,
+                                protected DefaultUserResolver           $defaultUserResolver,
                                 protected PushSalesUnitStrategy         $pushSalesUnitStrategy,
                                 protected PushClientStrategy            $pushClientStrategy,
                                 protected PushContactStrategy           $pushContactStrategy,
@@ -94,6 +99,10 @@ class PushCompanyStrategy implements PushStrategy
     {
         if (!$model instanceof Company) {
             throw new \TypeError(sprintf("Model must be an instance of %s.", Company::class));
+        }
+
+        if (null === $model->owner) {
+            $model->owner()->associate($this->defaultUserResolver->resolve());
         }
 
         if (null !== $model->owner) {
@@ -221,7 +230,7 @@ class PushCompanyStrategy implements PushStrategy
         );
 
         /** @var string[] $detachedContactRelations */
-        $detachedContactRelations = LazyCollection::make(static fn(): \Generator => yield from $iterator)
+        $detachedContactRelations = LazyCollection::make(static fn(): Generator => yield from $iterator)
             ->filter(static function (ContactEntity $contactEntity) use ($contactIdMap): bool {
                 return $contactIdMap->has($contactEntity->id) === false;
             })
@@ -270,5 +279,43 @@ class PushCompanyStrategy implements PushStrategy
     public function isApplicableTo(object $entity): bool
     {
         return $entity instanceof Company;
+    }
+
+    /**
+     * @param  mixed|Company  $entity
+     * @return LazyCollection
+     */
+    public function resolveHigherHierarchyEntities(mixed $entity): LazyCollection
+    {
+        if (!$entity instanceof Company) {
+            throw new \TypeError(sprintf("Entity must be an instance of %s.", Company::class));
+        }
+
+        return LazyCollection::make(function () use ($entity): Generator {
+            $where = function (Builder $builder): void {
+                $builder->whereIn((new Opportunity())->salesUnit()->getForeignKeyName(), Collection::make($this->salesUnits)->modelKeys());
+            };
+
+            yield from $entity->opportunities()
+                ->tap($where)
+                ->lazy(100);
+
+            yield from $entity->opportunitiesWhereEndUser()
+                ->tap($where)
+                ->lazy(100);
+        })
+            ->unique(static function (Opportunity $opportunity): string {
+                return $opportunity->getKey();
+            })
+            ->filter(function (Opportunity $opportunity): bool {
+                foreach ($this->salesUnits as $unit) {
+                    if ($opportunity->salesUnit()->is($unit)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            })
+            ->values();
     }
 }

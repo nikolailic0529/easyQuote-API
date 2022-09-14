@@ -16,7 +16,7 @@ class PipelinerSyncException extends \Exception
 
     public static function nonAllowedSalesUnit(SalesUnit $unit): static
     {
-        return new static ("The sales unit `$unit->unit_name` not allowed for synchronization.");
+        return new static ("The sales unit [$unit->unit_name] not allowed for synchronization.");
     }
 
     public static function noSalesUnitIsEnabled(): static
@@ -26,6 +26,6 @@ class PipelinerSyncException extends \Exception
 
     public static function undefinedContactAddressRelation(Contact $contact): static
     {
-        return new static("Contact `{$contact->getKey()}` must be associated with the address.");
+        return new static("Contact [{$contact->getIdForHumans()}] must be associated with the address.");
     }
 }

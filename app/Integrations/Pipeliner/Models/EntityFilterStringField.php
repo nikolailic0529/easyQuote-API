@@ -6,9 +6,10 @@ use App\Integrations\Pipeliner\Enum\EntityFilterStringOperator;
 
 class EntityFilterStringField extends BaseFilterInput
 {
-    private function __construct(public readonly EntityFilterStringOperator $op,
-                                 public readonly mixed $value)
-    {
+    private function __construct(
+        public readonly EntityFilterStringOperator $op,
+        public readonly mixed $value
+    ) {
     }
 
     public static function contains(string $value, string ...$values): static

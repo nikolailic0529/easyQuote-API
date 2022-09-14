@@ -248,17 +248,6 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         return Collection::wrap($this->privileges)->toString('module', 'privilege');
     }
 
-    public function companies(): MorphToMany
-    {
-        return $this->morphedByMany(
-            Company::class,
-            'model',
-            config('permission.table_names.model_has_roles'),
-            'role_id',
-            config('permission.column_names.model_morph_key')
-        );
-    }
-
     public function getItemNameAttribute()
     {
         return $this->name;

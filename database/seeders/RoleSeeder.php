@@ -38,11 +38,6 @@ class RoleSeeder extends Seeder
             });
 
             $connection->transaction(fn() => $role->syncPermissions($seed['permissions']));
-
-            $companyIDs = Company::query()->whereIn('short_code', $seed['companies'])->get()->modelKeys();
-
-            $connection->transaction(fn() => $role->companies()->sync($companyIDs));
-
         }
     }
 }

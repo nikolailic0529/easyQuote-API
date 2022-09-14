@@ -2,6 +2,8 @@
 
 namespace App\Integrations\Pipeliner\Models;
 
+use JsonSerializable;
+
 class ClientFilterInput extends BaseFilterInput
 {
     protected array $fields = [];
@@ -33,7 +35,7 @@ class ClientFilterInput extends BaseFilterInput
 
     public function jsonSerialize(): array
     {
-        return array_map(static fn(\JsonSerializable $field): array => $field->jsonSerialize(),
+        return array_map(static fn(JsonSerializable $field): array => $field->jsonSerialize(),
             $this->fields);
     }
 }

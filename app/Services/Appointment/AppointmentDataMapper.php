@@ -22,11 +22,14 @@ use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateAppointmentInput;
 use App\Integrations\Pipeliner\Models\CreateAppointmentReminderInput;
+use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInput;
+use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInputCollection;
 use App\Integrations\Pipeliner\Models\SalesUnitEntity;
 use App\Integrations\Pipeliner\Models\UpdateAppointmentInput;
 use App\Models\Appointment\Appointment;
 use App\Models\Appointment\AppointmentContactInvitee;
 use App\Models\Appointment\AppointmentReminder;
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
@@ -348,6 +351,17 @@ class AppointmentDataMapper implements CauserAware
             );
         });
         $attributes['unitId'] = $appointment->salesUnit?->pl_reference ?? InputValueEnum::Miss;
+        $attributes['documents'] = $appointment->attachments
+            ->whereNotNull('pl_reference')
+            ->values()
+            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+                return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
+            })
+            ->whenNotEmpty(
+                static function (BaseCollection $collection): CreateCloudObjectRelationInputCollection {
+                    return new CreateCloudObjectRelationInputCollection(...$collection->all());
+                },
+                static fn(): InputValueEnum => InputValueEnum::Miss);
 
         return new CreateAppointmentInput(
             ...$attributes
@@ -424,6 +438,17 @@ class AppointmentDataMapper implements CauserAware
             ->pipe(static function (BaseCollection $collection): CreateActivityContactRelationInputCollection {
                 return new CreateActivityContactRelationInputCollection(...$collection->all());
             });
+        $attributes['documents'] =  $appointment->attachments
+            ->whereNotNull('pl_reference')
+            ->values()
+            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+                return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
+            })
+            ->whenNotEmpty(
+                static function (BaseCollection $collection): CreateCloudObjectRelationInputCollection {
+                    return new CreateCloudObjectRelationInputCollection(...$collection->all());
+                },
+                static fn(): InputValueEnum => InputValueEnum::Miss);
 //        $attributes['reminder'] = value(static function () use ($appointment): CreateAppointmentReminderInput|InputValueEnum {
 //            if (null === $appointment->reminder) {
 //                return InputValueEnum::Miss;

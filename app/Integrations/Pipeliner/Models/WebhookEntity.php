@@ -2,6 +2,8 @@
 
 namespace App\Integrations\Pipeliner\Models;
 
+use DateTimeImmutable;
+
 class WebhookEntity
 {
     public function __construct(
@@ -11,8 +13,8 @@ class WebhookEntity
         public readonly bool $insecureSsl,
         public readonly array $options,
         public readonly ?string $signature,
-        public readonly \DateTimeImmutable $created,
-        public readonly \DateTimeImmutable $modified,
+        public readonly DateTimeImmutable $created,
+        public readonly DateTimeImmutable $modified,
         public readonly bool $isDeleted
     ) {
     }

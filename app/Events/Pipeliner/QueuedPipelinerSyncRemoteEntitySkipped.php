@@ -2,7 +2,6 @@
 
 namespace App\Events\Pipeliner;
 
-use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Models\User;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
@@ -15,10 +14,12 @@ final class QueuedPipelinerSyncRemoteEntitySkipped implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(public readonly OpportunityEntity $opportunity,
-                                public readonly ?Model $causer,
-                                public readonly string $correlationId)
-    {
+    public function __construct(
+        public readonly object $entity,
+        public readonly ?Model $causer,
+        public readonly string $correlationId,
+        public readonly ?\Throwable $e,
+    ) {
     }
 
     public function broadcastOn(): array
@@ -39,7 +40,7 @@ final class QueuedPipelinerSyncRemoteEntitySkipped implements ShouldBroadcastNow
     {
         return [
             'correlation_id' => $this->correlationId,
-            'opportunity_id' => $this->opportunity->id,
+            'entity_id' => $this->entity->id,
         ];
     }
 }

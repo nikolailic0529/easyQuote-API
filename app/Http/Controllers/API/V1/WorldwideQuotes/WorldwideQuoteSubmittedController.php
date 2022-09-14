@@ -24,7 +24,7 @@ class WorldwideQuoteSubmittedController extends Controller
     {
         $this->authorize('viewAny', WorldwideQuote::class);
 
-        $pagination = $request->transformWorldwideQuotesQuery($queries->aliveSubmittedListingQuery($request))->apiPaginate();
+        $pagination = $queries->aliveSubmittedListingQuery($request)->apiPaginate();
 
         return tap(SubmittedWorldwideQuote::collection($pagination), function (AnonymousResourceCollection $resourceCollection) use ($pagination) {
             $resourceCollection->additional([
@@ -51,7 +51,7 @@ class WorldwideQuoteSubmittedController extends Controller
     {
         $this->authorize('viewAny', WorldwideQuote::class);
 
-        $pagination = $request->transformWorldwideQuotesQuery($queries->deadSubmittedListingQuery($request))->apiPaginate();
+        $pagination = $queries->deadSubmittedListingQuery($request)->apiPaginate();
 
         return SubmittedWorldwideQuote::collection($pagination);
     }

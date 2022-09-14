@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\SalesOrder;
 use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
+use App\Queries\Scopes\CurrentUserScope;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Auth\Access\Gate;
@@ -103,6 +104,7 @@ class SalesOrderQueries
                 'worldwide_quotes.contract_type_id',
                 'worldwide_quotes.opportunity_id',
                 'opportunities.project_name as opportunity_name',
+                'opportunities.sales_unit_id as sales_unit_id',
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
                 'primary_account.name as customer_name',
@@ -136,6 +138,7 @@ class SalesOrderQueries
             ->join('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
+            ->tap(CurrentUserScope::from($request, $this->gate))
             ->whereNull('sales_orders.submitted_at')
             ->orderByDesc($model->qualifyColumn('is_active'));
 
@@ -193,6 +196,7 @@ class SalesOrderQueries
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
                 'opportunities.project_name as opportunity_name',
+                'opportunities.sales_unit_id as sales_unit_id',
                 'primary_account.name as customer_name',
                 'end_user.name as end_user_name',
                 'account_manager.user_fullname as account_manager_name',
@@ -224,6 +228,7 @@ class SalesOrderQueries
             ->join('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
+            ->tap(CurrentUserScope::from($request, $this->gate))
             ->whereNotNull('sales_orders.submitted_at')
             ->orderByDesc($model->qualifyColumn('is_active'));
 

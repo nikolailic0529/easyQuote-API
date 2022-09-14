@@ -11,6 +11,8 @@ use App\Models\Data\Currency;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Traits\Uuid;
+use Database\Factories\SalesOrderTemplateFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -43,9 +45,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class SalesOrderTemplate extends Model implements SearchableEntity
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): SalesOrderTemplateFactory
+    {
+        return SalesOrderTemplateFactory::new();
+    }
 
     public function templateSchema(): BelongsTo
     {

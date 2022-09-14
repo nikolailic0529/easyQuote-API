@@ -2,7 +2,9 @@
 
 namespace App\Integrations\Pipeliner\Models;
 
-abstract class BaseFilterInput implements \JsonSerializable
+use JsonSerializable;
+
+abstract class BaseFilterInput implements JsonSerializable
 {
     protected array $fields = [];
 
@@ -11,16 +13,16 @@ abstract class BaseFilterInput implements \JsonSerializable
         return new static(...$args);
     }
 
+    public function jsonSerialize(): array
+    {
+        return array_map(static fn(JsonSerializable $field): array => $field->jsonSerialize(),
+            $this->fields);
+    }
+
     protected function setField(string $name, BaseFilterInput $value): static
     {
         $this->fields[$name] = $value;
 
         return $this;
-    }
-
-    public function jsonSerialize(): array
-    {
-        return array_map(static fn(\JsonSerializable $field): array => $field->jsonSerialize(),
-            $this->fields);
     }
 }

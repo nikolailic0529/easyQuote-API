@@ -6,10 +6,11 @@ use JetBrains\PhpStorm\Pure;
 
 class CurrencyForeignField
 {
-    public function __construct(public readonly float $baseValue,
-                                public readonly string $currencyId,
-                                public readonly float $valueForeign)
-    {
+    public function __construct(
+        public readonly float $baseValue,
+        public readonly string $currencyId,
+        public readonly float $valueForeign
+    ) {
     }
 
     #[Pure]

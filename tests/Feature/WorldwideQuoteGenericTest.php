@@ -7,16 +7,17 @@ use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\Role;
 use App\Models\SalesOrder;
+use App\Models\SalesUnit;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Tests\TestCase;
 
 /**
  * @group worldwide
+ * @group build
  */
 class WorldwideQuoteGenericTest extends TestCase
 {
@@ -53,7 +54,8 @@ class WorldwideQuoteGenericTest extends TestCase
                 ],
             ]);
 
-        $this->assertCount($opportunity->primaryAccount->addresses->count() + $opportunity->endUser->addresses->count(), $response->json('opportunity.merged_addresses'));
+        $this->assertCount($opportunity->primaryAccount->addresses->count() + $opportunity->endUser->addresses->count(),
+            $response->json('opportunity.merged_addresses'));
     }
 
     /**
@@ -89,15 +91,14 @@ class WorldwideQuoteGenericTest extends TestCase
                 ],
             ]);
 
-        $this->assertCount($opportunity->primaryAccount->contacts->count() + $opportunity->endUser->contacts->count(), $response->json('opportunity.merged_contacts'));
+        $this->assertCount($opportunity->primaryAccount->contacts->count() + $opportunity->endUser->contacts->count(),
+            $response->json('opportunity.merged_contacts'));
     }
 
     /**
      * Test an ability to view paginated worldwide quotes.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedWorldwideQuotes()
+    public function testCanViewPaginatedWorldwideQuotes(): void
     {
         $this->authenticateApi();
 
@@ -106,7 +107,9 @@ class WorldwideQuoteGenericTest extends TestCase
 
             $opportunity = Opportunity::factory()->create();
             $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
-            $submittedQuote = factory(WorldwideQuote::class)->create(['submitted_at' => now(), 'opportunity_id' => $opportunity->getKey()]);
+            $submittedQuote = factory(WorldwideQuote::class)->create([
+                'submitted_at' => now(), 'opportunity_id' => $opportunity->getKey(),
+            ]);
 
             $quoteFile = factory(QuoteFile::class)->create();
 
@@ -288,10 +291,8 @@ class WorldwideQuoteGenericTest extends TestCase
 
     /**
      * Test an ability to view own paginated drafted worldwide quotes.
-     *
-     * @return void
      */
-    public function testCanViewOwnPaginatedDraftedWorldwideQuotes()
+    public function testCanViewOwnPaginatedDraftedWorldwideQuotes(): void
     {
         /** @var Role $role */
         $role = factory(Role::class)->create();
@@ -299,22 +300,35 @@ class WorldwideQuoteGenericTest extends TestCase
         $role->syncPermissions('view_own_ww_quotes');
 
         /** @var User $user */
-        $user = User::factory()->create();
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
 
         $user->syncRoles($role);
 
         // Own WorldwideQuote entity.
-        $quote = factory(WorldwideQuote::class)->create([
-            'user_id' => $user->getKey(),
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => null,
-        ]);
+        $quote = WorldwideQuote::factory()
+            ->for($user)
+            ->for(
+                Opportunity::factory()
+                    ->for($user->salesUnits->first())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => null,
+            ]);
 
         // WorldwideQuote entity own by another user.
-        factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => null,
-        ]);
+        WorldwideQuote::factory()
+            ->for($anotherUser = User::factory()->create())
+            ->for(
+                Opportunity::factory()
+                    ->for($user->salesUnits->first())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => null,
+            ]);
 
         $this->actingAs($user, 'api');
 
@@ -339,33 +353,44 @@ class WorldwideQuoteGenericTest extends TestCase
 
     /**
      * Test an ability to view own paginated submitted worldwide quotes.
-     *
-     * @return void
      */
-    public function testCanViewOwnPaginatedSubmittedWorldwideQuotes()
+    public function testCanViewOwnPaginatedSubmittedWorldwideQuotes(): void
     {
         /** @var Role $role */
-        $role = factory(Role::class)->create();
+        $role = Role::factory()->create();
 
         $role->syncPermissions('view_own_ww_quotes');
 
         /** @var User $user */
-        $user = User::factory()->create();
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
 
         $user->syncRoles($role);
 
         // Own WorldwideQuote entity.
-        $quote = factory(WorldwideQuote::class)->create([
-            'user_id' => $user->getKey(),
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => now(),
-        ]);
+        $quote = WorldwideQuote::factory()
+            ->for($user)
+            ->for(
+                Opportunity::factory()
+                    ->for($user->salesUnits->first())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => now(),
+            ]);
 
         // WorldwideQuote entity own by another user.
-        factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => now(),
-        ]);
+        WorldwideQuote::factory()
+            ->for($anotherUser = User::factory()->create())
+            ->for(
+                Opportunity::factory()
+                    ->for($user->salesUnits->first())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => now(),
+            ]);
 
         $this->actingAs($user, 'api');
 
@@ -387,4 +412,133 @@ class WorldwideQuoteGenericTest extends TestCase
             $this->assertSame($user->getKey(), $ownerUserKey);
         }
     }
+
+    /**
+     * Test an ability to view only drafted quotes belong to assigned sales units to user.
+     */
+    public function testCanViewDraftedQuotesBelongToAssignedSalesUnitsToUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_own_ww_quotes');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->syncRoles($role);
+
+        // Own WorldwideQuote entity.
+        $quote = WorldwideQuote::factory()
+            ->for($user)
+            ->for(
+                Opportunity::factory()
+                    ->for($user->salesUnits->first())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => null,
+            ]);
+
+        // Owned but belong to different sales unit.
+        WorldwideQuote::factory()
+            ->for($user)
+            ->for(
+                Opportunity::factory()
+                    ->for(SalesUnit::factory())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => null,
+            ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/ww-quotes/drafted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'sales_unit_id',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+
+        foreach ($response->json('data') as $quote) {
+            $this->assertSame($user->getKey(), $quote['user_id']);
+            $this->assertContains($quote['sales_unit_id'], $user->salesUnits->modelKeys());
+        }
+    }
+
+    /**
+     * Test an ability to view only submitted quotes belong to assigned sales units to user.
+     */
+    public function testCanViewSubmittedQuotesBelongToAssignedSalesUnitsToUser(): void
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_own_ww_quotes');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->syncRoles($role);
+
+        // Own WorldwideQuote entity.
+        $quote = WorldwideQuote::factory()
+            ->for($user)
+            ->for(
+                Opportunity::factory()
+                    ->for($user->salesUnits->first())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => now(),
+            ]);
+
+        // Owned but belong to different sales unit.
+        WorldwideQuote::factory()
+            ->for($user)
+            ->for(
+                Opportunity::factory()
+                    ->for(SalesUnit::factory())
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+                'submitted_at' => now(),
+            ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/ww-quotes/submitted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'sales_unit_id',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+
+        foreach ($response->json('data') as $quote) {
+            $this->assertSame($user->getKey(), $quote['user_id']);
+            $this->assertContains($quote['sales_unit_id'], $user->salesUnits->modelKeys());
+        }
+    }
+
 }

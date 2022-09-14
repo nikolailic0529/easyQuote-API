@@ -9,14 +9,11 @@ return [
         'quotes.drafted.listing' => 'importer/manage',
         'quotes.drafted.review' => 'importer/quote-review/{quote}/false',
         'quotes.status' => 'importer/quote-status/{quote}',
-
         'contracts.submitted.review' => 'contracts/view/{contract}/submit',
-
         'customers.listing' => 'importer/customers',
-
         'users.profile' => 'users/profile',
         'users.notifications' => 'users/notification',
-
-        'opportunity.update' => 'worldwide/update-opportunity/{opportunity}/list',
+        'opportunities.update' => 'worldwide/update-opportunity/{opportunity}/list',
+        'companies.update' => 'company/modify/{company}'
     ],
 ];

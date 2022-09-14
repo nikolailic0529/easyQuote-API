@@ -2,19 +2,22 @@
 
 namespace App\Integrations\Pipeliner\Models;
 
+use DateTimeImmutable;
+
 class NoteEntity
 {
-    public function __construct(public readonly string             $id,
-                                public readonly ClientEntity       $owner,
-                                public readonly ?string            $accountId,
-                                public readonly ?string            $contactId,
-                                public readonly ?string            $leadOpptyId,
-                                public readonly ?string            $projectId,
-                                public readonly string             $note,
-                                public readonly \DateTimeImmutable $created,
-                                public readonly \DateTimeImmutable $modified,
-                                public readonly int                $revision)
-    {
+    public function __construct(
+        public readonly string $id,
+        public readonly ClientEntity $owner,
+        public readonly ?string $accountId,
+        public readonly ?string $contactId,
+        public readonly ?string $leadOpptyId,
+        public readonly ?string $projectId,
+        public readonly string $note,
+        public readonly DateTimeImmutable $created,
+        public readonly DateTimeImmutable $modified,
+        public readonly int $revision
+    ) {
     }
 
     public static function fromArray(array $array): static

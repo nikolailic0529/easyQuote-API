@@ -211,12 +211,6 @@ return [
                 'Discounts' => $RWD,
                 'Teams' => $RWD,
             ],
-        'companies' =>
-            [
-                'SWH',
-                'THG',
-                'EPD',
-            ],
     ],
     [
         'name' => 'Sales Manager',
@@ -305,12 +299,6 @@ return [
                 'Vendors' => $RWD,
                 'Margins' => $RWD,
                 'Discounts' => $RWD,
-            ],
-        'companies' =>
-            [
-                'SWH',
-                'THG',
-                'EPD',
             ],
     ],
 ];

@@ -24,7 +24,7 @@ class SalesOrderSubmittedController extends Controller
     {
         $this->authorize('viewAny', SalesOrder::class);
 
-        $paginator = $request->transformSalesOrdersQuery($queries->paginateSubmittedOrdersQuery($request))->apiPaginate();
+        $paginator = $queries->paginateSubmittedOrdersQuery($request)->apiPaginate();
 
         return SalesOrderSubmitted::collection($paginator);
     }

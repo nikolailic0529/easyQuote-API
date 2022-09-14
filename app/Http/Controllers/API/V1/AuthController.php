@@ -89,7 +89,7 @@ class AuthController extends Controller
     {
         return response()->json(
             AuthenticatedUserResource::make(
-                auth()->user()->load('companies:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+                auth()->user()->load('companies:id,name', 'hpeContractTemplate:id,name', 'roles')
             )
                 ->additional(['build' => $build->last()])
         );
@@ -127,7 +127,7 @@ class AuthController extends Controller
             AuthenticatedUserResource::make(
                 $service
                     ->updateCurrentUser($guard->user(), $data)
-                    ->load('companies:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+                    ->load('companies:id,name', 'hpeContractTemplate:id,name', 'roles')
                     ->withAppends()
             )
                 ->additional(['build' => $build->last()])

@@ -1277,7 +1277,7 @@ class OpportunityDataMapper implements CauserAware
 
         return [
             $opportunity->primaryAccountContact->pl_reference => new CreateContactRelationInput(
-                contactId: $opportunity->primaryAccountContact->pl_reference,
+                contactId: (string)$opportunity->primaryAccountContact->pl_reference,
                 isPrimary: true,
             ),
         ];

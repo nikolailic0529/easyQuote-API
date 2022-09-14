@@ -27,7 +27,6 @@ class UpdateRoleRequest extends Request
             'properties.*' => 'required|array',
             'properties.*.key' => ['required', 'string', Rule::in(static::$properties)],
             'properties.*.value' => 'required|boolean',
-            'companies.*' => ['uuid', Rule::exists(Company::class, 'id')->where('type', CompanyType::INTERNAL)->whereNull('deleted_at')]
         ];
     }
 }

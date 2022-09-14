@@ -4,11 +4,12 @@ namespace App\Integrations\Pipeliner\Models;
 
 class LeadOpptyAccountRelationEntity
 {
-    public function __construct(public readonly string $id,
-                                public readonly string $accountId,
-                                public readonly bool $isPrimary,
-                                public readonly AccountEntity $account)
-    {
+    public function __construct(
+        public readonly string $id,
+        public readonly string $accountId,
+        public readonly bool $isPrimary,
+        public readonly AccountEntity $account
+    ) {
     }
 
     public static function fromArray(array $array): static

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Services\Mail\Exceptions\MailRateLimitException;
 use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -51,11 +52,18 @@ class ScheduleMaintenance implements ShouldQueue
             ->image(assetExternal(SN_IMG_MS))
             ->send();
 
-        $users->cursor()->each(
-            function (User $user) {
+        $users->cursor()
+            ->each(static function (User $user) {
                 MaintenanceScheduledEvent::dispatch($user, $this->startTime);
-                $user->notify(new MaintenanceScheduled($this->startTime, $this->endTime));
-            }
-        );
+            });
+
+        try {
+            $users->cursor()
+                ->each(static function (User $user): void {
+                    $user->notify(new MaintenanceScheduled($this->startTime, $this->endTime));
+                });
+        } catch (MailRateLimitException $e) {
+            report($e);
+        }
     }
 }

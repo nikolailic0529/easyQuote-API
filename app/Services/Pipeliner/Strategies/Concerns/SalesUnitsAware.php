@@ -6,6 +6,7 @@ use App\Models\SalesUnit;
 
 trait SalesUnitsAware
 {
+    /** @var list<SalesUnit> */
     protected array $salesUnits = [];
 
     public function setSalesUnits(SalesUnit ...$units): static

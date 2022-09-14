@@ -6,12 +6,13 @@ use JetBrains\PhpStorm\Pure;
 
 class StepEntity
 {
-    public function __construct(public readonly string          $id,
-                                public readonly string          $name,
-                                public readonly int             $percent,
-                                public readonly int             $sortOrder,
-                                public readonly ?PipelineEntity $pipeline = null)
-    {
+    public function __construct(
+        public readonly string $id,
+        public readonly string $name,
+        public readonly int $percent,
+        public readonly int $sortOrder,
+        public readonly ?PipelineEntity $pipeline = null
+    ) {
     }
 
     #[Pure]

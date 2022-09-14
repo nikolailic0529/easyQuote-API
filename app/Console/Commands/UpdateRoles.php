@@ -84,11 +84,6 @@ class UpdateRoles extends Command
             });
 
             $connection->transaction(fn() => $role->syncPermissions($attributes['permissions']));
-
-            $companyIDs = Company::query()->whereIn('short_code', $attributes['companies'])->get()->modelKeys();
-
-            $connection->transaction(fn() => $role->companies()->sync($companyIDs));
-
         });
     }
 }

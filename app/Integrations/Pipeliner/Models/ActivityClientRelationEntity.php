@@ -4,9 +4,10 @@ namespace App\Integrations\Pipeliner\Models;
 
 class ActivityClientRelationEntity
 {
-    public function __construct(public readonly string $id,
-                                public readonly string $clientId)
-    {
+    public function __construct(
+        public readonly string $id,
+        public readonly string $clientId
+    ) {
     }
 
     public static function fromArray(array $array): static

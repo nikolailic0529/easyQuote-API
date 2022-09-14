@@ -21,9 +21,6 @@ class Role extends JsonResource
             'privileges'    => $this->privileges,
             'properties'    => $this->properties,
             'is_system'     => (bool) $this->is_system,
-
-            'companies'     => $this->whenLoaded('companies', fn () => $this->companies->makeHidden('pivot')),
-
             'created_at'    => $this->created_at,
             'updated_at'    => $this->updated_at,
             'activated_at'  => $this->activated_at,

@@ -4,12 +4,18 @@ namespace App\Integrations\Pipeliner\Models;
 
 class ClientEntity
 {
-    public function __construct(public readonly string $id,
-                                public readonly string $email,
-                                public readonly string $formattedName,
-                                public readonly string $firstName,
-                                public readonly string $lastName)
+    public function __construct(
+        public readonly string $id,
+        public readonly string $email,
+        public readonly string $formattedName,
+        public readonly string $firstName,
+        public readonly string $lastName
+    ) {
+    }
+
+    public static function tryFromArray(?array $array): static|null
     {
+        return is_array($array) ? static::fromArray($array) : null;
     }
 
     public static function fromArray(array $array): static
@@ -21,10 +27,5 @@ class ClientEntity
             firstName: $array['firstName'],
             lastName: $array['lastName']
         );
-    }
-
-    public static function tryFromArray(?array $array): static|null
-    {
-        return is_array($array) ? static::fromArray($array) : null;
     }
 }

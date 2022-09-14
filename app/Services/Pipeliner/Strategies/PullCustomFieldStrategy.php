@@ -93,7 +93,7 @@ class PullCustomFieldStrategy implements PullStrategy
         return $this->sync($this->getByReference($reference));
     }
 
-    private function getByReference(string $reference): FieldEntity
+    public function getByReference(string $reference): FieldEntity
     {
         $plFields = $this->fieldIntegration->getByCriteria(
             FieldFilterInput::new()->entityName(EntityFilterStringField::eq('Opportunity'))

@@ -68,7 +68,6 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
                 $role->save();
 
                 $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
-                $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);
 
                 $role->forgetCachedPermissions();
             })
@@ -84,7 +83,6 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
                 $role->save();
 
                 $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
-                $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);
 
                 $role->forgetCachedPermissions();
             }),

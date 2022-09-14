@@ -247,9 +247,12 @@ class PullOpportunityStrategy implements PullStrategy
 
     private function isStrategyYetToBeAppliedTo(string $plReference, string|\DateTimeInterface $modified): bool
     {
-        $model = Opportunity::query()
+        $oppModel = new Opportunity();
+
+        $model = $oppModel->newQuery()
             ->where('pl_reference', $plReference)
             ->withTrashed()
+            ->select([$oppModel->getKeyName()])
             ->first();
 
         // Assume the strategy as not applied, if the model doesn't exist yet.
@@ -295,5 +298,10 @@ class PullOpportunityStrategy implements PullStrategy
             'created' => $entity->created,
             'modified' => $entity->modified,
         ];
+    }
+
+    public function getByReference(string $reference): OpportunityEntity
+    {
+        return $this->oppIntegration->getById($reference);
     }
 }

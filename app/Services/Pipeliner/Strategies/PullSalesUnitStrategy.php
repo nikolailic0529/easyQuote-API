@@ -75,7 +75,7 @@ class PullSalesUnitStrategy implements PullStrategy
         );
     }
 
-    private function getByReference(string $reference): SalesUnitEntity
+    public function getByReference(string $reference): SalesUnitEntity
     {
         return $this->salesUnitIntegration->getById($reference);
     }

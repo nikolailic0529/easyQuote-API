@@ -6,9 +6,10 @@ use App\Integrations\Pipeliner\Enum\EntityLacotaType;
 
 class EntityFilterRelatedField extends BaseFilterInput
 {
-    protected function __construct(public readonly EntityLacotaType $entity,
-                                   public readonly array            $entityIds)
-    {
+    protected function __construct(
+        public readonly EntityLacotaType $entity,
+        public readonly array $entityIds
+    ) {
     }
 
     public static function account(string $entityId, string ...$entityIds): static

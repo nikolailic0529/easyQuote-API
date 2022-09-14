@@ -4,22 +4,24 @@ namespace App\Integrations\Pipeliner\Models;
 
 use App\Helpers\Enum;
 use App\Integrations\Pipeliner\Enum\CloudObjectTypeEnum;
+use DateTimeImmutable;
 use Illuminate\Support\Carbon;
 
 class CloudObjectEntity
 {
-    public function __construct(public readonly string              $id,
-                                public readonly string              $filename,
-                                public readonly bool                $isPublic,
-                                public readonly string              $mimeType,
-                                public readonly string              $params,
-                                public readonly int                 $size,
-                                public readonly CloudObjectTypeEnum $type,
-                                public readonly string              $url,
-                                public readonly ?string             $publicUrl,
-                                public readonly \DateTimeImmutable  $created,
-                                public readonly \DateTimeImmutable  $modified)
-    {
+    public function __construct(
+        public readonly string $id,
+        public readonly string $filename,
+        public readonly bool $isPublic,
+        public readonly string $mimeType,
+        public readonly string $params,
+        public readonly int $size,
+        public readonly CloudObjectTypeEnum $type,
+        public readonly string $url,
+        public readonly ?string $publicUrl,
+        public readonly DateTimeImmutable $created,
+        public readonly DateTimeImmutable $modified
+    ) {
     }
 
     public static function fromArray(array $array): static

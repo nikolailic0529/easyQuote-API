@@ -205,14 +205,12 @@ class UpdateApplicationCommand extends Command
         $this->call(UpdateVendors::class);
         $this->call(UpdateRoles::class);
         $this->call(UpdateExchangeRates::class);
-
         $this->call(UpdateDocumentMapping::class);
         $this->call(UpdateTemplateFields::class);
-
         $this->call(UpdateRescueQuoteTemplates::class);
         $this->call(UpdateTemplatesAssets::class);
-
         $this->call(ResetTaskTemplates::class);
+        $this->call(ValidateOpportunitiesCommand::class);
 
         $this->call(CreatePersonalAccessClient::class);
         $this->call(CreateClientCredentials::class);

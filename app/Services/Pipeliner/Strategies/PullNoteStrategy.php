@@ -7,6 +7,7 @@ use App\Integrations\Pipeliner\Models\NoteEntity;
 use App\Models\Note\Note;
 use App\Models\PipelinerModelScrollCursor;
 use App\Services\Note\NoteDataMapper;
+use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -162,5 +163,10 @@ class PullNoteStrategy implements PullStrategy
             'created' => $entity->created,
             'modified' => $entity->modified,
         ];
+    }
+
+    public function getByReference(string $reference): NoteEntity
+    {
+        return $this->noteIntegration->getById($reference);
     }
 }
