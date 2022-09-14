@@ -3,6 +3,7 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Enum\AddressType;
+use App\Foundation\Fork\Exceptions\CouldNotCreateForkException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
 use App\Integrations\Pipeliner\Models\ContactAccountRelationEntity;
@@ -29,6 +30,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\LazyCollection;
+use App\Foundation\Fork\Fork;
 
 class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyEntities
 {
@@ -149,10 +151,20 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             }
         }
 
-        $this->syncContactRelationsFromAccount($model);
-        $this->syncNotesFromAccount($model);
-        $this->syncTasksFromAccount($model);
-        $this->syncAppointmentsFromAccount($model);
+        $tasks = [
+            fn() => $this->syncContactRelationsFromAccount($model),
+            fn() => $this->syncNotesFromAccount($model),
+            fn() => $this->syncTasksFromAccount($model),
+            fn() => $this->syncAppointmentsFromAccount($model),
+        ];
+
+        try {
+            Fork::new()->before(child: fn () => $this->connection->reconnect())->run(...$tasks);
+        } catch (CouldNotCreateForkException) {
+            collect($tasks)->each(static function (callable $task): void {
+                $task();
+            });
+        }
     }
 
     private function syncNotesFromAccount(Company $model): void

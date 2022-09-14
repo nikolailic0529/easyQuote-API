@@ -123,7 +123,7 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
                 $company->vat_type = $importedCompany->vat_type ?? VAT::NO_VAT;
             }
 
-            if (is_null($company->pl_reference)) {
+            if (null !== $importedCompany->pl_reference) {
                 $company->pl_reference = $importedCompany->pl_reference;
             }
 

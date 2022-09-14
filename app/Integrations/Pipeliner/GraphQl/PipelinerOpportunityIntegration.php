@@ -15,6 +15,7 @@ use GraphQL\Query;
 use GraphQL\QueryBuilder\MutationBuilder;
 use GraphQL\QueryBuilder\QueryBuilder;
 use GraphQL\RawObject;
+use Illuminate\Http\Client\RequestException;
 
 class PipelinerOpportunityIntegration
 {
@@ -86,10 +87,10 @@ class PipelinerOpportunityIntegration
     }
 
     /**
-     * @throws \Illuminate\Http\Client\RequestException
+     * @param  string  ...$ids
+     * @return OpportunityEntity[]
      * @throws GraphQlRequestException
-     * @throws EntityNotFoundException
-     * @returns OpportunityEntity[]
+     * @throws RequestException
      */
     public function getByIds(string ...$ids): array
     {

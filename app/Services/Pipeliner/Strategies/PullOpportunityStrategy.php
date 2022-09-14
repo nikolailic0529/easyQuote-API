@@ -5,6 +5,8 @@ namespace App\Services\Pipeliner\Strategies;
 use App\Enum\Lock;
 use App\Events\Opportunity\OpportunityCreated;
 use App\Events\Opportunity\OpportunityUpdated;
+use App\Foundation\Fork\Exceptions\CouldNotCreateForkException;
+use App\Foundation\Fork\Fork;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerNoteIntegration;
@@ -39,6 +41,7 @@ use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
 class PullOpportunityStrategy implements PullStrategy
@@ -74,13 +77,27 @@ class PullOpportunityStrategy implements PullStrategy
 
     public function iteratePending(): \Traversable
     {
-        $iterator = $this->oppIntegration->scroll(
-            ...$this->resolveScrollParameters()
-        );
+        /** @var iterable<LazyCollection> $chunks */
+        $chunks = LazyCollection::make(function (): \Generator {
+            yield from $this->oppIntegration->simpleScroll(
+                ...$this->resolveScrollParameters()
+            );
+        })
+            ->filter(function (array $item): bool {
+                return $this->isStrategyYetToBeAppliedTo($item['id'], $item['modified']);
+            })
+            ->mapWithKeys(static function (array $item, string $cursor): \Generator {
+                yield $item['id'] => $item + ['cursor' => $cursor];
+            })
+            ->chunk(10);
 
-        foreach ($iterator as $cursor => $item) {
-            if ($this->isStrategyYetToBeAppliedTo($item->id, $item->modified)) {
-                yield $cursor => $item;
+        foreach ($chunks as $chunk) {
+            $map = collect($chunk->all());
+
+            $items = $this->oppIntegration->getByIds(...$map->pluck('id')->all());
+
+            foreach ($items as $item) {
+                yield $map->get($item->id)['cursor'] => $item;
             }
         }
     }
@@ -147,52 +164,53 @@ class PullOpportunityStrategy implements PullStrategy
         });
     }
 
-    private function iterateRelationsOfOpportunityEntity(OpportunityEntity $entity): \Generator
-    {
-        $relations = [
-            'notes' => fn() => $this->noteIntegration->scroll(filter: NoteFilterInput::new()->leadOpptyId(
-                EntityFilterStringField::eq($entity->id)
-            ), first: 100),
-            'tasks' => fn() => $this->taskIntegration->scroll(filter: TaskFilterInput::new()->opportunityRelations(
-                ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
-            ), first: 100),
-            'appointments' => fn() => $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()->opportunityRelations(
-                ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
-            ), first: 100),
-        ];
-
-        foreach ($relations as $relation => $callback) {
-            try {
-                foreach ($callback() as $item) {
-                    yield $relation => $item;
-                }
-            } catch (GraphQlRequestException $e) {
-                report($e);
-            }
-        }
-    }
-
     private function syncRelationsOfOpportunityEntity(OpportunityEntity $entity, Opportunity $model): void
     {
-        $relations = $this->iterateRelationsOfOpportunityEntity($entity);
+        $tasks = [
+            function () use ($entity): void {
+                $iterator = $this->noteIntegration->scroll(filter: NoteFilterInput::new()->leadOpptyId(
+                    EntityFilterStringField::eq($entity->id)
+                ), first: 100);
 
-        foreach ($relations as $relation => $item) {
-            /** @var SyncStrategy $strategy */
-            $strategy = match ($item::class) {
-                NoteEntity::class => $this->pullNoteStrategy,
-                TaskEntity::class => $this->pullTaskStrategy,
-                AppointmentEntity::class => $this->pullAppointmentStrategy,
-            };
+                foreach ($iterator as $item) {
+                    $this->pullNoteStrategy->sync($item);
+                }
+            },
+            function () use ($entity): void {
+                $iterator = $this->taskIntegration->scroll(filter: TaskFilterInput::new()->opportunityRelations(
+                    ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
+                ), first: 100);
 
-            $strategy->sync($item);
-        }
+                foreach ($iterator as $item) {
+                    $this->pullTaskStrategy->sync($item);
+                }
+            },
+            function () use ($entity): void {
+                $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()->opportunityRelations(
+                    ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
+                ), first: 100);
 
-        $attachments = Collection::make($entity->documents)
-            ->map(function (CloudObjectEntity $entity): Attachment {
-                return $this->pullAttachmentStrategy->sync($entity);
+                foreach ($iterator as $item) {
+                    $this->pullAppointmentStrategy->sync($item);
+                }
+            },
+            function () use ($model, $entity): void {
+                $attachments = Collection::make($entity->documents)
+                    ->map(function (CloudObjectEntity $entity): Attachment {
+                        return $this->pullAttachmentStrategy->sync($entity);
+                    });
+
+                $this->connection->transaction(static fn() => $model->attachments()->syncWithoutDetaching($attachments));
+            }
+        ];
+
+        try {
+            Fork::new()->before(child: fn () => $this->connection->reconnect())->run(...$tasks);
+        } catch (CouldNotCreateForkException) {
+            collect($tasks)->each(static function (callable $task): void {
+                $task();
             });
-
-        $this->connection->transaction(static fn() => $model->attachments()->syncWithoutDetaching($attachments));
+        }
     }
 
     public function syncByReference(string $reference): Model

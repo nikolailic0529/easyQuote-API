@@ -2,6 +2,8 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
+use App\Foundation\Fork\Exceptions\CouldNotCreateForkException;
+use App\Foundation\Fork\Fork;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
@@ -176,9 +178,19 @@ class PushOpportunityStrategy implements PushStrategy
 
         // Pushing the note, task, appointment entities at last,
         // as they are dependent on the existing opportunity entity.
-        $this->pushNotesFromOppty($model);
-        $this->pushTasksFromOppty($model);
-        $this->pushAppointmentsFromOppty($model);
+        $tasks = [
+            fn () => $this->pushNotesFromOppty($model),
+            fn () => $this->pushTasksFromOppty($model),
+            fn () => $this->pushAppointmentsFromOppty($model),
+        ];
+
+        try {
+            Fork::new()->before(child: fn () => $this->connection->reconnect())->run(...$tasks);
+        } catch (CouldNotCreateForkException) {
+            collect($tasks)->each(static function (callable $task): void {
+                $task();
+            });
+        }
     }
 
     public function getModelType(): string

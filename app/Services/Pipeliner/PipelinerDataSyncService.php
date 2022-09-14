@@ -74,13 +74,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
     protected function prepareStrategies(): void
     {
-        $units = $this->getEnabledSalesUnits()
-            ->when($this->causer instanceof User, function (Collection $collection) {
-                return $collection->filter(function (SalesUnit $unit) {
-                    return $this->causer->salesUnits->contains($unit);
-                });
-            })
-            ->values();
+        $units = $this->getAllowedSalesUnits();
 
         foreach ($this->syncStrategies as $strategy) {
             $strategy->setSalesUnits(...$units->all());
@@ -578,8 +572,15 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         return '*' === $allowedMethods[0] || in_array($method, $allowedMethods, true);
     }
 
+    /**
+     * @throws PipelinerSyncException
+     */
     public function queueSync(array $strategies = []): QueueSyncResult
     {
+        if ($this->getAllowedSalesUnits()->isEmpty()) {
+            throw new PipelinerSyncException("Sync could not be started: none of the enabled units are associated with your user.");
+        }
+
         $job = new QueuedPipelinerDataSync($this->causer, $strategies);
 
         if (!(new UniqueLock($this->cache))->acquire($job)) {
@@ -622,6 +623,17 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
                 return $collection;
             });
+    }
+
+    protected function getAllowedSalesUnits(): Collection
+    {
+        return $this->getEnabledSalesUnits()
+            ->when($this->causer instanceof User, function (Collection $collection) {
+                return $collection->filter(function (SalesUnit $unit) {
+                    return $this->causer->salesUnits->contains($unit);
+                });
+            })
+            ->values();
     }
 
     public function setLogger(LoggerInterface $logger): static
