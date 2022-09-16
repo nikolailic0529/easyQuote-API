@@ -2,9 +2,8 @@
 
 namespace App\Events\Pipeliner;
 
-use App\Models\User;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -25,11 +24,7 @@ final class QueuedPipelinerSyncLocalEntitySkipped implements ShouldBroadcastNow
 
     public function broadcastOn(): array
     {
-        if (!$this->causer instanceof User) {
-            return [];
-        }
-
-        return [new PrivateChannel('user.'.$this->causer->getKey())];
+        return [new Channel('pipeliner-sync')];
     }
 
     public function broadcastAs(): string

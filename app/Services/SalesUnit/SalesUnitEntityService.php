@@ -4,7 +4,9 @@ namespace App\Services\SalesUnit;
 
 use App\DTO\SalesUnit\CreateOrUpdateSalesUnitData;
 use App\DTO\SalesUnit\CreateOrUpdateSalesUnitDataCollection;
+use App\Events\SalesUnit\SalesUnitsUpdated;
 use App\Models\SalesUnit;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\LazyCollection;
@@ -13,13 +15,16 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class SalesUnitEntityService
 {
-    public function __construct(protected ConnectionResolverInterface $connectionResolver,
-                                protected ValidatorInterface          $validator)
+    public function __construct(protected readonly ConnectionResolverInterface $connectionResolver,
+                                protected readonly EventDispatcher $eventDispatcher,
+                                protected readonly ValidatorInterface          $validator)
     {
     }
 
     public function bulkCreateOrUpdateSalesUnits(CreateOrUpdateSalesUnitDataCollection $data): Collection
     {
+        // TODO: flush pipeliner model scroll cursors on change
+
         foreach ($data as $item) {
             $violations = $this->validator->validate($item);
 
@@ -27,6 +32,8 @@ class SalesUnitEntityService
                 throw new ValidationFailedException($data, $violations);
             }
         }
+
+        $old = SalesUnit::query()->orderBy('entity_order')->get();
 
         $data->rewind();
 
@@ -69,6 +76,10 @@ class SalesUnitEntityService
 
                 $models->each->save();
             });
+
+        $new = SalesUnit::query()->orderBy('entity_order')->get();
+
+        $this->eventDispatcher->dispatch(new SalesUnitsUpdated($old, $new));
 
         return $models;
     }

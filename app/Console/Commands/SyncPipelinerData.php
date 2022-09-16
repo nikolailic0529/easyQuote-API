@@ -2,15 +2,18 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Pipeliner\PlSyncStatusCommand;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerDataSyncService;
 use Illuminate\Console\Command;
 use Illuminate\Log\LogManager;
 use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Console\Command\SignalableCommandInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\SignalRegistry\SignalRegistry;
 
-class SyncPipelinerData extends Command
+class SyncPipelinerData extends Command implements SignalableCommandInterface
 {
     /**
      * The name and signature of the console command.
@@ -145,5 +148,29 @@ class SyncPipelinerData extends Command
             new InputOption(name: 'method', mode: InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, description: 'Method to sync (pull/push)'),
             new InputOption(name: 'strategy', mode: InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, description: 'Strategy to sync'),
         ];
+    }
+
+    public function getSubscribedSignals(): array
+    {
+        if (\defined('SIGINT') && SignalRegistry::isSupported()) {
+            return [\SIGINT];
+        }
+
+        return [];
+    }
+
+    public function handleSignal(int $signal): void
+    {
+        if (!\defined('SIGINT') || !SignalRegistry::isSupported()) {
+            return;
+        }
+
+        if (\SIGINT === $signal) {
+            $this->call(PlSyncStatusCommand::class, [
+                'action' => 'flush',
+            ]);
+
+            exit(1);
+        }
     }
 }

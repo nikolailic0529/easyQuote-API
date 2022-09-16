@@ -18,11 +18,12 @@ use Illuminate\Queue\SerializesModels;
 
 class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, SerializesModels;
 
-    public int $timeout = 7200;
-
+    public int $timeout = 60 * 60 * 8;
     public int $tries = 1;
+    public string $queue = 'long';
+    public string $connection = 'redis_long';
 
     public function __construct(protected ?Model $causer = null,
                                 protected array  $strategies = [])
@@ -47,12 +48,7 @@ class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
     {
         report($exception);
 
-        /** @var SyncPipelinerDataStatus $status */
-        $status = app(SyncPipelinerDataStatus::class);
-
-        $status
-            ->setCauser($this->causer)
-            ->disable();
+        app(SyncPipelinerDataStatus::class)->clear();
 
         if ($this->causer instanceof User) {
             event(new QueuedPipelinerSyncFailed($exception, $this->causer));

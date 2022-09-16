@@ -2,9 +2,8 @@
 
 namespace App\Events\Pipeliner;
 
-use App\Models\User;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -14,20 +13,17 @@ final class QueuedPipelinerSyncProgress implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(protected readonly int    $totalEntities,
-                                protected readonly int    $pendingEntities,
-                                protected readonly ?Model $causer,
-                                protected readonly string $correlationId)
-    {
+    public function __construct(
+        protected readonly int $totalEntities,
+        protected readonly int $pendingEntities,
+        protected readonly ?Model $causer,
+        protected readonly string $correlationId
+    ) {
     }
 
     public function broadcastOn(): array
     {
-        if (!$this->causer instanceof User) {
-            return [];
-        }
-
-        return [new PrivateChannel('user.'.$this->causer->getKey())];
+        return [new Channel('pipeliner-sync')];
     }
 
     public function broadcastAs(): string
@@ -45,13 +41,13 @@ final class QueuedPipelinerSyncProgress implements ShouldBroadcastNow
         ];
     }
 
-    private function processedEntities(): int
-    {
-        return $this->totalEntities - $this->pendingEntities;
-    }
-
     private function progress(): int
     {
         return $this->totalEntities > 0 ? round(($this->processedEntities() / $this->totalEntities) * 100) : 0;
+    }
+
+    private function processedEntities(): int
+    {
+        return $this->totalEntities - $this->pendingEntities;
     }
 }

@@ -86,7 +86,6 @@ class StoreCompanyRequest extends FormRequest
             ],
             'category' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
                 new Enum(CompanyCategoryEnum::class),
             ],

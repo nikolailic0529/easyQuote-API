@@ -27,7 +27,7 @@ class StoreContactRequest extends FormRequest
         return [
             'sales_unit_id' => ['bail', 'required', 'uuid',
                 Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
-            'address_id' => ['bail', 'uuid',
+            'address_id' => ['bail', 'nullable', 'uuid',
                 Rule::exists(Address::class, (new Address())->getKeyName())->withoutTrashed()],
             'contact_type' => ['required', 'string', Rule::in(ContactType::getValues())],
             'gender' => ['nullable', 'string', new Enum(GenderEnum::class)],
@@ -62,7 +62,7 @@ class StoreContactRequest extends FormRequest
 
         return new CreateContactData([
             'sales_unit_id' => $this->input('sales_unit_id'),
-            'address_id' => $this->whenHas('address_id', value(...), static fn() => $missing),
+            'address_id' => $this->whenFilled('address_id', value(...), static fn() => $missing),
             'contact_type' => $this->input('contact_type'),
             'gender' => $this->filled('gender')
                 ? GenderEnum::from($this->input('gender'))

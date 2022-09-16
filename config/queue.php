@@ -66,6 +66,14 @@ return [
             'block_for' => null,
         ],
 
+        'redis_long' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => env('REDIS_QUEUE', 'default'),
+            'retry_after' => 60 * 60 * 8,
+            'block_for' => null,
+        ],
+
     ],
 
     /*

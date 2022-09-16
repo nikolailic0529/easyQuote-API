@@ -8,6 +8,7 @@ use App\Events\{Company\CompanyUpdated,
     Opportunity\OpportunityUpdated,
     Permission\GrantedModulePermission,
     RfqReceived,
+    SalesUnit\SalesUnitsUpdated,
     WorldwideQuote\WorldwideQuoteNoteCreated,
     WorldwideQuote\WorldwideQuoteSubmitted};
 use App\Listeners\{AddressEventAuditor,
@@ -15,6 +16,7 @@ use App\Listeners\{AddressEventAuditor,
     CompanyEventAuditor,
     CompanyNoteAuditor,
     ContactEventAuditor,
+    FlushPipelinerModelScrollCursorsOnUnitsUpdate,
     MailEventRateLimitingSubscriber,
     SyncCustomFieldValuesInPipeliner,
     DocumentMappingSyncSubscriber,
@@ -86,6 +88,10 @@ class EventServiceProvider extends ServiceProvider
 
         CustomFieldValuesUpdated::class => [
             SyncCustomFieldValuesInPipeliner::class,
+        ],
+
+        SalesUnitsUpdated::class => [
+            FlushPipelinerModelScrollCursorsOnUnitsUpdate::class,
         ],
     ];
 

@@ -83,6 +83,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
     public function sync(): void
     {
+        $this->dataSyncStatus->clear();
         $this->dataSyncStatus->enable();
 
         $this->prepareStrategies();
@@ -107,6 +108,8 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
         $pendingCount = $totalCount = array_sum($counts);
 
+        $this->dataSyncStatus->setTotal($pendingCount);
+
         $this->logger->debug("Total count of pending entities: $pendingCount.", [
             'counts' => collect($counts)
                 ->mapWithKeys(static fn(int $count, string $class): array => [class_basename($class) => $count])
@@ -120,8 +123,11 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             // the total count will be incremented.
             if ($pendingCount < 0) {
                 $totalCount += abs($pendingCount);
+                $this->dataSyncStatus->setTotal($totalCount);
                 $pendingCount = 0;
             }
+
+            $this->dataSyncStatus->incrementProcessed();
 
             $this->logger->debug("Progress, total pending count: $pendingCount");
 
@@ -164,12 +170,9 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             }
         }
 
-        $this->dataSyncStatus->disable();
+        $this->dataSyncStatus->clear();
 
-        if ($this->causer instanceof User) {
-            $this->eventDispatcher->dispatch(new QueuedPipelinerSyncProcessed($this->causer, $totalCount,
-                $pendingCount));
-        }
+        $this->eventDispatcher->dispatch(new QueuedPipelinerSyncProcessed($this->causer, $totalCount, $pendingCount));
     }
 
     #[ArrayShape(['applied' => "array[]"])]
@@ -628,8 +631,12 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
     protected function getAllowedSalesUnits(): Collection
     {
         return $this->getEnabledSalesUnits()
-            ->when($this->causer instanceof User, function (Collection $collection) {
-                return $collection->filter(function (SalesUnit $unit) {
+            ->when($this->causer instanceof User, function (Collection $collection): Collection {
+                if ($this->causer->can('syncAny', SalesUnit::class)) {
+                    return $collection;
+                }
+
+                return $collection->filter(function (SalesUnit $unit): bool {
                     return $this->causer->salesUnits->contains($unit);
                 });
             })
@@ -647,7 +654,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
     {
         return tap($this, function () use ($causer) {
             $this->causer = $causer;
-            $this->dataSyncStatus->setCauser($causer);
         });
     }
 

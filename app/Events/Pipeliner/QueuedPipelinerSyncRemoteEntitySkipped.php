@@ -2,13 +2,13 @@
 
 namespace App\Events\Pipeliner;
 
-use App\Models\User;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Throwable;
 
 final class QueuedPipelinerSyncRemoteEntitySkipped implements ShouldBroadcastNow
 {
@@ -18,17 +18,13 @@ final class QueuedPipelinerSyncRemoteEntitySkipped implements ShouldBroadcastNow
         public readonly object $entity,
         public readonly ?Model $causer,
         public readonly string $correlationId,
-        public readonly ?\Throwable $e,
+        public readonly ?Throwable $e,
     ) {
     }
 
     public function broadcastOn(): array
     {
-        if (!$this->causer instanceof User) {
-            return [];
-        }
-
-        return [new PrivateChannel('user.'.$this->causer->getKey())];
+        return [new Channel('pipeliner-sync')];
     }
 
     public function broadcastAs(): string

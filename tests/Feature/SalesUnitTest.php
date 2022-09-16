@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PipelinerModelScrollCursor;
 use App\Models\Role;
 use App\Models\SalesUnit;
 use App\Models\User;
@@ -125,6 +126,43 @@ class SalesUnitTest extends TestCase
                 $this->assertSame($item[$attr], $itemFromResponse[$attr], $attr);
             }
         }
+    }
+
+    public function testItFlushesPipelinerScrollCursorsOnUpdateOfEnabledSalesUnits(): void
+    {
+        $con = $this->app['db.connection'];
+        $con->table('sales_units')->delete();
+
+        PipelinerModelScrollCursor::factory()->create();
+
+        $units = SalesUnit::factory()
+            ->count(2)
+            ->sequence(
+                ['is_enabled' => true, 'is_default' => true],
+                ['is_enabled' => false, 'is_default' => false],
+            )
+            ->create();
+
+        $data = SalesUnit::factory()
+            ->count(2)
+            ->sequence(
+                ['id' => $units[0]->getKey(), 'is_enabled' => false, 'is_default' => false],
+                ['id' => $units[1]->getKey(), 'is_enabled' => true, 'is_default' => true],
+            )
+            ->raw();
+
+        $this->authenticateApi();
+
+        $this->putJson('api/sales-units', ['sales_units' => $data])
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'unit_name', 'is_default', 'is_enabled', 'created_at', 'updated_at'],
+                ],
+            ]);
+
+        $this->assertDatabaseCount('pipeliner_model_scroll_cursors', 0);
     }
 
     /**
