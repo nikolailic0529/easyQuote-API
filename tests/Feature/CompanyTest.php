@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enum\CompanyCategoryEnum;
+use App\Enum\CompanyType;
 use App\Enum\CustomerTypeEnum;
 use App\Models\Address;
 use App\Models\Asset;
@@ -120,6 +122,11 @@ class CompanyTest extends TestCase
      */
     public function testCanViewPaginatedCompaniesLimitedByScopeOfCurrentUser(): void
     {
+        $this->app['db.connection']
+            ->table('companies')
+            ->whereRaw('(flags & (1 << 0)) != (1 << 0)')
+            ->delete();
+
         $this->authenticateApi();
 
         /** @var Role $role */
@@ -139,14 +146,30 @@ class CompanyTest extends TestCase
         $company = Company::factory()
             ->for($user->salesUnits->first())
             ->for($user)
-            ->create();
+            ->create([
+                'type' => CompanyType::EXTERNAL,
+            ]);
 
         $companyOfDifferentSalesUnit = Company::factory()
             ->for(SalesUnit::factory())
             ->for($user)
-            ->create();
+            ->create([
+                'type' => CompanyType::EXTERNAL,
+            ]);
 
         $response = $this->getJson('api/companies')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id']
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertContains($company->getKey(), $response->json('data.*.id'));
+
+        $response = $this->getJson('api/external-companies')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([

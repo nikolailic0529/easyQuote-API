@@ -88,10 +88,10 @@ class CompanyController extends Controller
      * @param  CompanyQueries  $queries
      * @return JsonResponse
      */
-    public function getExternal(CompanyQueries $queries): JsonResponse
+    public function getExternal(Request $request, CompanyQueries $queries): JsonResponse
     {
         return response()->json(
-            data: $queries->listOfExternalCompaniesBySource(CompanySource::EQ)->get(['id', 'name'])
+            data: $queries->listOfExternalCompaniesBySource($request, CompanySource::EQ)->get(['id', 'name'])
         );
     }
 

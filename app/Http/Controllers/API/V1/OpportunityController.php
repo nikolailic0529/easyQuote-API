@@ -13,7 +13,7 @@ use App\Http\Requests\Opportunity\{BatchSave,
 use App\Http\Resources\V1\Appointment\AppointmentListResource;
 use App\Http\Resources\V1\Opportunity\GroupedOpportunityCollection;
 use App\Http\Resources\V1\Opportunity\OpportunityList;
-use App\Http\Resources\V1\Opportunity\OpportunityOfStage;
+use App\Http\Resources\V1\Opportunity\OpportunityOfPipelineStageResource;
 use App\Http\Resources\V1\Opportunity\OpportunityWithIncludesResource;
 use App\Http\Resources\V1\Opportunity\UploadedOpportunities;
 use App\Models\Opportunity;
@@ -115,7 +115,7 @@ class OpportunityController extends Controller
 
         $summary = $aggregateService->calculateSummaryOfPipelineStage($stage, $request);
 
-        return OpportunityOfStage::collection($pagination)->additional([
+        return OpportunityOfPipelineStageResource::collection($pagination)->additional([
             'meta' => $summary->except('total')
                 ->toArray(),
         ]);

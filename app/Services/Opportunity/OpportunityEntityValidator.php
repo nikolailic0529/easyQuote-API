@@ -77,9 +77,8 @@ class OpportunityEntityValidator
                 'exclude_without:primary_account', 'bail', 'required',
                 (new Count())
                     ->whereIn('contact_type', [ContactType::HARDWARE, ContactType::SOFTWARE])
-                    ->where('pivot.is_default', true)
                     ->min(1)
-                    ->setMinMessage("Primary Account must have at least :limit default software/hardware contact."),
+                    ->setMinMessage("Primary Account must have at least :limit software/hardware contact."),
             ],
 
             'primary_account_contact' => ['bail', 'required'],
@@ -107,9 +106,8 @@ class OpportunityEntityValidator
                 'exclude_without:end_user', 'bail', 'required',
                 (new Count())
                     ->whereIn('contact_type', [ContactType::HARDWARE, ContactType::SOFTWARE])
-                    ->where('pivot.is_default', true)
                     ->min(1)
-                    ->setMinMessage("End Customer must have at least :limit default software/hardware contact."),
+                    ->setMinMessage("End Customer must have at least :limit software/hardware contact."),
             ],
 
             'contract_duration_months' => ['bail', 'required_if:is_contract_duration_checked,true'],

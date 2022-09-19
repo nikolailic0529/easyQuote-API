@@ -478,6 +478,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
                     yield from $company->opportunities;
                     yield from $company->opportunitiesWhereEndUser;
                 })
+                    ->whereNotNull('pl_reference')
                     ->pluck('pl_reference')
                     ->unique()
                     ->values();

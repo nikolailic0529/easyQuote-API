@@ -8,6 +8,7 @@ use App\Contracts\{ActivatableInterface,
     HasOwnAppointments,
     HasOwner,
     HasOwnNotes,
+    HasSalesUnit,
     LinkedToAppointments,
     LinkedToTasks,
     ProvidesIdForHumans,
@@ -102,6 +103,7 @@ class Company extends Model implements
     HasOwnAppointments,
     LinkedToTasks,
     HasOwnNotes,
+    HasSalesUnit,
     ProvidesIdForHumans
 {
     use Uuid,

@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
+use App\Queries\Scopes\CurrentUserScope;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Auth\Access\Response;
@@ -78,7 +79,7 @@ class CompanyQueries
             ->withCasts([
                 'total_quoted_value' => 'decimal:2',
             ])
-            ->tap($this->scopeCurrentUser($request))
+            ->tap(CurrentUserScope::from($request, $this->gate))
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -112,9 +113,7 @@ class CompanyQueries
 
         $query = $model->newQuery()
             ->where($model->qualifyColumn('type'), CompanyType::EXTERNAL)
-            ->when($this->gate->denies('viewAnyOwnerEntities', Company::class), function (Builder $builder) use ($user) {
-                $builder->whereBelongsTo($user);
-            })
+            ->tap(CurrentUserScope::from($request, $this->gate))
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -182,68 +181,22 @@ class CompanyQueries
             ->orderByRaw("field({$companyModel->getQualifiedKeyName()}, null, ?) desc", [$user?->company_id]);
     }
 
-    public function listOfExternalCompaniesQuery(): Builder
+    public function listOfExternalCompaniesQuery(Request $request = null): Builder
     {
         $companyModel = new Company();
 
         return $companyModel->newQuery()
             ->where('type', CompanyType::EXTERNAL)
             ->whereNotNull('activated_at')
+            ->tap(CurrentUserScope::from($request ?? new Request(), $this->gate))
             ->orderByRaw("field({$companyModel->qualifyColumn('vat')}, ?, null) desc", [CP_DEF_VAT]);
     }
 
-    public function listOfExternalCompaniesBySource(string ...$sources): Builder
+    public function listOfExternalCompaniesBySource(Request $request = null, string ...$sources): Builder
     {
-        return $this->listOfExternalCompaniesQuery()
-            ->when(false === empty($sources), function (Builder $builder) use ($sources) {
+        return $this->listOfExternalCompaniesQuery($request)
+            ->unless(empty($sources), static function (Builder $builder) use ($sources): void {
                 $builder->whereIn('source', $sources);
             });
-    }
-
-    protected function scopeCurrentUser(Request $request): callable
-    {
-        return function (Builder $builder) use ($request): void {
-            /** @var User|null $user */
-            $user = $request->user();
-
-            if (null === $user) {
-                Response::deny('The query cannot be performed without user authentication.')->authorize();
-            }
-
-            $builder->unless($this->gate->allows('viewAnyOwnerEntities', Opportunity::class),
-                function (Builder $builder) use ($user): void {
-
-                    /** @var \Staudenmeir\LaravelCte\Query\Builder $builder */
-
-                    $builder->withExpression('led_team_users',
-                        $user->ledTeamUsers()->getQuery()
-                            ->select($user->ledTeamUsers()->getModel()->getQualifiedKeyName())
-                            ->toBase()
-                    );
-
-                    $builder->withExpression('user_has_sales_units',
-                        $user->salesUnits()->getQuery()
-                            ->select($user->salesUnits()->getModel()->getQualifiedKeyName())
-                            ->toBase()
-                    );
-
-                    $builder->where(static function (Builder $builder) use ($user): void {
-                        $builder
-                            ->where($builder->qualifyColumn('user_id'), $user->getKey())
-                            ->orWhereIn($builder->qualifyColumn('user_id'),
-                                static function (BaseBuilder $builder) use ($user): void {
-                                    $builder->select($user->ledTeamUsers()->getModel()->getKeyName())
-                                        ->from('led_team_users');
-                                });
-                    })
-                        ->where(static function (Builder $builder) use ($user): void {
-                            $builder->whereIn($builder->qualifyColumn('sales_unit_id'),
-                                static function (BaseBuilder $builder) use ($user): void {
-                                    $builder->select($user->salesUnits()->getModel()->getKeyName())
-                                        ->from('user_has_sales_units');
-                                });
-                        });
-                });
-        };
     }
 }
