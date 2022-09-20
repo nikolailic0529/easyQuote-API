@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Services\MigratesCustomerEntity;
 use App\Contracts\WithOutput;
-use App\Models\{Address, Company, Customer\Customer};
+use App\Models\{Address, Company, CompanyCategory, Customer\Customer};
 use App\Services\Concerns\WithProgress;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -78,11 +78,10 @@ class CustomerFlowService implements MigratesCustomerEntity, WithOutput
             ->where('name', $customer->name)
             ->where('user_id', $customer->user_id)
             ->where('type', self::COMPANY_TYPE)
-            ->where('category', self::COMPANY_CATEGORY)
+            ->whereRelation('categories', 'name', '=', self::COMPANY_CATEGORY)
             ->firstOrNew();
 
         return tap($company, function () use ($customer, $company) {
-
             $emailFromCustomerAddresses = $customer->addresses()
                 ->whereNotNull('contact_email')
                 ->value('contact_email');
@@ -94,13 +93,11 @@ class CustomerFlowService implements MigratesCustomerEntity, WithOutput
             $company->name = $customer->name;
             $company->user_id = $customer->user_id;
             $company->type = self::COMPANY_TYPE;
-            $company->category = self::COMPANY_CATEGORY;
             $company->email ??= $customer->email ?? $emailFromCustomerAddresses;
             $company->vat ??= $customer->vat;
             $company->phone ??= $customer->phone ?? $phoneNoFromCustomerAddresses;
 
             if (false === $company->exists) {
-
                 $customerQuoteData = $customer->quotes()->getQuery()
                     ->toBase()
                     ->select([
@@ -118,7 +115,6 @@ class CustomerFlowService implements MigratesCustomerEntity, WithOutput
                 $company->defaultCountry()->associate($countryKey);
                 $company->defaultVendor()->associate($vendorKey);
                 $company->defaultTemplate()->associate($templateKey);
-
             }
 
             $this->connection->transaction(fn() => $company->save());
@@ -126,15 +122,16 @@ class CustomerFlowService implements MigratesCustomerEntity, WithOutput
             $addresses = static::rejectDuplicatedAddresses($company->addresses, $customer->addresses);
 
             $contacts = $customer->contacts;
-
             $contacts = $contacts->whenEmpty(fn() => $this->contactService->retrieveContactsFromAddresses($addresses));
 
-            $this->connection->transaction(function () use ($customer, $contacts, $addresses, $company) {
+            $categories = CompanyCategory::query()->where('name', self::COMPANY_CATEGORY)->get();
+
+            $this->connection->transaction(function () use ($customer, $contacts, $addresses, $categories, $company) {
                 $company->addresses()->syncWithoutDetaching($addresses);
                 $company->contacts()->syncWithoutDetaching($contacts);
                 $company->vendors()->syncWithoutDetaching($customer->vendors);
+                $company->categories()->syncWithoutDetaching($categories);
             });
-
         });
     }
 

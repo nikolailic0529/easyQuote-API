@@ -7,6 +7,7 @@ use App\Models\CancelSalesOrderReason;
 use Database\Seeders\{AssetCategorySeeder,
     BusinessDivisionSeeder,
     CancelSalesOrderReasonSeeder,
+    CompanyCategorySeeder,
     CompanySeeder,
     ContractTypeSeeder,
     CountryFlagSeeder,
@@ -148,6 +149,11 @@ class UpdateApplicationCommand extends Command
 
         $this->call(SeedCommand::class, [
             '--class' => VendorSeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => CompanyCategorySeeder::class,
             '--force' => true
         ]);
 

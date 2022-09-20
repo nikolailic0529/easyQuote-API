@@ -15,6 +15,7 @@ use App\Events\Company\CompanyDeleted;
 use App\Events\Company\CompanyUpdated;
 use App\Models\Address;
 use App\Models\Company;
+use App\Models\CompanyCategory;
 use App\Models\Contact;
 use App\Models\User;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -22,6 +23,7 @@ use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use PhpOffice\PhpSpreadsheet\Calculation\Category;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -80,7 +82,6 @@ class CompanyEntityService implements CauserAware
             $company->type = $data->type;
             $company->source = $data->source;
             $company->short_code = $data->short_code;
-            $company->category = $data->category;
             if (!$data->customer_type instanceof MissingValue) {
                 $company->customer_type = $data->customer_type;
             }
@@ -95,6 +96,8 @@ class CompanyEntityService implements CauserAware
             if ($this->causer instanceof User) {
                 $company->owner()->associate($this->causer);
             }
+
+            $categories = CompanyCategory::query()->whereIn('name', $data->categories)->get();
 
             $addressesData = [];
 
@@ -129,7 +132,8 @@ class CompanyEntityService implements CauserAware
                 $data,
                 $company,
                 $addressesData,
-                $contactsData
+                $contactsData,
+                $categories,
             ) {
                 $addresses->each->save();
 
@@ -138,6 +142,7 @@ class CompanyEntityService implements CauserAware
                 $company->vendors()->sync($data->vendors);
                 $company->addresses()->sync($addressesData);
                 $company->contacts()->sync($contactsData);
+                $company->categories()->sync($categories);
 
                 // TODO: refactor image processing.
                 ThumbHelper::createLogoThumbnails($company, $data->logo);
@@ -163,7 +168,6 @@ class CompanyEntityService implements CauserAware
             $company->type = $data->type;
             $company->source = $data->source;
             $company->short_code = $data->short_code;
-            $company->category = $data->category;
             if (!$data->customer_type instanceof MissingValue) {
                 $company->customer_type = $data->customer_type;
             }
@@ -174,6 +178,8 @@ class CompanyEntityService implements CauserAware
             $company->defaultVendor()->associate($data->default_vendor_id);
             $company->defaultTemplate()->associate($data->default_template_id);
             $company->defaultCountry()->associate($data->default_country_id);
+
+            $categories = CompanyCategory::query()->whereIn('name', $data->categories)->get();
 
             $addressesData = [];
 
@@ -225,6 +231,7 @@ class CompanyEntityService implements CauserAware
                 $company,
                 $addressesData,
                 $contactsData,
+                $categories,
                 $latestUpdatedAtOfContactRelations
             ) {
                 $addresses->each->save();
@@ -233,6 +240,7 @@ class CompanyEntityService implements CauserAware
                     'vendors' => $company->vendors()->sync($data->vendors),
                     'addresses' => $company->addresses()->sync($addressesData),
                     'contacts' => $company->contacts()->sync($contactsData),
+                    'categories' => $company->categories()->sync($categories),
                 ];
 
                 $relationsWereChanged = collect($relationChanges)->lazy()->flatten()->isNotEmpty();

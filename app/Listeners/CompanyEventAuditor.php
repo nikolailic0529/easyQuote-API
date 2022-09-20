@@ -21,11 +21,9 @@ class CompanyEventAuditor
 {
     protected static array $logAttributes = [
         'name',
-        'category',
         'vat',
         'type',
         'email',
-        'category',
         'website',
         'phone',
         'defaultVendor.name',

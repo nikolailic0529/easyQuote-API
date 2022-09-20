@@ -66,6 +66,9 @@ class DatabaseSeeder extends Seeder
         $this->call(VendorSeeder::class);
         $this->command->info('Seeded the default vendors');
 
+        $this->call(CompanyCategorySeeder::class);
+        $this->command->info('Seeded the company categories');
+
         $this->call(CompanySeeder::class);
         $this->command->info('Seeded the default companies');
 

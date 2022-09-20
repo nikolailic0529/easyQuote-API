@@ -18,6 +18,10 @@ class UsersSeeder extends Seeder
      */
     public function run(Faker $faker)
     {
+        if (app()->environment('production')) {
+            return;
+        }
+
         //Empty the users table
         Schema::disableForeignKeyConstraints();
 

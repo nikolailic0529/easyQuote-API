@@ -25,6 +25,7 @@ use App\Integrations\Pipeliner\Models\UpdateAccountInput;
 use App\Models\Address;
 use App\Models\Attachment;
 use App\Models\Company;
+use App\Models\CompanyCategory;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\ImportedAddress;
@@ -259,7 +260,8 @@ class CompanyDataMapper
         $categoryFieldMap = $this->getCategoryCustomFieldMap();
 
         foreach ($categoryFieldMap as $category => $field) {
-            $customFields[$field] = $category === $company->category;
+            /** @var CompanyCategoryEnum $category */
+            $customFields[$field] = $company->categories->containsStrict('name', $category->value);
         }
 
         return $customFields;
@@ -275,17 +277,19 @@ class CompanyDataMapper
         });
     }
 
-    public function resolveCategoryFromCustomFields(array $customFields): CompanyCategoryEnum
+    public function resolveCategoriesFromCustomFields(array $customFields): BaseCollection
     {
-        $categoryFieldMap = $this->getCategoryCustomFieldMap();
+        $map = $this->getCategoryCustomFieldMap();
 
-        foreach ($categoryFieldMap as $category => $field) {
+        $categories = collect();
+
+        foreach ($map as $category => $field) {
             if (Arr::get($customFields, $field)) {
-                return $category;
+                $categories->push($category);
             }
         }
 
-        return CompanyCategoryEnum::Reseller;
+        return $categories;
     }
 
     public function mapImportedCompanyFromAccountEntity(AccountEntity $entity, array $contactRelations): ImportedCompany
@@ -294,7 +298,7 @@ class CompanyDataMapper
             $account->{$account->getKeyName()} = (string)Uuid::generate(4);
             $account->pl_reference = $entity->id;
             $account->company_name = $entity->formattedName;
-            $account->company_category = $this->resolveCategoryFromCustomFields($entity->customFields);
+            $account->company_categories = $this->resolveCategoriesFromCustomFields($entity->customFields);
             $account->customer_type = CustomerTypeEnum::tryFrom($entity->customerType?->optionName ?? '');
             $account->email = $entity?->email1;
             $account->phone = $entity?->phone1;
@@ -352,7 +356,6 @@ class CompanyDataMapper
         $company->email = coalesce_blank($another->email, $company->email);
         $company->phone = coalesce_blank($another->phone, $company->phone);
         $company->website = coalesce_blank($another->website, $company->website);
-        $company->category = coalesce_blank($another->company_category, $company->category);
         $company->customer_type = $another->customer_type;
 
         $vendorNames = Str::of($another->vendors_cs)
@@ -367,11 +370,19 @@ class CompanyDataMapper
             ->values()
             ->all();
 
-        $vendors = Vendor::query()
-            ->whereIn('name', $vendorNames)
-            ->get();
+        $company->setRelation(
+            'vendors',
+            Vendor::query()
+                ->whereIn('name', $vendorNames)
+                ->get()
+        );
 
-        $company->setRelation('vendors', $vendors);
+        $company->setRelation(
+            'categories',
+            CompanyCategory::query()
+                ->whereIn('name', $another->company_categories)
+                ->get()
+        );
 
         if (null !== $another->salesUnit) {
             $company->salesUnit()->associate($another->salesUnit);

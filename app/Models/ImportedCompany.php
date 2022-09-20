@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 /**
  * @property string|null $pl_reference
  * @property string|null $company_name
- * @property string|null $company_category
  * @property string|null $customer_type
  * @property string|null $email
  * @property string|null $phone
@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * @property int|null $flags
  * @property string|null $picture_url
  * @property string|null $picture_filename
+ * @property \Illuminate\Support\Collection $company_categories
  *
  * @property-read SalesUnit|null $salesUnit
  * @property-read Collection<int, ImportedAddress>|ImportedAddress[] $addresses
@@ -47,6 +48,10 @@ class ImportedCompany extends Model
     const IS_END_USER = 1 << 1;
 
     protected $guarded = [];
+
+    protected $casts = [
+      'company_categories' => AsCollection::class,
+    ];
 
     public function getFlag(int $flag): bool
     {

@@ -8,6 +8,9 @@ use App\Models\Contact;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Company
+ */
 class CompanyWithIncludes extends JsonResource
 {
     /**
@@ -18,8 +21,6 @@ class CompanyWithIncludes extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var CompanyWithIncludes|\App\Models\Company $this */
-
         return [
             'id' => $this->getKey(),
             'user_id' => $this->owner()->getParentKey(),
@@ -35,7 +36,6 @@ class CompanyWithIncludes extends JsonResource
             'name' => $this->name,
             'short_code' => $this->short_code,
             'type' => $this->type,
-            'category' => $this->category,
             'customer_type' => $this->customer_type,
 
             'source' => $this->source,
@@ -48,6 +48,8 @@ class CompanyWithIncludes extends JsonResource
             'phone' => $this->phone,
             'website' => $this->website,
             'logo' => $this->logo,
+
+            'categories' => $this->categories->pluck('name'),
 
             'vendors' => value(function () {
                 /** @var CompanyWithIncludes|\App\Models\Company $this */

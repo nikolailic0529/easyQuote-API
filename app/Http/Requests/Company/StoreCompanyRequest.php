@@ -84,10 +84,11 @@ class StoreCompanyRequest extends FormRequest
                 'image',
                 'max:2048',
             ],
-            'category' => [
-                'nullable',
-                'string',
-                new Enum(CompanyCategoryEnum::class),
+            'categories' => [
+                'array',
+            ],
+            'categories.*' => [
+                new Enum(CompanyCategoryEnum::class)
             ],
             'customer_type' => [
                 'bail', 'nullable', 'string',
@@ -151,7 +152,7 @@ class StoreCompanyRequest extends FormRequest
                 'source' => $this->input('source'),
                 'short_code' => $this->input('short_code'),
                 'logo' => $this->file('logo'),
-                'category' => $this->input('category'),
+                'categories' => $this->collect('categories')->values()->all(),
                 'customer_type' => $this->has('customer_type')
                     ? value(static function (?string $value): ?CustomerTypeEnum {
                         return isset($value) ? CustomerTypeEnum::from($value) : null;

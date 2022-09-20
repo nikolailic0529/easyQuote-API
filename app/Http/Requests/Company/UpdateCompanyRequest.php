@@ -104,10 +104,11 @@ class UpdateCompanyRequest extends FormRequest
                 'max:2048',
             ],
             'delete_logo' => 'boolean',
-            'category' => [
-                'nullable',
-                'string',
-                new Enum(CompanyCategoryEnum::class),
+            'categories' => [
+                'array',
+            ],
+            'categories.*' => [
+                new Enum(CompanyCategoryEnum::class)
             ],
             'customer_type' => [
                 'bail', 'nullable', 'string',
@@ -176,7 +177,7 @@ class UpdateCompanyRequest extends FormRequest
                 'short_code' => $this->input('short_code'),
                 'logo' => $this->file('logo'),
                 'delete_logo' => $this->boolean('delete_logo'),
-                'category' => $this->input('category'),
+                'categories' => $this->collect('categories')->values()->all(),
                 'customer_type' => $this->has('customer_type')
                     ? value(static function (?string $value): ?CustomerTypeEnum {
                         return isset($value) ? CustomerTypeEnum::from($value) : null;

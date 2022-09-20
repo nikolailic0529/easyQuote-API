@@ -254,6 +254,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
                         $account->addresses()->sync($account->addresses);
                         $account->contacts()->sync($account->contacts);
                         $account->vendors()->sync($account->vendors);
+                        $account->categories()->sync($account->categories);
                     });
                 });
 

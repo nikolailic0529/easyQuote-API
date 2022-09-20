@@ -35,8 +35,10 @@ class FilterCompanyCategory implements RequestQueryBuilderPipe
 
         $filter = Arr::wrap($request->input('filter.category'));
 
-        $builder->where(function (Builder $builder) use ($filter) {
-            $builder->where($builder->qualifyColumn('category'), $filter);
+        $builder->where(function (Builder $builder) use ($filter): void {
+            $builder->whereHas('categories', static function ($query) use ($filter): void {
+                $query->whereIn('name', $filter);
+            });
         });
     }
 }

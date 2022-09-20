@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Builders\CompanyBuilder;
 use App\Contracts\{ActivatableInterface,
     HasImagesDirectory,
     HasOrderedScope,
@@ -14,7 +15,6 @@ use App\Contracts\{ActivatableInterface,
     ProvidesIdForHumans,
     SearchableEntity,
     WithLogo};
-use App\Builders\CompanyBuilder;
 use App\Enum\CompanyCategoryEnum;
 use App\Enum\CustomerTypeEnum;
 use App\Models\{Appointment\Appointment,
@@ -67,7 +67,6 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property string|null $vs_company_code
  * @property string|null $type
  * @property string|null $source
- * @property CompanyCategoryEnum|null $category
  * @property CustomerTypeEnum|null $customer_type
  * @property string|null $email
  * @property string|null $vat
@@ -89,6 +88,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property-read Collection<int, Attachment>|Attachment[] $attachments
  * @property-read Collection<int, Vendor>|Vendor[] $vendors
  * @property-read Collection<int, Country>|Country[] $countries
+ * @property-read Collection<int, CompanyCategory> $categories
  * @property-read User|null $user
  * @property-read SalesUnit|null $salesUnit
  */
@@ -124,12 +124,11 @@ class Company extends Model implements
     const FROZEN_SOURCE = 1 << 1;
 
     protected $fillable = [
-        'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id',
+        'name', 'short_code', 'type', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id',
         'default_country_id', 'default_template_id',
     ];
 
     protected $casts = [
-        'category' => CompanyCategoryEnum::class,
         'customer_type' => CustomerTypeEnum::class,
     ];
 
@@ -160,11 +159,22 @@ class Company extends Model implements
         return new CompanyBuilder($query);
     }
 
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            related: CompanyCategory::class,
+            table: 'category_company',
+            foreignPivotKey: 'company_id',
+            relatedPivotKey: 'category_id'
+        );
+    }
+
     public function vendors(): BelongsToMany
     {
         return tap($this->belongsToMany(Vendor::class), function (BelongsToMany $relation) {
 
-            $relation->leftJoin($this->getTable(), $relation->getQualifiedForeignPivotKeyName(), $this->getQualifiedKeyName())
+            $relation->leftJoin($this->getTable(), $relation->getQualifiedForeignPivotKeyName(),
+                $this->getQualifiedKeyName())
                 ->select("{$relation->getRelated()->getTable()}.*")
                 ->addSelect([
                     "{$this->qualifyColumn('default_vendor_id')} as company_default_vendor_id",
@@ -270,7 +280,9 @@ class Company extends Model implements
             'type' => $this->type,
             'email' => $this->email,
             'phone' => $this->phone,
-            'created_at' => transform($this->{$this->getCreatedAtColumn()}, static fn(\DateTimeInterface|string $dateTime) => Carbon::parse($dateTime)),
+            'categories' => $this->categories->pluck('name')->all(),
+            'created_at' => transform($this->{$this->getCreatedAtColumn()},
+                static fn(\DateTimeInterface|string $dateTime) => Carbon::parse($dateTime)),
         ];
     }
 

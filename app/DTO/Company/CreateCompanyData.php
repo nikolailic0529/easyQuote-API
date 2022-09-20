@@ -30,6 +30,8 @@ final class CreateCompanyData extends DataTransferObject
 
     public ?string $category;
 
+    public array $categories;
+
     /** @var \App\Enum\CustomerTypeEnum|\App\DTO\MissingValue|null */
     public CustomerTypeEnum|MissingValue|null $customer_type;
 

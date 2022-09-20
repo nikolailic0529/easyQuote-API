@@ -11,6 +11,7 @@ use App\Enum\VAT;
 use App\Foundation\TemporaryDirectory;
 use App\Models\Address;
 use App\Models\Company;
+use App\Models\CompanyCategory;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\ImportedAddress;
@@ -94,7 +95,6 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         $company ??= tap(new Company(), function (Company $company) use ($importedCompany) {
             $company->name = $importedCompany->company_name;
             $company->type = CompanyType::EXTERNAL;
-            $company->category = $importedCompany->company_category;
             $company->customer_type = $importedCompany->customer_type;
             $company->source = CompanySource::PL;
             $company->flags |= Company::FROZEN_SOURCE;
@@ -150,10 +150,15 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             ->whereIn('name', $vendorNames)
             ->get();
 
-        $this->connection->transaction(static function () use ($vendors, $company): void {
-            $company->withoutTimestamps(static function (Company $company) use ($vendors): void {
+        $categories = CompanyCategory::query()
+            ->whereIn('name', $importedCompany->company_categories)
+            ->get();
+
+        $this->connection->transaction(static function () use ($categories, $vendors, $company): void {
+            $company->withoutTimestamps(static function (Company $company) use ($categories, $vendors): void {
                 $company->save();
                 $company->vendors()->syncWithoutDetaching($vendors);
+                $company->categories()->syncWithoutDetaching($categories);
             });
         });
 

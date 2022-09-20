@@ -9,6 +9,7 @@ use App\Models\Address;
 use App\Models\Asset;
 use App\Models\Attachment;
 use App\Models\Company;
+use App\Models\CompanyCategory;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
 use App\Models\Note\Note;
@@ -59,7 +60,7 @@ class CompanyTest extends TestCase
                         'name',
                         'short_code',
                         'type',
-                        'category',
+                        'categories',
                         'source',
                         'source_long',
                         'vat',
@@ -326,11 +327,54 @@ class CompanyTest extends TestCase
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
         $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
         $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], Contact::factory()->count(2)->create()->modelKeys());
+        $attributes['categories'] = CompanyCategory::query()->take(2)->pluck('name')->all();
 
-        $this->postJson('api/companies', $attributes)
+        $r = $this->postJson('api/companies', $attributes)
 //            ->dump()
             ->assertCreated()
-            ->assertJsonStructure(array_keys($attributes));
+            ->assertJsonStructure([
+                'id',
+                'sales_unit_id',
+                'name',
+                'short_code',
+                'vat',
+                'vat_type',
+                'type',
+                'email',
+                'phone',
+                'website',
+                'vendors',
+                'addresses',
+                'contacts',
+                'categories',
+            ]);
+
+        $r = $this->getJson("api/companies/{$r->json('id')}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'sales_unit_id',
+                'name',
+                'short_code',
+                'vat',
+                'vat_type',
+                'type',
+                'email',
+                'phone',
+                'website',
+                'vendors',
+                'addresses',
+                'contacts',
+                'categories',
+            ])
+            ->assertJsonCount(count($attributes['vendors']), 'vendors')
+            ->assertJsonCount(count($attributes['addresses']), 'addresses')
+            ->assertJsonCount(count($attributes['contacts']), 'contacts')
+            ->assertJsonCount(count($attributes['categories']), 'categories');
+
+        foreach ($attributes['categories'] as $category) {
+            $this->assertContains($category, $r->json('categories'));
+        }
     }
 
     /**
@@ -434,6 +478,8 @@ class CompanyTest extends TestCase
             ['id' => $contact2->getKey(), 'is_default' => "0"],
         ];
 
+        $newAttributes['categories'] = CompanyCategory::query()->take(2)->pluck('name')->all();
+
         $newAttributes['logo'] = UploadedFile::fake()->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
 
         $this->postJson("api/companies/".$company->getKey(), $newAttributes)
@@ -461,6 +507,7 @@ class CompanyTest extends TestCase
                         'is_default',
                     ],
                 ],
+                'categories',
             ]);
 
         $response = $this->getJson('api/companies/'.$company->getKey())
@@ -481,20 +528,28 @@ class CompanyTest extends TestCase
                         'is_default',
                     ],
                 ],
-            ]);
+                'categories',
+            ])
+            ->assertJsonCount(count($newAttributes['categories']), 'categories')
+            ->assertJsonCount(count($newAttributes['addresses']), 'addresses')
+            ->assertJsonCount(count($newAttributes['contacts']), 'contacts');
 
         $machineAddressFromResponse = Arr::first($response->json('addresses'), fn(array $address) => $address['id'] === $machineAddress->getKey());
         $contact1FromResponse = Arr::first($response->json('contacts'), fn(array $contact) => $contact['id'] === $contact1->getKey());
 
-
         $this->assertTrue($machineAddressFromResponse['is_default']);
         $this->assertTrue($contact1FromResponse['is_default']);
+
+        foreach ($newAttributes['categories'] as $category) {
+            $this->assertContains($category, $response->json('categories'));
+        }
 
         $assertableAttributes = Arr::except($newAttributes, [
             '_method',
             'vendors',
             'addresses',
             'contacts',
+            'categories',
             'logo'
         ]);
 

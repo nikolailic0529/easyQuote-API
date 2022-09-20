@@ -6,6 +6,7 @@ use App\Contracts\CauserAware;
 use App\DTO\Opportunity\ImportedOpportunityData;
 use App\Enum\AccountCategory;
 use App\Enum\AddressType;
+use App\Enum\CompanyCategoryEnum;
 use App\Enum\ContactType;
 use App\Integrations\Pipeliner\Enum\InputValueEnum;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
@@ -153,7 +154,7 @@ class OpportunityDataMapper implements CauserAware
             $accountName
         ): void {
             $account->company_name = $accountName;
-            $account->company_category = self::resolveCategoryOfCompany($accountData);
+            $account->company_categories = self::resolveCategoriesOfCompany($accountData);
             $account->email = self::coalesceMap($accountData, PipelinerOppMap::PRIMARY_EMAIL);
             $account->phone = self::coalesceMap($accountData, PipelinerOppMap::PRIMARY_PHONE);
             $account->website = self::coalesceMap($accountData, PipelinerOppMap::HOME_PAGE);
@@ -366,7 +367,7 @@ class OpportunityDataMapper implements CauserAware
         });
     }
 
-    public static function resolveCategoryOfCompany(?array $accountData): string
+    public static function resolveCategoriesOfCompany(?array $accountData): BaseCollection
     {
         static $categoryDictionary = [
             'distributor' => AccountCategory::RESELLER,
@@ -376,21 +377,21 @@ class OpportunityDataMapper implements CauserAware
         ];
 
         if (is_null($accountData)) {
-            return AccountCategory::RESELLER;
+            return collect(AccountCategory::RESELLER);
         }
 
         $categoryDictionaryOfAccountData = Arr::only($accountData, ['distributor', 'business_partner', 'reseller',
             'end_user']);
 
+        $categories = collect();
+
         foreach ($categoryDictionaryOfAccountData as $key => $value) {
-
             if (self::getFlag($value)) {
-                return $categoryDictionary[$key];
+                $categories->push($categoryDictionary[$key]);
             }
-
         }
 
-        return AccountCategory::RESELLER;
+        return $categories;
     }
 
     public static function getFlag(?string $value): bool
@@ -516,9 +517,20 @@ class OpportunityDataMapper implements CauserAware
                         return $entity->primaryAccount->id === $company->pl_reference;
                     });
 
+                /** @var Company|null $primaryAccount */
+                $primaryAccount = false !== $primaryAccountKey ? $accounts->pull($primaryAccountKey) : null;
+                /** @var Company|null $endUser */
+                $endUser = $accounts->shift();
+
+                // When there aren't secondary accounts and the primary account belongs to `End User` category,
+                // we assume the primary account as end user
+                if (null === $endUser && $primaryAccount !== null && $primaryAccount->categories->containsStrict('name', CompanyCategoryEnum::EndUser->value)) {
+                    $endUser = $primaryAccount;
+                }
+
                 return [
-                    false !== $primaryAccountKey ? $accounts->pull($primaryAccountKey) : null,
-                    $accounts->shift(),
+                    $primaryAccount,
+                    $endUser,
                 ];
             });
 

@@ -5,6 +5,9 @@ namespace App\Http\Resources\V1\Company;
 use App\Models\Company;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Company
+ */
 class CompanyList extends JsonResource
 {
     /**
@@ -28,7 +31,8 @@ class CompanyList extends JsonResource
             'name' => $this->name,
             'short_code' => $this->short_code,
             'type' => $this->type,
-            'category' => $this->category,
+
+            'categories' => $this->whenLoaded('categories', fn () => $this->categories->pluck('name')),
 
             'source' => $this->source,
             'source_long' => __($this->source),

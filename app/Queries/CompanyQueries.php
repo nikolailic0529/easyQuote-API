@@ -59,6 +59,7 @@ class CompanyQueries
 
         $query = $model->newQuery()
             ->with('image')
+            ->with('categories')
             ->select([
                 'id',
                 'user_id',
@@ -96,7 +97,6 @@ class CompanyQueries
                 'phone',
                 'website',
                 'email',
-                'category',
             ])
             ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
             ->process();
@@ -131,7 +131,6 @@ class CompanyQueries
                 'phone',
                 'website',
                 'email',
-                'category',
             ])
             ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
             ->process();

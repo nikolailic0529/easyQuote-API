@@ -1,0 +1,10 @@
+---
+- id: edbbf2ee-23f3-4683-b4b1-4f8fd5397bd5
+  name: End User
+- id: 929dfc8b-225f-4d22-9cb9-89ac753b0b93
+  name: Reseller
+- id: baf6f769-caeb-46ce-9e63-72dad7f88167
+  name: Business Partner
+- id: 65f00a5e-a432-47ca-927a-6a9096b42780
+  name: Distributor
+...

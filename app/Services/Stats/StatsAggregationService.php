@@ -285,7 +285,7 @@ class StatsAggregationService
     {
         $count = Company::query()
             ->where('type', 'External')
-            ->where('category', AccountCategory::END_USER)
+            ->whereRelation('categories', 'name', AccountCategory::END_USER)
             ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
                 $builder->where('default_country_id', $summaryRequestData->country_id);
             })

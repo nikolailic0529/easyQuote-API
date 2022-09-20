@@ -2,6 +2,7 @@
 
 namespace App\Services\Stats;
 
+use App\Enum\CompanyCategoryEnum;
 use App\Contracts\{Services\ManagesExchangeRates, Services\Stats};
 use App\DTO\AssetAggregate;
 use App\Enum\QuoteStatus;
@@ -151,7 +152,8 @@ class StatsCalculationService implements Stats
     {
         $company = Company::query()
             ->where('name', $quote->customer->name)
-            ->where(['type' => 'External', 'category' => 'End User'])
+            ->where(['type' => 'External'])
+            ->whereRelation('categories', 'name', '=', CompanyCategoryEnum::EndUser)
             ->first();
 
         if (!$company instanceof Company) {
