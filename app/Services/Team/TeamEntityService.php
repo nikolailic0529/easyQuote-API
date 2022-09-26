@@ -2,43 +2,37 @@
 
 namespace App\Services\Team;
 
+use App\Models\SalesUnit;
+use App\Models\User;
 use App\DTO\{Team\CreateTeamData, Team\UpdateTeamData};
 use App\Events\{Team\TeamCreated, Team\TeamDeleted, Team\TeamUpdated};
 use App\Models\Team;
-use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Events\Dispatcher as EventDispatcher;
 
 class TeamEntityService
 {
-    protected ConnectionInterface $connection;
-
-    protected EventDispatcher $eventDispatcher;
-
-    /**
-     * TeamEntityService constructor.
-     * @param ConnectionInterface $connection
-     * @param EventDispatcher $eventDispatcher
-     */
-    public function __construct(ConnectionInterface $connection, EventDispatcher $eventDispatcher)
-    {
-        $this->connection = $connection;
-        $this->eventDispatcher = $eventDispatcher;
+    public function __construct(
+        protected readonly ConnectionResolverInterface $connectionResolver,
+        protected readonly EventDispatcher $eventDispatcher
+    ) {
     }
 
     public function createTeam(CreateTeamData $data): Team
     {
-        return tap(new Team(), function (Team $team) use ($data) {
-            $team->team_name = $data->team_name;
-            $team->businessDivision()->associate($data->business_division_id);
-            $team->monthly_goal_amount = $data->monthly_goal_amount;
+        return tap(new Team(), function (Team $team) use ($data): void {
+            $team->forceFill($data->except('sales_units', 'team_leaders')->all());
 
-            $this->connection->transaction(function () use ($data, $team) {
-                $team->save();
+            $teamLeaders = User::query()->findMany($data->team_leaders->toCollection()->pluck('id'));
+            $salesUnits = SalesUnit::query()->findMany($data->sales_units->toCollection()->pluck('id'));
 
-                if (!empty($data->team_leader_user_ids)) {
-                    $team->teamLeaders()->sync($data->team_leader_user_ids);
-                }
-            });
+            $this->connectionResolver->connection()
+                ->transaction(static function () use ($teamLeaders, $salesUnits, $team): void {
+                    $team->save();
+
+                    $team->teamLeaders()->attach($teamLeaders);
+                    $team->salesUnits()->attach($salesUnits);
+                });
 
             $this->eventDispatcher->dispatch(
                 new TeamCreated($team)
@@ -49,15 +43,18 @@ class TeamEntityService
     public function updateTeam(UpdateTeamData $data, Team $team): Team
     {
         return tap($team, function (Team $team) use ($data) {
-            $team->team_name = $data->team_name;
-            $team->businessDivision()->associate($data->business_division_id);
-            $team->monthly_goal_amount = $data->monthly_goal_amount;
+            $team->forceFill($data->except('sales_units', 'team_leaders')->all());
 
-            $this->connection->transaction(function () use ($data, $team) {
-                $team->save();
+            $teamLeaders = User::query()->findMany($data->team_leaders->toCollection()->pluck('id'));
+            $salesUnits = SalesUnit::query()->findMany($data->sales_units->toCollection()->pluck('id'));
 
-                $team->teamLeaders()->sync($data->team_leader_user_ids);
-            });
+            $this->connectionResolver->connection()
+                ->transaction(static function () use ($teamLeaders, $salesUnits, $team): void {
+                    $team->save();
+
+                    $team->teamLeaders()->sync($teamLeaders);
+                    $team->salesUnits()->sync($salesUnits);
+                });
 
             $this->eventDispatcher->dispatch(
                 new TeamUpdated($team)
@@ -67,7 +64,8 @@ class TeamEntityService
 
     public function deleteTeam(Team $team): void
     {
-        $this->connection->transaction(fn() => $team->delete());
+        $this->connectionResolver->connection()
+            ->transaction(static fn() => $team->delete());
 
         $this->eventDispatcher->dispatch(
             new TeamDeleted($team)

@@ -305,6 +305,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('external-companies', [CompanyController::class, 'paginateExternalCompanies']);
 
         Route::get('companies', [CompanyController::class, 'paginateCompanies']);
+        Route::get('companies/filters', [CompanyController::class, 'showCompanyFilters']);
         Route::get('companies/create', [CompanyController::class, 'showCompanyFormData']);
         Route::get('companies/{company}', [CompanyController::class, 'showCompany']);
         Route::get('companies/{company}/opportunities', [CompanyController::class, 'showOpportunitiesOfCompany']);
@@ -518,6 +519,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('pipeliner/sync-model', [PipelinerController::class, 'syncModel']);
 
     Route::get('opportunities', [OpportunityController::class, 'paginateOpportunities']);
+    Route::get('opportunities/filters', [OpportunityController::class, 'showOpportunityFilters']);
     Route::get('opportunities/lost', [OpportunityController::class, 'paginateLostOpportunities']);
     Route::post('opportunities/upload', [OpportunityController::class, 'batchUploadOpportunities']);
     Route::patch('opportunities/save', [OpportunityController::class, 'batchSaveOpportunities']);

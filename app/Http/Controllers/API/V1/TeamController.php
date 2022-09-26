@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\DTO\Team\CreateTeamData;
+use App\DTO\Team\UpdateTeamData;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{Team\CreateTeam, Team\UpdateTeam};
 use App\Http\Resources\V1\Team\TeamList;
 use App\Http\Resources\V1\Team\TeamWithIncludes;
 use App\Models\Team;
@@ -58,15 +59,15 @@ class TeamController extends Controller
     /**
      * Store a newly created Team entity.
      *
-     * @param CreateTeam $request
+     * @param  CreateTeamData  $data
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function storeTeam(CreateTeam $request): JsonResponse
+    public function storeTeam(CreateTeamData $data): JsonResponse
     {
         $this->authorize('create', Team::class);
 
-        $resource = $this->entityService->createTeam($request->getCreateTeamData());
+        $resource = $this->entityService->createTeam($data);
 
         return response()->json(
             $resource,
@@ -77,16 +78,16 @@ class TeamController extends Controller
     /**
      * Update the existing Team entity.
      *
-     * @param UpdateTeam $request
-     * @param Team $team
+     * @param  UpdateTeamData  $data
+     * @param  Team  $team
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function updateTeam(UpdateTeam $request, Team $team): JsonResponse
+    public function updateTeam(UpdateTeamData $data, Team $team): JsonResponse
     {
         $this->authorize('update', $team);
 
-        $resource = $this->entityService->updateTeam($request->getUpdateTeamData(), $team);
+        $resource = $this->entityService->updateTeam($data, $team);
 
         return response()->json(
             $resource,

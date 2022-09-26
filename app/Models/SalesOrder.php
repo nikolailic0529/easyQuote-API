@@ -44,6 +44,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property int|null $status
  * @property string|null $status_reason
  * @property string|null $failure_reason
+ * @property-read SalesOrder $salesUnit
  */
 class SalesOrder extends Model implements SearchableEntity, HasSalesUnit
 {

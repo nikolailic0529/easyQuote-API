@@ -4,100 +4,152 @@ namespace App\Queries;
 
 use App\Enum\OpportunityStatus;
 use App\Models\Company;
+use App\Models\ContractType;
 use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
-use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesUnit;
 use App\Models\User;
+use App\Queries\Enums\OperatorEnum;
+use App\Queries\Enums\PipeBooleanEnum;
+use App\Queries\Pipeline\FilterFieldPipe;
+use App\Queries\Pipeline\LikeValueProcessor;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
+use App\Queries\Pipeline\PipeGroup;
+use App\Queries\Scopes\CurrentUserScope;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
-use Illuminate\Auth\Access\Response;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 
 class OpportunityQueries
 {
-    public function __construct(protected Elasticsearch $elasticsearch,
-                                protected Gate          $gate)
-    {
+    public function __construct(
+        protected Elasticsearch $elasticsearch,
+        protected Gate $gate
+    ) {
     }
 
-    public function paginateLostOpportunitiesQuery(Request $request): Builder
+    public function listLostOpportunitiesQuery(Request $request): Builder
     {
-        return $this->paginateQuotedOpportunitiesQuery($request)
+        return $this->listQuotedOpportunitiesQuery($request)
             ->where('opportunities.status', OpportunityStatus::LOST);
     }
 
-    public function paginateOkOpportunitiesQuery(Request $request): Builder
+    public function listOkOpportunitiesQuery(Request $request): Builder
     {
-        return $this->paginateQuotedOpportunitiesQuery($request)
+        return $this->listQuotedOpportunitiesQuery($request)
             ->where('opportunities.status', OpportunityStatus::NOT_LOST);
     }
 
-    public function listOfCompanyOpportunitiesQuery(Company $company, Request $request): Builder
+    public function listOpportunitiesOfCompanyQuery(Company $company, Request $request): Builder
     {
-        return tap($this->paginateOpportunitiesQuery($request), function (Builder $builder) use ($company) {
+        return tap($this->baseOpportunitiesQuery($request), function (Builder $builder) use ($company) {
             $builder
+                ->with(['salesUnit:id,unit_name'])
                 ->withExists('worldwideQuotes')
                 ->where($builder->qualifyColumn('primary_account_id'), $company->getKey());
         });
     }
 
-    public function paginateOpportunitiesQuery(Request $request): Builder
+    public function baseOpportunitiesQuery(Request $request): Builder
     {
-        $request ??= new Request();
-
-        $model = new Opportunity();
+        $opportunityModel = new Opportunity();
         $pipelineStageModel = new PipelineStage();
-        $quoteModel = new WorldwideQuote();
+        $contractTypeModel = new ContractType();
+        $userModel = new User();
+        $companyModel = new Company();
+        $unitModel = new SalesUnit();
 
-        $query = $model->newQuery()
+        $query = $opportunityModel->newQuery()
             ->select([
-                'opportunities.id',
-                'opportunities.sales_unit_id',
-                'opportunities.user_id',
-                'opportunities.account_manager_id',
-                'companies.id as company_id',
-                'companies.name as account_name',
-                'contract_types.type_short_name as opportunity_type',
-                'opportunities.project_name',
-                'users.user_fullname as account_manager_name',
-                'opportunities.opportunity_closing_date',
-                'opportunities.base_opportunity_amount as opportunity_amount',
-                'opportunities.opportunity_start_date',
-                'opportunities.opportunity_end_date',
+                $opportunityModel->getQualifiedKeyName(),
+                $opportunityModel->salesUnit()->getQualifiedForeignKeyName(),
+                $opportunityModel->owner()->getQualifiedForeignKeyName(),
+                $opportunityModel->accountManager()->getQualifiedForeignKeyName(),
+                "{$opportunityModel->qualifyColumn('base_opportunity_amount')} as opportunity_amount",
+                $opportunityModel->getQualifiedCreatedAtColumn(),
+                ...$opportunityModel->qualifyColumns([
+                    'project_name',
+                    'opportunity_closing_date',
+                    'opportunity_start_date',
+                    'opportunity_end_date',
+                    'status',
+                    'status_reason',
+                ]),
+
                 "{$pipelineStageModel->qualifyColumn('stage_name')} as sale_action_name",
-                'opportunities.status',
-                'opportunities.status_reason',
-                'opportunities.created_at',
+                "{$userModel->qualifyColumn('user_fullname')} as account_manager_name",
+                "{$contractTypeModel->qualifyColumn('type_short_name')} as opportunity_type",
+                'primary_account.id as company_id',
+                'primary_account.name as account_name',
+                "{$unitModel->qualifyColumn('unit_name')} as unit_name"
             ])
-            ->leftJoin('contract_types', function (JoinClause $join) {
-                $join->on('contract_types.id', 'opportunities.contract_type_id');
-            })
-            ->leftJoin($pipelineStageModel->getTable(),
-                $pipelineStageModel->getQualifiedKeyName(),
-                $model->pipelineStage()->getQualifiedForeignKeyName())
-            ->leftJoin('users', function (JoinClause $join) {
-                $join->on('users.id', 'opportunities.account_manager_id');
-            })
-            ->leftJoin('companies', function (JoinClause $join) {
-                $join->on('companies.id', 'opportunities.primary_account_id');
-            })
-            ->with(['salesUnit:id,unit_name'])
-            ->tap($this->scopeCurrentUser($request));
+            ->leftJoin(
+                table: $unitModel->getTable(),
+                first: $unitModel->getQualifiedKeyName(),
+                operator: $opportunityModel->salesUnit()->getQualifiedForeignKeyName(),
+            )
+            ->leftJoin(
+                table: $contractTypeModel->getTable(),
+                first: $contractTypeModel->getQualifiedKeyName(),
+                operator: $opportunityModel->contractType()->getQualifiedForeignKeyName(),
+            )
+            ->leftJoin(
+                table: $pipelineStageModel->getTable(),
+                first: $pipelineStageModel->getQualifiedKeyName(),
+                operator: $opportunityModel->pipelineStage()->getQualifiedForeignKeyName()
+            )
+            ->leftJoin(
+                table: $userModel->getTable(),
+                first: $userModel->getQualifiedKeyName(),
+                operator: $opportunityModel->accountManager()->getQualifiedForeignKeyName(),
+            )
+            ->leftJoin(
+                table: "{$companyModel->getTable()} as primary_account",
+                first: "primary_account.{$companyModel->getKeyName()}",
+                operator: $opportunityModel->primaryAccount()->getQualifiedForeignKeyName(),
+            )
+            ->leftJoin(
+                table: "{$companyModel->getTable()} as end_user",
+                first: "end_user.{$companyModel->getKeyName()}",
+                operator: $opportunityModel->endUser()->getQualifiedForeignKeyName(),
+            )
+            ->tap(CurrentUserScope::from($request, $this->gate));
 
         return RequestQueryBuilder::for(
             builder: $query,
             request: $request,
         )
             ->addCustomBuildQueryPipe(
-                new PerformElasticsearchSearch($this->elasticsearch)
+                new FilterFieldPipe(
+                    field: 'sales_unit_id',
+                    column: $opportunityModel->salesUnit()->getQualifiedForeignKeyName(),
+                ),
+                new FilterFieldPipe(
+                    field: 'account_manager_id',
+                    column: $opportunityModel->accountManager()->getQualifiedForeignKeyName(),
+                ),
+                PipeGroup::of(
+                    new FilterFieldPipe(
+                        field: 'customer_name',
+                        column: 'primary_account.name',
+                        operator: OperatorEnum::Like,
+                        valueProcessor: LikeValueProcessor::new()
+                    ),
+                    new FilterFieldPipe(
+                        field: 'customer_name',
+                        column: 'end_user.name',
+                        operator: OperatorEnum::Like,
+                        valueProcessor: LikeValueProcessor::new(),
+                    )
+                )
+                    ->boolean(PipeBooleanEnum::Or),
+                new PerformElasticsearchSearch($this->elasticsearch),
             )
-            ->allowOrderFields(...[
+            ->allowOrderFields(
                 'account_name',
                 'project_name',
                 'opportunity_type',
@@ -111,32 +163,35 @@ class OpportunityQueries
                 'status_reason',
                 'created_at',
                 'updated_at',
-            ])
-            ->qualifyOrderFields(
-                account_name: 'companies.name',
-                project_name: $model->qualifyColumn('project_name'),
-                opportunity_type: 'contract_types.type_short_name',
-                opportunity_amount: $model->qualifyColumn('opportunities.base_opportunity_amount'),
-                opportunity_start_date: $model->qualifyColumn('opportunity_start_date'),
-                opportunity_end_date: $model->qualifyColumn('opportunity_end_date'),
-                opportunity_closing_date: $model->qualifyColumn('opportunity_closing_date'),
-                sale_action_name: $model->qualifyColumn('sale_action_name'),
-                account_manager_name: 'users.user_fullname',
-                status: $model->qualifyColumn('status'),
-                status_reason: $model->qualifyColumn('status_reason'),
-                created_at: $model->getQualifiedCreatedAtColumn(),
-                updated_at: $model->getQualifiedUpdatedAtColumn(),
+                'unit_name',
             )
-            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->qualifyOrderFields(
+                account_name: 'primary_account.name',
+                project_name: $opportunityModel->qualifyColumn('project_name'),
+                opportunity_type: 'contract_types.type_short_name',
+                opportunity_amount: $opportunityModel->qualifyColumn('opportunities.base_opportunity_amount'),
+                opportunity_start_date: $opportunityModel->qualifyColumn('opportunity_start_date'),
+                opportunity_end_date: $opportunityModel->qualifyColumn('opportunity_end_date'),
+                opportunity_closing_date: $opportunityModel->qualifyColumn('opportunity_closing_date'),
+                sale_action_name: $opportunityModel->qualifyColumn('sale_action_name'),
+                account_manager_name: 'users.user_fullname',
+                status: $opportunityModel->qualifyColumn('status'),
+                status_reason: $opportunityModel->qualifyColumn('status_reason'),
+                created_at: $opportunityModel->getQualifiedCreatedAtColumn(),
+                updated_at: $opportunityModel->getQualifiedUpdatedAtColumn(),
+                unit_name: $unitModel->qualifyColumn('unit_name'),
+            )
+            ->enforceOrderBy($opportunityModel->getQualifiedCreatedAtColumn(), 'desc')
             ->process();
     }
 
-    public function paginateQuotedOpportunitiesQuery(Request $request): Builder
+    public function listQuotedOpportunitiesQuery(Request $request): Builder
     {
-        return $this->paginateOpportunitiesQuery($request)
+        return $this->baseOpportunitiesQuery($request)
             ->addSelect([
                 new Expression('0 as quotes_exist'),
             ])
+            ->with(['salesUnit:id,unit_name'])
             ->doesntHave('worldwideQuotes');
     }
 
@@ -144,7 +199,7 @@ class OpportunityQueries
     {
         $opportunityModel = new Opportunity();
 
-        $query = $this->opportunitiesOfPipelineStageQuery($pipelineStage, $request)
+        return $this->opportunitiesOfPipelineStageQuery($pipelineStage, $request)
             ->select([
                 $opportunityModel->getQualifiedKeyName(),
                 $opportunityModel->salesUnit()->getQualifiedForeignKeyName(),
@@ -185,7 +240,7 @@ class OpportunityQueries
 
                 new Expression("false as quotes_exist"),
             ])
-            ->with([
+            ->withOnly([
                 'accountManager:id,email,user_fullname',
                 'primaryAccount:id,name,phone,email',
                 'primaryAccount.image',
@@ -195,90 +250,22 @@ class OpportunityQueries
                 'salesUnit:id,unit_name',
                 'validationResult:id,opportunity_id,messages,is_passed',
             ])
-            ->leftJoin('users', function (JoinClause $join) {
-                $join->on('users.id', 'opportunities.account_manager_id');
-            })
-            ->leftJoin('companies as primary_account', function (JoinClause $join) {
-                $join->on('primary_account.id', 'opportunities.primary_account_id');
-            })
-            ->leftJoin('companies as end_user', function (JoinClause $join) {
-                $join->on('end_user.id', 'opportunities.end_user_id');
-            })
             ->leftJoin('contacts as primary_account_contact', function (JoinClause $join) {
                 $join->on('primary_account_contact.id', 'opportunities.primary_account_contact_id');
             })
             ->orderByRaw("isnull({$opportunityModel->qualifyColumn('order_in_pipeline_stage')}) asc")
             ->orderBy($opportunityModel->qualifyColumn('order_in_pipeline_stage'))
             ->orderByDesc($opportunityModel->getQualifiedCreatedAtColumn());
-
-        return RequestQueryBuilder::for($query, $request)
-            ->addCustomBuildQueryPipe(
-                new PerformElasticsearchSearch($this->elasticsearch)
-            )
-            ->process();
     }
 
     public function opportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage, Request $request): Builder
     {
         $opportunityModel = new Opportunity();
 
-        return $opportunityModel->newQuery()
-            ->tap($this->scopeCurrentUser($request))
+        return $this->baseOpportunitiesQuery($request)
+            ->with(['salesUnit:id,unit_name'])
             ->whereBelongsTo($pipelineStage)
             ->doesntHave('worldwideQuotes')
             ->where($opportunityModel->qualifyColumn('status'), OpportunityStatus::NOT_LOST);
-    }
-
-    protected function scopeCurrentUser(Request $request): callable
-    {
-        return function (Builder $builder) use ($request): void {
-            /** @var User|null $user */
-            $user = $request->user();
-
-            if (null === $user) {
-                Response::deny('The query cannot be performed without user authentication.')->authorize();
-            }
-
-            $builder->unless($this->gate->allows('viewAnyOwnerEntities', Opportunity::class),
-                function (Builder $builder) use ($user): void {
-
-                    /** @var \Staudenmeir\LaravelCte\Query\Builder $builder */
-
-                    $builder->withExpression('led_team_users',
-                        $user->ledTeamUsers()->getQuery()
-                            ->select($user->ledTeamUsers()->getModel()->getQualifiedKeyName())
-                            ->toBase()
-                    );
-
-                    $builder->withExpression('user_has_sales_units',
-                        $user->salesUnits()->getQuery()
-                            ->select($user->salesUnits()->getModel()->getQualifiedKeyName())
-                            ->toBase()
-                    );
-
-                    $builder->where(static function (Builder $builder) use ($user): void {
-                        $builder
-                            ->where($builder->qualifyColumn('user_id'), $user->getKey())
-                            ->orWhere($builder->qualifyColumn('account_manager_id'), $user->getKey())
-                            ->orWhereIn($builder->qualifyColumn('user_id'),
-                                static function (BaseBuilder $builder) use ($user): void {
-                                    $builder->select($user->ledTeamUsers()->getModel()->getKeyName())
-                                        ->from('led_team_users');
-                                })
-                            ->orWhereIn($builder->qualifyColumn('account_manager_id'),
-                                static function (BaseBuilder $builder) use ($user): void {
-                                    $builder->select($user->ledTeamUsers()->getModel()->getKeyName())
-                                        ->from('led_team_users');
-                                });
-                    })
-                        ->where(static function (Builder $builder) use ($user): void {
-                            $builder->whereIn($builder->qualifyColumn('sales_unit_id'),
-                                static function (BaseBuilder $builder) use ($user): void {
-                                    $builder->select($user->salesUnits()->getModel()->getKeyName())
-                                        ->from('user_has_sales_units');
-                                });
-                        });
-                });
-        };
     }
 }

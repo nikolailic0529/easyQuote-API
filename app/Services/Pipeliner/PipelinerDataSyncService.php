@@ -28,7 +28,8 @@ use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use App\Services\Pipeliner\Strategies\StrategyNameResolver;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use Carbon\Carbon;
-use Illuminate\Bus\UniqueLock;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
@@ -66,7 +67,8 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         protected EventDispatcher $eventDispatcher,
         protected Cache $cache,
         protected Config $config,
-        protected LoggerInterface $logger = new NullLogger()
+        protected Guard $guard,
+        protected LoggerInterface $logger = new NullLogger(),
     ) {
         $this->correlationId = (string) Str::orderedUuid();
         $this->strategyFilter = static fn() => true;
@@ -83,8 +85,9 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
     public function sync(): void
     {
-        $this->dataSyncStatus->clear();
-        $this->dataSyncStatus->enable();
+        if ($this->causer instanceof Authenticatable) {
+            $this->guard->setUser($this->causer);
+        }
 
         $this->prepareStrategies();
 
@@ -169,8 +172,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 $this->syncUsing($this->syncStrategies[$class], $events);
             }
         }
-
-        $this->dataSyncStatus->clear();
 
         $this->eventDispatcher->dispatch(new QueuedPipelinerSyncProcessed($this->causer, $totalCount, $pendingCount));
     }
@@ -362,6 +363,14 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         $latestCursor = null;
 
         foreach ($strategy->iteratePending() as $cursor => $entity) {
+            if ($this->dataSyncStatus->running() === false) {
+                $this->logger->warning("Sync disabled. Exiting the method...", [
+                    'method' => __FUNCTION__,
+                ]);
+
+                return;
+            }
+
             $latestCursor ??= $cursor;
 
             $this->logger->info(sprintf('Fetching new %s.', class_basename($entity::class)), [
@@ -475,6 +484,14 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         $updateErrorOccurred = false;
 
         foreach ($strategy->iteratePending() as $model) {
+            if ($this->dataSyncStatus->running() === false) {
+                $this->logger->warning("Sync disabled. Exiting the method...", [
+                    'method' => __FUNCTION__,
+                ]);
+
+                return;
+            }
+
             /** @var Model $model */
 
             $this->logger->info(sprintf('Pushing the %s.', class_basename($model)), [
@@ -540,11 +557,10 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         };
 
         return LazyCollection::make(function () use ($entity): \Generator {
-            return yield from $this->syncStrategies;
+            yield from $this->syncStrategies;
         })
-            ->whereInstanceOf($methodInterface)
-            ->filter(static function (SyncStrategy $strategy) use ($entity): bool {
-                return $strategy->isApplicableTo($entity);
+            ->filter(static function (SyncStrategy $strategy) use ($entity, $methodInterface): bool {
+                return $strategy instanceof $methodInterface && $strategy->isApplicableTo($entity);
             })
             ->pipe(function (LazyCollection $collection) {
                 return new SyncStrategyCollection(...$collection->all());
@@ -584,17 +600,21 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             throw new PipelinerSyncException("Sync could not be started: none of the enabled units are associated with your user.");
         }
 
-        $job = new QueuedPipelinerDataSync($this->causer, $strategies);
+        $this->dataSyncStatus->setOwner($owner = Str::random());
 
-        if (!(new UniqueLock($this->cache))->acquire($job)) {
-            $this->logger->info("Sync pipeliner data job is processing yet.");
+        $job = new QueuedPipelinerDataSync(
+            $this->causer,
+            $strategies,
+            $owner,
+        );
+
+        if ($this->dataSyncStatus->acquire() === false) {
+            $this->logger->info("Pipeliner sync status: locked.");
 
             return new QueueSyncResult(queued: false);
         }
 
-        $this->logger->info("Sync pipeliner data job has been dispatched.");
-
-        $this->dataSyncStatus->enable();
+        $this->logger->info("Pipeliner sync status: acquired.");
 
         $this->busDispatcher->dispatch($job);
 
@@ -688,6 +708,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 ]
                 : [
                     'plReference' => $entity->id,
+                    'strategies' => collect($hhStrategies)->keys()->map(class_basename(...))->all(),
                 ];
 
             $this->logger->debug(

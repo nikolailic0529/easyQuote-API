@@ -267,6 +267,8 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
             $account = ($this->accountProjector)($newAccount);
 
+            $account->load(['addresses', 'contacts']);
+
             $this->syncRelationsOfAccountEntity($entity, $account);
 
             return $account;
@@ -397,7 +399,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
     public function isApplicableTo(object $entity): bool
     {
-        return $entity instanceof Company;
+        return $entity instanceof Company || $entity instanceof AccountEntity;
     }
 
     #[ArrayShape([

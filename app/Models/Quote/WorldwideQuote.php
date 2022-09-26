@@ -70,6 +70,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property-read Collection<Attachment>|Attachment[] $attachments
  * @property-read bool|null $sales_order_exists
+ * @property-read SalesUnit $salesUnit
  */
 class WorldwideQuote extends Model implements SearchableEntity, LinkedToTasks, LinkedToAppointments, HasOwnAppointments, HasOwnNotes, HasSalesUnit
 {

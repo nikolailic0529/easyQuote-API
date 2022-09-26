@@ -2,19 +2,20 @@
 
 namespace App\Jobs\Pipeliner;
 
-use App\Console\Commands\SyncPipelinerData;
 use App\Events\Pipeliner\QueuedPipelinerSyncFailed;
-use App\Events\Pipeliner\QueuedPipelinerSyncProcessed;
 use App\Models\User;
+use App\Services\Pipeliner\PipelinerDataSyncService;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Log\LogManager;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Str;
 
 class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
 {
@@ -25,30 +26,66 @@ class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
     public string $queue = 'long';
     public string $connection = 'redis_long';
 
-    public function __construct(protected ?Model $causer = null,
-                                protected array  $strategies = [])
-    {
+    protected string $owner;
+
+    public function __construct(
+        protected ?Model $causer = null,
+        protected array $strategies = [],
+        string $owner = null
+    ) {
+        $this->owner = $owner ?? Str::random();
     }
 
-    public function handle(Kernel $kernel): void
-    {
-        $parameters = [
-            '--quiet' => true,
-            '--strategy' => $this->strategies,
-        ];
+    public function handle(
+        SyncPipelinerDataStatus $status,
+        PipelinerDataSyncService $service,
+        LogManager $logManager,
+    ): void {
+        $status->setOwner($this->owner);
 
-        if ($this->causer instanceof User) {
-            $parameters['--user-id'] = $this->causer->getKey();
+        try {
+            $service
+                ->setLogger($logManager->channel('pipeliner'))
+                ->setCauser($this->causer)
+                ->setStrategyFilter($this->resolveStrategyFilter())
+                ->sync();
+        } finally {
+            $status->release();
+        }
+    }
+
+    protected function resolveStrategyFilter(): callable
+    {
+        $strategies = $this->strategies;
+
+        if (empty($strategies)) {
+            $map = config('pipeliner.sync.strategies');
+
+            $strategies = collect(config('pipeliner.sync.default_strategies'))
+                ->map(static function (string $name) use ($map): string {
+                    return $map[$name];
+                })
+                ->all();
         }
 
-        $kernel->call(SyncPipelinerData::class, $parameters);
+        return static function (object $strategy) use ($strategies) {
+            foreach ($strategies as $classname) {
+                if ($strategy instanceof $classname) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
     }
 
     public function failed(\Throwable $exception): void
     {
         report($exception);
 
-        app(SyncPipelinerDataStatus::class)->clear();
+        app(SyncPipelinerDataStatus::class)
+            ->setOwner($this->owner)
+            ->release();
 
         if ($this->causer instanceof User) {
             event(new QueuedPipelinerSyncFailed($exception, $this->causer));

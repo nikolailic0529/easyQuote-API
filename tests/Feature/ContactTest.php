@@ -79,7 +79,9 @@ class ContactTest extends TestCase
         ]);
 
         /** @var User $user */
-        $user = User::factory()->create();
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
 
         $user->syncRoles($role);
 
@@ -115,7 +117,9 @@ class ContactTest extends TestCase
 
         $this->assertEmpty($response->json('data'));
 
-        Contact::factory()->create(['user_id' => $user->getKey()]);
+        Contact::factory()
+            ->for($user->salesUnits->first())
+            ->create(['user_id' => $user->getKey()]);
 
         $response = $this->getJson('api/contacts')
             ->assertOk();

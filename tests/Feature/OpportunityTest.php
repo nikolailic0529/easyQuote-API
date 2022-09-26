@@ -69,6 +69,7 @@ class OpportunityTest extends TestCase
                         'id',
                         'company_id',
                         'opportunity_type',
+                        'unit_name',
                         'account_name',
                         'account_manager_name',
                         'project_name',
@@ -94,6 +95,194 @@ class OpportunityTest extends TestCase
         $this->getJson('api/opportunities?order_by_sale_action_name=asc')->assertOk();
         $this->getJson('api/opportunities?order_by_created_at=asc')->assertOk();
         $this->getJson('api/opportunities?order_by_status=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_unit_name=asc')->assertOk();
+    }
+
+    public function testCanViewOpportunityFilters(): void
+    {
+        $this->authenticateApi();
+
+        $this->getJson('api/opportunities/filters')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'label',
+                        'type',
+                        'parameter',
+                        'possible_values' => [
+                            '*' => [
+                                'label',
+                                'value',
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    public function testCanFilterPaginatedOpportunitiesUsingCustomerName(): void
+    {
+        $this->authenticateApi();
+
+        $op = Opportunity::factory()
+            ->for(Company::factory(['name' => 'Test primary account']), relationship: 'primaryAccount')
+            ->for(Company::factory(['name' => 'Test end user']), relationship: 'endUser')
+            ->create();
+
+        Opportunity::factory()
+            ->for(Company::factory(['name' => Str::random(40)]), relationship: 'primaryAccount')
+            ->for(Company::factory(['name' => Str::random(40)]), relationship: 'endUser')
+            ->create();
+
+        $this->getJson('api/opportunities?'.Arr::query([
+                'filter' => [
+                    'customer_name' => 'primary',
+                ],
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'company_id',
+                        'opportunity_type',
+                        'account_name',
+                        'account_manager_name',
+                        'project_name',
+                        'opportunity_amount',
+                        'opportunity_start_date',
+                        'opportunity_end_date',
+                        'opportunity_closing_date',
+                        'sale_action_name',
+                        'status',
+                        'status_reason',
+                        'created_at',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $op->getKey());
+
+        $this->getJson('api/opportunities?'.Arr::query([
+                'filter' => [
+                    'customer_name' => 'end user',
+                ],
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'company_id',
+                        'opportunity_type',
+                        'account_name',
+                        'account_manager_name',
+                        'project_name',
+                        'opportunity_amount',
+                        'opportunity_start_date',
+                        'opportunity_end_date',
+                        'opportunity_closing_date',
+                        'sale_action_name',
+                        'status',
+                        'status_reason',
+                        'created_at',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $op->getKey());
+    }
+
+    public function testCanFilterPaginatedOpportunitiesUsingSalesUnit(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Opportunity $op */
+        $op = Opportunity::factory()
+            ->for(SalesUnit::factory())
+            ->create();
+
+        Opportunity::factory()
+            ->for(SalesUnit::factory())
+            ->create();
+
+        $this->getJson('api/opportunities?'.Arr::query([
+                'filter' => [
+                    'sales_unit_id' => $op->salesUnit->getKey(),
+                ],
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'company_id',
+                        'opportunity_type',
+                        'account_name',
+                        'account_manager_name',
+                        'project_name',
+                        'opportunity_amount',
+                        'opportunity_start_date',
+                        'opportunity_end_date',
+                        'opportunity_closing_date',
+                        'sale_action_name',
+                        'status',
+                        'status_reason',
+                        'created_at',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $op->getKey());
+    }
+
+    public function testCanFilterPaginatedOpportunitiesAccountManager(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Opportunity $op */
+        $op = Opportunity::factory()
+            ->for(User::factory(), relationship: 'accountManager')
+            ->create();
+
+        Opportunity::factory()
+            ->for(User::factory(), relationship: 'accountManager')
+            ->create();
+
+        $this->getJson('api/opportunities?'.Arr::query([
+                'filter' => [
+                    'account_manager_id' => $op->accountManager->getKey(),
+                ],
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'company_id',
+                        'opportunity_type',
+                        'account_name',
+                        'account_manager_name',
+                        'project_name',
+                        'opportunity_amount',
+                        'opportunity_start_date',
+                        'opportunity_end_date',
+                        'opportunity_closing_date',
+                        'sale_action_name',
+                        'status',
+                        'status_reason',
+                        'created_at',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $op->getKey());
     }
 
     /**
@@ -191,7 +380,9 @@ class OpportunityTest extends TestCase
             ->for($user)
             ->create();
 
-        Opportunity::factory()->create();
+        Opportunity::factory()
+            ->for(SalesUnit::factory())
+            ->create();
 
         $this->actingAs($user, 'api');
 
@@ -211,7 +402,7 @@ class OpportunityTest extends TestCase
 
         foreach ($response->json('data') as $item) {
             $this->assertTrue($item['permissions']['view']);
-            $this->assertSame($user->getKey(), $item['user_id']);
+//            $this->assertSame($user->getKey(), $item['user_id']);
         }
     }
 
@@ -2376,7 +2567,7 @@ class OpportunityTest extends TestCase
                 ->for($anotherUser)
                 ->for($pipeline)
                 ->for($pipelineStage)
-                ->for($currentUser->salesUnits->first())
+                ->for(SalesUnit::factory())
                 ->create();
 
             $currentUserOpportunities[$stage['id']] ??= [];

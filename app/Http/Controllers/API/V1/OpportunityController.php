@@ -4,12 +4,14 @@ namespace App\Http\Controllers\API\V1;
 
 use App\DTO\Opportunity\ImportFilesData;
 use App\Http\Controllers\Controller;
+use App\Services\Opportunity\OpportunityQueryFilterDataProvider;
 use App\Http\Requests\Opportunity\{BatchSave,
     CreateOpportunity,
     MarkOpportunityAsLost,
     PaginateOpportunities,
     SetStageOfOpportunity,
-    UpdateOpportunity};
+    UpdateOpportunity
+};
 use App\Http\Resources\V1\Appointment\AppointmentListResource;
 use App\Http\Resources\V1\Opportunity\GroupedOpportunityCollection;
 use App\Http\Resources\V1\Opportunity\OpportunityList;
@@ -30,12 +32,29 @@ use Illuminate\Http\{JsonResponse,
     Request,
     Resources\Json\AnonymousResourceCollection,
     Resources\Json\ResourceCollection,
-    Response};
+    Response
+};
+use Spatie\LaravelData\DataCollection;
 use Symfony\Component\HttpFoundation\Response as R;
 use Throwable;
 
 class OpportunityController extends Controller
 {
+    /**
+     * Show opportunity filters.
+     *
+     * @param  Request  $request
+     * @param  OpportunityQueryFilterDataProvider  $dataProvider
+     * @return DataCollection
+     * @throws AuthorizationException
+     */
+    public function showOpportunityFilters(Request $request, OpportunityQueryFilterDataProvider $dataProvider): DataCollection
+    {
+        $this->authorize('viewAny', Opportunity::class);
+
+        return $dataProvider->getFilters($request);
+    }
+
     /**
      * Paginate existing opportunities with the status 'OK'.
      *
@@ -50,7 +69,7 @@ class OpportunityController extends Controller
     ): AnonymousResourceCollection {
         $this->authorize('viewAny', Opportunity::class);
 
-        $resource = $queries->paginateOkOpportunitiesQuery($request)->apiPaginate();
+        $resource = $queries->listOkOpportunitiesQuery($request)->apiPaginate();
 
         return OpportunityList::collection($resource);
     }
@@ -69,7 +88,7 @@ class OpportunityController extends Controller
     ): AnonymousResourceCollection {
         $this->authorize('viewAny', Opportunity::class);
 
-        $resource = $queries->paginateLostOpportunitiesQuery($request)->apiPaginate();
+        $resource = $queries->listLostOpportunitiesQuery($request)->apiPaginate();
 
         return OpportunityList::collection($resource);
     }

@@ -72,6 +72,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<int, User> $ledTeamUsers
  * @property-read Collection<int, Role> $roles
  * @property-read Collection<int, Team> $ledTeams
+ * @property-read Collection<int, SalesUnit> $salesUnitsFromLedTeams
  */
 class User extends Model implements
     ActivatableInterface,
@@ -196,6 +197,14 @@ class User extends Model implements
             table: (new ModelHasSalesUnits())->getTable()
         )
             ->using(ModelHasSalesUnits::class);
+    }
+
+    public function salesUnitsFromLedTeams(): HasManyDeep
+    {
+        return $this->hasManyDeepFromRelations(
+          $this->ledTeams(),
+            (new Team())->salesUnits(),
+        );
     }
 
     public function companies(): MorphToMany

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\Repositories\SettingRepository;
 use App\Contracts\Repositories\System\SystemSettingRepositoryInterface;
+use App\Foundation\Settings\DatabaseSettingsStatus;
 use App\Repositories\System\CachedSettingRepository;
 use App\Repositories\System\SystemSettingRepository;
 use App\Services\Settings\DynamicSettingsProviders\DynamicSettingsProvider;
@@ -11,6 +12,7 @@ use App\Services\Settings\DynamicSettingsProviders\DynamicSettingsProviderCollec
 use App\Services\Settings\DynamicSettingsProviders\RemainingMailLimitProvider;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\ServiceProvider;
 
 class SettingServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -27,6 +29,16 @@ class SettingServiceProvider extends ServiceProvider implements DeferrableProvid
         $this->app->alias(SystemSettingRepositoryInterface::class, 'setting.repository');
 
         $this->app->singleton(SettingRepository::class, CachedSettingRepository::class);
+
+        $this->app->singleton(DatabaseSettingsStatus::class);
+
+        $this->app->when(DatabaseSettingsStatus::class)
+            ->needs(Builder::class)
+            ->give(static function (Container $container): Builder {
+                return $container['db.connection']->getSchemaBuilder();
+            });
+
+        $this->app->alias(DatabaseSettingsStatus::class, 'settings.status');
 
         $this->app->tag([
             RemainingMailLimitProvider::class,

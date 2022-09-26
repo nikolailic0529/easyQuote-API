@@ -5,6 +5,9 @@ namespace App\Http\Resources\V1;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin User
+ */
 class AuthenticatedUserResource extends JsonResource
 {
     /**
@@ -15,8 +18,6 @@ class AuthenticatedUserResource extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var User|self $this */
-
         return [
             'id' => $this->getKey(),
             'email' => $this->email,
@@ -49,6 +50,8 @@ class AuthenticatedUserResource extends JsonResource
 //            'company' => $this->whenLoaded('company'),
             'companies' => $this->whenLoaded('companies'),
             'hpe_contract_template' => $this->whenLoaded('hpeContractTemplate'),
+
+            'led_teams' => $this->ledTeams,
 
             'build' => [
                 'git_tag' => data_get($this->additional, 'build.git_tag'),

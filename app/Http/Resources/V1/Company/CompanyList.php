@@ -19,8 +19,8 @@ class CompanyList extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
+            'id' => $this->getKey(),
+            'user_id' => $this->owner()->getParentKey(),
             
             'default_vendor_id' => $this->default_vendor_id,
             'default_country_id' => $this->default_country_id,
@@ -31,6 +31,7 @@ class CompanyList extends JsonResource
             'name' => $this->name,
             'short_code' => $this->short_code,
             'type' => $this->type,
+            'unit_name' => $this->unit_name,
 
             'categories' => $this->whenLoaded('categories', fn () => $this->categories->pluck('name')),
 

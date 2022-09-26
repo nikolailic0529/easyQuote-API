@@ -40,6 +40,8 @@ class TeamWithIncludes extends JsonResource
                 });
             }),
 
+            'sales_units' => $this->salesUnits,
+
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];

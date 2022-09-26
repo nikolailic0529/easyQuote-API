@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Pipeliner\PlSyncStatusCommand;
+use App\Console\Commands\Pipeliner\ReleasePlSyncStatusCommand;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerDataSyncService;
+use App\Services\Pipeliner\SyncPipelinerDataStatus;
 use Illuminate\Console\Command;
 use Illuminate\Log\LogManager;
 use Illuminate\Support\Str;
@@ -47,19 +48,37 @@ class SyncPipelinerData extends Command implements SignalableCommandInterface
      * @return int
      * @throws \Illuminate\Http\Client\RequestException
      */
-    public function handle(PipelinerDataSyncService $service, LogManager $logManager): int
+    public function handle(
+        SyncPipelinerDataStatus $status,
+        PipelinerDataSyncService $service,
+        LogManager $logManager
+    ): int
     {
+        if ($this->option('status-owner')) {
+            $status->setOwner($this->option('status-owner'));
+        }
+
         $logger = $this->resolveLogger($logManager);
 
         $correlationId = (string)Str::orderedUuid();
 
-        $service
-            ->setCauser($this->resolveCauser())
-            ->setLogger($logger)
-            ->setFlags($this->resolveSyncMethods())
-            ->setStrategyFilter($this->resolveStrategyFilter())
-            ->setCorrelation($correlationId)
-            ->sync();
+        if (!$status->acquire()) {
+            $logger->warning("Sync status: could not acquire.");
+
+            return self::FAILURE;
+        }
+
+        try {
+            $service
+                ->setCauser($this->resolveCauser())
+                ->setLogger($logger)
+                ->setFlags($this->resolveSyncMethods())
+                ->setStrategyFilter($this->resolveStrategyFilter())
+                ->setCorrelation($correlationId)
+                ->sync();
+        } finally {
+            $status->release();
+        }
 
         return self::SUCCESS;
     }
@@ -147,6 +166,7 @@ class SyncPipelinerData extends Command implements SignalableCommandInterface
             new InputOption(name: 'user-id', mode: InputOption::VALUE_REQUIRED, description: 'The acting user id'),
             new InputOption(name: 'method', mode: InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, description: 'Method to sync (pull/push)'),
             new InputOption(name: 'strategy', mode: InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, description: 'Strategy to sync'),
+            new InputOption(name: 'status-owner', mode: InputOption::VALUE_REQUIRED, description: 'Sync status owner'),
         ];
     }
 
@@ -166,11 +186,13 @@ class SyncPipelinerData extends Command implements SignalableCommandInterface
         }
 
         if (\SIGINT === $signal) {
-            $this->call(PlSyncStatusCommand::class, [
-                'action' => 'flush',
-            ]);
+            $status = $this->laravel->make(SyncPipelinerDataStatus::class);
 
-            exit(1);
+            if ($status->running()) {
+                $status->release();
+
+                $this->line('Shutting down...');
+            }
         }
     }
 }

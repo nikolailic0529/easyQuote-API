@@ -80,10 +80,7 @@ class UserEntityService
                 $user->load('image');
             }
 
-            $user->forceFill($data->only(
-                'first_name', 'middle_name', 'last_name', 'phone',
-                'timezone_id', 'country_id', 'hpe_contract_template_id'
-            )->all());
+            $user->forceFill($data->except('picture', 'delete_picture', 'password', 'current_password', 'change_password')->all());
 
             if (true === $data->change_password) {
                 $user->password = $this->hasher->make($data->password);

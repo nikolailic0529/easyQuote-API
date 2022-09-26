@@ -2,11 +2,10 @@
 
 namespace App\Policies;
 
-use App\Models\{
-    User,
-    Company
-};
+use App\Policies\Access\ResponseBuilder;
+use App\Models\{Company, User};
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 class CompanyPolicy
 {
@@ -16,26 +15,34 @@ class CompanyPolicy
      * Determine whether the user can view any companies.
      *
      * @param  \App\Models\User  $user
-     * @return mixed
+     * @return Response
      */
-    public function viewAny(User $user)
+    public function viewAny(User $user): Response
     {
-        if ($user->can('view_companies')) {
-            return true;
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
         }
+
+        if ($user->can('view_companies')) {
+            return $this->allow();
+        }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can view entities of any owner.
      *
-     * @param \App\Models\User $user
-     * @return mixed
+     * @param  \App\Models\User  $user
+     * @return Response
      */
-    public function viewAnyOwnerEntities(User $user)
+    public function viewAnyOwnerEntities(User $user): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
@@ -43,26 +50,33 @@ class CompanyPolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Company  $company
-     * @return mixed
+     * @return Response
      */
-    public function view(User $user, Company $company)
+    public function view(User $user, Company $company): Response
     {
         if ($user->canAny(['view_companies', 'view_opportunities', "companies.*.{$company->getKey()}"])) {
-            return true;
+            return $this->allow();
         }
+
+        return ResponseBuilder::deny()
+            ->action('view')
+            ->item('company')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can create companies.
      *
-     * @param  \App\Models\User  $user
-     * @return mixed
+     * @param  User  $user
+     * @return Response
      */
-    public function create(User $user)
+    public function create(User $user): Response
     {
         if ($user->can('create_companies')) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
@@ -70,26 +84,45 @@ class CompanyPolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Company  $company
-     * @return mixed
+     * @return Response
      */
-    public function update(User $user, Company $company)
+    public function update(User $user, Company $company): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->can("companies.*.{$company->getKey()}")) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->canAny('update_companies')) {
+        if ($user->cant('update_companies')) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('company')
+                ->toResponse();
+        }
 
-            if ($user->getKey() !== $company->{$company->user()->getForeignKeyName()}) {
-                return $this->deny("You can't update the company owned by another user.");
+        if ($user->salesUnitsFromLedTeams->contains($company->salesUnit)) {
+            return $this->allow();
+        }
+
+        if ($user->salesUnits->contains($company->salesUnit)) {
+            if ($company->owner()->is($user)) {
+                return $this->allow();
             }
 
-            return true;
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('company')
+                ->reason('You must be an owner')
+                ->toResponse();
         }
+
+        return ResponseBuilder::deny()
+            ->action('update')
+            ->item('company')
+            ->toResponse();
     }
 
     /**
@@ -97,29 +130,48 @@ class CompanyPolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Company  $company
-     * @return mixed
+     * @return Response
      */
-    public function delete(User $user, Company $company)
+    public function delete(User $user, Company $company): Response
     {
         if ($company->getFlag(Company::SYSTEM)) {
             return $this->deny(CPSD_01);
         }
 
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->can("companies.*.{$company->getKey()}")) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->canAny('delete_companies')) {
+        if ($user->cant('delete_companies')) {
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('company')
+                ->toResponse();
+        }
 
-            if ($user->getKey() !== $company->{$company->user()->getForeignKeyName()}) {
-                return $this->deny("You can't delete the company owned by another user.");
+        if ($user->salesUnitsFromLedTeams->contains($company->salesUnit)) {
+            return $this->allow();
+        }
+
+        if ($user->salesUnits->contains($company->salesUnit)) {
+            if ($company->owner()->is($user)) {
+                return $this->allow();
             }
 
-            return true;
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('company')
+                ->reason('You must be an owner')
+                ->toResponse();
         }
+
+        return ResponseBuilder::deny()
+            ->action('delete')
+            ->item('company')
+            ->toResponse();
     }
 }

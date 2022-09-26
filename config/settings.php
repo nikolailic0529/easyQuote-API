@@ -9,6 +9,7 @@ use App\Services\Settings\ValueProviders\RangeValueProvider;
 use App\Services\Settings\ValueProviders\UserValueProvider;
 
 return [
+    'table' => 'system_settings',
 
     'public' => [
         'google_recaptcha_enabled',
@@ -42,6 +43,14 @@ return [
             'provider' => EnumValueProvider::class,
             'with' => [
                 'enum' => PriceCalculationDurationEnum::class,
+            ],
+        ],
+        'pipeliner_sync_schedule' => [
+            'provider' => RangeValueProvider::class,
+            'with' => [
+                'start' => 1,
+                'end' => 12,
+                'label' => "Every Hour|Every :value Hours",
             ],
         ],
         'file_upload_size' => [

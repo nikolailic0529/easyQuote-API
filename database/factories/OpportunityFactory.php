@@ -25,7 +25,7 @@ class OpportunityFactory extends Factory
         $endCustomer = Company::factory()->create();
 
         return [
-            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
+            'sales_unit_id' => SalesUnit::factory(),
             'pipeline_id' => PL_WWDP,
             'pipeline_stage_id' => PipelineStage::query()->where('pipeline_id', PL_WWDP)->first()->getKey(),
             'contract_type_id' => $this->faker->randomElement([CT_CONTRACT, CT_PACK]),

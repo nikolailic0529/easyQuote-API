@@ -53,7 +53,10 @@ class SettingValue implements Rule, DataAwareRule
             return blank(array_diff($value, $flattenPossibleValues));
         }
 
-        return in_array($value, $flattenPossibleValues, true);
+        return collect($flattenPossibleValues)
+            ->lazy()
+            ->map(static fn (mixed $v): string => (string)$v)
+            ->containsStrict((string)$value);
     }
 
     protected static function resolveLeadingAttributePath(string $attribute): string

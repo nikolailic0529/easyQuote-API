@@ -36,12 +36,17 @@ class CompanyTest extends TestCase
 {
     use WithFaker, AssertsListing, DatabaseTransactions;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->getConnection()->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM);
+    }
+
     /**
      * Test an ability to view paginated companies listing.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedCompaniesListing()
+    public function testCanViewPaginatedCompanies(): void
     {
         $this->authenticateApi();
 
@@ -69,6 +74,7 @@ class CompanyTest extends TestCase
                         'website',
                         'logo',
                         'total_quoted_value',
+                        'unit_name',
                         'created_at',
                         'activated_at',
                     ],
@@ -184,11 +190,36 @@ class CompanyTest extends TestCase
     }
 
     /**
-     * Test an ability to view paginated companies filtered by category.
-     *
-     * @return void
+     * Test an ability to view company filters.
      */
-    public function testCanViewExternalCompaniesFilteredByCategory()
+    public function testCanViewCompanyFilters(): void
+    {
+        $this->authenticateApi();
+
+        $this->getJson('api/companies/filters')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'label',
+                        'type',
+                        'parameter',
+                        'possible_values' => [
+                            '*' => [
+                                'label',
+                                'value',
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+    }
+
+    /**
+     * Test an ability to view paginated companies filtered by category.
+     */
+    public function testCanViewExternalCompaniesFilteredByCategory(): void
     {
         $this->authenticateApi();
 
@@ -199,14 +230,15 @@ class CompanyTest extends TestCase
         ];
 
         foreach ($categories as $category) {
-            Company::factory()->create([
-                'type' => 'External',
-                'category' => $category,
-            ]);
+            Company::factory()
+                ->hasAttached(
+                    CompanyCategory::query()->where('name', $category)->sole(),
+                    relationship: 'categories',
+                )
+                ->create(['type' => 'External']);
         }
 
         foreach ($categories as $category) {
-
             $response = $this->getJson('api/external-companies/?filter[category][]='.$category)
 //                ->dump()
                 ->assertOk()
@@ -214,13 +246,13 @@ class CompanyTest extends TestCase
                     'data' => [
                         '*' => [
                             'type',
-                            'category',
+                            'categories',
                         ],
                     ],
                 ]);
 
-            foreach ($response->json('data.*.category') as $value) {
-                $this->assertSame($category, $value);
+            foreach ($response->json('data.*.categories') as $value) {
+                $this->assertContains($category, $value);
             }
         }
     }

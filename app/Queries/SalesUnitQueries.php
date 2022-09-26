@@ -56,12 +56,22 @@ class SalesUnitQueries
                             ->toBase()
                     );
 
+                    $builder->withExpression('user_has_sales_units_from_led_teams',
+                        $user->salesUnitsFromLedTeams()->getQuery()
+                            ->select($user->salesUnitsFromLedTeams()->getModel()->getQualifiedKeyName())
+                            ->toBase()
+                    );
+
                     if ($request->has('filter.assigned_to_me')) {
                         $builder->where(static function (Builder $builder) use ($request, $user): void {
                             $builder->whereIn((new SalesUnit())->getQualifiedKeyName(),
                                 static function (BaseBuilder $builder) use ($user): void {
                                     $builder->select($user->salesUnits()->getModel()->getKeyName())
-                                        ->from('user_has_sales_units');
+                                        ->from('user_has_sales_units')
+                                        ->union(static function (BaseBuilder $builder) use ($user): void {
+                                            $builder->select($user->salesUnitsFromLedTeams()->getModel()->getKeyName())
+                                                ->from('user_has_sales_units_from_led_teams');
+                                        });
                                 }, not: !$request->boolean('filter.assigned_to_me'));
                         });
                     }

@@ -20,6 +20,7 @@ return [
         'use_legacy_doc_parsing_method' => 'Legacy Document Parsing',
         'mail_limit'                    => 'Monthly Mail Limit',
         'remaining_mail_limit'          => 'Remaining Mail Limit',
+        'pipeliner_sync_schedule'       => 'Pipeliner Sync Schedule',
     ],
     'supported_file_types' => [
         'pdf' => [

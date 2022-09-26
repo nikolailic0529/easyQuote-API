@@ -301,7 +301,7 @@ class PullOpportunityStrategy implements PullStrategy
 
     public function isApplicableTo(object $entity): bool
     {
-        return $entity instanceof Opportunity;
+        return $entity instanceof Opportunity || $entity instanceof OpportunityEntity;
     }
 
     #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,

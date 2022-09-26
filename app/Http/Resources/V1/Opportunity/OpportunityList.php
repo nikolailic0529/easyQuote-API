@@ -33,6 +33,7 @@ class OpportunityList extends JsonResource
             'user_id' => $this->user_id,
             'company_id' => $this->company_id,
             'opportunity_type' => $this->opportunity_type,
+            'unit_name' => $this->unit_name,
             'status_type' => value(function (): string {
 
                 /** @var Opportunity|OpportunityList $this */

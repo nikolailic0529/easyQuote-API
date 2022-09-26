@@ -56,6 +56,14 @@
         "section": "global"
     },
     {
+        "key": "pipeliner_sync_schedule",
+        "value": 2,
+        "type": "integer",
+        "field_type": "dropdown",
+        "is_read_only": false,
+        "section": "global"
+    },
+    {
         "key": "file_upload_size",
         "value": 2,
         "type": "integer",

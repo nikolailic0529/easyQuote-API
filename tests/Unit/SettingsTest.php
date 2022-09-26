@@ -228,6 +228,12 @@ class SettingsTest extends TestCase
                 return User::factory()->count(10)->create()->modelKeys();
             },
         ];
+        foreach (range(1, 12) as $case) {
+            yield "pipeliner sync schedule: $case" => [
+                "global.pipeliner_sync_schedule",
+                $case,
+            ];
+        }
 
         foreach ([true, false] as $item) {
             yield "google recaptcha enabled: $item" => [

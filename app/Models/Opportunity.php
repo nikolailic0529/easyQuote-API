@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Contracts\HasOwnAppointments;
 use App\Contracts\HasOwner;
 use App\Contracts\HasOwnNotes;
+use App\Contracts\HasSalesUnit;
 use App\Contracts\LinkedToAppointments;
 use App\Contracts\LinkedToTasks;
 use App\Contracts\ProvidesIdForHumans;
@@ -137,7 +138,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<int,Attachment>|Attachment[] $attachments
  * @property-read OpportunityValidationResult|null $validationResult
  */
-class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes, ProvidesIdForHumans
+class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes, ProvidesIdForHumans, HasSalesUnit
 {
     use Uuid, SoftDeletes, HasRelationships, HasFactory, HasTimestamps;
 

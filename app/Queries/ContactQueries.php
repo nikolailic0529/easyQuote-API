@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Contact;
 use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
+use App\Queries\Scopes\CurrentUserScope;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Auth\Access\Gate;
@@ -30,9 +31,7 @@ class ContactQueries
 
         $query = $contactModel
             ->newQuery()
-            ->when($this->gate->denies('viewAnyOwnerEntities', Address::class), function (Builder $builder) use ($user) {
-                $builder->whereBelongsTo($user);
-            });
+            ->tap(CurrentUserScope::from($request, $this->gate));
 
         return RequestQueryBuilder::for(
             builder: $query,

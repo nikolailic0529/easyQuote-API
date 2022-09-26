@@ -2,18 +2,25 @@
 
 namespace App\Queries\Pipeline;
 
+use App\Queries\Enums\OperatorEnum;
 use Devengine\RequestQueryBuilder\Contracts\RequestQueryBuilderPipe;
 use Devengine\RequestQueryBuilder\Models\BuildQueryParameters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 class FilterRelationPipe implements RequestQueryBuilderPipe
 {
+    protected \Closure $valueProcessor;
+
     public function __construct(
         protected string $field,
         protected string $relation,
+        protected ?OperatorEnum $operator = null,
+        ?callable $valueProcessor = null,
     ) {
+        $this->valueProcessor = ($valueProcessor ?? static fn($value) => $value)(...);
     }
 
     public function __invoke(BuildQueryParameters $parameters): void
@@ -28,15 +35,29 @@ class FilterRelationPipe implements RequestQueryBuilderPipe
             return;
         }
 
+        $value = call_user_func($this->valueProcessor, $value);
+
         [$relation, $column] = explode('.', $this->relation, 2) + [$this->relation, 'id'];
 
         $builder->where(function (Builder $builder) use ($column, $relation, $value): void {
             $builder->whereHas($relation, function (Builder $builder) use ($column, $value): void {
-                $builder->when(
-                    is_array($value),
-                    fn(Builder $builder) => $builder->whereIn($column, $value),
-                    fn(Builder $builder) => $builder->where($column, $value),
-                );
+                if (null !== $this->operator) {
+                    match ($this->operator) {
+                        OperatorEnum::In => $builder->whereIn($column, Arr::wrap($value)),
+                        OperatorEnum::NotIn => $builder->whereNotIn($column, Arr::wrap($value)),
+                        default => (function () use ($column, $value, $builder): void {
+                            foreach (Arr::wrap($value) as $v) {
+                                $builder->where($column, $this->operator->value, $v);
+                            }
+                        })(),
+                    };
+                } else {
+                    $builder->when(
+                        is_array($value),
+                        fn(Builder $builder) => $builder->whereIn($column, $value),
+                        fn(Builder $builder) => $builder->where($column, $value),
+                    );
+                }
             });
         });
     }

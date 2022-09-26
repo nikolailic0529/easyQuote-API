@@ -6,7 +6,10 @@ use App\Console\Commands\Routine\ProcessTaskRecurrences;
 use App\Console\Commands\Routine\ProcessTaskReminders;
 use App\Console\Commands\Routine\UpdateExchangeRates;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
+use App\Services\Pipeliner\PipelinerDataSyncService;
+use App\Services\Pipeliner\SyncPipelinerDataStatus;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
@@ -28,14 +31,6 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->job(new QueuedPipelinerDataSync())
-            ->when(config('pipeliner.sync.schedule.enabled'))
-            ->hourly()
-            ->between('8:00', '18:00')
-            ->weekdays()
-            ->runInBackground()
-            ->withoutOverlapping();
-
         $schedule->command(ProcessTaskRecurrences::class)
             ->when(config('task.recurrence.schedule.enabled'))
             ->dailyAt('8:00')
@@ -97,16 +92,6 @@ class Kernel extends ConsoleKernel
          * @see \App\Console\Commands\Routine\Notifications\PasswordExpiration
          */
         $schedule->command('eq:notify-password-expiration')->runInBackground()->daily();
-
-        /**
-         * Update exchange rates from external service based on system setting schedule.
-         *
-         * @see \App\Console\Commands\Routine\UpdateExchangeRates
-         */
-        $schedule->command(UpdateExchangeRates::class)
-            ->runInBackground()
-            ->emailOutputOnFailure(setting('failure_report_recipients')->pluck('email')->all())
-            ->{setting('exchange_rate_update_schedule')}();
     }
 
     /**

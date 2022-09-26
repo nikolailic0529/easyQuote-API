@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Unit\User;
+namespace Tests\Feature;
 
 use App\Http\Middleware\PerformUserActivity;
 use App\Models\Data\Country;
@@ -23,14 +23,10 @@ class AuthTest extends TestCase
 {
     use WithFaker, DatabaseTransactions;
 
-    protected static array $assertableAttributes = ['email', 'password', 'local_ip'];
-
     /**
-     * Test Authentication of the existing user.
-     *
-     * @return void
+     * Test an ability to authenticate with valid credentials.
      */
-    public function testAuthExistingUser()
+    public function testCanAuthenticateWithValidCredentials(): void
     {
         $user = User::factory()->create();
 
@@ -41,7 +37,7 @@ class AuthTest extends TestCase
             'g_recaptcha' => Str::random(),
         ];
 
-        $response = $this->postJson(url('/api/auth/signin'), $attributes);
+        $response = $this->postJson('/api/auth/signin', $attributes);
 
         $response
 //            ->dump()
@@ -50,11 +46,9 @@ class AuthTest extends TestCase
     }
 
     /**
-     * Test Failed Authentication of the existing user.
-     *
-     * @return void
+     * Test an ability to authenticate with invalid credentials.
      */
-    public function testFailingAuthExistingUser()
+    public function testCanNotAuthenticateWithInvalidCredentials(): void
     {
         $user = User::factory()->create();
 
@@ -65,15 +59,14 @@ class AuthTest extends TestCase
             'g_recaptcha' => Str::random(),
         ];
 
-        $this->postJson(url('/api/auth/signin'), $attributes)->assertStatus(403);
+        $this->postJson('/api/auth/signin', $attributes)
+            ->assertForbidden();
     }
 
     /**
-     * Test authentication of deactivated user.
-     *
-     * @return void
+     * Test an ability to authenticate with valid credentials of blocked user.
      */
-    public function testAuthDeactivatedUser()
+    public function testCanNotAuthenticateWithValidCredentialsOfBlockedUser(): void
     {
         $user = tap(User::factory()->create())->deactivate();
 
@@ -82,42 +75,16 @@ class AuthTest extends TestCase
             'g_recaptcha' => Str::random(),
         ];
 
-        $response = $this->postJson(url('/api/auth/signin'), $credentials)->assertStatus(422);
+        $response = $this->postJson('/api/auth/signin', $credentials)
+            ->assertUnprocessable();
 
         $this->assertTrue(Str::contains($response->json('message'), 'user is blocked'));
     }
 
     /**
-     * Test Authentication of the existing user without passing ip address.
-     *
-     * @return void
+     * Test user is being logged out due to inactivity.
      */
-    public function testAuthUserWithoutLocalIp()
-    {
-        $this->markTestSkipped('Skipped since IP detection has been disabled');
-
-        $user = User::factory()->create();
-
-        $attributes = [
-            'email' => $user->email,
-            'local_ip' => $user->ip_address,
-            'password' => 'password',
-            'g_recaptcha' => Str::random(),
-        ];
-
-        $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password']))
-            ->assertStatus(422)
-            ->assertJsonStructure([
-                'Error' => ['original' => ['local_ip']],
-            ]);
-    }
-
-    /**
-     * Test User logout due inactivity.
-     *
-     * @return void
-     */
-    public function testLogoutDueInactivity()
+    public function testUserIsBeingLoggedOutDueToInactivity(): void
     {
         $this->authenticateApi();
 
@@ -142,11 +109,9 @@ class AuthTest extends TestCase
     }
 
     /**
-     * Test retrieving Authenticated User.
-     *
-     * @return void
+     * Test an ability to view current authenticated user.
      */
-    public function testCanViewCurrentUser()
+    public function testCanViewCurrentUser(): void
     {
         $this->authenticateApi();
 
@@ -165,8 +130,14 @@ class AuthTest extends TestCase
                 'role_name',
                 'privileges',
                 'companies' => [
-                    '*' => ['id', 'name']
-                ]
+                    '*' => ['id', 'name'],
+                ],
+                'sales_units' => [
+                    '*' => [
+                        'id',
+                        'unit_name',
+                    ],
+                ],
             ]);
     }
 

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property BusinessDivision|null $businessDivision
  * @property Collection<User>|User[] $teamLeaders
+ * @property Collection<SalesUnit> $salesUnits
  */
 class Team extends Model implements SearchableEntity
 {
@@ -48,6 +49,16 @@ class Team extends Model implements SearchableEntity
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function salesUnits(): BelongsToMany
+    {
+        return $this->morphToMany(
+            related: SalesUnit::class,
+            name: 'model',
+            table: (new ModelHasSalesUnits())->getTable()
+        )
+            ->using(ModelHasSalesUnits::class);
     }
 
     public function getSearchIndex(): string

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Contracts\HasImagesDirectory;
 use App\Contracts\HasOwnAppointments;
+use App\Contracts\HasSalesUnit;
 use App\Contracts\LinkedToAppointments;
 use App\Contracts\ProvidesIdForHumans;
 use App\Contracts\SearchableEntity;
@@ -47,7 +48,7 @@ use Intervention\Image\ImageManagerStatic;
  * @property-read User|null $user
  * @property-read SalesUnit|null $salesUnit
  */
-class Contact extends Model implements HasImagesDirectory, SearchableEntity, LinkedToAppointments, HasOwnAppointments, ProvidesIdForHumans
+class Contact extends Model implements HasImagesDirectory, SearchableEntity, LinkedToAppointments, HasOwnAppointments, ProvidesIdForHumans, HasSalesUnit
 {
     use Uuid, SoftDeletes, Searchable, Activatable, HasFactory;
 

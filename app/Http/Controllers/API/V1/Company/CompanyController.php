@@ -5,6 +5,9 @@ namespace App\Http\Controllers\API\V1\Company;
 use App\Enum\CompanySource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
+use App\Models\Opportunity;
+use App\Services\Company\CompanyQueryFilterDataProvider;
+use App\Services\Opportunity\OpportunityQueryFilterDataProvider;
 use App\Http\Requests\Company\{DeleteCompany,
     PaginateCompanies,
     PartialUpdateCompany,
@@ -13,6 +16,7 @@ use App\Http\Requests\Company\{DeleteCompany,
     UpdateCompanyContact,
     UpdateCompanyRequest};
 use App\Http\Requests\Opportunity\PaginateOpportunities;
+use Spatie\LaravelData\DataCollection;
 use App\Http\Resources\{V1\Appointment\AppointmentListResource,
     V1\Asset\AssetOfCompany,
     V1\Attachment\AttachmentOfCompany,
@@ -50,6 +54,21 @@ use function response;
 class CompanyController extends Controller
 {
     /**
+     * Show opportunity filters.
+     *
+     * @param  Request  $request
+     * @param  CompanyQueryFilterDataProvider  $dataProvider
+     * @return DataCollection
+     * @throws AuthorizationException
+     */
+    public function showCompanyFilters(Request $request, CompanyQueryFilterDataProvider $dataProvider): DataCollection
+    {
+        $this->authorize('viewAny', Company::class);
+
+        return $dataProvider->getFilters($request);
+    }
+
+    /**
      * Display a listing of the Companies.
      *
      * @param  \App\Http\Requests\Company\PaginateCompanies  $request
@@ -61,7 +80,7 @@ class CompanyController extends Controller
     {
         $this->authorize('viewAny', Company::class);
 
-        $pagination = $queries->paginateCompaniesQuery($request)->apiPaginate();
+        $pagination = $queries->baseCompaniesQuery($request)->apiPaginate();
 
         return \App\Http\Resources\V1\Company\CompanyCollection::make($pagination);
     }
@@ -196,7 +215,7 @@ class CompanyController extends Controller
         $this->authorize('view', $company);
 
         $resource = $opportunityQueries
-            ->listOfCompanyOpportunitiesQuery(company: $company, request: $request)
+            ->listOpportunitiesOfCompanyQuery(company: $company, request: $request)
             ->get();
 
         return OpportunityList::collection($resource);

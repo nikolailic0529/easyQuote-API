@@ -2,24 +2,76 @@
 
 namespace App\Services\Pipeliner;
 
+use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Support\Str;
 
 class SyncPipelinerDataStatus implements \JsonSerializable
 {
+    protected string $owner;
+
     public function __construct(
         protected readonly Cache $cache,
-        protected readonly string $prefix = 'sync_pipeliner_data_status',
+        protected readonly LockProvider $lockProvider,
+        string $owner = null,
     ) {
+        $this->owner = $owner ?? Str::random();
     }
 
-    public function enable(): void
+    public function setOwner(string $owner): static
     {
-        $this->cache->set($this->getStatusKey(), true);
+        return tap($this, fn () => $this->owner = $owner);
     }
 
-    public function disable(): void
+    /**
+     * @return string
+     */
+    public function getOwner(): string
     {
-        $this->cache->forget($this->getStatusKey());
+        return $this->owner;
+    }
+
+    public function acquire(): bool
+    {
+        $acquired = (bool) $this->lock()->get();
+
+        if ($acquired) {
+            $this->cache->set($this->getStatusKey(), true);
+        }
+
+        return $acquired;
+    }
+
+    public function release(): bool
+    {
+        if ($released = $this->lock()->release()) {
+            $this->flush();
+        }
+
+        return $released;
+    }
+
+    public function forceRelease(): bool
+    {
+        $this->lock()->forceRelease();
+        $this->flush();
+
+        return true;
+    }
+
+    protected function flush(): void
+    {
+        $this->cache->deleteMultiple([
+            $this->getStatusKey(),
+            $this->getTotalKey(),
+            $this->getProcessedKey(),
+        ]);
+    }
+
+    protected function lock(): Lock
+    {
+        return $this->lockProvider->lock(static::class, owner: $this->owner);
     }
 
     public function running(): bool
@@ -54,33 +106,24 @@ class SyncPipelinerDataStatus implements \JsonSerializable
 
     private function getStatusKey(): string
     {
-        return $this->prefix.':status';
+        return static::class.':status';
     }
 
     private function getProcessedKey(): string
     {
-        return $this->prefix.':processed';
+        return static::class.':processed';
     }
 
     private function getTotalKey(): string
     {
-        return $this->prefix.':total';
-    }
-
-    public function clear(): void
-    {
-        $this->cache->deleteMultiple([
-            $this->getTotalKey(),
-            $this->getProcessedKey(),
-            $this->getStatusKey(),
-        ]);
+        return static::class.':total';
     }
 
     public function jsonSerialize(): array
     {
         return [
             'running' => $this->running(),
-            'progress' =>  $this->progress(),
+            'progress' => $this->progress(),
             'total_entities' => $this->total(),
             'pending_entities' => $this->total() - $this->processed(),
         ];

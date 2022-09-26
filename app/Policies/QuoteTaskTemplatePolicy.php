@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Policies\Access\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
@@ -26,7 +27,10 @@ class QuoteTaskTemplatePolicy
             return $this->allow();
         }
 
-        return $this->deny(__('access.cant_view', ['item' => 'task template']));
+        return ResponseBuilder::deny()
+            ->action('view')
+            ->item('task template')
+            ->toResponse();
     }
 
     /**
@@ -45,6 +49,9 @@ class QuoteTaskTemplatePolicy
             return $this->allow();
         }
 
-        return $this->deny(__('access.cant_update', ['item' => 'task template']));
+        return ResponseBuilder::deny()
+            ->action('update')
+            ->item('task template')
+            ->toResponse();
     }
 }
