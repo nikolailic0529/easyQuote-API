@@ -5,28 +5,20 @@ namespace App\Services\Pipeliner\Strategies;
 use App\Enum\Lock;
 use App\Events\Opportunity\OpportunityCreated;
 use App\Events\Opportunity\OpportunityUpdated;
-use App\Foundation\Fork\Exceptions\CouldNotCreateForkException;
-use App\Foundation\Fork\Fork;
-use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerNoteIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerPipelineIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
 use App\Integrations\Pipeliner\Models\ActivityRelationFilterInput;
-use App\Integrations\Pipeliner\Models\AppointmentEntity;
 use App\Integrations\Pipeliner\Models\AppointmentFilterInput;
-use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\LeadOpptyAccountRelationEntity;
-use App\Integrations\Pipeliner\Models\NoteEntity;
 use App\Integrations\Pipeliner\Models\NoteFilterInput;
 use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Integrations\Pipeliner\Models\OpportunityFilterInput;
 use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
-use App\Integrations\Pipeliner\Models\TaskEntity;
 use App\Integrations\Pipeliner\Models\TaskFilterInput;
-use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
@@ -35,7 +27,6 @@ use App\Services\Opportunity\OpportunityDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
-use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
@@ -48,21 +39,22 @@ class PullOpportunityStrategy implements PullStrategy
 {
     use SalesUnitsAware;
 
-    public function __construct(protected ConnectionInterface             $connection,
-                                protected EventDispatcher                 $eventDispatcher,
-                                protected PipelinerPipelineIntegration    $pipelineIntegration,
-                                protected PipelinerOpportunityIntegration $oppIntegration,
-                                protected PullCompanyStrategy             $pullCompanyStrategy,
-                                protected PullTaskStrategy                $pullTaskStrategy,
-                                protected PullAppointmentStrategy         $pullAppointmentStrategy,
-                                protected PullNoteStrategy                $pullNoteStrategy,
-                                protected PullAttachmentStrategy          $pullAttachmentStrategy,
-                                protected PipelinerAppointmentIntegration $appointmentIntegration,
-                                protected PipelinerTaskIntegration        $taskIntegration,
-                                protected PipelinerNoteIntegration        $noteIntegration,
-                                protected OpportunityDataMapper           $oppDataMapper,
-                                protected LockProvider                    $lockProvider)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected EventDispatcher $eventDispatcher,
+        protected PipelinerPipelineIntegration $pipelineIntegration,
+        protected PipelinerOpportunityIntegration $oppIntegration,
+        protected PullCompanyStrategy $pullCompanyStrategy,
+        protected PullTaskStrategy $pullTaskStrategy,
+        protected PullAppointmentStrategy $pullAppointmentStrategy,
+        protected PullNoteStrategy $pullNoteStrategy,
+        protected PullAttachmentStrategy $pullAttachmentStrategy,
+        protected PipelinerAppointmentIntegration $appointmentIntegration,
+        protected PipelinerTaskIntegration $taskIntegration,
+        protected PipelinerNoteIntegration $noteIntegration,
+        protected OpportunityDataMapper $oppDataMapper,
+        protected LockProvider $lockProvider
+    ) {
     }
 
     /**
@@ -77,33 +69,19 @@ class PullOpportunityStrategy implements PullStrategy
 
     public function iteratePending(): \Traversable
     {
-        /** @var iterable<LazyCollection> $chunks */
-        $chunks = LazyCollection::make(function (): \Generator {
+        return LazyCollection::make(function (): \Generator {
             yield from $this->oppIntegration->simpleScroll(
-                ...$this->resolveScrollParameters()
+                ...$this->resolveScrollParameters(),
+                ...['first' => 2_000]
             );
         })
             ->filter(function (array $item): bool {
                 return $this->isStrategyYetToBeAppliedTo($item['id'], $item['modified']);
-            })
-            ->mapWithKeys(static function (array $item, string $cursor): \Generator {
-                yield $item['id'] => $item + ['cursor' => $cursor];
-            })
-            ->chunk(10);
-
-        foreach ($chunks as $chunk) {
-            $map = collect($chunk->all());
-
-            $items = $this->oppIntegration->getByIds(...$map->pluck('id')->all());
-
-            foreach ($items as $item) {
-                yield $map->get($item->id)['cursor'] => $item;
-            }
-        }
+            });
     }
 
     /**
-     * @param OpportunityEntity $entity
+     * @param  OpportunityEntity  $entity
      * @return Opportunity
      */
     public function sync(object $entity): Model
@@ -124,7 +102,8 @@ class PullOpportunityStrategy implements PullStrategy
             /** @var Collection|Company[] $accounts */
             $accounts = Collection::make($entity->accountRelations)
                 ->map(function (LeadOpptyAccountRelationEntity $relationEntity) use ($entity): Company {
-                    return $this->pullCompanyStrategy->sync($relationEntity->account, contactRelations: $relationEntity->isPrimary ? $entity->contactRelations : []);
+                    return $this->pullCompanyStrategy->sync($relationEntity->account,
+                        contactRelations: $relationEntity->isPrimary ? $entity->contactRelations : []);
                 });
 
             $newOpportunity = $this->oppDataMapper->mapOpportunityFromOpportunityEntity($entity, $accounts);
@@ -186,31 +165,38 @@ class PullOpportunityStrategy implements PullStrategy
                 }
             },
             function () use ($entity): void {
-                $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()->opportunityRelations(
-                    ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
-                ), first: 100);
+                $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()
+                    ->opportunityRelations(
+                        ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
+                    ), first: 100);
 
                 foreach ($iterator as $item) {
                     $this->pullAppointmentStrategy->sync($item);
                 }
             },
             function () use ($model, $entity): void {
-                $attachments = Collection::make($entity->documents)
-                    ->map(function (CloudObjectEntity $entity): Attachment {
-                        return $this->pullAttachmentStrategy->sync($entity);
+                $attachments = collect($entity->documents)
+                    ->lazy()
+                    ->chunk(50)
+                    ->map(function (LazyCollection $collection): array {
+                        return $this->pullAttachmentStrategy->batch(...$collection->all());
+                    })
+                    ->collapse()
+                    ->pipe(static function (LazyCollection $collection) {
+                        return Collection::make($collection->all());
                     });
 
-                $this->connection->transaction(static fn() => $model->attachments()->syncWithoutDetaching($attachments));
-            }
+                if ($attachments->isNotEmpty()) {
+                    $this->connection->transaction(
+                        static fn() => $model->attachments()->syncWithoutDetaching($attachments)
+                    );
+                }
+            },
         ];
 
-        try {
-            Fork::new()->before(child: fn () => $this->connection->reconnect())->run(...$tasks);
-        } catch (CouldNotCreateForkException) {
-            collect($tasks)->each(static function (callable $task): void {
-                $task();
-            });
-        }
+        collect($tasks)->each(static function (callable $task): void {
+            $task();
+        });
     }
 
     public function syncByReference(string $reference): Model
@@ -282,7 +268,7 @@ class PullOpportunityStrategy implements PullStrategy
 
         return $syncStrategyLogModel->newQuery()
             ->whereMorphedTo('model', $model)
-            ->where('strategy_name', (string)StrategyNameResolver::from($this))
+            ->where('strategy_name', (string) StrategyNameResolver::from($this))
             ->where($syncStrategyLogModel->getUpdatedAtColumn(), '>=', $modified)
             ->doesntExist();
     }
@@ -304,8 +290,10 @@ class PullOpportunityStrategy implements PullStrategy
         return $entity instanceof Opportunity || $entity instanceof OpportunityEntity;
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
-        'modified' => \DateTimeInterface::class])]
+    #[ArrayShape([
+        'id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
+        'modified' => \DateTimeInterface::class,
+    ])]
     public function getMetadata(?string $reference): array
     {
         $entity = $this->oppIntegration->getById($reference);

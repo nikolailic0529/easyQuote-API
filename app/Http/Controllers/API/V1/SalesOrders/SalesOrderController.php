@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\V1\SalesOrders;
 use App\Contracts\Services\ProcessesSalesOrderState;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderResult;
 use App\Http\Controllers\Controller;
+use App\Services\WorldwideQuote\Models\QuoteExportResult;
 use App\Http\Requests\{SalesOrder\CancelSalesOrder, SalesOrder\DraftSalesOrder, SalesOrder\UpdateSalesOrder};
 use App\Http\Resources\V1\SalesOrder\SalesOrderState;
 use App\Models\SalesOrder;
@@ -233,17 +234,17 @@ class SalesOrderController extends Controller
     /**
      * Export the submitted Sales Order.
      *
-     * @param SalesOrder $salesOrder
-     * @param SalesOrderDataMapper $salesOrderDataMapper
-     * @param WorldwideQuoteDataMapper $quoteDataMapper
-     * @param \App\Services\WorldwideQuote\WorldwideQuoteExporter $exporter
-     * @return Response
+     * @param  SalesOrder  $salesOrder
+     * @param  SalesOrderDataMapper  $salesOrderDataMapper
+     * @param  WorldwideQuoteDataMapper  $quoteDataMapper
+     * @param  WorldwideQuoteExporter  $exporter
+     * @return QuoteExportResult
      * @throws AuthorizationException
      */
     public function exportSalesOrder(SalesOrder $salesOrder,
                                      SalesOrderDataMapper $salesOrderDataMapper,
                                      WorldwideQuoteDataMapper $quoteDataMapper,
-                                     WorldwideQuoteExporter $exporter): Response
+                                     WorldwideQuoteExporter $exporter): QuoteExportResult
     {
         $this->authorize('view', $salesOrder);
 

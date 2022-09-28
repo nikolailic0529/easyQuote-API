@@ -14,6 +14,7 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\SalesOrder;
 use App\Services\Exceptions\ValidationException;
 use App\Services\WorldwideQuote\Models\PageLocatedElements;
+use App\Services\WorldwideQuote\Models\QuoteExportResult;
 use Barryvdh\Snappy\PdfWrapper;
 use iio\libmergepdf\Merger;
 use Illuminate\Contracts\View\Factory as ViewFactory;
@@ -36,7 +37,7 @@ class WorldwideQuoteExporter
     {
     }
 
-    public function export(WorldwideQuotePreviewData $previewData, WorldwideQuote|SalesOrder $exportedEntity): Response
+    public function export(WorldwideQuotePreviewData $previewData, WorldwideQuote|SalesOrder $exportedEntity): QuoteExportResult
     {
         $this->mapTemplateDataControls($previewData);
 
@@ -79,12 +80,10 @@ class WorldwideQuoteExporter
             }
         }
 
-        $content = $merger->merge();
-
-        return new Response($content, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'."$rfqNumber.pdf".'"',
-        ]);
+        return new QuoteExportResult(
+            content: $merger->merge(),
+            filename: "$rfqNumber.pdf"
+        );
     }
 
     private function isPdfBlank(string $filepath): bool

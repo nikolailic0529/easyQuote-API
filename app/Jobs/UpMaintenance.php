@@ -41,12 +41,14 @@ class UpMaintenance
     {
         Maintenance::putData();
 
-        ScheduleMaintenance::dispatchNow($this->startTime, $this->endTime);
+        ScheduleMaintenance::dispatchSync($this->startTime, $this->endTime);
 
-        $start = StartMaintenance::dispatch($this->endTime)->delay($this->startTime);
+        $start = StartMaintenance::dispatch($this->endTime)
+            ->onQueue('long')
+            ->delay($this->startTime);
 
         if ($this->autoComplete) {
-            $start->chain([(new StopMaintenance)->delay($this->endTime)]);
+            $start->chain([(new StopMaintenance)->delay($this->endTime)->onQueue('long')]);
         }
     }
 }

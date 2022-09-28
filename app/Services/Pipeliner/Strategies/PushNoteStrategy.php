@@ -102,4 +102,9 @@ class PushNoteStrategy implements PushStrategy
     {
         return $entity instanceof Note;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return Note::query()->findOrFail($reference);
+    }
 }

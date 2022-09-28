@@ -10,14 +10,13 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Throwable;
 
-final class QueuedPipelinerSyncRemoteEntitySkipped implements ShouldBroadcastNow
+final class QueuedPipelinerSyncEntitySkipped implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
         public readonly object $entity,
         public readonly ?Model $causer,
-        public readonly string $correlationId,
         public readonly ?Throwable $e,
     ) {
     }
@@ -29,14 +28,14 @@ final class QueuedPipelinerSyncRemoteEntitySkipped implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'queued-pipeliner-sync.remote-entity-skipped';
+        return 'queued-pipeliner-sync.entity-skipped';
     }
 
     public function broadcastWith(): array
     {
         return [
-            'correlation_id' => $this->correlationId,
-            'entity_id' => $this->entity->id,
+            'entity_id' => $this->entity->getKey(),
+            'entity_type' => class_basename($this->entity),
         ];
     }
 }

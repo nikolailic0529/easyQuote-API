@@ -72,4 +72,9 @@ class PushSalesUnitStrategy implements PushStrategy
     {
         return $entity instanceof SalesUnit;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return SalesUnit::query()->findOrFail($reference);
+    }
 }

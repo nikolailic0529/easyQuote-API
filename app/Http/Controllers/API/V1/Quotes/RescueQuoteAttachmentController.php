@@ -48,7 +48,7 @@ class RescueQuoteAttachmentController extends Controller
 
         $resource = $entityService->createAttachmentForEntity(
             file: $request->getUploadedFile(),
-            attachmentType: $request->getAttachmentType(),
+            type: $request->getAttachmentType(),
             entity: $quote,
         );
 

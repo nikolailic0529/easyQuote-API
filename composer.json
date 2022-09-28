@@ -12,6 +12,7 @@
     "ext-json": "*",
     "ext-libxml": "*",
     "ext-simplexml": "*",
+    "ext-sockets": "*",
     "ext-yaml": "*",
     "ext-zip": "*",
     "awobaz/compoships": "^2.1",
@@ -36,6 +37,7 @@
     "intervention/image": "^2.5",
     "laminas/laminas-escaper": "^2.7",
     "laravel/framework": "^8.0",
+    "laravel/horizon": "^5.10",
     "laravel/legacy-factories": "^1.1",
     "laravel/passport": "^10.1",
     "laravel/telescope": "^4.5",
@@ -66,8 +68,7 @@
     "symfony/intl": "^5.2",
     "symfony/validator": "^5.2",
     "webpatser/laravel-countries": "^1.5",
-    "webpatser/laravel-uuid": "^4.0",
-    "ext-sockets": "*"
+    "webpatser/laravel-uuid": "^4.0"
   },
   "require-dev": {
     "barryvdh/laravel-ide-helper": "^2.12.0",

@@ -123,7 +123,9 @@ class Invitation extends Model implements SearchableEntity
      */
     public function getUrlAttribute(): string
     {
-        return (string) Str::of($this->host)->finish('/')->finish('signup/')->append($this->invitation_token);
+        return (string)Str::of(config('app.ui_url'))
+            ->finish('/')
+            ->append('signup', '/', $this->invitation_token);
     }
 
     public function getUserEmailAttribute()

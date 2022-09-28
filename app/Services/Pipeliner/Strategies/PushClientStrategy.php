@@ -88,4 +88,9 @@ class PushClientStrategy implements PushStrategy
     {
         return $entity instanceof User;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return User::query()->findOrFail($reference);
+    }
 }

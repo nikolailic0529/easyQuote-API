@@ -65,4 +65,9 @@ class PushAttachmentStrategy implements PushStrategy
     {
         return $entity instanceof Attachment;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return Attachment::query()->findOrFail($reference);
+    }
 }

@@ -4,7 +4,7 @@ namespace App\Services\Pipeliner;
 
 use App\Models\Pipeliner\PipelinerCustomField;
 
-class RuntimeCachedFieldApiNameResolver
+class CachedFieldApiNameResolver
 {
     /** @var string[] */
     private array $cache = [];

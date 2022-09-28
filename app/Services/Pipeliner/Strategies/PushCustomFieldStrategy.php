@@ -126,4 +126,9 @@ class PushCustomFieldStrategy implements PushStrategy
     {
         return $entity instanceof CustomField;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return CustomField::query()->findOrFail($reference);
+    }
 }

@@ -87,8 +87,6 @@ class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
             ->setOwner($this->owner)
             ->release();
 
-        if ($this->causer instanceof User) {
-            event(new QueuedPipelinerSyncFailed($exception, $this->causer));
-        }
+        event(new QueuedPipelinerSyncFailed($exception));
     }
 }

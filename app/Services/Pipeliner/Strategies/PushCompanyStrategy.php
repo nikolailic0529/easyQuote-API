@@ -3,7 +3,6 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Enum\AddressType;
-use App\Foundation\Fork\Exceptions\CouldNotCreateForkException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
 use App\Integrations\Pipeliner\Models\ContactAccountRelationEntity;
@@ -30,7 +29,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\LazyCollection;
-use App\Foundation\Fork\Fork;
 
 class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyEntities
 {
@@ -64,7 +62,10 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         $syncStrategyLogModel = new PipelinerSyncStrategyLog();
 
         return $model->newQuery()
-            ->select($model->qualifyColumn('*'))
+            ->select([
+                $model->getQualifiedKeyName(),
+                $model->getQualifiedUpdatedAtColumn(),
+            ])
             ->orderBy($model->getQualifiedUpdatedAtColumn())
             ->whereNonSystem()
             ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(), Collection::make($this->getSalesUnits())->modelKeys())
@@ -158,13 +159,9 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             fn() => $this->syncAppointmentsFromAccount($model),
         ];
 
-        try {
-            Fork::new()->before(child: fn () => $this->connection->reconnect())->run(...$tasks);
-        } catch (CouldNotCreateForkException) {
-            collect($tasks)->each(static function (callable $task): void {
-                $task();
-            });
-        }
+        collect($tasks)->each(static function (callable $task): void {
+            $task();
+        });
     }
 
     private function syncNotesFromAccount(Company $model): void
@@ -280,7 +277,13 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
     public function iteratePending(): \Traversable
     {
         return $this->modelsToBeUpdatedQuery()
-            ->lazyById(100);
+            ->lazyById()
+            ->map(static function (Company $model): array {
+                return [
+                    'id' => $model->getKey(),
+                    'modified' => $model->{$model->getUpdatedAtColumn()}
+                ];
+            });
     }
 
     public function getModelType(): string
@@ -329,5 +332,10 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
                 return false;
             })
             ->values();
+    }
+
+    public function getByReference(string $reference): object
+    {
+        return Company::query()->findOrFail($reference);
     }
 }

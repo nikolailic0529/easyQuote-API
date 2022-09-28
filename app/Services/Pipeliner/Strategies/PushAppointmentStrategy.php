@@ -120,4 +120,9 @@ class PushAppointmentStrategy implements PushStrategy
     {
         return $entity instanceof Appointment;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return Appointment::query()->findOrFail($reference);
+    }
 }

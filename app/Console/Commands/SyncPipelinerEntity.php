@@ -9,6 +9,7 @@ use App\Models\Opportunity;
 use App\Models\Task\Task;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerDataSyncService;
+use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Log\LogManager;

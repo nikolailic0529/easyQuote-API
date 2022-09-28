@@ -2,8 +2,6 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
-use App\Foundation\Fork\Exceptions\CouldNotCreateForkException;
-use App\Foundation\Fork\Fork;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
@@ -29,24 +27,25 @@ class PushOpportunityStrategy implements PushStrategy
 {
     use SalesUnitsAware;
 
-    public function __construct(protected ConnectionInterface               $connection,
-                                protected PipelinerAccountLookupService     $accountLookupService,
-                                protected PipelinerOpportunityLookupService $opportunityLookupService,
-                                protected PipelinerPipelineIntegration      $pipelineIntegration,
-                                protected PipelinerAccountIntegration       $accountIntegration,
-                                protected PipelinerOpportunityIntegration   $oppIntegration,
-                                protected PipelinerClientIntegration        $clientIntegration,
-                                protected PushSalesUnitStrategy             $pushSalesUnitStrategy,
-                                protected PushClientStrategy                $pushClientStrategy,
-                                protected PushCurrencyStrategy              $pushCurrencyStrategy,
-                                protected PushContactStrategy               $pushContactStrategy,
-                                protected PushCompanyStrategy               $pushCompanyStrategy,
-                                protected PushNoteStrategy                  $pushNoteStrategy,
-                                protected PushTaskStrategy                  $pushTaskStrategy,
-                                protected PushAttachmentStrategy            $pushAttachmentStrategy,
-                                protected PushAppointmentStrategy           $pushAppointmentStrategy,
-                                protected OpportunityDataMapper             $dataMapper)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected PipelinerAccountLookupService $accountLookupService,
+        protected PipelinerOpportunityLookupService $opportunityLookupService,
+        protected PipelinerPipelineIntegration $pipelineIntegration,
+        protected PipelinerAccountIntegration $accountIntegration,
+        protected PipelinerOpportunityIntegration $oppIntegration,
+        protected PipelinerClientIntegration $clientIntegration,
+        protected PushSalesUnitStrategy $pushSalesUnitStrategy,
+        protected PushClientStrategy $pushClientStrategy,
+        protected PushCurrencyStrategy $pushCurrencyStrategy,
+        protected PushContactStrategy $pushContactStrategy,
+        protected PushCompanyStrategy $pushCompanyStrategy,
+        protected PushNoteStrategy $pushNoteStrategy,
+        protected PushTaskStrategy $pushTaskStrategy,
+        protected PushAttachmentStrategy $pushAttachmentStrategy,
+        protected PushAppointmentStrategy $pushAppointmentStrategy,
+        protected OpportunityDataMapper $dataMapper
+    ) {
     }
 
 
@@ -67,9 +66,13 @@ class PushOpportunityStrategy implements PushStrategy
         $syncStrategyLogModel = new PipelinerSyncStrategyLog();
 
         return $model->newQuery()
-            ->select($model->qualifyColumn('*'))
+            ->select([
+                $model->getQualifiedKeyName(),
+                $model->getQualifiedUpdatedAtColumn(),
+            ])
             ->orderBy($model->getQualifiedUpdatedAtColumn())
-            ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(), Collection::make($this->getSalesUnits())->modelKeys())
+            ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(),
+                Collection::make($this->getSalesUnits())->modelKeys())
             ->where(static function (Builder $builder) use ($model): void {
                 $builder->whereColumn($model->getQualifiedUpdatedAtColumn(), '>', $model->getQualifiedCreatedAtColumn())
                     ->orWhereNull($model->qualifyColumn('pl_reference'));
@@ -78,7 +81,8 @@ class PushOpportunityStrategy implements PushStrategy
                 $syncStrategyLogModel->newQuery()
                     ->selectRaw("max({$syncStrategyLogModel->getQualifiedUpdatedAtColumn()}) as {$syncStrategyLogModel->getUpdatedAtColumn()}")
                     ->addSelect($syncStrategyLogModel->model()->getQualifiedForeignKeyName())
-                    ->where($syncStrategyLogModel->qualifyColumn('strategy_name'), (string)StrategyNameResolver::from($this))
+                    ->where($syncStrategyLogModel->qualifyColumn('strategy_name'),
+                        (string) StrategyNameResolver::from($this))
                     ->groupBy($syncStrategyLogModel->model()->getQualifiedForeignKeyName())
                 ,
                 'latest_sync_strategy_log',
@@ -88,7 +92,8 @@ class PushOpportunityStrategy implements PushStrategy
             ->where(static function (Builder $builder) use ($syncStrategyLogModel, $model): void {
                 $builder
                     ->whereNull("latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}")
-                    ->orWhereColumn($model->getQualifiedUpdatedAtColumn(), '>', "latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}");
+                    ->orWhereColumn($model->getQualifiedUpdatedAtColumn(), '>',
+                        "latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}");
             })
             ->unless(is_null($lastOpportunityUpdatedAt), static function (Builder $builder) use (
                 $model,
@@ -111,11 +116,18 @@ class PushOpportunityStrategy implements PushStrategy
      */
     public function iteratePending(): \Traversable
     {
-        return $this->modelsToBeUpdatedQuery()->lazyById(100);
+        return $this->modelsToBeUpdatedQuery()
+            ->lazyById()
+            ->map(static function (Opportunity $model): array {
+                return [
+                    'id' => $model->getKey(),
+                    'modified' => $model->{$model->getUpdatedAtColumn()},
+                ];
+            });
     }
 
     /**
-     * @param Opportunity $model
+     * @param  Opportunity  $model
      * @return void
      * @throws \App\Integrations\Pipeliner\Exceptions\GraphQlRequestException
      * @throws \App\Services\Pipeliner\Exceptions\MultiplePipelinerEntitiesFoundException
@@ -154,7 +166,9 @@ class PushOpportunityStrategy implements PushStrategy
         if (is_null($model->pl_reference)) {
             $input = $this->dataMapper->mapPipelinerCreateOpportunityInput(opportunity: $model);
 
-            $oppEntity = $this->oppIntegration->create($input, ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS, ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
+            $oppEntity = $this->oppIntegration->create($input,
+                ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS,
+                    ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
 
             tap($model, function (Opportunity $opportunity) use ($oppEntity): void {
                 $opportunity->pl_reference = $oppEntity->id;
@@ -172,25 +186,23 @@ class PushOpportunityStrategy implements PushStrategy
             $modifiedFields = $input->getModifiedFields();
 
             if (false === empty($modifiedFields)) {
-                $this->oppIntegration->update($input, ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS, ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
+                $this->oppIntegration->update($input,
+                    ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS,
+                        ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
             }
         }
 
         // Pushing the note, task, appointment entities at last,
         // as they are dependent on the existing opportunity entity.
         $tasks = [
-            fn () => $this->pushNotesFromOppty($model),
-            fn () => $this->pushTasksFromOppty($model),
-            fn () => $this->pushAppointmentsFromOppty($model),
+            fn() => $this->pushNotesFromOppty($model),
+            fn() => $this->pushTasksFromOppty($model),
+            fn() => $this->pushAppointmentsFromOppty($model),
         ];
 
-        try {
-            Fork::new()->before(child: fn () => $this->connection->reconnect())->run(...$tasks);
-        } catch (CouldNotCreateForkException) {
-            collect($tasks)->each(static function (callable $task): void {
-                $task();
-            });
-        }
+        collect($tasks)->each(static function (callable $task): void {
+            $task();
+        });
     }
 
     public function getModelType(): string
@@ -272,5 +284,10 @@ class PushOpportunityStrategy implements PushStrategy
         foreach ($opportunity->ownAppointments()->lazyById(100) as $item) {
             $this->pushAppointmentStrategy->sync($item);
         }
+    }
+
+    public function getByReference(string $reference): object
+    {
+        return Opportunity::query()->findOrFail($reference);
     }
 }

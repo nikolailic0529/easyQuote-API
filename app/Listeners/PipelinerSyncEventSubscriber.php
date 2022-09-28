@@ -4,14 +4,10 @@ namespace App\Listeners;
 
 use App\Contracts\ProvidesIdForHumans;
 use App\Enum\Priority;
-use App\Events\Pipeliner\QueuedPipelinerSyncLocalEntitySkipped;
-use App\Events\Pipeliner\QueuedPipelinerSyncRemoteEntitySkipped;
+use App\Events\Pipeliner\QueuedPipelinerSyncEntitySkipped;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
-use App\Models\Appointment\Appointment;
 use App\Models\Company;
-use App\Models\Contact;
 use App\Models\Opportunity;
-use App\Models\Task\Task;
 use App\Models\User;
 use App\Services\Notification\Models\PendingNotification;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -25,25 +21,33 @@ class PipelinerSyncEventSubscriber
 {
     public function subscribe(Dispatcher $events): void
     {
-        $events->listen(QueuedPipelinerSyncLocalEntitySkipped::class, [self::class, 'handleLocalEntitySkippedEvent']);
-        $events->listen(QueuedPipelinerSyncRemoteEntitySkipped::class, [self::class, 'handleRemoteEntitySkippedEvent']);
+        $events->listen(QueuedPipelinerSyncEntitySkipped::class, [self::class, 'handleEntitySkippedEvent']);
     }
 
-    public function handleLocalEntitySkippedEvent(QueuedPipelinerSyncLocalEntitySkipped $event): void
+    public function handleEntitySkippedEvent(QueuedPipelinerSyncEntitySkipped $event): void
     {
-        if ($event->causer instanceof User) {
-            $url = match ($event->model::class) {
-                Opportunity::class => ui_route('opportunities.update', ['opportunity' => $event->model]),
-                Company::class => ui_route('companies.update', ['company' => $event->model]),
+        if ($event->entity instanceof Model) {
+            $this->handleModelSkippedEvent($event->entity, $event->e, $event->causer);
+        } else {
+            $this->handlePipelinerEntitySkippedEvent($event->entity, $event->e, $event->causer);
+        }
+    }
+
+    protected function handleModelSkippedEvent(Model $model, ?\Throwable $e, ?Model $causer): void
+    {
+        if ($causer instanceof User) {
+            $url = match ($model::class) {
+                Opportunity::class => ui_route('opportunities.update', ['opportunity' => $model]),
+                Company::class => ui_route('companies.update', ['company' => $model]),
                 default => null,
             };
 
-            $modelName = Str::headline(class_basename($event->model));
+            $modelName = Str::headline(class_basename($model));
 
-            $errors = isset($event->e) ? $this->errorsForHumans($event->e) : null;
+            $errors = isset($e) ? $this->errorsForHumans($e) : null;
 
             notification()
-                ->for($event->causer)
+                ->for($causer)
                 ->priority(Priority::High)
                 ->unless(is_null($url), static function (PendingNotification $n) use ($url): void {
                     $n->url($url);
@@ -55,7 +59,7 @@ Unable push {{ \$model_name }} [{{ \$model_id }}] to pipeliner due to errors.
 {!! \$errors !!}@endisset
 MSG,
                         [
-                            'model_id' => $this->modelIdForHumans($event->model),
+                            'model_id' => $this->modelIdForHumans($model),
                             'model_name' => $modelName,
                             'errors' => $errors->join("\n"),
                         ])
@@ -64,16 +68,15 @@ MSG,
         }
     }
 
-    public function handleRemoteEntitySkippedEvent(QueuedPipelinerSyncRemoteEntitySkipped $event): void
+    protected function handlePipelinerEntitySkippedEvent(object $entity, ?\Throwable $e, ?Model $causer): void
     {
-        if ($event->causer instanceof User) {
-
-            $entityName = Str::of($event->entity)->classBasename()->beforeLast('Entity')->headline();
+        if ($causer instanceof User) {
+            $entityName = Str::of($entity)->classBasename()->beforeLast('Entity')->headline();
 
             notification()
-                ->for($event->causer)
+                ->for($causer)
                 ->priority(Priority::High)
-                ->message("Unable to pull $entityName ({$event->entity->id}) from pipeliner due to errors.")
+                ->message("Unable to pull $entityName ($entity->id) from pipeliner due to errors.")
                 ->push();
         }
     }

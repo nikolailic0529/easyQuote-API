@@ -45,8 +45,8 @@ use App\Models\User;
 use App\Repositories\TaskTemplate\QuoteTaskTemplateStore;
 use App\Services\Attachment\AttachmentDataMapper;
 use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
-use App\Services\Pipeliner\RuntimeCachedSalesUnitResolver;
-use App\Services\Pipeliner\RuntimeCachedTaskTypeResolver;
+use App\Services\Pipeliner\CachedSalesUnitResolver;
+use App\Services\Pipeliner\CachedTaskTypeResolver;
 use App\Services\Template\Models\TemplateControlFilter;
 use App\Services\Template\TemplateSchemaDataMapper;
 use Illuminate\Database\Eloquent\Collection;
@@ -63,8 +63,8 @@ class TaskDataMapper implements CauserAware
 
     public function __construct(protected QuoteTaskTemplateStore         $taskTemplateStore,
                                 protected TemplateSchemaDataMapper       $templateSchemaMapper,
-                                protected RuntimeCachedSalesUnitResolver $salesUnitResolver,
-                                protected RuntimeCachedTaskTypeResolver  $pipelinerTaskTypeResolver,
+                                protected CachedSalesUnitResolver $salesUnitResolver,
+                                protected CachedTaskTypeResolver  $pipelinerTaskTypeResolver,
                                 protected AttachmentDataMapper           $attachmentDataMapper)
     {
     }

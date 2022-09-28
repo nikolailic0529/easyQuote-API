@@ -3,12 +3,10 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
-use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
 use App\Integrations\Pipeliner\Models\TaskEntity;
 use App\Integrations\Pipeliner\Models\TaskFilterInput;
-use App\Models\Attachment;
 use App\Models\PipelinerModelScrollCursor;
 use App\Models\Task\Task;
 use App\Services\Attachment\AttachmentDataMapper;
@@ -20,24 +18,26 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
 class PullTaskStrategy implements PullStrategy
 {
     use SalesUnitsAware;
 
-    public function __construct(protected ConnectionInterface      $connection,
-                                protected PipelinerTaskIntegration $taskIntegration,
-                                protected TaskDataMapper           $dataMapper,
-                                protected AttachmentDataMapper     $attachmentDataMapper,
-                                protected AttachmentFileService    $attachmentFileService,
-                                protected PullAttachmentStrategy   $pullAttachmentStrategy,
-                                protected LockProvider             $lockProvider)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected PipelinerTaskIntegration $taskIntegration,
+        protected TaskDataMapper $dataMapper,
+        protected AttachmentDataMapper $attachmentDataMapper,
+        protected AttachmentFileService $attachmentFileService,
+        protected PullAttachmentStrategy $pullAttachmentStrategy,
+        protected LockProvider $lockProvider
+    ) {
     }
 
     /**
-     * @param TaskEntity $entity
+     * @param  TaskEntity  $entity
      * @return Model
      * @throws \Throwable
      */
@@ -99,12 +99,22 @@ class PullTaskStrategy implements PullStrategy
 
     private function syncRelationsOfTaskEntity(TaskEntity $entity, Task $model): void
     {
-        $attachments = Collection::make($entity->documents)
-            ->map(function (CloudObjectEntity $entity): Attachment {
-                return $this->pullAttachmentStrategy->sync($entity);
+        $attachments = collect($entity->documents)
+            ->lazy()
+            ->chunk(50)
+            ->map(function (LazyCollection $collection): array {
+                return $this->pullAttachmentStrategy->batch(...$collection->all());
+            })
+            ->collapse()
+            ->pipe(static function (LazyCollection $collection) {
+                return Collection::make($collection->all());
             });
 
-        $this->connection->transaction(static fn() => $model->attachments()->syncWithoutDetaching($attachments));
+        if ($attachments->isNotEmpty()) {
+            $this->connection->transaction(
+                static fn() => $model->attachments()->syncWithoutDetaching($attachments)
+            );
+        }
     }
 
     public function syncByReference(string $reference): Model
@@ -183,8 +193,10 @@ class PullTaskStrategy implements PullStrategy
         return $entity instanceof Task;
     }
 
-    #[ArrayShape(['id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
-        'modified' => \DateTimeInterface::class])]
+    #[ArrayShape([
+        'id' => 'string', 'revision' => 'int', 'created' => \DateTimeInterface::class,
+        'modified' => \DateTimeInterface::class,
+    ])]
     public function getMetadata(string $reference): array
     {
         $entity = $this->taskIntegration->getById($reference);

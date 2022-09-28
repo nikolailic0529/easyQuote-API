@@ -53,13 +53,13 @@ class ScheduleMaintenance implements ShouldQueue
             ->send();
 
         $users->cursor()
-            ->each(static function (User $user) {
+            ->each(function (User $user): void {
                 MaintenanceScheduledEvent::dispatch($user, $this->startTime);
             });
 
         try {
             $users->cursor()
-                ->each(static function (User $user): void {
+                ->each(function (User $user): void {
                     $user->notify(new MaintenanceScheduled($this->startTime, $this->endTime));
                 });
         } catch (MailRateLimitException $e) {

@@ -19,7 +19,7 @@ class DenyResponse extends Fluent
         $item = $this->get('item', '');
         $reason = $this->get('reason');
 
-        $key = isset($reason) ? 'access.no_permissions_to' : 'access.no_permissions_to_because';
+        $key = isset($reason) ? 'access.no_permissions_to_because' : 'access.no_permissions_to';
 
         return Response::deny(__($key, ['action' => $action, 'item' => $item, 'reason' => $reason]), HttpResponse::HTTP_FORBIDDEN);
     }

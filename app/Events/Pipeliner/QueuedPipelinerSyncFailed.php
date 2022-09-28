@@ -5,7 +5,6 @@ namespace App\Events\Pipeliner;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Throwable;
@@ -16,7 +15,6 @@ final class QueuedPipelinerSyncFailed implements ShouldBroadcastNow
 
     public function __construct(
         protected readonly Throwable $exception,
-        protected readonly ?Model $causer
     ) {
         //
     }

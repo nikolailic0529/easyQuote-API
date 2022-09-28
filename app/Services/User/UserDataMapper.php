@@ -9,12 +9,12 @@ use App\Integrations\Pipeliner\Models\CreateSalesUnitClientRelationInput;
 use App\Integrations\Pipeliner\Models\CreateSalesUnitClientRelationInputCollection;
 use App\Integrations\Pipeliner\Models\MasterRight;
 use App\Models\User;
-use App\Services\Pipeliner\RuntimeCachedSalesUnitResolver;
+use App\Services\Pipeliner\CachedSalesUnitResolver;
 
 class UserDataMapper
 {
     public function __construct(protected PipelinerMasterRightIntegration $masterRightIntegration,
-                                protected RuntimeCachedSalesUnitResolver  $salesUnitResolver)
+                                protected CachedSalesUnitResolver  $salesUnitResolver)
     {
     }
 

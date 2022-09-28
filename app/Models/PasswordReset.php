@@ -43,7 +43,7 @@ class PasswordReset extends Model
      */
     public function getUrlAttribute(): string
     {
-        return Str::of($this->host)->finish('/')->append('reset/', $this->token);
+        return Str::of(config('app.ui_url'))->finish('/')->append('reset/', $this->token);
     }
 
     public function getRouteKeyName()

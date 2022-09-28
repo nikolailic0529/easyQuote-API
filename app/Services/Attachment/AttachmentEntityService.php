@@ -6,6 +6,7 @@ use App\Enum\AttachmentType;
 use App\Events\Attachment\AttachmentCreated;
 use App\Events\Attachment\AttachmentDeleted;
 use App\Events\Attachment\AttachmentExported;
+use App\Foundation\File\BinaryFileContent;
 use App\Models\Attachable;
 use App\Models\Attachment;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use function tap;
 
@@ -42,22 +44,42 @@ class AttachmentEntityService
             });
     }
 
-    public function createAttachmentForEntity(UploadedFile   $file,
-                                              AttachmentType $attachmentType,
-                                              Model          $entity): Attachment
+    public function createAttachmentFromBinaryFile(BinaryFileContent $file, AttachmentType $attachmentType): Attachment
     {
-        return tap($this->createAttachmentFromUploadedFile($file, $attachmentType),
-            function (Attachment $attachment) use ($entity): void {
-                $this->connection->transaction(function () use ($attachment, $entity) {
-                    $entity
-                        ->morphToMany($attachment::class, 'attachable')
-                        ->attach($attachment);
+        $this->filesystem->put(
+            $filePath = Str::random(40),
+            $file->content,
+        );
 
-                    $this->touchRelated($attachment);
-                });
+        $metadata = $this->filesystem->getMetadata($filePath) + ['filename' => $file->filename];
 
-                $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
+        return tap($this->dataMapper->mapFromMetadata($metadata, $attachmentType),
+            function (Attachment $attachment): void {
+                $this->connection->transaction(static fn() => $attachment->save());
             });
+    }
+
+    public function createAttachmentForEntity(
+        UploadedFile|BinaryFileContent $file,
+        AttachmentType $type,
+        Model $entity
+    ): Attachment {
+        $attachment = match (true) {
+            is_a($file, UploadedFile::class, true) => $this->createAttachmentFromUploadedFile($file, $type),
+            is_a($file, BinaryFileContent::class, true) => $this->createAttachmentFromBinaryFile($file, $type),
+        };
+
+        return tap($attachment, function (Attachment $attachment) use ($entity): void {
+            $this->connection->transaction(function () use ($attachment, $entity) {
+                $entity
+                    ->morphToMany($attachment::class, 'attachable')
+                    ->attach($attachment);
+
+                $this->touchRelated($attachment);
+            });
+
+            $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
+        });
     }
 
     public function deleteAttachment(Attachment $attachment, Model $entity): void

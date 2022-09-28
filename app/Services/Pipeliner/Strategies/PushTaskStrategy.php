@@ -148,4 +148,9 @@ class PushTaskStrategy implements PushStrategy
     {
         return $entity instanceof Task;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return Task::query()->findOrFail($reference);
+    }
 }

@@ -36,7 +36,7 @@ use App\Models\Opportunity;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
-use App\Services\Pipeliner\RuntimeCachedAppointmentTypeResolver;
+use App\Services\Pipeliner\CachedAppointmentTypeResolver;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -48,7 +48,7 @@ class AppointmentDataMapper implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected RuntimeCachedAppointmentTypeResolver $pipelinerAppointmentTypeResolver)
+    public function __construct(protected CachedAppointmentTypeResolver $pipelinerAppointmentTypeResolver)
     {
     }
 

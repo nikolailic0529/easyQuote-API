@@ -6,17 +6,14 @@ use App\Contracts\CauserAware;
 use App\Contracts\CorrelationAware;
 use App\Contracts\FlagsAware;
 use App\Contracts\LoggerAware;
-use App\Events\Pipeliner\QueuedPipelinerSyncLocalEntitySkipped;
+use App\Events\Pipeliner\QueuedPipelinerSyncFailed;
 use App\Events\Pipeliner\QueuedPipelinerSyncProcessed;
-use App\Events\Pipeliner\QueuedPipelinerSyncProgress;
-use App\Events\Pipeliner\QueuedPipelinerSyncRemoteEntitySkipped;
 use App\Events\Pipeliner\QueuedPipelinerSyncStarting;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
+use App\Jobs\Pipeliner\SyncPipelinerEntity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
-use App\Models\PipelinerModelScrollCursor;
-use App\Models\PipelinerModelUpdateLog;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
@@ -28,16 +25,16 @@ use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use App\Services\Pipeliner\Strategies\StrategyNameResolver;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use Carbon\Carbon;
+use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
+use Illuminate\Contracts\Bus\QueueingDispatcher;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
@@ -63,7 +60,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         protected ConnectionInterface $connection,
         protected SyncPipelinerDataStatus $dataSyncStatus,
         protected SyncStrategyCollection $syncStrategies,
-        protected BusDispatcher $busDispatcher,
+        protected QueueingDispatcher $busDispatcher,
         protected EventDispatcher $eventDispatcher,
         protected Cache $cache,
         protected Config $config,
@@ -93,87 +90,54 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
         $this->logger->debug("Computing total count of pending entities...");
 
-        $events = new Dispatcher();
-
-        $counts = [];
+        $pendingEntities = collect();
 
         foreach ($this->syncStrategies as $key => $strategy) {
             if (false === $this->determineStrategyCanBeApplied($strategy)) {
                 continue;
             }
 
-            $counts[$key] = $strategy->countPending();
+            $pendingEntities[$key] = LazyCollection::make(static function () use ($strategy): \Generator {
+                yield from $strategy->iteratePending();
+            })
+                ->values();
 
-            if (0 === $counts[$key]) {
+            if ($pendingEntities[$key]->isEmpty()) {
                 $this->logger->debug(sprintf("Nothing to sync using: %s", class_basename($strategy::class)));
             }
         }
 
-        $pendingCount = $totalCount = array_sum($counts);
+        $counts = $pendingEntities->map(static function (LazyCollection $collection): int {
+            return $collection->eager()->count();
+        });
 
-        $this->dataSyncStatus->setTotal($pendingCount);
+        $pendingCount = $counts->sum();
+
+        $this->dataSyncStatus->setTotal($counts->sum());
 
         $this->logger->debug("Total count of pending entities: $pendingCount.", [
-            'counts' => collect($counts)
+            'counts' => $counts
                 ->mapWithKeys(static fn(int $count, string $class): array => [class_basename($class) => $count])
                 ->all(),
         ]);
 
-        $events->listen('progress', function () use (&$totalCount, &$pendingCount): void {
-            $pendingCount--;
-
-            // When the pending entities were added after synchronization start,
-            // the total count will be incremented.
-            if ($pendingCount < 0) {
-                $totalCount += abs($pendingCount);
-                $this->dataSyncStatus->setTotal($totalCount);
-                $pendingCount = 0;
-            }
-
-            $this->dataSyncStatus->incrementProcessed();
-
-            $this->logger->debug("Progress, total pending count: $pendingCount");
-
-            $this->eventDispatcher->dispatch(
-                new QueuedPipelinerSyncProgress(
-                    totalEntities: $totalCount,
-                    pendingEntities: $pendingCount,
-                    causer: $this->causer,
-                    correlationId: $this->correlationId,
-                )
-            );
-        });
-
-        $events->listen('skipped', function (object $entity, ?Throwable $e = null): void {
-            if ($entity instanceof Model) {
-                $this->eventDispatcher->dispatch(
-                    new QueuedPipelinerSyncLocalEntitySkipped($entity, $this->causer, $this->correlationId, $e)
-                );
-            } else {
-                $this->eventDispatcher->dispatch(
-                    new QueuedPipelinerSyncRemoteEntitySkipped($entity, $this->causer, $this->correlationId, $e)
-                );
-            }
-        });
-
         $this->eventDispatcher->dispatch(
-            new QueuedPipelinerSyncStarting(
-                totalEntities: $totalCount,
-                pendingEntities: $pendingCount,
-                causer: $this->causer,
-                correlationId: $this->correlationId,
-            )
+            new QueuedPipelinerSyncStarting(total: $pendingCount, pending: $pendingCount)
         );
 
-        foreach ($counts as $class => $count) {
-            if ($count > 0) {
+        foreach ($pendingEntities as $class => $collection) {
+            if (!$this->dataSyncStatus->running()) {
+                break;
+            }
+
+            if ($collection->isNotEmpty()) {
                 $this->logger->info(sprintf('Syncing entities using: %s', class_basename($class)));
 
-                $this->syncUsing($this->syncStrategies[$class], $events);
+                $this->syncUsing($this->syncStrategies[$class], $collection);
             }
         }
 
-        $this->eventDispatcher->dispatch(new QueuedPipelinerSyncProcessed($this->causer, $totalCount, $pendingCount));
+        $this->eventDispatcher->dispatch(new QueuedPipelinerSyncProcessed($pendingCount));
     }
 
     #[ArrayShape(['applied' => "array[]"])]
@@ -335,101 +299,65 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         }
     }
 
-    /**
-     * @throws PipelinerSyncException
-     */
-    protected function syncUsing(SyncStrategy $strategy, EventDispatcher $events): void
+    protected function syncUsing(SyncStrategy $strategy, \Traversable $pending): void
     {
-        if ($strategy instanceof PushStrategy) {
-            $this->pushUsing($strategy, $events);
+        $this->logger->info("Loading pending entities...", [
+            'strategy' => class_basename($strategy),
+        ]);
 
-            return;
-        }
+        /** @var Batch $batch */
+        $batch = LazyCollection::make(static function () use ($pending): \Generator {
+            yield from $pending;
+        })
+            ->map(function (array $item) use ($strategy): SyncPipelinerEntity {
+                return new SyncPipelinerEntity($strategy, $item['id'], $this->causer);
+            })
+            ->values()
+            ->pipe(function (LazyCollection $pending): Batch {
+                $statusOwner = $this->dataSyncStatus->getOwner();
 
-        if ($strategy instanceof PullStrategy) {
-            $this->pullUsing($strategy, $events);
+                return $this->busDispatcher
+                    ->batch($pending->all())
+                    ->onQueue('pipeliner-sync')
+                    ->catch(static function (Batch $batch, Throwable $e) use ($statusOwner): void {
+                        app('log')->channel('pipeliner')->error($e);
 
-            return;
-        }
+                        app(SyncPipelinerDataStatus::class)
+                            ->setOwner($statusOwner)
+                            ->release();
 
-        throw new PipelinerSyncException(sprintf("Strategy must implement either %s or %s.", PushStrategy::class,
-            PullStrategy::class));
-    }
+                        event(new QueuedPipelinerSyncFailed($e));
+                    })
+                    ->dispatch();
+            });
 
-    protected function pullUsing(PullStrategy $strategy, EventDispatcher $events): void
-    {
-        $pullErrorOccurred = false;
-        $anyCursorSaved = false;
-        $latestCursor = null;
+        $this->logger->info("Pending entities are loaded into batch. Waiting...", [
+            'strategy' => class_basename($strategy),
+            'batch' => $batch->toArray(),
+        ]);
 
-        foreach ($strategy->iteratePending() as $cursor => $entity) {
-            if ($this->dataSyncStatus->running() === false) {
-                $this->logger->warning("Sync disabled. Exiting the method...", [
-                    'method' => __FUNCTION__,
+        while (true) {
+            $batch = $batch->fresh();
+
+            if ($batch->finished()) {
+                $this->logger->info("Batch: finished.", [
+                    'batch' => $batch->toArray(),
                 ]);
 
-                return;
+                break;
             }
 
-            $latestCursor ??= $cursor;
+            if (!$this->dataSyncStatus->running()) {
+                $batch->cancel();
 
-            $this->logger->info(sprintf('Fetching new %s.', class_basename($entity::class)), [
-                'plReference' => $entity->id,
-            ]);
-
-            try {
-                $model = $strategy->sync($entity);
-
-                if ($strategy instanceof ImpliesSyncOfHigherHierarchyEntities) {
-                    /** @var $strategy PushStrategy&ImpliesSyncOfHigherHierarchyEntities */
-                    $this->syncHigherHierarchyEntities($strategy, $entity);
-                }
-
-                if (!$model->wasRecentlyCreated) {
-                    $this->logger->info(sprintf('%s already exists.', class_basename($entity::class)), [
-                        'plReference' => $entity->id,
-                    ]);
-                } else {
-                    $this->logger->info(sprintf('%s fetched.', class_basename($entity::class)), [
-                        'id' => $model->getKey(),
-                        'plReference' => $entity->id,
-                    ]);
-                }
-
-                $this->persistSyncStrategyLog($model, $strategy);
-            } catch (PipelinerIntegrationException|PipelinerSyncException $e) {
-                report($e);
-
-                $pullErrorOccurred = true;
-
-                $this->logger->warning('Remote %s skipped due to errors.', [
-                    'plReference' => $entity->id,
-                    'error' => trim($e->getMessage()),
+                $this->logger->warning("Batch: cancelled.", [
+                    'batch' => $batch->fresh()->toArray(),
                 ]);
 
-                $events->dispatch('skipped', $entity);
+                break;
             }
 
-            $events->dispatch('progress');
-
-            if (false === $pullErrorOccurred && $cursor !== $latestCursor) {
-                $this->logger->info('Page entities were handled. Persisting the new scroll cursor.', [
-                    'cursor' => $cursor,
-                ]);
-
-                $this->persistScrollCursor($cursor, $strategy);
-
-                $anyCursorSaved = true;
-                $latestCursor = $cursor;
-            }
-        }
-
-        if (null !== $latestCursor && false === $pullErrorOccurred && false === $anyCursorSaved) {
-            $this->logger->info('All pages were handled. Persisting the latest scroll cursor.', [
-                'cursor' => $latestCursor,
-            ]);
-
-            $this->persistScrollCursor($latestCursor, $strategy);
+            usleep(1000 * 1000);
         }
     }
 
@@ -441,108 +369,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
             $this->connection->transaction(static fn() => $log->save());
         });
-    }
-
-    private function persistScrollCursor(string $cursor, SyncStrategy $strategy): void
-    {
-        if ($this->causer instanceof User) {
-            $this->logger->debug("The scroll cursor will not be saved because the sync is run by user.");
-
-            return;
-        }
-
-        tap(new PipelinerModelScrollCursor, function (PipelinerModelScrollCursor $cursorModel) use (
-            $strategy,
-            $cursor
-        ) {
-            $cursorModel->model_type = $strategy->getModelType();
-            $cursorModel->cursor = $cursor;
-
-            $this->connection->transaction(static fn() => $cursorModel->save());
-        });
-    }
-
-    private function persistUpdateLog(\DateTimeInterface $dateTime, SyncStrategy $strategy): void
-    {
-        if ($this->causer instanceof User) {
-            $this->logger->debug("The model update log will not be saved because the sync is run by user.");
-
-            return;
-        }
-
-        tap(new PipelinerModelUpdateLog, function (PipelinerModelUpdateLog $log) use ($strategy, $dateTime): void {
-            $log->model_type = $strategy->getModelType();
-            $log->latest_model_updated_at = $dateTime;
-
-            $this->connection->transaction(static fn() => $log->save());
-        });
-    }
-
-    protected function pushUsing(PushStrategy $strategy, EventDispatcher $events): void
-    {
-        $lastSyncedModel = null;
-        $updateErrorOccurred = false;
-
-        foreach ($strategy->iteratePending() as $model) {
-            if ($this->dataSyncStatus->running() === false) {
-                $this->logger->warning("Sync disabled. Exiting the method...", [
-                    'method' => __FUNCTION__,
-                ]);
-
-                return;
-            }
-
-            /** @var Model $model */
-
-            $this->logger->info(sprintf('Pushing the %s.', class_basename($model)), [
-                'id' => $model->getKey(),
-                'plReference' => $model->pl_reference,
-                'updatedAt' => $model->{$model->getUpdatedAtColumn()},
-            ]);
-
-            try {
-                $strategy->sync($model);
-
-                if ($strategy instanceof ImpliesSyncOfHigherHierarchyEntities) {
-                    /** @var $strategy PushStrategy&ImpliesSyncOfHigherHierarchyEntities */
-                    $this->syncHigherHierarchyEntities($strategy, $model);
-                }
-
-                $this->logger->info(sprintf('%s synced.', class_basename($model)), [
-                    'id' => $model->getKey(),
-                ]);
-
-                $this->persistSyncStrategyLog($model, $strategy);
-            } catch (PipelinerIntegrationException|PipelinerSyncException $e) {
-                report($e);
-
-                $updateErrorOccurred = true;
-
-                $this->logger->warning(sprintf("Local %s skipped due to errors.", class_basename($model)), [
-                    'id' => $model->getKey(),
-                    'error' => trim($e->getMessage()),
-                    'graphQlErrors' => $e instanceof GraphQlRequestException ? $e->errors : null,
-                ]);
-
-                $events->dispatch('skipped', [$model, $e]);
-            }
-
-            $events->dispatch('progress');
-
-            $lastSyncedModel = $model;
-        }
-
-        if (false === $updateErrorOccurred && null !== $lastSyncedModel) {
-            if ($lastSyncedModel->usesTimestamps() === false) {
-                $this->logger->warning("Model doesn't support timestamps. Update log won't be persisted.");
-            } else {
-                $this->logger->info('Persisting update log.', [
-                    'updatedAt' => $lastSyncedModel->{$lastSyncedModel->getUpdatedAtColumn()},
-                ]);
-
-                $this->persistUpdateLog($lastSyncedModel->{$lastSyncedModel->getUpdatedAtColumn()}, $strategy);
-            }
-        }
     }
 
     private function resolveSuitableStrategiesFor(mixed $entity, string|object $methodInterface): SyncStrategyCollection

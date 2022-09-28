@@ -49,7 +49,7 @@ class OpportunityAttachmentController extends Controller
 
         $resource = $entityService->createAttachmentForEntity(
             file: $request->getUploadedFile(),
-            attachmentType: $request->getAttachmentType(),
+            type: $request->getAttachmentType(),
             entity: $opportunity,
         );
 

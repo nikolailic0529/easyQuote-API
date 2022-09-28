@@ -3,9 +3,6 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Enum\Lock;
-use App\Foundation\Fork\Exceptions\CouldNotCreateForkException;
-use App\Foundation\Fork\Fork;
-use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
@@ -16,24 +13,19 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
 use App\Integrations\Pipeliner\Models\AccountEntity;
 use App\Integrations\Pipeliner\Models\AccountFilterInput;
 use App\Integrations\Pipeliner\Models\ActivityRelationFilterInput;
-use App\Integrations\Pipeliner\Models\AppointmentEntity;
 use App\Integrations\Pipeliner\Models\AppointmentFilterInput;
-use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\ContactAccountRelationEntity;
 use App\Integrations\Pipeliner\Models\ContactAccountRelationFilterInput;
 use App\Integrations\Pipeliner\Models\ContactFilterInput;
 use App\Integrations\Pipeliner\Models\ContactRelationEntity;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\LeadOpptyAccountRelationFilterInput;
-use App\Integrations\Pipeliner\Models\NoteEntity;
 use App\Integrations\Pipeliner\Models\NoteFilterInput;
 use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Integrations\Pipeliner\Models\OpportunityFilterInput;
 use App\Integrations\Pipeliner\Models\SalesUnitFilterInput;
-use App\Integrations\Pipeliner\Models\TaskEntity;
 use App\Integrations\Pipeliner\Models\TaskFilterInput;
 use App\Models\Address;
-use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\ImportedAddress;
@@ -48,9 +40,9 @@ use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
-use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use DateTimeInterface;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -78,7 +70,8 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         protected OpportunityEntityService $entityService,
         protected CompanyDataMapper $dataMapper,
         protected ImportedCompanyToPrimaryAccountProjector $accountProjector,
-        protected LockProvider $lockProvider
+        protected LockProvider $lockProvider,
+        protected Cache $cache,
     ) {
     }
 
@@ -94,29 +87,15 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
     public function iteratePending(): \Traversable
     {
-        /** @var iterable<LazyCollection> $chunks */
-        $chunks = LazyCollection::make(function (): \Generator {
+        return LazyCollection::make(function (): \Generator {
             yield from $this->accountIntegration->simpleScroll(
-                ...$this->resolveScrollParameters()
+                ...$this->resolveScrollParameters(),
+                ...['first' => 2_000],
             );
         })
             ->filter(function (array $item): bool {
                 return $this->isStrategyYetToBeAppliedTo($item['id'], $item['modified']);
-            })
-            ->mapWithKeys(static function (array $item, string $cursor): \Generator {
-                yield $item['id'] => $item + ['cursor' => $cursor];
-            })
-            ->chunk(10);
-
-        foreach ($chunks as $chunk) {
-            $map = collect($chunk->all());
-
-            $items = $this->accountIntegration->getByIds(...$map->pluck('id')->all());
-
-            foreach ($items as $item) {
-                yield $map->get($item->id)['cursor'] => $item;
-            }
-        }
+            });
     }
 
     #[ArrayShape(['after' => 'string|null', 'filter' => AccountFilterInput::class])]
@@ -208,9 +187,9 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
     private function performSync(AccountEntity $entity, Company $account = null, array $contactRelations = []): Model
     {
-        $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 30);
+        $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 120);
 
-        return $lock->block(30, function () use ($entity, $account, $contactRelations): Company {
+        return $lock->block(120, function () use ($entity, $account, $contactRelations): Company {
             $contacts = [...$contactRelations, ...$this->collectContactRelationsFromAccountEntity($entity)];
 
             $newAccount = $this->dataMapper->mapImportedCompanyFromAccountEntity($entity, $contacts);
@@ -291,51 +270,86 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
     {
         $tasks = [
             function () use ($entity): void {
-                $iterator = $this->noteIntegration->scroll(filter: NoteFilterInput::new()->accountId(
-                    EntityFilterStringField::eq($entity->id)
-                ), first: 100);
+                $cacheKey = static::class.$this->noteIntegration::class.$entity->id.$entity->modified->getTimestamp();
 
-                foreach ($iterator as $item) {
+                $items = $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
+                    $iterator = $this->noteIntegration->scroll(filter: NoteFilterInput::new()->accountId(
+                        EntityFilterStringField::eq($entity->id)
+                    ), first: 100);
+
+                    return LazyCollection::make(static function () use ($iterator) {
+                        yield from $iterator;
+                    })
+                        ->values()
+                        ->all();
+                });
+
+                foreach ($items as $item) {
                     $this->pullNoteStrategy->sync($item);
                 }
             },
             function () use ($entity): void {
-                $iterator = $this->taskIntegration->scroll(filter: TaskFilterInput::new()->accountRelations(
-                    ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
-                ), first: 100);
+                $cacheKey = static::class.$this->taskIntegration::class.$entity->id.$entity->modified->getTimestamp();
 
-                foreach ($iterator as $item) {
+                $items = $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
+                    $iterator = $this->taskIntegration->scroll(filter: TaskFilterInput::new()->accountRelations(
+                        ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
+                    ), first: 100);
+
+                    return LazyCollection::make(static function () use ($iterator) {
+                        yield from $iterator;
+                    })
+                        ->values()
+                        ->all();
+                });
+
+                foreach ($items as $item) {
                     $this->pullTaskStrategy->sync($item);
                 }
             },
             function () use ($entity): void {
-                $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()
-                    ->accountRelations(
-                        ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
-                    ), first: 100);
+                $cacheKey = static::class.$this->appointmentIntegration::class.$entity->id.$entity->modified->getTimestamp();
 
-                foreach ($iterator as $item) {
+                $items = $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
+                    $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()
+                        ->accountRelations(
+                            ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
+                        ), first: 100);
+
+                    return LazyCollection::make(static function () use ($iterator) {
+                        yield from $iterator;
+                    })
+                        ->values()
+                        ->all();
+                });
+
+                foreach ($items as $item) {
                     $this->pullAppointmentStrategy->sync($item);
                 }
             },
             function () use ($model, $entity): void {
-                $attachments = Collection::make($entity->documents)
-                    ->map(function (CloudObjectEntity $entity): Attachment {
-                        return $this->pullAttachmentStrategy->sync($entity);
+                $attachments = collect($entity->documents)
+                    ->lazy()
+                    ->chunk(50)
+                    ->map(function (LazyCollection $collection): array {
+                        return $this->pullAttachmentStrategy->batch(...$collection->all());
+                    })
+                    ->collapse()
+                    ->pipe(static function (LazyCollection $collection) {
+                        return Collection::make($collection->all());
                     });
 
-                $this->connection->transaction(static fn() => $model->attachments()
-                    ->syncWithoutDetaching($attachments));
+                if ($attachments->isNotEmpty()) {
+                    $this->connection->transaction(
+                        static fn() => $model->attachments()->syncWithoutDetaching($attachments)
+                    );
+                }
             },
         ];
 
-        try {
-            Fork::new()->before(child: fn () => $this->connection->reconnect())->run(...$tasks);
-        } catch (CouldNotCreateForkException) {
-            collect($tasks)->each(static function (callable $task): void {
-                $task();
-            });
-        }
+        collect($tasks)->each(static function (callable $task): void {
+            $task();
+        });
     }
 
     private function computeTotalEntitiesCountAndLastIdToPull(): array
@@ -423,7 +437,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         if (!$entity instanceof AccountEntity) {
             throw new \TypeError(
                 sprintf("Entity must be an instance of [%s], given [%s].", AccountEntity::class,
-                is_object($entity) ? $entity::class : gettype($entity))
+                    is_object($entity) ? $entity::class : gettype($entity))
             );
         }
 
@@ -447,33 +461,35 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
             /** @var iterable<Company> $companiesOfReference */
             $companiesOfReference = Company::query()
                 ->where('pl_reference', $entity->id)
-                ->with(['opportunities' => function (Relation $relation) use ($opportunityModel): void {
-                    $relation->select([
-                        $opportunityModel->getKeyName(),
-                        $opportunityModel->salesUnit()->getForeignKeyName(),
-                        'pl_reference',
-                        $opportunityModel->primaryAccount()->getForeignKeyName(),
-                        $opportunityModel->endUser()->getForeignKeyName(),
-                    ]);
+                ->with([
+                    'opportunities' => function (Relation $relation) use ($opportunityModel): void {
+                        $relation->select([
+                            $opportunityModel->getKeyName(),
+                            $opportunityModel->salesUnit()->getForeignKeyName(),
+                            'pl_reference',
+                            $opportunityModel->primaryAccount()->getForeignKeyName(),
+                            $opportunityModel->endUser()->getForeignKeyName(),
+                        ]);
 
-                    $relation->whereIn(
-                        $opportunityModel->salesUnit()->getForeignKeyName(),
-                        Collection::make($this->salesUnits)->modelKeys()
-                    );
-                }, 'opportunitiesWhereEndUser' => function (Relation $relation) use ($opportunityModel): void {
-                    $relation->select([
-                        $opportunityModel->getKeyName(),
-                        $opportunityModel->salesUnit()->getForeignKeyName(),
-                        'pl_reference',
-                        $opportunityModel->primaryAccount()->getForeignKeyName(),
-                        $opportunityModel->endUser()->getForeignKeyName(),
-                    ]);
+                        $relation->whereIn(
+                            $opportunityModel->salesUnit()->getForeignKeyName(),
+                            Collection::make($this->salesUnits)->modelKeys()
+                        );
+                    }, 'opportunitiesWhereEndUser' => function (Relation $relation) use ($opportunityModel): void {
+                        $relation->select([
+                            $opportunityModel->getKeyName(),
+                            $opportunityModel->salesUnit()->getForeignKeyName(),
+                            'pl_reference',
+                            $opportunityModel->primaryAccount()->getForeignKeyName(),
+                            $opportunityModel->endUser()->getForeignKeyName(),
+                        ]);
 
-                    $relation->whereIn(
-                        $opportunityModel->salesUnit()->getForeignKeyName(),
-                        Collection::make($this->salesUnits)->modelKeys()
-                    );
-                }])
+                        $relation->whereIn(
+                            $opportunityModel->salesUnit()->getForeignKeyName(),
+                            Collection::make($this->salesUnits)->modelKeys()
+                        );
+                    },
+                ])
                 ->lazy(1);
 
             foreach ($companiesOfReference as $company) {

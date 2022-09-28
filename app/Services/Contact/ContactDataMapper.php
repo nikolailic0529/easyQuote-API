@@ -13,12 +13,12 @@ use App\Integrations\Pipeliner\Models\FieldFilterInput;
 use App\Integrations\Pipeliner\Models\UpdateContactInput;
 use App\Models\Contact;
 use App\Services\Pipeliner\PipelinerClientLookupService;
-use App\Services\Pipeliner\RuntimeCachedFieldEntityResolver;
+use App\Services\Pipeliner\CachedFieldEntityResolver;
 
 class ContactDataMapper
 {
     public function __construct(protected PipelinerClientLookupService     $pipelinerClientLookupService,
-                                protected RuntimeCachedFieldEntityResolver $pipelinerFieldResolver)
+                                protected CachedFieldEntityResolver $pipelinerFieldResolver)
     {
     }
 

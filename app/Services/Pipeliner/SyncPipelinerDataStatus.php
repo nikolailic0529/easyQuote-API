@@ -99,6 +99,11 @@ class SyncPipelinerDataStatus implements \JsonSerializable
         return min($this->cache->get($this->getProcessedKey(), 0), $this->total());
     }
 
+    public function pending(): int
+    {
+        return $this->total() - $this->processed();
+    }
+
     public function incrementProcessed(): void
     {
         $this->cache->increment($this->getProcessedKey());

@@ -446,6 +446,7 @@ class CompanyTest extends TestCase
         unset($attributes['vat']);
         unset($attributes['vat_type']);
 
+        $attributes['name'] = Str::random(40);
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
         $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
         $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], Contact::factory()->count(2)->create()->modelKeys());

@@ -17,4 +17,6 @@ interface SyncStrategy
     public function getModelType(): string;
 
     public function isApplicableTo(object $entity): bool;
+
+    public function getByReference(string $reference): object;
 }

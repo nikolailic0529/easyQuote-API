@@ -1773,10 +1773,12 @@ class WorldwideContractQuoteTest extends TestCase
         $this->app['db.connection']->table('assets')->delete();
 
         /** @var WorldwideQuote $wwQuote */
-        $wwQuote = factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_CONTRACT,
-        ]);
+        $wwQuote = WorldwideQuote::factory()
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+            ]);
 
+        $wwQuote->activeVersion->quoteTemplate()->associate(QuoteTemplate::query()->first());
         $wwQuote->activeVersion->user()->associate($this->app['auth.driver']->user());
         $wwQuote->activeVersion->save();
 
@@ -1818,12 +1820,14 @@ class WorldwideContractQuoteTest extends TestCase
         $distributorFile = factory(QuoteFile::class)->create();
 
         /** @var WorldwideDistribution $distributorQuote */
-        $distributorQuote = factory(WorldwideDistribution::class)->create([
-            'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
-            'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
-            'distributor_file_id' => $distributorFile->getKey(),
-            'opportunity_supplier_id' => $supplier->getKey(),
-        ]);
+        $distributorQuote = factory(WorldwideDistribution::class)
+            ->create([
+                'country_id' => Country::query()->where('iso_3166_2', 'GB')->sole()->getKey(),
+                'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
+                'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
+                'distributor_file_id' => $distributorFile->getKey(),
+                'opportunity_supplier_id' => $supplier->getKey(),
+            ]);
 
         $distributorQuote->vendors()->sync(Vendor::query()->where('short_code', 'HPE')->sole());
 

@@ -6,6 +6,7 @@ use App\Contracts\LoggerAware;
 use App\Foundation\Settings\DatabaseSettingsStatus;
 use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
+use App\Jobs\Pipeliner\SyncPipelinerEntity;
 use App\Services\Pipeliner\PipelinerDataSyncService;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
@@ -49,6 +50,11 @@ class PipelinerServiceProvider extends ServiceProvider
         $this->app->tag($this->app['config']['pipeliner.webhook.event_handlers'], EventHandler::class);
 
         $this->app->when(EventHandlerCollection::class)->needs(EventHandler::class)->giveTagged(EventHandler::class);
+
+        $this->app->bindMethod([SyncPipelinerEntity::class, 'handle'],
+            static function (SyncPipelinerEntity $concrete, Container $container): mixed {
+                return $container->call($concrete->handle(...), ['logger' => $container['log']->driver('pipeliner')]);
+            });
     }
 
     public function boot(): void

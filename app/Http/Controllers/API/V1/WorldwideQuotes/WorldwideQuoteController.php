@@ -34,6 +34,7 @@ use App\Models\Quote\WorldwideQuoteVersion;
 use App\Queries\AppointmentQueries;
 use App\Services\{WorldwideQuote\Calculation\WorldwideQuoteCalc,
     WorldwideQuote\CollectWorldwideQuoteFilesService,
+    WorldwideQuote\Models\QuoteExportResult,
     WorldwideQuote\WorldwideQuoteDataMapper,
     WorldwideQuote\WorldwideQuoteExporter,
     WorldwideQuote\WorldwideQuoteValidator,
@@ -478,13 +479,17 @@ class WorldwideQuoteController extends Controller
     /**
      * Export the specified Worldwide Quote.
      *
-     * @param WorldwideQuote $worldwideQuote
-     * @param \App\Services\WorldwideQuote\WorldwideQuoteDataMapper $quoteViewService
-     * @param WorldwideQuoteExporter $exporter
-     * @return Response
+     * @param  WorldwideQuote  $worldwideQuote
+     * @param  WorldwideQuoteDataMapper  $quoteViewService
+     * @param  WorldwideQuoteExporter  $exporter
+     * @return QuoteExportResult
      * @throws AuthorizationException
      */
-    public function exportQuote(WorldwideQuote $worldwideQuote, WorldwideQuoteDataMapper $quoteViewService, WorldwideQuoteExporter $exporter): Response
+    public function exportQuote(
+        WorldwideQuote $worldwideQuote,
+        WorldwideQuoteDataMapper $quoteViewService,
+        WorldwideQuoteExporter $exporter
+    ): QuoteExportResult
     {
         $this->authorize('export', $worldwideQuote);
 

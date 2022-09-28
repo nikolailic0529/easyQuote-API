@@ -97,4 +97,9 @@ class PushContactStrategy implements PushStrategy
     {
         return $entity instanceof Contact;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return Contact::query()->findOrFail($reference);
+    }
 }

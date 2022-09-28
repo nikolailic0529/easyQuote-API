@@ -14,7 +14,7 @@ use Illuminate\Support\LazyCollection;
 class PipelinerOpportunityLookupService
 {
     public function __construct(protected PipelinerOpportunityIntegration $integration,
-                                protected RuntimeCachedDataEntityResolver $dataEntityResolver)
+                                protected CachedDataEntityResolver $dataEntityResolver)
     {
     }
 

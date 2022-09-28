@@ -2,8 +2,13 @@
 
 namespace App\Listeners;
 
+use App\Enum\AttachmentType;
 use App\Enum\ContractQuoteStage;
 use App\Enum\PackQuoteStage;
+use App\Foundation\File\BinaryFileContent;
+use App\Services\Attachment\AttachmentEntityService;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
+use App\Services\WorldwideQuote\WorldwideQuoteExporter;
 use App\Events\{WorldwideQuote\NewVersionOfWorldwideQuoteCreated,
     WorldwideQuote\WorldwideContractQuoteDetailsStepProcessed,
     WorldwideQuote\WorldwideContractQuoteDiscountStepProcessed,
@@ -46,23 +51,15 @@ use Illuminate\Support\Str;
 
 class WorldwideQuoteEventAuditor
 {
-    protected Config $config;
-
-    protected BusDispatcher $busDispatcher;
-
-    protected ActivityLogger $activityLogger;
-
-    protected ChangesDetector $changesDetector;
-
-    public function __construct(Config          $config,
-                                BusDispatcher   $busDispatcher,
-                                ActivityLogger  $activityLogger,
-                                ChangesDetector $changesDetector)
-    {
-        $this->config = $config;
-        $this->busDispatcher = $busDispatcher;
-        $this->activityLogger = $activityLogger;
-        $this->changesDetector = $changesDetector;
+    public function __construct(
+        protected readonly Config $config,
+        protected readonly BusDispatcher $busDispatcher,
+        protected readonly ActivityLogger $activityLogger,
+        protected readonly ChangesDetector $changesDetector,
+        protected readonly WorldwideQuoteExporter $quoteExporter,
+        protected readonly WorldwideQuoteDataMapper $quoteDataMapper,
+        protected readonly AttachmentEntityService $attachmentEntityService,
+    ) {
     }
 
     /**
@@ -73,7 +70,8 @@ class WorldwideQuoteEventAuditor
     public function subscribe(\Illuminate\Events\Dispatcher $events)
     {
         $events->listen(WorldwideQuoteInitialized::class, [self::class, 'handleInitializedEvent']);
-        $events->listen(WorldwideQuoteSubmitted::class, [self::class, 'handleSubmittedEvent']);
+        $events->listen(WorldwideQuoteSubmitted::class, [self::class, 'auditSubmittedEvent']);
+        $events->listen(WorldwideQuoteSubmitted::class, [self::class, 'createAttachmentFromSubmittedQuote']);
         $events->listen(WorldwideQuoteUnraveled::class, [self::class, 'handleUnraveledEvent']);
         $events->listen(WorldwideQuoteDrafted::class, [self::class, 'handleDraftedEvent']);
         $events->listen(WorldwideQuoteDeleted::class, [self::class, 'handleDeletedEvent']);
@@ -164,10 +162,9 @@ class WorldwideQuoteEventAuditor
             ->log('created');
     }
 
-    public function handleSubmittedEvent(WorldwideQuoteSubmitted $event)
+    public function auditSubmittedEvent(WorldwideQuoteSubmitted $event): void
     {
-        $quote = $event->getQuote();
-        $oldQuote = $event->getOldQuote();
+        [$quote, $oldQuote] = [$event->getQuote(), $event->getOldQuote()];
 
         $this->activityLogger
             ->performedOn($quote)
@@ -183,6 +180,20 @@ class WorldwideQuoteEventAuditor
                 )
             )
             ->log('submitted');
+    }
+
+    public function createAttachmentFromSubmittedQuote(WorldwideQuoteSubmitted $event): void
+    {
+        $result = $this->quoteExporter->export(
+            previewData: $this->quoteDataMapper->mapWorldwideQuotePreviewDataForExport($event->getQuote()),
+            exportedEntity: $event->getQuote(),
+        );
+
+        $this->attachmentEntityService->createAttachmentForEntity(
+            file: new BinaryFileContent($result->content, $result->filename),
+            type: AttachmentType::SubmittedQuote,
+            entity: $event->getQuote(),
+        );
     }
 
     public function handleUnraveledEvent(WorldwideQuoteUnraveled $event)

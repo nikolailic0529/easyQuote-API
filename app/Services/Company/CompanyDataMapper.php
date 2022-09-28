@@ -39,9 +39,9 @@ use App\Services\Address\ImportedAddressToAddressProjector;
 use App\Services\Contact\ContactHashResolver;
 use App\Services\Contact\ImportedContactToContactProjector;
 use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
-use App\Services\Pipeliner\RuntimeCachedDataEntityResolver;
-use App\Services\Pipeliner\RuntimeCachedFieldApiNameResolver;
-use App\Services\Pipeliner\RuntimeCachedFieldEntityResolver;
+use App\Services\Pipeliner\CachedDataEntityResolver;
+use App\Services\Pipeliner\CachedFieldApiNameResolver;
+use App\Services\Pipeliner\CachedFieldEntityResolver;
 use App\Services\ThumbHelper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
@@ -51,9 +51,9 @@ use Webpatser\Uuid\Uuid;
 
 class CompanyDataMapper
 {
-    public function __construct(protected RuntimeCachedFieldApiNameResolver $fieldApiNameResolver,
-                                protected RuntimeCachedFieldEntityResolver  $pipelinerFieldResolver,
-                                protected RuntimeCachedDataEntityResolver   $pipelinerDataResolver,
+    public function __construct(protected CachedFieldApiNameResolver $fieldApiNameResolver,
+                                protected CachedFieldEntityResolver  $pipelinerFieldResolver,
+                                protected CachedDataEntityResolver   $pipelinerDataResolver,
                                 protected ImportedAddressToAddressProjector $addressProjector,
                                 protected ImportedContactToContactProjector $contactProjector)
     {

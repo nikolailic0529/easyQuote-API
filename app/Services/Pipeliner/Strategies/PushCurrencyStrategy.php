@@ -88,4 +88,9 @@ class PushCurrencyStrategy implements Contracts\PushStrategy
     {
         return $entity instanceof Currency;
     }
+
+    public function getByReference(string $reference): object
+    {
+        return Currency::query()->findOrFail($reference);
+    }
 }

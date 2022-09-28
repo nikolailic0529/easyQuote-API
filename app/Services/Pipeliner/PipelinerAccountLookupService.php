@@ -13,7 +13,7 @@ use App\Services\Pipeliner\Exceptions\MultiplePipelinerEntitiesFoundException;
 class PipelinerAccountLookupService
 {
     public function __construct(protected PipelinerAccountIntegration     $integration,
-                                protected RuntimeCachedDataEntityResolver $dataEntityResolver)
+                                protected CachedDataEntityResolver $dataEntityResolver)
     {
     }
 

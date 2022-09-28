@@ -43,13 +43,13 @@ use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\PipelineQueries;
 use App\Services\Opportunity\Models\PipelinerOppMap;
-use App\Services\Pipeliner\RuntimeCachedCurrencyEntityResolver;
-use App\Services\Pipeliner\RuntimeCachedDataEntityResolver;
-use App\Services\Pipeliner\RuntimeCachedFieldApiNameResolver;
-use App\Services\Pipeliner\RuntimeCachedFieldEntityResolver;
-use App\Services\Pipeliner\RuntimeCachedPipelineResolver;
-use App\Services\Pipeliner\RuntimeCachedSalesUnitResolver;
-use App\Services\Pipeliner\RuntimeCachedStepResolver;
+use App\Services\Pipeliner\CachedCurrencyEntityResolver;
+use App\Services\Pipeliner\CachedDataEntityResolver;
+use App\Services\Pipeliner\CachedFieldApiNameResolver;
+use App\Services\Pipeliner\CachedFieldEntityResolver;
+use App\Services\Pipeliner\CachedPipelineResolver;
+use App\Services\Pipeliner\CachedSalesUnitResolver;
+use App\Services\Pipeliner\CachedStepResolver;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Contracts\Config\Repository as Config;
@@ -76,13 +76,13 @@ class OpportunityDataMapper implements CauserAware
                                 protected PipelinerFieldIntegration           $fieldIntegration,
                                 protected PipelinerCurrencyIntegration        $currencyIntegration,
                                 protected PipelinerAccountIntegration         $accountIntegration,
-                                protected RuntimeCachedFieldEntityResolver    $pipelinerFieldResolver,
-                                protected RuntimeCachedFieldApiNameResolver   $fieldApiNameResolver,
-                                protected RuntimeCachedDataEntityResolver     $pipelinerDataResolver,
-                                protected RuntimeCachedCurrencyEntityResolver $pipelinerCurrencyResolver,
-                                protected RuntimeCachedSalesUnitResolver      $salesUnitResolver,
-                                protected RuntimeCachedPipelineResolver       $pipelineResolver,
-                                protected RuntimeCachedStepResolver           $stepResolver,
+                                protected CachedFieldEntityResolver    $pipelinerFieldResolver,
+                                protected CachedFieldApiNameResolver   $fieldApiNameResolver,
+                                protected CachedDataEntityResolver     $pipelinerDataResolver,
+                                protected CachedCurrencyEntityResolver $pipelinerCurrencyResolver,
+                                protected CachedSalesUnitResolver      $salesUnitResolver,
+                                protected CachedPipelineResolver       $pipelineResolver,
+                                protected CachedStepResolver           $stepResolver,
                                 protected PipelineQueries                     $pipelineQueries,
                                 protected AccountOwnerResolver                $accountOwnerResolver,
                                 protected ContractTypeResolver                $contractTypeResolver)

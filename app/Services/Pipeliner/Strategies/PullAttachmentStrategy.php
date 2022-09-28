@@ -11,7 +11,10 @@ use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Database\ConnectionResolverInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection as BaseCollection;
+use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
 class PullAttachmentStrategy implements PullStrategy
@@ -54,6 +57,54 @@ class PullAttachmentStrategy implements PullStrategy
         return tap($this->dataMapper->mapFromCloudObjectEntity($entity, $metadata), function (Attachment $attachment): void {
             $this->connectionResolver->connection()->transaction(static fn() => $attachment->save());
         });
+    }
+
+    public function batch(object $entity, object ...$entities): array
+    {
+        $entities = collect([$entity, ...$entities])->lazy();
+
+        foreach ($entities as $entity) {
+            if (!$entity instanceof CloudObjectEntity) {
+                throw new \TypeError(sprintf("Entity must be an instance of %s.", CloudObjectEntity::class));
+            }
+        }
+
+        /** @var Collection $map */
+        $map = Attachment::query()
+            ->whereIn('pl_reference', $entities->pluck('id')->all())
+            ->withTrashed()
+            ->get()
+            ->keyBy(static function (Attachment $attachment): string {
+                return $attachment->pl_reference;
+            });
+
+        $pending = $entities
+            ->filter(static function (CloudObjectEntity $entity) use ($map): bool {
+                return !$map->has($entity->id);
+            })
+            ->keyBy(static function (CloudObjectEntity $entity): string {
+                return $entity->url;
+            })
+            ->pipe(static function (LazyCollection $collection): BaseCollection {
+                return collect($collection->all());
+            });
+
+        if ($pending->isEmpty()) {
+            return $map->values()->all();
+        }
+
+        $attachments = collect($this->fileService->downloadMultipleFromUrls(...$pending->pluck('url')->all()))
+            ->map(function (array $metadata, string $url) use ($pending): Attachment {
+                return tap($this->dataMapper->mapFromCloudObjectEntity($pending[$url], $metadata),
+                    function (Attachment $attachment): void {
+                        $this->connectionResolver->connection()->transaction(static fn() => $attachment->save());
+                    });
+            })
+            ->values();
+
+        return $map->values()
+            ->merge($attachments)
+            ->all();
     }
 
     public function syncByReference(string $reference): Model
