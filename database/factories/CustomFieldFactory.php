@@ -2,18 +2,18 @@
 
 namespace Database\Factories;
 
-use App\Models\System\CustomFieldValue;
+use App\Models\System\CustomField;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-class CustomFieldValueFactory extends Factory
+class CustomFieldFactory extends Factory
 {
-    protected $model = CustomFieldValue::class;
+    protected $model = CustomField::class;
 
     public function definition(): array
     {
         return [
-            'field_value' => Str::random(40),
+            //
         ];
     }
 }

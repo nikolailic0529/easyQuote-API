@@ -69,6 +69,9 @@ class Team extends Model implements SearchableEntity
     public function toSearchArray(): array
     {
         return [
+            'business_division_name' => $this->businessDivision?->division_name,
+            'sales_units' => $this->salesUnits->pluck('unit_name'),
+            'team_leaders' => $this->teamLeaders->pluck('user_fullname'),
             'team_name' => $this->team_name,
             'monthly_goal_amount' => $this->monthly_goal_amount
         ];

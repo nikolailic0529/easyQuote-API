@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\DTO\Attachment\CreateAttachmentData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
-use App\Http\Resources\V1\Attachment\AttachmentOfQuote;
 use App\Http\Resources\V1\Attachment\OpportunityAttachmentResource;
 use App\Models\Attachment;
 use App\Models\Opportunity;
@@ -19,15 +19,16 @@ class OpportunityAttachmentController extends Controller
     /**
      * List opportunity attachments.
      *
-     * @param Opportunity $opportunity
+     * @param  Opportunity  $opportunity
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
     public function listAttachments(Opportunity $opportunity): AnonymousResourceCollection
     {
         $this->authorize('view', $opportunity);
+        $this->authorize('viewAny', Attachment::class);
 
-        $collection = $opportunity->attachments()->get();
+        $collection = $opportunity->attachments()->latest()->get();
 
         return OpportunityAttachmentResource::collection($collection);
     }
@@ -35,21 +36,22 @@ class OpportunityAttachmentController extends Controller
     /**
      * Create opportunity attachment.
      *
-     * @param CreateAttachment $request
-     * @param AttachmentEntityService $entityService
-     * @param Opportunity $opportunity
+     * @param  CreateAttachment  $request
+     * @param  AttachmentEntityService  $entityService
+     * @param  Opportunity  $opportunity
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function storeAttachment(CreateAttachment        $request,
-                                    AttachmentEntityService $entityService,
-                                    Opportunity             $opportunity): JsonResponse
-    {
+    public function storeAttachment(
+        CreateAttachment $request,
+        AttachmentEntityService $entityService,
+        Opportunity $opportunity
+    ): JsonResponse {
         $this->authorize('view', $opportunity);
+        $this->authorize('create', Attachment::class);
 
         $resource = $entityService->createAttachmentForEntity(
-            file: $request->getUploadedFile(),
-            type: $request->getAttachmentType(),
+            data: CreateAttachmentData::from($request),
             entity: $opportunity,
         );
 
@@ -63,17 +65,19 @@ class OpportunityAttachmentController extends Controller
     /**
      * Delete the specified attachment of the quote entity.
      *
-     * @param AttachmentEntityService $entityService
-     * @param Opportunity $opportunity
-     * @param Attachment $attachment
+     * @param  AttachmentEntityService  $entityService
+     * @param  Opportunity  $opportunity
+     * @param  Attachment  $attachment
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function deleteAttachment(AttachmentEntityService $entityService,
-                                     Opportunity             $opportunity,
-                                     Attachment              $attachment): JsonResponse
-    {
+    public function deleteAttachment(
+        AttachmentEntityService $entityService,
+        Opportunity $opportunity,
+        Attachment $attachment
+    ): JsonResponse {
         $this->authorize('view', $opportunity);
+        $this->authorize('delete', $attachment);
 
         $entityService->deleteAttachment($attachment, $opportunity);
 

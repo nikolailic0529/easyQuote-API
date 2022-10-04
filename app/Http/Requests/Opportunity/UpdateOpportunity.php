@@ -21,6 +21,7 @@ use App\Rules\Opportunity\ValidSupplierData;
 use App\Rules\ScalarValue;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -268,7 +269,9 @@ class UpdateOpportunity extends FormRequest
 
             $data = [];
 
-            $this->whenHas('suppliers_grid', static function (array $input) use (&$data): void {
+            $this->whenHas('suppliers_grid', static function (?array $input) use (&$data): void {
+                $input = Arr::wrap($input);
+
                 $data['create_suppliers'] = [];
                 $data['update_suppliers'] = [];
 

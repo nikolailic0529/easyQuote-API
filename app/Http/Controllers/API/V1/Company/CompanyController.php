@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\V1\Company;
 
+use App\DTO\Attachment\CreateAttachmentData;
 use App\Enum\CompanySource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
@@ -496,9 +497,8 @@ class CompanyController extends Controller
         $this->authorize('view', $company);
 
         $resource = $entityService->createAttachmentForEntity(
-            file: $request->getUploadedFile(),
-            type: $request->getAttachmentType(),
-            entity: $company
+            data: CreateAttachmentData::from($request),
+            entity: $company,
         );
 
         return response()->json(

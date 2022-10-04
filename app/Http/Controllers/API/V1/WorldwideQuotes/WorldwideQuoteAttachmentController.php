@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\V1\WorldwideQuotes;
 
+use App\DTO\Attachment\CreateAttachmentData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
 use App\Http\Resources\V1\Attachment\AttachmentOfQuote;
@@ -18,15 +19,16 @@ class WorldwideQuoteAttachmentController extends Controller
     /**
      * Show a list of existing attachments of the worldwide quote entity.
      *
-     * @param WorldwideQuote $worldwideQuote
+     * @param  WorldwideQuote  $worldwideQuote
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
     public function showAttachmentsOfWorldwideQuote(WorldwideQuote $worldwideQuote): AnonymousResourceCollection
     {
         $this->authorize('view', $worldwideQuote);
+        $this->authorize('viewAny', Attachment::class);
 
-        $collection = $worldwideQuote->attachments()->get();
+        $collection = $worldwideQuote->attachments()->latest()->get();
 
         return AttachmentOfQuote::collection($collection);
     }
@@ -34,21 +36,22 @@ class WorldwideQuoteAttachmentController extends Controller
     /**
      * Store a new attachment for the worldwide quote entity.
      *
-     * @param CreateAttachment $request
-     * @param AttachmentEntityService $entityService
-     * @param WorldwideQuote $worldwideQuote
+     * @param  CreateAttachment  $request
+     * @param  AttachmentEntityService  $entityService
+     * @param  WorldwideQuote  $worldwideQuote
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function storeAttachmentForWorldwideQuote(CreateAttachment        $request,
-                                                     AttachmentEntityService $entityService,
-                                                     WorldwideQuote          $worldwideQuote): JsonResponse
-    {
+    public function storeAttachmentForWorldwideQuote(
+        CreateAttachment $request,
+        AttachmentEntityService $entityService,
+        WorldwideQuote $worldwideQuote
+    ): JsonResponse {
         $this->authorize('view', $worldwideQuote);
+        $this->authorize('create', Attachment::class);
 
         $resource = $entityService->createAttachmentForEntity(
-            file: $request->getUploadedFile(),
-            type: $request->getAttachmentType(),
+            data: CreateAttachmentData::from($request),
             entity: $worldwideQuote,
         );
 
@@ -62,17 +65,19 @@ class WorldwideQuoteAttachmentController extends Controller
     /**
      * Delete the specified attachment of the quote entity.
      *
-     * @param AttachmentEntityService $entityService
-     * @param WorldwideQuote $worldwideQuote
-     * @param Attachment $attachment
+     * @param  AttachmentEntityService  $entityService
+     * @param  WorldwideQuote  $worldwideQuote
+     * @param  Attachment  $attachment
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function deleteAttachmentOfQuote(AttachmentEntityService $entityService,
-                                            WorldwideQuote          $worldwideQuote,
-                                            Attachment              $attachment): JsonResponse
-    {
+    public function deleteAttachmentOfQuote(
+        AttachmentEntityService $entityService,
+        WorldwideQuote $worldwideQuote,
+        Attachment $attachment
+    ): JsonResponse {
         $this->authorize('view', $worldwideQuote);
+        $this->authorize('delete', $attachment);
 
         $entityService->deleteAttachment($attachment, $worldwideQuote);
 

@@ -8,6 +8,7 @@ use App\DTO\Contact\UpdateContactData;
 use App\Events\Contact\ContactCreated;
 use App\Events\Contact\ContactDeleted;
 use App\Events\Contact\ContactUpdated;
+use App\Models\Address;
 use App\Models\Contact;
 use App\Models\Image;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
@@ -23,15 +24,16 @@ class ContactEntityService implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface $connection,
-                                protected EventDispatcher     $eventDispatcher)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected EventDispatcher $eventDispatcher
+    ) {
     }
 
     public function createContact(CreateContactData $data): Contact
     {
         return tap(new Contact(), function (Contact $contact) use ($data) {
-            $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
+            $contact->{$contact->getKeyName()} = (string) Uuid::generate(4);
             $contact->user()->associate($this->causer);
 
             $contact->forceFill(
@@ -105,6 +107,20 @@ class ContactEntityService implements CauserAware
                 $this->createImageForContact($contact, $data->picture);
                 $contact->image()->flushQueryCache();
             }
+
+            $this->eventDispatcher->dispatch(
+                new ContactUpdated(contact: $oldContact, newContact: $contact, causer: $this->causer)
+            );
+        });
+    }
+
+    public function associateContactWithAddress(Contact $contact, Address $address): Contact
+    {
+        return tap($contact, function (Contact $contact) use ($address) {
+            $oldContact = (new Contact)->setRawAttributes($contact->getRawOriginal());
+            $contact->address()->associate($address);
+
+            $this->connection->transaction(static fn() => $contact->save());
 
             $this->eventDispatcher->dispatch(
                 new ContactUpdated(contact: $oldContact, newContact: $contact, causer: $this->causer)

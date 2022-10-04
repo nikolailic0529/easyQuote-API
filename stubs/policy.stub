@@ -3,6 +3,7 @@
 namespace {{ namespace }};
 
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 use {{ namespacedModel }};
 use {{ namespacedUserModel }};
 
@@ -14,11 +15,11 @@ class {{ class }}
      * Determine whether the user can view any models.
      *
      * @param  \{{ namespacedUserModel }}  $user
-     * @return mixed
+     * @return Response
      */
-    public function viewAny({{ user }} $user)
+    public function viewAny({{ user }} $user): Response
     {
-        //
+        return $this->allow();
     }
 
     /**
@@ -26,22 +27,22 @@ class {{ class }}
      *
      * @param  \{{ namespacedUserModel }}  $user
      * @param  \{{ namespacedModel }}  ${{ modelVariable }}
-     * @return mixed
+     * @return Response
      */
-    public function view({{ user }} $user, {{ model }} ${{ modelVariable }})
+    public function view({{ user }} $user, {{ model }} ${{ modelVariable }}): Response
     {
-        //
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can create models.
      *
      * @param  \{{ namespacedUserModel }}  $user
-     * @return mixed
+     * @return Response
      */
-    public function create({{ user }} $user)
+    public function create({{ user }} $user): Response
     {
-        //
+        return $this->allow();
     }
 
     /**
@@ -49,11 +50,11 @@ class {{ class }}
      *
      * @param  \{{ namespacedUserModel }}  $user
      * @param  \{{ namespacedModel }}  ${{ modelVariable }}
-     * @return mixed
+     * @return Response
      */
-    public function update({{ user }} $user, {{ model }} ${{ modelVariable }})
+    public function update({{ user }} $user, {{ model }} ${{ modelVariable }}): Response
     {
-        //
+        return $this->allow();
     }
 
     /**
@@ -61,11 +62,11 @@ class {{ class }}
      *
      * @param  \{{ namespacedUserModel }}  $user
      * @param  \{{ namespacedModel }}  ${{ modelVariable }}
-     * @return mixed
+     * @return Response
      */
-    public function delete({{ user }} $user, {{ model }} ${{ modelVariable }})
+    public function delete({{ user }} $user, {{ model }} ${{ modelVariable }}): Response
     {
-        //
+        return $this->allow();
     }
 
     /**
@@ -73,11 +74,11 @@ class {{ class }}
      *
      * @param  \{{ namespacedUserModel }}  $user
      * @param  \{{ namespacedModel }}  ${{ modelVariable }}
-     * @return mixed
+     * @return Response
      */
-    public function restore({{ user }} $user, {{ model }} ${{ modelVariable }})
+    public function restore({{ user }} $user, {{ model }} ${{ modelVariable }}): Response
     {
-        //
+        return $this->allow();
     }
 
     /**
@@ -85,10 +86,10 @@ class {{ class }}
      *
      * @param  \{{ namespacedUserModel }}  $user
      * @param  \{{ namespacedModel }}  ${{ modelVariable }}
-     * @return mixed
+     * @return Response
      */
-    public function forceDelete({{ user }} $user, {{ model }} ${{ modelVariable }})
+    public function forceDelete({{ user }} $user, {{ model }} ${{ modelVariable }}): Response
     {
-        //
+        return $this->allow();
     }
 }

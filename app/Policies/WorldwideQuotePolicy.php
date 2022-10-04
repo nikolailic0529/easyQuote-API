@@ -147,8 +147,12 @@ class WorldwideQuotePolicy
         $response = $this->getBaseUpdateResponse($user, $worldwideQuote);
 
         if ($response->allowed()) {
-            if (null === $worldwideQuote->submitted_at) {
-                return $response;
+            if (null !== $worldwideQuote->submitted_at) {
+                return ResponseBuilder::deny()
+                    ->action('delete')
+                    ->item('worldwide quote version')
+                    ->reason('Quote is submitted')
+                    ->toResponse();
             }
 
             if ($worldwideQuote->activeVersion()->is($version)) {
@@ -158,12 +162,6 @@ class WorldwideQuotePolicy
                     ->reason('The version is active')
                     ->toResponse();
             }
-
-            return ResponseBuilder::deny()
-                ->action('delete')
-                ->item('worldwide quote version')
-                ->reason('Quote is submitted')
-                ->toResponse();
         }
 
         return $response;

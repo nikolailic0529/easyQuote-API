@@ -83,7 +83,9 @@ class SyncPipelinerEntity implements ShouldQueue
 
             if ($strategy instanceof ImpliesSyncOfHigherHierarchyEntities) {
                 /** @var SyncStrategy&ImpliesSyncOfHigherHierarchyEntities $strategy */
-                $this->syncHigherHierarchyEntities($strategy, $entity);
+                $addedJobsCount = $this->syncHigherHierarchyEntities($strategy, $entity);
+
+                $status->incrementTotal($addedJobsCount);
             }
 
             $model = $strategy instanceof PullStrategy
@@ -136,15 +138,23 @@ class SyncPipelinerEntity implements ShouldQueue
 
     protected function syncHigherHierarchyEntities(
         SyncStrategy&ImpliesSyncOfHigherHierarchyEntities $strategy,
-        object $relatedEntity
-    ): void {
+        object $relatedEntity,
+    ): int {
+        $jobs = collect();
+
         foreach ($strategy->resolveHigherHierarchyEntities($relatedEntity) as $entity) {
             $hhStrategies = $this->resolveSuitableStrategiesFor($entity, $strategy);
 
             foreach ($hhStrategies as $sStrategy) {
-                $sStrategy->sync($entity);
+                $jobs[] = new static($sStrategy, $entity->id, $this->causer);
             }
         }
+
+        if ($jobs->isNotEmpty()) {
+            $this->batch()->add($jobs);
+        }
+
+        return $jobs->count();
     }
 
     private function resolveSuitableStrategiesFor(

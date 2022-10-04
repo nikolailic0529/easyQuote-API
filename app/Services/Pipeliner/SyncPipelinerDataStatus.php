@@ -89,6 +89,11 @@ class SyncPipelinerDataStatus implements \JsonSerializable
         return $this->cache->get($this->getTotalKey(), 0);
     }
 
+    public function incrementTotal(int $value = 1): void
+    {
+        $this->cache->increment($this->getTotalKey(), $value);
+    }
+
     public function setProcessed(int $value): void
     {
         $this->cache->set($this->getProcessedKey(), $value);

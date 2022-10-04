@@ -181,6 +181,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::put('contacts/deactivate/{contact}', [ContactController::class, 'deactivate']);
 
         Route::get('contacts/{contact}/appointments', [ContactController::class, 'showAppointmentsOfContact']);
+        Route::put('contacts/{contact}/address/{address}', [ContactController::class, 'associateContactWithAddress']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {

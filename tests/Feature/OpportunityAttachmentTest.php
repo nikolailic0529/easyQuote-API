@@ -43,6 +43,10 @@ class OpportunityAttachmentTest extends TestCase
                         'filename',
                         'extension',
                         'size',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
                         'created_at',
                     ],
                 ],

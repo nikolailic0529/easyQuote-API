@@ -32,6 +32,7 @@ use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
@@ -269,7 +270,7 @@ class PullOpportunityStrategy implements PullStrategy
         return $syncStrategyLogModel->newQuery()
             ->whereMorphedTo('model', $model)
             ->where('strategy_name', (string) StrategyNameResolver::from($this))
-            ->where($syncStrategyLogModel->getUpdatedAtColumn(), '>=', $modified)
+            ->where($syncStrategyLogModel->getUpdatedAtColumn(), '>=', Carbon::parse($modified))
             ->doesntExist();
     }
 

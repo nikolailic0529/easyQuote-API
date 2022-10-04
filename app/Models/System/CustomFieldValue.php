@@ -3,7 +3,9 @@
 namespace App\Models\System;
 
 use App\Traits\Uuid;
+use Database\Factories\CustomFieldValueFactory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -26,9 +28,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class CustomFieldValue extends Model
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): CustomFieldValueFactory
+    {
+        return CustomFieldValueFactory::new();
+    }
 
     public function customField(): BelongsTo
     {

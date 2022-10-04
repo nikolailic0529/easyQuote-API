@@ -426,6 +426,37 @@ class ContactTest extends TestCase
     }
 
     /**
+     * Test an ability to associate an existing contact with the address.
+     */
+    public function testCanAssociateContactWithAddress(): void
+    {
+        $this->authenticateApi();
+
+        $contact = Contact::factory()->create();
+
+        $this->getJson("api/contacts/{$contact->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'address_id'
+            ])
+            ->assertJsonPath('address_id', null);
+
+        $address = Address::factory()->create();
+
+        $this->putJson("api/contacts/{$contact->getKey()}/address/{$address->getKey()}")
+            ->assertOk();
+
+        $this->getJson("api/contacts/{$contact->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'address_id'
+            ])
+            ->assertJsonPath('address_id', $address->getKey());
+    }
+
+    /**
      * Test an ability to mark an existing contact as active.
      */
     public function testCanMarkContactAsActive(): void

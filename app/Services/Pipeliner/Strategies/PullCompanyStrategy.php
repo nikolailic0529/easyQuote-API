@@ -47,6 +47,7 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
@@ -395,7 +396,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         return $syncStrategyLogModel->newQuery()
             ->whereMorphedTo('model', $model)
             ->where('strategy_name', (string) StrategyNameResolver::from($this))
-            ->where($syncStrategyLogModel->getUpdatedAtColumn(), '>=', $modified)
+            ->where($syncStrategyLogModel->getUpdatedAtColumn(), '>=', Carbon::parse($modified))
             ->doesntExist();
     }
 

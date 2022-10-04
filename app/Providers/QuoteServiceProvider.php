@@ -18,6 +18,7 @@ use App\Repositories\Quote\Margin\MarginRepository;
 use App\Repositories\Quote\QuoteDraftedRepository;
 use App\Repositories\Quote\QuoteSubmittedRepository;
 use App\Repositories\QuoteFile\QuoteFileRepository;
+use App\Services\QuoteFile\QuoteFileFilesystem;
 use App\Services\QuoteStateProcessor;
 use App\Services\QuoteViewService;
 use App\Services\SalesOrder\SalesOrderStateProcessor;
@@ -27,6 +28,7 @@ use App\Services\WorldwideQuote\WorldwideQuoteStateProcessor;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
+use League\Flysystem\FilesystemInterface;
 
 class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -37,6 +39,11 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
      */
     public function register()
     {
+        $this->app->when(QuoteFileFilesystem::class)->needs(FilesystemInterface::class)
+            ->give(static function (Container $container): FilesystemInterface {
+                return $container['filesystem']->disk()->getDriver();
+            });
+
         $this->app->singleton(QuoteFileRepositoryInterface::class, QuoteFileRepository::class);
 
         $this->app->singleton(QuoteState::class, QuoteStateProcessor::class);
@@ -108,6 +115,7 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
             ProcessesWorldwideQuoteAssetState::class,
 
             ProcessesSalesOrderState::class,
+            QuoteFileFilesystem::class,
         ];
     }
 }

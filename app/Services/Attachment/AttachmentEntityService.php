@@ -2,7 +2,7 @@
 
 namespace App\Services\Attachment;
 
-use App\Enum\AttachmentType;
+use App\DTO\Attachment\CreateAttachmentData;
 use App\Events\Attachment\AttachmentCreated;
 use App\Events\Attachment\AttachmentDeleted;
 use App\Events\Attachment\AttachmentExported;
@@ -21,65 +21,42 @@ use function tap;
 
 class AttachmentEntityService
 {
-    public function __construct(protected FilesystemAdapter    $filesystem,
-                                protected ConnectionInterface  $connection,
-                                protected AttachmentDataMapper $dataMapper,
-                                protected Dispatcher           $eventDispatcher)
-    {
+    public function __construct(
+        protected readonly FilesystemAdapter $filesystem,
+        protected readonly ConnectionInterface $connection,
+        protected readonly AttachmentDataMapper $dataMapper,
+        protected readonly Dispatcher $eventDispatcher
+    ) {
     }
 
-    public function createAttachmentFromUploadedFile(UploadedFile $file, AttachmentType $attachmentType): Attachment
+    public function createAttachmentFromFile(CreateAttachmentData $data): Attachment
     {
-        $filePath = $this->filesystem->putFileAs(
-            path: null,
-            file: $file,
-            name: $file->hashName(),
-        );
+        $metadata = $this->storeAttachmentFile($data->file);
 
-        $metadata = $this->filesystem->getMetadata($filePath) + ['filename' => $file->getClientOriginalName()];
-
-        return tap($this->dataMapper->mapFromMetadata($metadata, $attachmentType),
+        return tap($this->dataMapper->mapFromMetadata($metadata, $data->type, $data->isDeleteProtected),
             function (Attachment $attachment): void {
                 $this->connection->transaction(static fn() => $attachment->save());
             });
     }
 
-    public function createAttachmentFromBinaryFile(BinaryFileContent $file, AttachmentType $attachmentType): Attachment
+    public function createAttachmentForEntity(CreateAttachmentData $data, Model $entity): Attachment
     {
-        $this->filesystem->put(
-            $filePath = Str::random(40),
-            $file->content,
-        );
+        $metadata = $this->storeAttachmentFile($data->file);
 
-        $metadata = $this->filesystem->getMetadata($filePath) + ['filename' => $file->filename];
+        return tap($this->dataMapper->mapFromMetadata($metadata, $data->type, $data->isDeleteProtected),
+            function (Attachment $attachment) use ($entity, $data): void {
+                $this->connection->transaction(function () use ($attachment, $entity) {
+                    $attachment->save();
 
-        return tap($this->dataMapper->mapFromMetadata($metadata, $attachmentType),
-            function (Attachment $attachment): void {
-                $this->connection->transaction(static fn() => $attachment->save());
+                    $entity
+                        ->morphToMany($attachment::class, 'attachable')
+                        ->attach($attachment);
+
+                    $this->touchRelated($attachment);
+                });
+
+                $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
             });
-    }
-
-    public function createAttachmentForEntity(
-        UploadedFile|BinaryFileContent $file,
-        AttachmentType $type,
-        Model $entity
-    ): Attachment {
-        $attachment = match (true) {
-            is_a($file, UploadedFile::class, true) => $this->createAttachmentFromUploadedFile($file, $type),
-            is_a($file, BinaryFileContent::class, true) => $this->createAttachmentFromBinaryFile($file, $type),
-        };
-
-        return tap($attachment, function (Attachment $attachment) use ($entity): void {
-            $this->connection->transaction(function () use ($attachment, $entity) {
-                $entity
-                    ->morphToMany($attachment::class, 'attachable')
-                    ->attach($attachment);
-
-                $this->touchRelated($attachment);
-            });
-
-            $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
-        });
     }
 
     public function deleteAttachment(Attachment $attachment, Model $entity): void
@@ -118,6 +95,40 @@ class AttachmentEntityService
             /** @var $attachable Attachable */
             $attachable->related?->touch();
         }
+    }
+
+    protected function storeAttachmentFile(UploadedFile|BinaryFileContent $file): array
+    {
+        if (is_a($file, UploadedFile::class, true)) {
+            return $this->storeUploadedFile($file);
+        }
+
+        if (is_a($file, BinaryFileContent::class, true)) {
+            return $this->storeBinaryFile($file);
+        }
+
+        throw new \InvalidArgumentException("Unsupported attachment file type.");
+    }
+
+    protected function storeBinaryFile(BinaryFileContent $file): array
+    {
+        $this->filesystem->put(
+            $filePath = Str::random(40),
+            $file->content,
+        );
+
+        return $this->filesystem->getMetadata($filePath) + ['filename' => $file->filename];
+    }
+
+    protected function storeUploadedFile(UploadedFile $file): array
+    {
+        $filePath = $this->filesystem->putFileAs(
+            path: null,
+            file: $file,
+            name: $file->hashName(),
+        );
+
+        return $this->filesystem->getMetadata($filePath) + ['filename' => $file->getClientOriginalName()];
     }
 
     private static function processFileName(string $filename): string

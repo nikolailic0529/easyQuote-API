@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Elasticsearch\Client as ElasticsearchClient;
 use Elasticsearch\Common\Exceptions\Missing404Exception;
 use Elasticsearch\Common\Exceptions\NoNodesAvailableException;
+use GuzzleHttp\RetryMiddleware;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,8 +39,6 @@ class RebuildSearchMapping extends Command
      */
     public function handle(ElasticsearchClient $elasticsearch): int
     {
-        $start = Carbon::now()->toImmutable();
-
         if ($this->getLaravel()->runningUnitTests() && true !== $this->option('force')) {
             $this->info('Running testing environment. Indexing won\'t be proceeded.');
 
@@ -47,6 +46,20 @@ class RebuildSearchMapping extends Command
         }
 
         try {
+            retry(
+                times: 15,
+                callback: function () use ($elasticsearch): bool {
+                    $this->line('Elasticsearch: ping...');
+                    return $elasticsearch->ping();
+                },
+                sleepMilliseconds: static fn (int $retries): int => (int) pow(2, $retries - 1) * 1000,
+                when: static fn (\Throwable $e): bool => $e instanceof NoNodesAvailableException
+            );
+
+            $this->info('Elasticsearch: alive');
+
+            $start = Carbon::now()->toImmutable();
+
             $models = $this->option('model');
 
             $indicesToDelete = empty($models) ? ['_all'] : array_map([self::class, 'getSearchIndexOfModel'], $models);

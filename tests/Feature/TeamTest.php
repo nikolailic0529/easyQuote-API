@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\BusinessDivision;
 use App\Models\SalesUnit;
 use App\Models\Team;
 use App\Models\User;
@@ -20,12 +21,30 @@ class TeamTest extends TestCase
     {
         $this->authenticateApi();
 
+        Team::factory(10)
+            ->for(BusinessDivision::query()->first())
+            ->hasAttached(SalesUnit::factory(2))
+            ->hasAttached(User::factory(2), relationship: 'teamLeaders')
+            ->create();
+
         $this->getJson('api/teams')
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'team_name', 'monthly_goal_amount', 'is_system', 'created_at',
+                        'id',
+                        'team_name',
+                        'business_division_name',
+                        'monthly_goal_amount',
+                        'sales_units' => [
+                            '*' => ['id', 'unit_name']
+                        ],
+                        'team_leaders' => [
+                          '*' => ['id', 'user_fullname', 'email']
+                        ],
+                        'is_system',
+                        'created_at',
                     ],
                 ],
             ]);
@@ -33,6 +52,7 @@ class TeamTest extends TestCase
         $this->getJson('api/teams?order_by_created_at=asc');
         $this->getJson('api/teams?order_by_team_name=asc');
         $this->getJson('api/teams?order_by_monthly_goal_amount=asc');
+        $this->getJson('api/teams?order_by_business_division_name=asc');
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\DTO\Attachment\CreateAttachmentData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
 use App\Http\Resources\V1\Attachment\CreatedAttachment;
@@ -22,9 +23,8 @@ class AttachmentController extends Controller
     public function __invoke(CreateAttachment        $request,
                              AttachmentEntityService $service): JsonResponse
     {
-        $resource = $service->createAttachmentFromUploadedFile(
-            file: $request->getUploadedFile(),
-            attachmentType: $request->getAttachmentType(),
+        $resource = $service->createAttachmentFromFile(
+            CreateAttachmentData::from($request)
         );
 
         return response()->json(

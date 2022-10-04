@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\V1\Quotes;
 
+use App\DTO\Attachment\CreateAttachmentData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
 use App\Http\Resources\V1\Attachment\AttachmentOfQuote;
@@ -18,15 +19,16 @@ class RescueQuoteAttachmentController extends Controller
     /**
      * Show a list of existing attachments of the quote entity.
      *
-     * @param Quote $quote
+     * @param  Quote  $quote
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
     public function showAttachmentsOfQuote(Quote $quote): AnonymousResourceCollection
     {
         $this->authorize('view', $quote);
+        $this->authorize('viewAny', Attachment::class);
 
-        $collection = $quote->attachments()->get();
+        $collection = $quote->attachments()->latest()->get();
 
         return AttachmentOfQuote::collection($collection);
     }
@@ -34,21 +36,22 @@ class RescueQuoteAttachmentController extends Controller
     /**
      * Store a new attachment for the quote entity.
      *
-     * @param CreateAttachment $request
-     * @param AttachmentEntityService $entityService
-     * @param Quote $quote
+     * @param  CreateAttachment  $request
+     * @param  AttachmentEntityService  $entityService
+     * @param  Quote  $quote
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function storeAttachmentForQuote(CreateAttachment        $request,
-                                            AttachmentEntityService $entityService,
-                                            Quote                   $quote): JsonResponse
-    {
+    public function storeAttachmentForQuote(
+        CreateAttachment $request,
+        AttachmentEntityService $entityService,
+        Quote $quote
+    ): JsonResponse {
         $this->authorize('view', $quote);
+        $this->authorize('create', Attachment::class);
 
         $resource = $entityService->createAttachmentForEntity(
-            file: $request->getUploadedFile(),
-            type: $request->getAttachmentType(),
+            data: CreateAttachmentData::from($request),
             entity: $quote,
         );
 
@@ -62,17 +65,19 @@ class RescueQuoteAttachmentController extends Controller
     /**
      * Delete the specified attachment of the quote entity.
      *
-     * @param AttachmentEntityService $entityService
-     * @param Attachment $attachment
-     * @param Quote $quote
+     * @param  AttachmentEntityService  $entityService
+     * @param  Attachment  $attachment
+     * @param  Quote  $quote
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function deleteAttachmentOfQuote(AttachmentEntityService $entityService,
-                                            Quote                   $quote,
-                                            Attachment              $attachment): JsonResponse
-    {
+    public function deleteAttachmentOfQuote(
+        AttachmentEntityService $entityService,
+        Quote $quote,
+        Attachment $attachment
+    ): JsonResponse {
         $this->authorize('view', $quote);
+        $this->authorize('delete', $attachment);
 
         $entityService->deleteAttachment($attachment, $quote);
 

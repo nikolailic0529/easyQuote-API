@@ -42,15 +42,18 @@ class AttachmentDataMapper
         );
     }
 
-    public function mapFromMetadata(array $metadata, AttachmentType $type): Attachment
+    public function mapFromMetadata(array $metadata, AttachmentType $type, bool $isDeleteProtected = false): Attachment
     {
-        return tap(new Attachment(), function (Attachment $attachment) use ($metadata, $type) {
+        return tap(new Attachment(), function (Attachment $attachment) use ($isDeleteProtected, $metadata, $type) {
             $attachment->{$attachment->getKeyName()} = (string)Uuid::generate(4);
             $attachment->filepath = $metadata['path'];
             $attachment->filename = static::truncateFilename($metadata['filename'] ?? pathinfo($metadata['path'], PATHINFO_FILENAME));
             $attachment->extension = pathinfo($metadata['path'], PATHINFO_EXTENSION);
             $attachment->size = $metadata['size'];
             $attachment->type = $type;
+            if ($isDeleteProtected) {
+                $attachment->flags |= Attachment::IS_DELETE_PROTECTED;
+            }
             $attachment->updateTimestamps();
         });
     }
