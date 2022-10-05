@@ -42,6 +42,7 @@ use App\Models\Pipeline\PipelineStage;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\PipelineQueries;
+use App\Services\Opportunity\Exceptions\OpportunityDataMappingException;
 use App\Services\Opportunity\Models\PipelinerOppMap;
 use App\Services\Pipeliner\CachedCurrencyEntityResolver;
 use App\Services\Pipeliner\CachedDataEntityResolver;
@@ -1023,6 +1024,9 @@ class OpportunityDataMapper implements CauserAware
         ]);
     }
 
+    /**
+     * @throws OpportunityDataMappingException
+     */
     public function mapPipelinerCreateOpportunityInput(Opportunity $opportunity): CreateOpportunityInput
     {
         $customFields = array_merge(
@@ -1032,10 +1036,21 @@ class OpportunityDataMapper implements CauserAware
 
         $pipeline = ($this->pipelineResolver)($opportunity->pipeline->pipeline_name);
 
+        if (null === $pipeline) {
+            throw OpportunityDataMappingException::couldNotResolvePipelinerPipeline($opportunity->pipeline->pipeline_name);
+        }
+
         $step = null;
 
-        if (null !== $opportunity->pipelineStage) {
-            $step = ($this->stepResolver)($opportunity->pipelineStage?->stage_name, $pipeline->id);
+        if (null !== $opportunity->pipelineStage && null !== $pipeline) {
+            $step = ($this->stepResolver)($opportunity->pipelineStage?->stage_name ?? '', $pipeline->id);
+
+            if (null === $step) {
+                throw OpportunityDataMappingException::couldNotResolvePipelinerStep(
+                    stage: $opportunity->pipelineStage->stage_name,
+                    pipeline: $pipeline->name,
+                );
+            }
         }
 
         $currencyOfValue = ($this->pipelinerCurrencyResolver)($opportunity->opportunity_amount_currency_code ?? setting('base_currency'));
@@ -1081,9 +1096,9 @@ class OpportunityDataMapper implements CauserAware
             unitId: $opportunity->salesUnit?->pl_reference ?? '',
             customFields: json_encode($customFields),
             value: new CurrencyForeignFieldInput(
-                baseValue: $opportunity->base_opportunity_amount,
+                baseValue: (float)$opportunity->base_opportunity_amount,
                 currencyId: $currencyOfValue?->id ?? '',
-                valueForeign: $opportunity->opportunity_amount
+                valueForeign: (float)$opportunity->opportunity_amount
             )
         );
     }
@@ -1097,7 +1112,7 @@ class OpportunityDataMapper implements CauserAware
 
         $customFields = array_merge($customFields, $this->projectOpportunityAttrsToCustomFields($opportunity));
 
-        $step = ($this->stepResolver)($opportunity->pipelineStage?->stage_name, $oppEntity->step->pipeline->id);
+        $step = ($this->stepResolver)($opportunity->pipelineStage?->stage_name ?? '', $oppEntity->step->pipeline->id);
         $stepId = $step?->id;
 
         $ownerId = (string)$opportunity->owner?->pl_reference;
@@ -1111,9 +1126,9 @@ class OpportunityDataMapper implements CauserAware
         $name = $opportunity->project_name;
 
         $value = new CurrencyForeignFieldInput(
-            baseValue: $opportunity->base_opportunity_amount,
+            baseValue: (float)$opportunity->base_opportunity_amount,
             currencyId: $currencyOfValue?->id,
-            valueForeign: $opportunity->opportunity_amount
+            valueForeign: (float)$opportunity->opportunity_amount
         );
 
         $customFieldsJson = json_encode($customFields);
@@ -1134,7 +1149,7 @@ class OpportunityDataMapper implements CauserAware
             $ownerId = InputValueEnum::Miss;
         }
 
-        if ($stepId === $oppEntity->step?->id) {
+        if ($stepId === $oppEntity->step?->id || null === $stepId) {
             $stepId = InputValueEnum::Miss;
         }
 

@@ -93,12 +93,18 @@ class SyncPipelinerEntity implements ShouldQueue
                 : $entity;
 
             $this->persistSyncStrategyLog($model, $strategy);
+
+            $logger->info(sprintf('Syncing [%s]: success', class_basename($entity)), [
+                'id' => $entity->id,
+                'strategy' => class_basename($this->strategyClass),
+            ]);
         } catch (PipelinerIntegrationException|PipelinerSyncException $e) {
             report($e);
 
             $logger->warning(sprintf('Syncing [%s]: skipped', class_basename($entity)), [
                 'id' => $entity->id,
                 'error' => trim($e->getMessage()),
+                'strategy' => class_basename($this->strategyClass),
             ]);
 
             $eventDispatcher->dispatch(
@@ -109,11 +115,6 @@ class SyncPipelinerEntity implements ShouldQueue
                 )
             );
         }
-
-        $logger->info(sprintf('Syncing [%s]: success', class_basename($entity)), [
-            'id' => $entity->id,
-            'strategy' => class_basename($this->strategyClass),
-        ]);
 
         $status->incrementProcessed();
 

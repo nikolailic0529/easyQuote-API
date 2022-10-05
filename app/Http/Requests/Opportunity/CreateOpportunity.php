@@ -16,6 +16,7 @@ use App\Models\Pipeline\PipelineStage;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\PipelineQueries;
+use App\Rules\ModelIsActive;
 use App\Rules\Opportunity\SaleActionName;
 use App\Rules\Opportunity\ValidSupplierData;
 use App\Rules\ScalarValue;
@@ -56,11 +57,15 @@ class CreateOpportunity extends FormRequest
             ],
             'primary_account_id' => [
                 'bail', 'uuid',
-                Rule::exists(Company::class, 'id')->withoutTrashed()->whereNotNull('activated_at'),
+                Rule::exists(Company::class, 'id')->withoutTrashed(),
+                ModelIsActive::model(Company::class)
+                    ->setMessage(__("The given primary account is inactive.")),
             ],
             'end_user_id' => [
                 'bail', 'uuid',
-                Rule::exists(Company::class, 'id')->withoutTrashed()->whereNotNull('activated_at'),
+                Rule::exists(Company::class, 'id')->withoutTrashed(),
+                ModelIsActive::model(Company::class)
+                    ->setMessage(__("The given end user is inactive.")),
             ],
             'are_end_user_addresses_available' => [
                 'bail', 'boolean',

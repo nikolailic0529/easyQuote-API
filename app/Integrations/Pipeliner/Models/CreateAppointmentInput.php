@@ -23,7 +23,7 @@ final class CreateAppointmentInput extends BaseInput
         public readonly CreateActivityContactRelationInputCollection|InputValueEnum $contactRelations = InputValueEnum::Miss,
         public readonly CreateActivityLeadOpptyRelationInputCollection|InputValueEnum $opportunityRelations = InputValueEnum::Miss,
         public readonly CreateActivityClientRelationInputCollection|InputValueEnum $inviteesClients = InputValueEnum::Miss,
-        public readonly CreateActivityContactRelationInputCollection|InputValueEnum $inviteesContacts = InputValueEnum::Miss,
+        public readonly CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection|InputValueEnum $inviteesContacts = InputValueEnum::Miss,
         public readonly CreateAppointmentReminderInput|InputValueEnum $reminder = InputValueEnum::Miss,
         public readonly CreateCloudObjectRelationInputCollection|InputValueEnum $documents = InputValueEnum::Miss,
     ) {

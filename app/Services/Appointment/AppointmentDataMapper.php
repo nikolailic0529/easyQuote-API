@@ -20,6 +20,8 @@ use App\Integrations\Pipeliner\Models\CreateActivityContactRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityContactRelationInputCollection;
 use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInput;
 use App\Integrations\Pipeliner\Models\CreateActivityLeadOpptyRelationInputCollection;
+use App\Integrations\Pipeliner\Models\CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput;
+use App\Integrations\Pipeliner\Models\CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection;
 use App\Integrations\Pipeliner\Models\CreateAppointmentInput;
 use App\Integrations\Pipeliner\Models\CreateAppointmentReminderInput;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectRelationInput;
@@ -323,12 +325,18 @@ class AppointmentDataMapper implements CauserAware
             ->pipe(static function (BaseCollection $collection): CreateActivityClientRelationInputCollection {
                 return new CreateActivityClientRelationInputCollection(...$collection->all());
             });
-        $attributes['inviteesContacts'] = $appointment->inviteesContacts->whereNotNull('pl_reference')
-            ->map(static function (AppointmentContactInvitee $contact): CreateActivityContactRelationInput {
-                return new CreateActivityContactRelationInput($contact->pl_reference);
+        $attributes['inviteesContacts'] = $appointment->inviteesContacts
+            ->whereNotNull('pl_reference')
+            ->unique('pl_reference')
+            ->values()
+            ->map(static function (AppointmentContactInvitee $contact): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput {
+                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput(
+                    contactId: $contact->pl_reference,
+                    email: $contact->email ?? '',
+                );
             })
-            ->pipe(static function (BaseCollection $collection): CreateActivityContactRelationInputCollection {
-                return new CreateActivityContactRelationInputCollection(...$collection->all());
+            ->pipe(static function (BaseCollection $collection): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection {
+                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection(...$collection->all());
             });
         $attributes['reminder'] = value(static function () use ($appointment
         ): CreateAppointmentReminderInput|InputValueEnum {
@@ -432,11 +440,14 @@ class AppointmentDataMapper implements CauserAware
             ->whereNotNull('pl_reference')
             ->unique('pl_reference')
             ->values()
-            ->map(static function (Contact $contact): CreateActivityContactRelationInput {
-                return new CreateActivityContactRelationInput($contact->pl_reference);
+            ->map(static function (AppointmentContactInvitee $contact): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput {
+                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput(
+                    contactId: $contact->pl_reference,
+                    email: $contact->email ?? '',
+                );
             })
-            ->pipe(static function (BaseCollection $collection): CreateActivityContactRelationInputCollection {
-                return new CreateActivityContactRelationInputCollection(...$collection->all());
+            ->pipe(static function (BaseCollection $collection): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection {
+                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection(...$collection->all());
             });
         $attributes['documents'] =  $appointment->attachments
             ->whereNotNull('pl_reference')

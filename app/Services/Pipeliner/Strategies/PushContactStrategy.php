@@ -3,7 +3,12 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
+use App\Integrations\Pipeliner\Exceptions\EntityNotFoundException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
+use App\Integrations\Pipeliner\Models\BulkUpdateResultMap;
+use App\Integrations\Pipeliner\Models\CreateContactInput;
+use App\Integrations\Pipeliner\Models\CreateOrUpdateContactInputCollection;
+use App\Integrations\Pipeliner\Models\UpdateContactInput;
 use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
 use App\Models\Contact;
 use App\Services\Contact\ContactDataMapper;
@@ -13,21 +18,23 @@ use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\LazyCollection;
 
 class PushContactStrategy implements PushStrategy
 {
     use SalesUnitsAware;
 
-    public function __construct(protected ConnectionInterface         $connection,
-                                protected PipelinerContactIntegration $contactIntegration,
-                                protected PushSalesUnitStrategy       $pushSalesUnitStrategy,
-                                protected PushClientStrategy          $pushClientStrategy,
-                                protected ContactDataMapper           $dataMapper)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected PipelinerContactIntegration $contactIntegration,
+        protected PushSalesUnitStrategy $pushSalesUnitStrategy,
+        protected PushClientStrategy $pushClientStrategy,
+        protected ContactDataMapper $dataMapper
+    ) {
     }
 
     /**
-     * @param Contact $model
+     * @param  Contact  $model
      * @return void
      * @throws \App\Integrations\Pipeliner\Exceptions\GraphQlRequestException
      * @throws \Illuminate\Http\Client\RequestException
@@ -51,10 +58,23 @@ class PushContactStrategy implements PushStrategy
             throw PipelinerSyncException::undefinedContactAddressRelation($model);
         }
 
+        if (null !== $model->pl_reference) {
+            try {
+                $this->contactIntegration->getById($model->pl_reference);
+            } catch (EntityNotFoundException $e) {
+                tap($model, function (Contact $contact): void {
+                    $contact->pl_reference = null;
+
+                    $this->connection->transaction(static fn() => $contact->saveQuietly());
+                });
+            }
+        }
+
         if (null === $model->pl_reference) {
             $input = $this->dataMapper->mapPipelinerCreateContactInput($model);
 
-            $contactEntity = $this->contactIntegration->create($input, ValidationLevelCollection::from(ValidationLevel::SKIP_ALL));
+            $contactEntity = $this->contactIntegration->create($input,
+                ValidationLevelCollection::from(ValidationLevel::SKIP_ALL));
 
             tap($model, function (Contact $contact) use ($contactEntity): void {
                 $contact->pl_reference = $contactEntity->id;
@@ -74,6 +94,98 @@ class PushContactStrategy implements PushStrategy
         }
     }
 
+    public function batch(Model $model, Model ...$models): void
+    {
+        $models = collect([$model, ...array_values($models)])->lazy();
+
+        $models
+            ->each(static function (Model $model): void {
+                if (!$model instanceof Contact) {
+                    throw new \TypeError(sprintf("Model must be an instance of %s.", Contact::class));
+                }
+            })
+            ->each(function (Contact $contact): void {
+                if (null === $contact->address) {
+                    throw PipelinerSyncException::undefinedContactAddressRelation($contact);
+                }
+
+                if (null !== $contact->user) {
+                    $this->pushClientStrategy->sync($contact->user);
+                }
+
+                if (null !== $contact->salesUnit) {
+                    $this->pushSalesUnitStrategy->sync($contact->salesUnit);
+                }
+            });
+
+        /** @var LazyCollection $linkedContacts */
+        /** @var LazyCollection $unlinkedContacts */
+        [$linkedContacts, $unlinkedContacts] = $models->partition(static function (Contact $contact): bool {
+            return null !== $contact->pl_reference;
+        })
+            ->all();
+
+        $contactEntityMap = collect();
+
+        if ($linkedContacts->isNotEmpty()) {
+            $contactEntities = collect($this->contactIntegration->getByIds(
+                ...$linkedContacts->pluck('pl_reference')->all()
+            ));
+
+            $contactEntityMap = $contactEntities->keyBy('id');
+
+            $newlyUnlinkedContacts = $linkedContacts->reject(static function (Contact $contact) use ($contactEntityMap
+            ) {
+                return $contactEntityMap->has($contact->pl_reference);
+            })
+                ->each(static function (Contact $contact): void {
+                    $contact->pl_reference = null;
+                })
+                ->values();
+
+            $unlinkedContacts = $unlinkedContacts->merge($newlyUnlinkedContacts->all());
+        }
+
+        /** @var Collection $contacts */
+        $contacts = $linkedContacts
+            ->merge($unlinkedContacts)
+            ->pipe(static function (LazyCollection $collection): Collection {
+                return Collection::make($collection->all());
+            });
+
+        $input = $contacts
+            ->lazy()
+            ->map(function (Contact $contact) use ($contactEntityMap): CreateContactInput|UpdateContactInput {
+                if (null === $contact->pl_reference) {
+                    return $this->dataMapper->mapPipelinerCreateContactInput(
+                        $contact,
+                    );
+                }
+
+                return $this->dataMapper->mapPipelinerUpdateContactInput(
+                    $contact,
+                    $contactEntityMap->get($contact->pl_reference)
+                );
+            })
+            ->pipe(static function (LazyCollection $collection): CreateOrUpdateContactInputCollection {
+                return new CreateOrUpdateContactInputCollection(...$collection->all());
+            });
+
+        $results = $this->contactIntegration->bulkUpdate($input, ValidationLevelCollection::from(
+            ValidationLevel::SKIP_ALL
+        ));
+
+        collect($results->created)
+            ->each(function (BulkUpdateResultMap $resultMap) use ($contacts): void {
+                /** @var Contact $contact */
+                $contact = $contacts->get($resultMap->index);
+
+                $contact->pl_reference = $resultMap->id;
+
+                $this->connection->transaction(static fn() => $contact->save());
+            });
+    }
+
     public function countPending(): int
     {
         return 0;
@@ -84,7 +196,8 @@ class PushContactStrategy implements PushStrategy
         $model = new Contact();
 
         return $model->newQuery()
-            ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(), Collection::make($this->getSalesUnits())->modelKeys())
+            ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(),
+                Collection::make($this->getSalesUnits())->modelKeys())
             ->lazyById(100);
     }
 

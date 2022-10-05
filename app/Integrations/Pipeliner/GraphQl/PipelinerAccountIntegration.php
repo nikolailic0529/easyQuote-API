@@ -310,15 +310,16 @@ class PipelinerAccountIntegration
      * @throws GraphQlRequestException
      * @throws \Illuminate\Http\Client\RequestException
      */
-    public function create(CreateAccountInput $input): AccountEntity
+    public function create(CreateAccountInput $input, ValidationLevelCollection $validationLevel = null): AccountEntity
     {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: 'CreateAccountInput', isRequired: true)
+            ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
             ->selectField(
                 (new Mutation('createAccount'))
                     ->setArguments([
                         'input' => '$input',
-                        'validationLevel' => new RawObject('[SKIP_USER_DEFINED_VALIDATIONS]'),
+                        'validationLevel' => '$validationLevel',
                     ])
                     ->setSelectionSet([
                         (new Query('account'))
@@ -331,6 +332,7 @@ class PipelinerAccountIntegration
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => $input->jsonSerialize(),
+                    'validationLevel' => $validationLevel,
                 ],
             ]);
 
@@ -345,13 +347,14 @@ class PipelinerAccountIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    public function update(UpdateAccountInput $input): AccountEntity
+    public function update(UpdateAccountInput $input, ValidationLevelCollection $validationLevel = null): AccountEntity
     {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: 'UpdateAccountInput', isRequired: true)
+            ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
             ->selectField(
                 (new Mutation('updateAccount'))
-                    ->setArguments(['input' => '$input'])
+                    ->setArguments(['input' => '$input', 'validationLevel' => '$validationLevel'])
                     ->setSelectionSet([
                         (new Query('account'))
                             ->setSelectionSet(static::getAccountEntitySelectionSet()),
@@ -363,6 +366,7 @@ class PipelinerAccountIntegration
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => $input->jsonSerialize(),
+                    'validationLevel' => $validationLevel,
                 ],
             ]);
 

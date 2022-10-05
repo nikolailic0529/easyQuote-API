@@ -3,10 +3,13 @@
 namespace App\Integrations\Pipeliner\GraphQl;
 
 use App\Integrations\Pipeliner\Defaults;
+use App\Integrations\Pipeliner\Exceptions\EntityNotFoundException;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
+use App\Integrations\Pipeliner\Models\BulkUpdateResults;
 use App\Integrations\Pipeliner\Models\ContactEntity;
 use App\Integrations\Pipeliner\Models\ContactFilterInput;
 use App\Integrations\Pipeliner\Models\CreateContactInput;
+use App\Integrations\Pipeliner\Models\CreateOrUpdateContactInputCollection;
 use App\Integrations\Pipeliner\Models\UpdateContactInput;
 use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
 use GraphQL\Mutation;
@@ -121,6 +124,7 @@ class PipelinerContactIntegration
     /**
      * @throws GraphQlRequestException
      * @throws \Illuminate\Http\Client\RequestException
+     * @throws EntityNotFoundException
      */
     public function getById(string $id): ContactEntity
     {
@@ -151,7 +155,13 @@ class PipelinerContactIntegration
 
         $response->throw();
 
-        return ContactEntity::fromArray($response->json('data.entities.contact.getById'));
+        $value = $response->json('data.entities.contact.getById');
+
+        if (null === $value) {
+            throw EntityNotFoundException::notFoundById($id, 'contact');
+        }
+
+        return ContactEntity::fromArray($value);
     }
 
     /**
@@ -314,6 +324,41 @@ class PipelinerContactIntegration
         $response->throw();
 
         return ContactEntity::fromArray($response->json('data.updateContact.contact'));
+    }
+
+    public function bulkUpdate(CreateOrUpdateContactInputCollection $input, ValidationLevelCollection $validationLevel = null): BulkUpdateResults
+    {
+        $builder = (new MutationBuilder())
+            ->setVariable(name: 'input', type: '[CreateOrUpdateContactInput!]', isRequired: true)
+            ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
+            ->selectField(
+                (new Mutation('bulkUpdateContact'))
+                    ->setArguments([
+                        'input' => '$input',
+                        'validationLevel' => '$validationLevel',
+                    ])
+                    ->setSelectionSet([
+                        (new Query('result'))
+                            ->setSelectionSet([
+                                'updated',
+                                (new Query('created'))
+                                    ->setSelectionSet(['index', 'id']),
+                                (new Query('errors'))
+                                    ->setSelectionSet(['entityId', 'code', 'message', 'index', 'message'])
+                            ]),
+                    ])
+            );
+
+        $response = $this->client
+            ->post($this->client->buildSpaceEndpoint(), [
+                'query' => $builder->getQuery()->__toString(),
+                'variables' => [
+                    'input' => $input,
+                    'validationLevel' => $validationLevel,
+                ],
+            ]);
+
+        return BulkUpdateResults::fromArray($response->json('data.bulkUpdateContact.result'));
     }
 
     public static function getContactEntitySelectionSet(): array

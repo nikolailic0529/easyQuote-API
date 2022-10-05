@@ -645,6 +645,7 @@ class OpportunityTest extends TestCase
         });
 
         $endUser = Company::factory()->create();
+//        $endUser->forceFill(['activated_at' => null])->save();
 
         $response = $this->getJson('api/external-companies')
 //            ->dump()

@@ -190,7 +190,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
     {
         $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 120);
 
-        return $lock->block(120, function () use ($entity, $account, $contactRelations): Company {
+        $account = $lock->block(120, function () use ($entity, $account, $contactRelations): Company {
             $contacts = [...$contactRelations, ...$this->collectContactRelationsFromAccountEntity($entity)];
 
             $newAccount = $this->dataMapper->mapImportedCompanyFromAccountEntity($entity, $contacts);
@@ -240,8 +240,6 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
                 $account->load(['addresses', 'contacts']);
 
-                $this->syncRelationsOfAccountEntity($entity, $account);
-
                 return $account;
             }
 
@@ -249,9 +247,14 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
             $account->load(['addresses', 'contacts']);
 
-            $this->syncRelationsOfAccountEntity($entity, $account);
-
             return $account;
+        });
+
+        return tap($account, function () use ($account, $entity) {
+            $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id).'relations', 120)
+                ->block(120, function () use ($account, $entity) {
+                    $this->syncRelationsOfAccountEntity($entity, $account);
+                });
         });
     }
 

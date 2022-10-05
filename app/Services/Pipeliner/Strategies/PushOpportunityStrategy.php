@@ -2,22 +2,26 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
+use App\Enum\Lock;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerPipelineIntegration;
 use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
+use App\Models\Company;
 use App\Models\Data\Currency;
 use App\Models\Opportunity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelUpdateLog;
+use App\Services\Opportunity\Exceptions\OpportunityDataMappingException;
 use App\Services\Opportunity\OpportunityDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerAccountLookupService;
 use App\Services\Pipeliner\PipelinerOpportunityLookupService;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -44,7 +48,8 @@ class PushOpportunityStrategy implements PushStrategy
         protected PushTaskStrategy $pushTaskStrategy,
         protected PushAttachmentStrategy $pushAttachmentStrategy,
         protected PushAppointmentStrategy $pushAppointmentStrategy,
-        protected OpportunityDataMapper $dataMapper
+        protected OpportunityDataMapper $dataMapper,
+        protected LockProvider $lockProvider,
     ) {
     }
 
@@ -140,8 +145,16 @@ class PushOpportunityStrategy implements PushStrategy
             throw new \TypeError(sprintf("Model must be an instance of %s.", Opportunity::class));
         }
 
+        if (null === $model->pipelineStage) {
+            throw new PipelinerSyncException("Opportunity [{$model->getIdForHumans()}] doesn't have assigned pipeline stage.");
+        }
+
+        if (null === $model->salesUnit) {
+            throw new PipelinerSyncException("Opportunity [{$model->getIdForHumans()}] doesn't have assigned sales unit.");
+        }
+
         if (is_null($model->pl_reference)) {
-            $oppEntity = $this->opportunityLookupService->find($model, $this->getSalesUnits());
+            $oppEntity = $this->opportunityLookupService->find($model, [$model->salesUnit]);
 
             if (null !== $oppEntity) {
                 $model->pl_reference = $oppEntity->id;
@@ -164,7 +177,11 @@ class PushOpportunityStrategy implements PushStrategy
         $this->pushAttachmentsFromOppty($model);
 
         if (is_null($model->pl_reference)) {
-            $input = $this->dataMapper->mapPipelinerCreateOpportunityInput(opportunity: $model);
+            try {
+                $input = $this->dataMapper->mapPipelinerCreateOpportunityInput(opportunity: $model);
+            } catch (OpportunityDataMappingException $e) {
+                throw new PipelinerSyncException($e->getMessage(), previous: $e);
+            }
 
             $oppEntity = $this->oppIntegration->create($input,
                 ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS,
@@ -241,16 +258,21 @@ class PushOpportunityStrategy implements PushStrategy
     private function pushAccountsFromOppty(Opportunity $opportunity): void
     {
         if (null !== $opportunity->primaryAccount) {
-            $this->pushCompanyStrategy
-                ->setSalesUnits(...$this->getSalesUnits())
-                ->sync($opportunity->primaryAccount);
+            $this->pushAccount($opportunity->primaryAccount);
         }
 
-        if (null !== $opportunity->endUser) {
-            $this->pushCompanyStrategy
-                ->setSalesUnits(...$this->getSalesUnits())
-                ->sync($opportunity->endUser);
+        if (null !== $opportunity->endUser && $opportunity->endUser->isNot($opportunity->primaryAccount)) {
+            $this->pushAccount($opportunity->endUser);
         }
+
+        $opportunity->load(['primaryAccount', 'endUser']);
+    }
+
+    private function pushAccount(Company $company): void
+    {
+        $this->pushCompanyStrategy
+            ->setSalesUnits(...$this->getSalesUnits())
+            ->sync($company);
     }
 
     private function pushAttachmentsFromOppty(Opportunity $opportunity): void
