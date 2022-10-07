@@ -3,6 +3,7 @@
 namespace App\Integrations\Pipeliner\GraphQl;
 
 use App\Integrations\Pipeliner\Defaults;
+use App\Integrations\Pipeliner\Exceptions\EntityNotFoundException;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Models\ClientEntity;
 use App\Integrations\Pipeliner\Models\ClientFilterInput;
@@ -20,10 +21,11 @@ class PipelinerClientIntegration
     }
 
     /**
-     * @param string $id
+     * @param  string  $id
      * @return ClientEntity
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
+     * @throws EntityNotFoundException
      */
     public function getById(string $id): ClientEntity
     {
@@ -52,6 +54,12 @@ class PipelinerClientIntegration
         GraphQlRequestException::throwIfHasErrors($response);
 
         $response->throw();
+
+        $value = $response->json('data.entities.client.getById');
+
+        if (null === $value) {
+            throw EntityNotFoundException::notFoundById($id, 'client');
+        }
 
         return ClientEntity::fromArray($response->json('data.entities.client.getById'));
     }

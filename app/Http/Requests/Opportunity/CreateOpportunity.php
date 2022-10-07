@@ -11,6 +11,7 @@ use App\Enum\RecurrenceTypeEnum;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\ContractType;
+use App\Models\Opportunity;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\SalesUnit;
@@ -83,6 +84,8 @@ class CreateOpportunity extends FormRequest
             ],
             'project_name' => [
                 'bail', 'string', 'max:191',
+                Rule::unique(Opportunity::class)
+                    ->withoutTrashed()
             ],
             'nature_of_service' => [
                 'bail', 'string', 'max:191',
@@ -252,6 +255,13 @@ class CreateOpportunity extends FormRequest
             'recurrence.week' => ['bail', 'required_with:recurrence', new Enum(DateWeekEnum::class)],
             'recurrence.day_of_week' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:127'],
             'recurrence.condition' => ['bail', 'required_with:recurrence', 'integer', 'min:1', 'max:3'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'project_name.unique' => 'The opportunity name [:input] already taken.'
         ];
     }
 

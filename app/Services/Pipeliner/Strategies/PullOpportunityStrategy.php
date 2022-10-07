@@ -23,6 +23,7 @@ use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelScrollCursor;
+use App\Models\SalesUnit;
 use App\Services\Opportunity\OpportunityDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
@@ -100,6 +101,10 @@ class PullOpportunityStrategy implements PullStrategy
                 ->where('pl_reference', $entity->id)
                 ->first();
 
+            if (null === $opportunity) {
+                $opportunity = $this->performOpportunityLookup($entity);
+            }
+
             /** @var Collection|Company[] $accounts */
             $accounts = Collection::make($entity->accountRelations)
                 ->map(function (LeadOpptyAccountRelationEntity $relationEntity) use ($entity): Company {
@@ -142,6 +147,26 @@ class PullOpportunityStrategy implements PullStrategy
 
             return $newOpportunity;
         });
+    }
+
+    /**
+     * @throws PipelinerSyncException
+     */
+    protected function performOpportunityLookup(OpportunityEntity $entity): ?Opportunity
+    {
+        /** @var SalesUnit $unit */
+        $unit = SalesUnit::query()->where('unit_name', $entity->unit->name)->sole();
+
+        $matchingOpportunities = Opportunity::query()
+            ->where('project_name', $entity->name)
+            ->whereBelongsTo($unit)
+            ->get();
+
+        if ($matchingOpportunities->count() > 1) {
+            throw new PipelinerSyncException("Multiple opportunities matched. Opportunity name [$entity->name], Unit [$unit->unit_name].");
+        }
+
+        return $matchingOpportunities->first();
     }
 
     private function syncRelationsOfOpportunityEntity(OpportunityEntity $entity, Opportunity $model): void

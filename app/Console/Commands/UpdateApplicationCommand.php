@@ -34,6 +34,7 @@ use Database\Seeders\{AssetCategorySeeder,
 use Illuminate\Console\Command;
 use Illuminate\Database\Console\Seeds\SeedCommand;
 use Illuminate\Foundation\Console\{OptimizeClearCommand, OptimizeCommand};
+use Symfony\Component\Console\Input\InputOption;
 
 class UpdateApplicationCommand extends Command
 {
@@ -42,7 +43,7 @@ class UpdateApplicationCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:update';
+    protected $name = 'eq:update';
 
     /**
      * The console command description.
@@ -210,21 +211,44 @@ class UpdateApplicationCommand extends Command
         $this->call(UpdateCompanies::class);
         $this->call(UpdateVendors::class);
         $this->call(UpdateRoles::class);
-        $this->call(UpdateExchangeRates::class);
+
+        if ($this->shouldntSkip('update-exchange-rates')) {
+            $this->call(UpdateExchangeRates::class);
+        }
+
         $this->call(UpdateDocumentMapping::class);
         $this->call(UpdateTemplateFields::class);
         $this->call(UpdateRescueQuoteTemplates::class);
         $this->call(UpdateTemplatesAssets::class);
         $this->call(ResetTaskTemplates::class);
         $this->call(ValidateOpportunitiesCommand::class);
-
         $this->call(CreatePersonalAccessClient::class);
         $this->call(CreateClientCredentials::class);
-        $this->call(RebuildSearchMapping::class);
+
+        if ($this->shouldntSkip('rebuild-search-mapping')) {
+            $this->call(RebuildSearchMapping::class);
+        }
 
         $this->call(OptimizeClearCommand::class);
         $this->call(OptimizeCommand::class);
 
         return Command::SUCCESS;
+    }
+
+    protected function shouldntSkip(string $action): bool
+    {
+        return !$this->shouldSkip($action);
+    }
+
+    protected function shouldSkip(string $action): bool
+    {
+        return in_array($action, $this->option('skip'), true);
+    }
+
+    protected function getOptions()
+    {
+        return [
+            new InputOption('--skip', mode: InputOption::VALUE_REQUIRED|InputOption::VALUE_IS_ARRAY, description: 'The actions to skip')
+        ];
     }
 }

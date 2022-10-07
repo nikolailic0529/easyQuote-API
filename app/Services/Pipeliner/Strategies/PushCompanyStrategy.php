@@ -217,19 +217,13 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
     private function syncContactRelationsFromAccount(Company $model): void
     {
         $sortedDefaultAddresses = $model->addresses->sortByDesc('pivot.is_default');
+        $invoiceAddress = $sortedDefaultAddresses
+            ->first(static fn(Address $address): bool => $address->address_type === AddressType::INVOICE);
 
         $contactsToBeLinkedWithAddress = $model->contacts
-            ->filter(static fn(Contact $contact
-            ): bool => null === $contact->address || $contact->address->address_type !== $contact->contact_type)
-            ->each(static function (Contact $contact) use ($sortedDefaultAddresses): void {
-                $address = $sortedDefaultAddresses
-                    ->first(static fn(Address $address): bool => $contact->contact_type === $address->address_type);
-
-                // Link with the first address of non Invoice type.
-                $address ??= $sortedDefaultAddresses
-                    ->first(static fn(Address $address): bool => $address->address_type !== AddressType::INVOICE);
-
-                $contact->address()->associate($address);
+            ->filter(static fn(Contact $contact): bool => null === $contact->address)
+            ->each(static function (Contact $contact) use ($invoiceAddress): void {
+                $contact->address()->associate($invoiceAddress);
             });
 
         $this->connection->transaction(static function () use ($contactsToBeLinkedWithAddress): void {

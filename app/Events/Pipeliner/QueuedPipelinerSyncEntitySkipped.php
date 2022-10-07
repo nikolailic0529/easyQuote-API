@@ -34,7 +34,7 @@ final class QueuedPipelinerSyncEntitySkipped implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         return [
-            'entity_id' => $this->entity->getKey(),
+            'entity_id' => $this->entity->id,
             'entity_type' => class_basename($this->entity),
         ];
     }

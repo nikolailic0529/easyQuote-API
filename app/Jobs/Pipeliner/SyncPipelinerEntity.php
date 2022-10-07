@@ -16,6 +16,8 @@ use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
@@ -44,6 +46,11 @@ class SyncPipelinerEntity implements ShouldQueue
         $this->units = $strategy->getSalesUnits();
     }
 
+    public function uniqueId(): string
+    {
+        return 'pipeliner-sync:'.static::class.$this->batchId.$this->entityReference.$this->strategyClass;
+    }
+
     /**
      * Execute the job.
      *
@@ -51,6 +58,7 @@ class SyncPipelinerEntity implements ShouldQueue
      * @param  SyncPipelinerDataStatus  $status
      * @param  LoggerInterface  $logger
      * @param  EventDispatcher  $eventDispatcher
+     * @param  LockProvider  $lockProvider
      * @return void
      */
     public function handle(
@@ -58,6 +66,8 @@ class SyncPipelinerEntity implements ShouldQueue
         SyncPipelinerDataStatus $status,
         LoggerInterface $logger,
         EventDispatcher $eventDispatcher,
+        Cache $cache,
+        LockProvider $lockProvider,
     ): void {
         if ($this->batch()->canceled()) {
             return;
@@ -79,11 +89,15 @@ class SyncPipelinerEntity implements ShouldQueue
         ]);
 
         try {
-            $result = $strategy->sync($entity);
+            $arguments = $this->strategyHasOptions()
+                ? [$entity, 'batchId' => $this->batchId]
+                : [$entity];
+
+            $result = $strategy->sync(...$arguments);
 
             if ($strategy instanceof ImpliesSyncOfHigherHierarchyEntities) {
                 /** @var SyncStrategy&ImpliesSyncOfHigherHierarchyEntities $strategy */
-                $addedJobsCount = $this->syncHigherHierarchyEntities($strategy, $entity);
+                $addedJobsCount = $this->syncHigherHierarchyEntities($strategy, $entity, $lockProvider);
 
                 $status->incrementTotal($addedJobsCount);
             }
@@ -126,6 +140,21 @@ class SyncPipelinerEntity implements ShouldQueue
         );
     }
 
+    private function strategyHasOptions(): bool
+    {
+        $class = new \ReflectionClass($this->strategyClass);
+
+        $method = $class->getMethod('sync');
+
+        foreach ($method->getParameters() as $parameter) {
+            if ($parameter->getName() === 'options') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function persistSyncStrategyLog(Model $model, SyncStrategy $strategy): void
     {
         tap(new PipelinerSyncStrategyLog(),
@@ -140,6 +169,7 @@ class SyncPipelinerEntity implements ShouldQueue
     protected function syncHigherHierarchyEntities(
         SyncStrategy&ImpliesSyncOfHigherHierarchyEntities $strategy,
         object $relatedEntity,
+        LockProvider $lockProvider,
     ): int {
         $jobs = collect();
 
@@ -147,9 +177,15 @@ class SyncPipelinerEntity implements ShouldQueue
             $hhStrategies = $this->resolveSuitableStrategiesFor($entity, $strategy);
 
             foreach ($hhStrategies as $sStrategy) {
-                $jobs[] = new static($sStrategy, $entity->id, $this->causer);
+                $jobs[] = (new static($sStrategy, $entity->id, $this->causer));
             }
         }
+
+        $jobs = $jobs
+            ->filter(function (SyncPipelinerEntity $job) use ($lockProvider): mixed {
+                return $lockProvider->lock($job->uniqueId(), 60 * 60 * 8)->get();
+            })
+            ->values();
 
         if ($jobs->isNotEmpty()) {
             $this->batch()->add($jobs);

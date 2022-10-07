@@ -120,6 +120,14 @@ return [
             'permission' => 0777
         ],
 
+        'opportunities' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/opportunities.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
         'pipeliner' => [
             'driver' => 'daily',
             'path' => storage_path('/logs/pipeliner.log'),

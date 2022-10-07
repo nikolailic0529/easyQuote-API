@@ -31,6 +31,8 @@ class PushOpportunityStrategy implements PushStrategy
 {
     use SalesUnitsAware;
 
+    protected array $options = [];
+
     public function __construct(
         protected ConnectionInterface $connection,
         protected PipelinerAccountLookupService $accountLookupService,
@@ -139,8 +141,10 @@ class PushOpportunityStrategy implements PushStrategy
      * @throws \Illuminate\Http\Client\RequestException
      * @throws \Throwable
      */
-    public function sync(Model $model): void
+    public function sync(Model $model, mixed ...$options): void
     {
+        $this->options = $options;
+
         if (!$model instanceof Opportunity) {
             throw new \TypeError(sprintf("Model must be an instance of %s.", Opportunity::class));
         }
@@ -270,6 +274,17 @@ class PushOpportunityStrategy implements PushStrategy
 
     private function pushAccount(Company $company): void
     {
+        if ($this->hasBatchId()) {
+            $lock = $this->lockProvider->lock(
+                static::class.$this->getBatchId().'push-account'.$company->getKey(),
+                60 * 60 * 8
+            );
+
+            if (!$lock->get()) {
+                return;
+            }
+        }
+
         $this->pushCompanyStrategy
             ->setSalesUnits(...$this->getSalesUnits())
             ->sync($company);
@@ -306,6 +321,16 @@ class PushOpportunityStrategy implements PushStrategy
         foreach ($opportunity->ownAppointments()->lazyById(100) as $item) {
             $this->pushAppointmentStrategy->sync($item);
         }
+    }
+
+    private function getBatchId(): ?string
+    {
+        return $this->options['batchId'] ?? null;
+    }
+
+    private function hasBatchId(): bool
+    {
+        return $this->getBatchId() !== null;
     }
 
     public function getByReference(string $reference): object

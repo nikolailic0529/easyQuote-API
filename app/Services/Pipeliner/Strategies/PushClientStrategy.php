@@ -2,6 +2,7 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
+use App\Integrations\Pipeliner\Exceptions\EntityNotFoundException;
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\MultiplePipelinerEntitiesFoundException;
@@ -34,6 +35,18 @@ class PushClientStrategy implements PushStrategy
     {
         if (!$model instanceof User) {
             throw new \TypeError(sprintf("Model must be an instance of %s.", User::class));
+        }
+
+        if (null !== $model->pl_reference) {
+            try {
+                $this->clientIntegration->getById($model->pl_reference);
+            } catch (EntityNotFoundException) {
+                tap($model, function (User $user): void {
+                    $user->pl_reference = null;
+
+                    $this->connection->transaction(static fn () => $user->saveQuietly());
+                });
+            }
         }
 
         if (null !== $model->pl_reference) {

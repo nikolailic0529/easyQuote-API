@@ -137,6 +137,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read bool|null $quotes_exist
  * @property-read Collection<int,Attachment>|Attachment[] $attachments
  * @property-read OpportunityValidationResult|null $validationResult
+ * @property-read Collection<int, Appointment> $ownAppointments
  */
 class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes, ProvidesIdForHumans, HasSalesUnit
 {
