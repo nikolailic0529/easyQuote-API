@@ -2,7 +2,6 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
-use App\Enum\Lock;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
@@ -21,7 +20,9 @@ use App\Services\Pipeliner\PipelinerAccountLookupService;
 use App\Services\Pipeliner\PipelinerOpportunityLookupService;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
+use App\Services\User\DefaultUserResolver;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -51,6 +52,8 @@ class PushOpportunityStrategy implements PushStrategy
         protected PushAttachmentStrategy $pushAttachmentStrategy,
         protected PushAppointmentStrategy $pushAppointmentStrategy,
         protected OpportunityDataMapper $dataMapper,
+        protected DefaultUserResolver $defaultUserResolver,
+        protected Cache $cache,
         protected LockProvider $lockProvider,
     ) {
     }
@@ -102,6 +105,7 @@ class PushOpportunityStrategy implements PushStrategy
                     ->orWhereColumn($model->getQualifiedUpdatedAtColumn(), '>',
                         "latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}");
             })
+            ->whereSyncNotProtected()
             ->unless(is_null($lastOpportunityUpdatedAt), static function (Builder $builder) use (
                 $model,
                 $lastOpportunityUpdatedAt
@@ -149,6 +153,10 @@ class PushOpportunityStrategy implements PushStrategy
             throw new \TypeError(sprintf("Model must be an instance of %s.", Opportunity::class));
         }
 
+        if ($model->getFlag(Opportunity::SYNC_PROTECTED)) {
+            throw new PipelinerSyncException("Opportunity [{$model->getIdForHumans()}] is protected from sync.");
+        }
+
         if (null === $model->pipelineStage) {
             throw new PipelinerSyncException("Opportunity [{$model->getIdForHumans()}] doesn't have assigned pipeline stage.");
         }
@@ -158,7 +166,7 @@ class PushOpportunityStrategy implements PushStrategy
         }
 
         if (is_null($model->pl_reference)) {
-            $oppEntity = $this->opportunityLookupService->find($model, [$model->salesUnit]);
+            $oppEntity = $this->opportunityLookupService->find($model, $model->salesUnit);
 
             if (null !== $oppEntity) {
                 $model->pl_reference = $oppEntity->id;
@@ -199,10 +207,14 @@ class PushOpportunityStrategy implements PushStrategy
         } else {
             $oppEntity = $this->oppIntegration->getById($model->pl_reference);
 
-            $input = $this->dataMapper->mapPipelinerUpdateOpportunityInput(
-                opportunity: $model,
-                oppEntity: $oppEntity,
-            );
+            try {
+                $input = $this->dataMapper->mapPipelinerUpdateOpportunityInput(
+                    opportunity: $model,
+                    oppEntity: $oppEntity,
+                );
+            } catch (OpportunityDataMappingException $e) {
+                throw new PipelinerSyncException($e->getMessage(), previous: $e);
+            }
 
             $modifiedFields = $input->getModifiedFields();
 
@@ -223,6 +235,17 @@ class PushOpportunityStrategy implements PushStrategy
 
         collect($tasks)->each(static function (callable $task): void {
             $task();
+        });
+
+        $this->persistSyncLog($model);
+    }
+
+    private function persistSyncLog(Model $model): void
+    {
+        tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
+            $log->model()->associate($model);
+            $log->strategy_name = (string)StrategyNameResolver::from($this);
+            $log->save();
         });
     }
 
@@ -254,6 +277,12 @@ class PushOpportunityStrategy implements PushStrategy
 
     private function pushOwnerOfOppty(Opportunity $opportunity): void
     {
+        if (null === $opportunity->owner) {
+            $opportunity->owner()->associate($this->defaultUserResolver->resolve());
+
+            $this->connection->transaction(static fn() => $opportunity->saveQuietly());
+        }
+
         if (null !== $opportunity->owner) {
             $this->pushClientStrategy->sync($opportunity->owner);
         }
@@ -275,14 +304,26 @@ class PushOpportunityStrategy implements PushStrategy
     private function pushAccount(Company $company): void
     {
         if ($this->hasBatchId()) {
-            $lock = $this->lockProvider->lock(
-                static::class.$this->getBatchId().'push-account'.$company->getKey(),
-                60 * 60 * 8
-            );
+            $key = static::class.$this->getBatchId().$this->pushCompanyStrategy::class.$company->getKey();
 
-            if (!$lock->get()) {
-                return;
-            }
+            $this->lockProvider->lock($key, 240)
+                ->block(240, function () use ($company, $key) {
+                    $this->cache->remember(
+                        key: $key.'sync',
+                        ttl: now()->addHours(8),
+                        callback: function () use ($company): bool {
+                            $this->pushCompanyStrategy
+                                ->setSalesUnits(...$this->getSalesUnits())
+                                ->sync($company);
+
+                            return true;
+                        }
+                    );
+                });
+
+            $company->refresh();
+
+            return;
         }
 
         $this->pushCompanyStrategy

@@ -51,7 +51,7 @@ class CompanySeeder extends Seeder
                         'email' => $company['email'],
                         'phone' => $company['phone'],
                         'website' => $company['website'],
-                        'flags' => Company::SYSTEM,
+                        'flags' => Company::SYSTEM|Company::SYNC_PROTECTED,
                         'created_at' => now(),
                         'updated_at' => now(),
                         'activated_at' => now(),

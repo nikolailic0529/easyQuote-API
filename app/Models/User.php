@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Contracts\{ActivatableInterface, HasImagesDirectory, SearchableEntity};
 use App\Facades\Permission;
-use App\Models\{Collaboration\Invitation, Data\Timezone};
+use App\Models\{Collaboration\Invitation, Data\Country, Data\Timezone};
 use App\Models\Template\HpeContractTemplate;
 use App\Traits\{Activatable,
     Activity\LogsActivity,
@@ -73,6 +73,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<int, Role> $roles
  * @property-read Collection<int, Team> $ledTeams
  * @property-read Collection<int, SalesUnit> $salesUnitsFromLedTeams
+ * @property-read Country $country
  */
 class User extends Model implements
     ActivatableInterface,

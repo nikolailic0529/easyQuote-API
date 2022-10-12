@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $country_name
  * @property string|null $contact_name
  * @property string|null $contact_email
+ * @property int|null $entity_order
  *
  * @property-read Opportunity|null $opportunity
  * @property-read Collection<WorldwideDistribution>|WorldwideDistribution[] $distributorQuotes

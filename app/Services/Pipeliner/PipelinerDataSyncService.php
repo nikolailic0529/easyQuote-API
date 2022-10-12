@@ -13,7 +13,6 @@ use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
 use App\Jobs\Pipeliner\SyncPipelinerEntity;
-use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
@@ -90,22 +89,34 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
         $this->logger->debug("Computing total count of pending entities...");
 
-        $pendingEntities = collect();
-
-        foreach ($this->syncStrategies as $key => $strategy) {
-            if (false === $this->determineStrategyCanBeApplied($strategy)) {
-                continue;
-            }
-
-            $pendingEntities[$key] = LazyCollection::make(static function () use ($strategy): \Generator {
-                yield from $strategy->iteratePending();
+        $pendingEntities = LazyCollection::make(function (): \Generator {
+            yield from $this->syncStrategies;
+        })
+            ->filter(function (SyncStrategy $strategy): bool {
+                return $this->determineStrategyCanBeApplied($strategy);
             })
-                ->values();
+            ->sortBy(function (SyncStrategy $strategy): int|float {
+                $name = StrategyNameResolver::from($strategy)->__toString();
 
-            if ($pendingEntities[$key]->isEmpty()) {
-                $this->logger->debug(sprintf("Nothing to sync using: %s", class_basename($strategy::class)));
-            }
-        }
+                $index = array_search($name, $this->config->get('pipeliner.sync.aggregate_strategies'), true);
+
+                if (false === $index) {
+                    return INF;
+                }
+
+                return $index;
+            })
+            ->map(function (SyncStrategy $strategy): LazyCollection {
+                return LazyCollection::make(static function () use ($strategy): \Generator {
+                    yield from $strategy->iteratePending();
+                })
+                    ->values();
+            })
+            ->each(function (LazyCollection $pending, string $class): void {
+                if ($pending->isEmpty()) {
+                    $this->logger->debug(sprintf("Nothing to sync using: %s", class_basename($class)));
+                }
+            });
 
         $counts = $pendingEntities->map(static function (LazyCollection $collection): int {
             return $collection->eager()->count();
@@ -190,7 +201,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
                 try {
                     $this->syncModelUsing($model, $strategy);
-                    $this->persistSyncStrategyLog($model, $strategy);
 
                     $ok = true;
                 } catch (PipelinerIntegrationException|PipelinerSyncException $e) {
@@ -359,16 +369,6 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
             usleep(1000 * 1000);
         }
-    }
-
-    private function persistSyncStrategyLog(Model $model, SyncStrategy $strategy): void
-    {
-        tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model, $strategy) {
-            $log->model()->associate($model);
-            $log->strategy_name = (string) StrategyNameResolver::from($strategy);
-
-            $this->connection->transaction(static fn() => $log->save());
-        });
     }
 
     private function resolveSuitableStrategiesFor(mixed $entity, string|object $methodInterface): SyncStrategyCollection

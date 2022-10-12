@@ -14,6 +14,10 @@ return new class extends Migration {
      */
     public function up()
     {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
         /** @var WorldwideQuoteAttachmentService $service */
         $service = app(WorldwideQuoteAttachmentService::class);
 

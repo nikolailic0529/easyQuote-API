@@ -16,6 +16,8 @@ use App\Queries\Pipeline\LikeValueProcessor;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use App\Queries\Pipeline\PipeGroup;
 use App\Queries\Scopes\CurrentUserScope;
+use Devengine\RequestQueryBuilder\Contracts\RequestQueryBuilderPipe;
+use Devengine\RequestQueryBuilder\Models\BuildQueryParameters;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Auth\Access\Gate;
@@ -34,13 +36,17 @@ class OpportunityQueries
 
     public function listLostOpportunitiesQuery(Request $request): Builder
     {
-        return $this->listQuotedOpportunitiesQuery($request)
+        return $this->baseOpportunitiesQuery($request)
+            ->withExists('worldwideQuotes as quotes_exist')
+            ->with(['salesUnit:id,unit_name'])
             ->where('opportunities.status', OpportunityStatus::LOST);
     }
 
     public function listOkOpportunitiesQuery(Request $request): Builder
     {
-        return $this->listQuotedOpportunitiesQuery($request)
+        return $this->baseOpportunitiesQuery($request)
+            ->withExists('worldwideQuotes as quotes_exist')
+            ->with(['salesUnit:id,unit_name'])
             ->where('opportunities.status', OpportunityStatus::NOT_LOST);
     }
 
@@ -147,6 +153,29 @@ class OpportunityQueries
                     )
                 )
                     ->boolean(PipeBooleanEnum::Or),
+                new class implements RequestQueryBuilderPipe {
+
+                    public function __invoke(BuildQueryParameters $parameters): void
+                    {
+                        [$builder, $request] = [$parameters->getBuilder(), $parameters->getRequest()];
+
+                        $builder->where(static function (Builder $builder) use ($request): void {
+                            $builder
+                                ->unless(
+                                    value: $request->boolean('include_archived'),
+                                    callback: static fn(Builder $builder): Builder => $builder->whereNull(
+                                        $builder->qualifyColumn('archived_at')
+                                    )
+                                )
+                                ->when(
+                                    value: $request->boolean('only_archived'),
+                                    callback: static fn(Builder $builder): Builder => $builder->whereNotNull(
+                                        $builder->qualifyColumn('archived_at')
+                                    )
+                                );
+                        });
+                    }
+                },
                 new PerformElasticsearchSearch($this->elasticsearch),
             )
             ->allowOrderFields(
@@ -265,7 +294,7 @@ class OpportunityQueries
         return $this->baseOpportunitiesQuery($request)
             ->with(['salesUnit:id,unit_name'])
             ->whereBelongsTo($pipelineStage)
-            ->doesntHave('worldwideQuotes')
+            ->withExists('worldwideQuotes as quotes_exist')
             ->where($opportunityModel->qualifyColumn('status'), OpportunityStatus::NOT_LOST);
     }
 }

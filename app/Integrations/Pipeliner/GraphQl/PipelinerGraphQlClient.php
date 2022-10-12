@@ -3,6 +3,8 @@
 namespace App\Integrations\Pipeliner\GraphQl;
 
 use App\Contracts\LoggerAware;
+use App\Foundation\Http\Client\RateLimiter\RateLimiterMiddleware;
+use App\Foundation\Http\Client\RateLimiter\Store;
 use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
 use Illuminate\Config\Repository as Config;
@@ -20,10 +22,12 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
         'RESPONSE: {code} - {res_body}',
     ];
 
-    public function __construct(protected Config          $config,
-                                protected LoggerInterface $logger = new NullLogger(),
-                                Dispatcher                $dispatcher = null)
-    {
+    public function __construct(
+        protected Config $config,
+        protected Store $rateLimiterStore,
+        protected LoggerInterface $logger = new NullLogger(),
+        Dispatcher $dispatcher = null
+    ) {
         parent::__construct($dispatcher);
     }
 
@@ -36,18 +40,22 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
             $request
                 ->withBasicAuth(username: $this->getUsername(), password: $this->getPassword())
                 ->withHeaders([
-                    'Webhook-Skip-Key' => head($this->config->get('pipeliner.webhook.options.skip_keys', []))
+                    'Webhook-Skip-Key' => head($this->config->get('pipeliner.webhook.options.skip_keys', [])),
                 ])
                 ->asJson()
-                ->acceptJson();
+                ->acceptJson()
+                ->timeout(seconds: 60)
+                ->retry(times: 3, sleep: 100);
 
+            $this->setupRateLimiterMiddleware($request);
             $this->setupLoggingHandler($request);
         });
     }
 
     public function buildSpaceEndpoint(): string
     {
-        return strtr((string)$this->config->get('services.pipeliner.space_endpoint'), ['{space_id}' => $this->getSpaceId()]);
+        return strtr((string) $this->config->get('services.pipeliner.space_endpoint'),
+            ['{space_id}' => $this->getSpaceId()]);
     }
 
     protected function getServiceUrl(): string
@@ -57,17 +65,27 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
 
     protected function getUsername(): string
     {
-        return (string)$this->config->get('services.pipeliner.username');
+        return (string) $this->config->get('services.pipeliner.username');
     }
 
     protected function getPassword(): string
     {
-        return (string)$this->config->get('services.pipeliner.password');
+        return (string) $this->config->get('services.pipeliner.password');
     }
 
     protected function getSpaceId(): string
     {
-        return (string)$this->config->get('services.pipeliner.space_id');
+        return (string) $this->config->get('services.pipeliner.space_id');
+    }
+
+    protected function setupRateLimiterMiddleware(PendingRequest $request): void
+    {
+        $request->withMiddleware(
+            RateLimiterMiddleware::perMinute(
+                limit: (int) $this->config->get('pipeliner.client.throttle.rpm'),
+                store: $this->rateLimiterStore,
+            )
+        );
     }
 
     protected function setupLoggingHandler(PendingRequest $request): void

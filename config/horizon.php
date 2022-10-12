@@ -171,7 +171,7 @@ return [
             'balance' => 'auto',
             'maxProcesses' => 1,
             'maxTime' => 0,
-            'maxJobs' => 0,
+            'maxJobs' => 1000,
             'memory' => 128,
             'tries' => 3,
             'timeout' => 60,
@@ -183,7 +183,7 @@ return [
             'balance' => 'auto',
             'maxProcesses' => 1,
             'maxTime' => 0,
-            'maxJobs' => 0,
+            'maxJobs' => 1,
             'memory' => 256,
             'tries' => 1,
             'timeout' => 60 * 60 * 8,
@@ -195,19 +195,19 @@ return [
             'balance' => 'auto',
             'maxProcesses' => 1,
             'maxTime' => 0,
-            'maxJobs' => 0,
+            'maxJobs' => 1000,
             'memory' => 256,
             'tries' => 1,
-            'timeout' => 60 * 4,
+            'timeout' => 60 * 5,
             'nice' => 0,
-            'sleep' => 0,
+            'sleep' => 1,
         ],
     ],
 
     'environments' => [
         'production' => [
             'default' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 4,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
@@ -217,7 +217,7 @@ return [
                 'balanceCooldown' => 3,
             ],
             'pipeliner-sync' => [
-                'maxProcesses' => 8,
+                'maxProcesses' => 15,
                 'balanceMaxShift' => 4,
                 'balanceCooldown' => 1,
             ],
@@ -225,7 +225,7 @@ return [
 
         'local' => [
             'default' => [
-                'maxProcesses' => 1,
+                'maxProcesses' => 4,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
@@ -235,7 +235,7 @@ return [
                 'balanceCooldown' => 3,
             ],
             'pipeliner-sync' => [
-                'maxProcesses' => 8,
+                'maxProcesses' => 50,
                 'balanceMaxShift' => 4,
                 'balanceCooldown' => 1,
             ],

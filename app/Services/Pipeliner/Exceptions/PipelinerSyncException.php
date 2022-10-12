@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use JetBrains\PhpStorm\Pure;
 use Symfony\Component\HttpFoundation\Response;
 
-class PipelinerSyncException extends \Exception
+class PipelinerSyncException extends PipelinerException
 {
     #[Pure]
     public static function unsetSalesUnit(): static

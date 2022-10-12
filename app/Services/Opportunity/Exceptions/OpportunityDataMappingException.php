@@ -13,4 +13,9 @@ class OpportunityDataMappingException extends \Exception
     {
         return new static("Could not resolve step (name: [$stage], pipeline: [$pipeline]) in Pipeliner.");
     }
+
+    public static function distributorsOrderViolation(): static
+    {
+        return new static("Order of distributors violated.");
+    }
 }

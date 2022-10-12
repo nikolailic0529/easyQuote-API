@@ -306,6 +306,13 @@ class CompanyDataMapper
             $account->vat_type = $this->resolveVatTypeFromCustomFields($entity->customFields);
             $account->vat = $entity->customFields['cfVat'] ?? null;
             $account->vendors_cs = $this->resolveVendorsCsFromCustomFields($entity->customFields);
+            $account->contact_relations = collect($contactRelations)->map(
+                static fn(ContactRelationEntity $rel): array => [
+                    'id' => $rel->id,
+                    'is_primary' => $rel->isPrimary,
+                    'contact_id' => $rel->contact->id,
+                ])
+                ->values();
             $account->address_1 = $entity->address;
             $account->address_2 = Arr::get($entity->customFields, 'cfAddress2n');
             $account->city = $entity->city;

@@ -6,10 +6,13 @@ use App\Contracts\ProvidesIdForHumans;
 use App\Enum\Priority;
 use App\Events\Pipeliner\QueuedPipelinerSyncEntitySkipped;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
+use App\Integrations\Pipeliner\Models\AccountEntity;
+use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\Notification\Models\PendingNotification;
+use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -61,7 +64,7 @@ MSG,
                         [
                             'model_id' => $this->modelIdForHumans($model),
                             'model_name' => $modelName,
-                            'errors' => $errors->join("\n"),
+                            'errors' => $errors?->join("\n"),
                         ])
                 )
                 ->push();
@@ -71,12 +74,25 @@ MSG,
     protected function handlePipelinerEntitySkippedEvent(object $entity, ?\Throwable $e, ?Model $causer): void
     {
         if ($causer instanceof User) {
-            $entityName = Str::of($entity)->classBasename()->beforeLast('Entity')->headline();
+            $entityName = Str::of($entity::class)->classBasename()->beforeLast('Entity')->headline();
+
+            $errors = isset($e) ? $this->pipelinerErrorsForHumans($e) : null;
 
             notification()
                 ->for($causer)
                 ->priority(Priority::High)
-                ->message("Unable to pull $entityName ($entity->id) from pipeliner due to errors.")
+                ->message(
+                    Blade::render(<<<MSG
+Unable pull {{ \$entity_name }} [{{ \$entity_id }}] from pipeliner due to errors.
+@isset(\$errors)
+{!! \$errors !!}@endisset
+MSG,
+                        [
+                            'entity_id' => $this->entityIdForHumans($entity),
+                            'entity_name' => $entityName,
+                            'errors' => isset($errors) && $errors->isNotEmpty() ? $errors->join("\n") : null,
+                        ])
+                )
                 ->push();
         }
     }
@@ -88,6 +104,28 @@ MSG,
         }
 
         return $model->getKey();
+    }
+
+    protected function entityIdForHumans(object $entity): string
+    {
+        if ($entity instanceof OpportunityEntity) {
+            return $entity->name;
+        }
+
+        if ($entity instanceof AccountEntity) {
+            return $entity->name;
+        }
+
+        return $entity->id;
+    }
+
+    protected function pipelinerErrorsForHumans(\Throwable $e): Collection
+    {
+        if ($e instanceof PipelinerSyncException) {
+            return collect([$e->getMessage()]);
+        }
+
+        return Collection::empty();
     }
 
     protected function errorsForHumans(\Throwable $e): Collection

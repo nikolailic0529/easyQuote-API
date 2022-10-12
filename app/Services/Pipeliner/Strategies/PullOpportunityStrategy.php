@@ -12,6 +12,7 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerPipelineIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerTaskIntegration;
 use App\Integrations\Pipeliner\Models\ActivityRelationFilterInput;
 use App\Integrations\Pipeliner\Models\AppointmentFilterInput;
+use App\Integrations\Pipeliner\Models\ContactRelationEntity;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\LeadOpptyAccountRelationEntity;
 use App\Integrations\Pipeliner\Models\NoteFilterInput;
@@ -29,17 +30,21 @@ use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
 class PullOpportunityStrategy implements PullStrategy
 {
     use SalesUnitsAware;
+
+    protected array $options = [];
 
     public function __construct(
         protected ConnectionInterface $connection,
@@ -55,6 +60,7 @@ class PullOpportunityStrategy implements PullStrategy
         protected PipelinerTaskIntegration $taskIntegration,
         protected PipelinerNoteIntegration $noteIntegration,
         protected OpportunityDataMapper $oppDataMapper,
+        protected Cache $cache,
         protected LockProvider $lockProvider
     ) {
     }
@@ -86,15 +92,17 @@ class PullOpportunityStrategy implements PullStrategy
      * @param  OpportunityEntity  $entity
      * @return Opportunity
      */
-    public function sync(object $entity): Model
+    public function sync(object $entity, mixed ...$options): Model
     {
         if (!$entity instanceof OpportunityEntity) {
             throw new \TypeError(sprintf("Entity must be an instance of %s.", OpportunityEntity::class));
         }
 
+        $this->options = $options;
+
         $lock = $this->lockProvider->lock(Lock::SYNC_OPPORTUNITY($entity->id), 30);
 
-        return $lock->block(30, function () use ($entity): Opportunity {
+        $opportunity = $lock->block(30, function () use ($entity): Opportunity {
             /** @var Opportunity|null $opportunity */
             $opportunity = Opportunity::query()
                 ->withTrashed()
@@ -105,11 +113,41 @@ class PullOpportunityStrategy implements PullStrategy
                 $opportunity = $this->performOpportunityLookup($entity);
             }
 
+            if ($opportunity !== null && $opportunity->getFlag(Opportunity::SYNC_PROTECTED)) {
+                throw new PipelinerSyncException("Opportunity [{$opportunity->getIdForHumans()}] is protected from sync.");
+            }
+
             /** @var Collection|Company[] $accounts */
             $accounts = Collection::make($entity->accountRelations)
                 ->map(function (LeadOpptyAccountRelationEntity $relationEntity) use ($entity): Company {
-                    return $this->pullCompanyStrategy->sync($relationEntity->account,
-                        contactRelations: $relationEntity->isPrimary ? $entity->contactRelations : []);
+                    $contactRelations = $relationEntity->isPrimary ? $entity->contactRelations : [];
+
+                    if ($this->hasBatchId()) {
+                        $contactRelationsHash = $this->computeContactRelationsHash($contactRelations);
+
+                        $key = $this->pullCompanyStrategy::class.$this->getBatchId().$relationEntity->account->id.$contactRelationsHash;
+
+                        $id = $this->lockProvider->lock($key, 240)
+                            ->block(240, function () use ($contactRelations, $relationEntity, $key) {
+                                return $this->cache->remember(
+                                    key: $key.'result',
+                                    ttl: now()->addHours(8),
+                                    callback: fn(): string => $this->pullCompanyStrategy->sync(
+                                        $relationEntity->account,
+                                        contactRelations: $contactRelations,
+                                        batchId: $this->getBatchId(),
+                                    )->getKey());
+                            });
+
+                        /** @noinspection PhpIncompatibleReturnTypeInspection */
+                        return Company::query()->findOrFail($id);
+                    }
+
+                    return $this->pullCompanyStrategy->sync(
+                        $relationEntity->account,
+                        contactRelations: $contactRelations,
+                        batchId: $this->getBatchId(),
+                    );
                 });
 
             $newOpportunity = $this->oppDataMapper->mapOpportunityFromOpportunityEntity($entity, $accounts);
@@ -147,6 +185,33 @@ class PullOpportunityStrategy implements PullStrategy
 
             return $newOpportunity;
         });
+
+        $this->persistSyncLog($opportunity);
+
+        return $opportunity;
+    }
+
+    private function persistSyncLog(Model $model): void
+    {
+        tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
+            $log->model()->associate($model);
+            $log->strategy_name = (string)StrategyNameResolver::from($this);
+            $log->save();
+        });
+    }
+
+    private function computeContactRelationsHash(array $contactRelations): string
+    {
+        return collect($contactRelations)
+            ->sortBy(static function (ContactRelationEntity $entity): string {
+                return $entity->contact->id;
+            })
+            ->map(static function (ContactRelationEntity $entity): string {
+                return $entity->contact->id.$entity->isPrimary;
+            })
+            ->pipe(static function (BaseCollection $collection): string {
+                return sha1($collection->join("."));
+            });
     }
 
     /**
@@ -166,7 +231,14 @@ class PullOpportunityStrategy implements PullStrategy
             throw new PipelinerSyncException("Multiple opportunities matched. Opportunity name [$entity->name], Unit [$unit->unit_name].");
         }
 
-        return $matchingOpportunities->first();
+        /** @var Opportunity $opportunity */
+        $opportunity = $matchingOpportunities->first();
+
+        if (null !== $opportunity?->pl_reference) {
+            throw new PipelinerSyncException("Opportunity [{$opportunity->getIdForHumans()}] already references to a different entity in Pipeliner.");
+        }
+
+        return $opportunity;
     }
 
     private function syncRelationsOfOpportunityEntity(OpportunityEntity $entity, Opportunity $model): void
@@ -279,6 +351,7 @@ class PullOpportunityStrategy implements PullStrategy
     {
         $oppModel = new Opportunity();
 
+        /** @var Opportunity|null $model */
         $model = $oppModel->newQuery()
             ->where('pl_reference', $plReference)
             ->withTrashed()
@@ -288,6 +361,10 @@ class PullOpportunityStrategy implements PullStrategy
         // Assume the strategy as not applied, if the model doesn't exist yet.
         if (null === $model) {
             return true;
+        }
+
+        if ($model->getFlag(Opportunity::SYNC_PROTECTED)) {
+            return false;
         }
 
         $syncStrategyLogModel = new PipelinerSyncStrategyLog();
@@ -309,6 +386,16 @@ class PullOpportunityStrategy implements PullStrategy
             ->where('model_type', $this->getModelType())
             ->latest()
             ->first();
+    }
+
+    private function getBatchId(): ?string
+    {
+        return $this->options['batchId'] ?? null;
+    }
+
+    private function hasBatchId(): bool
+    {
+        return $this->getBatchId() !== null;
     }
 
     public function isApplicableTo(object $entity): bool

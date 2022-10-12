@@ -16,6 +16,7 @@ use GraphQL\QueryBuilder\MutationBuilder;
 use GraphQL\QueryBuilder\QueryBuilder;
 use GraphQL\RawObject;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\LazyCollection;
 
 class PipelinerOpportunityIntegration
 {
@@ -23,22 +24,34 @@ class PipelinerOpportunityIntegration
     {
     }
 
-    public function scroll(string                 $after = null,
-                           string                 $before = null,
-                           OpportunityFilterInput $filter = null,
-                           int                    $first = 10): OpportunityEntityScrollIterator
-    {
+    public function scroll(
+        string $after = null,
+        string $before = null,
+        OpportunityFilterInput $filter = null,
+        int $first = 10
+    ): OpportunityEntityScrollIterator {
         /** @noinspection PhpUnhandledExceptionInspection */
         $iterator = $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
 
         return new OpportunityEntityScrollIterator($iterator);
     }
 
-    public function simpleScroll(string                 $after = null,
-                                 string                 $before = null,
-                                 OpportunityFilterInput $filter = null,
-                                 int                    $first = 10): \Generator
-    {
+    public function rawScroll(
+        string $after = null,
+        string $before = null,
+        OpportunityFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
+        /** @noinspection PhpUnhandledExceptionInspection */
+        return $this->rawScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
+    }
+
+    public function simpleScroll(
+        string $after = null,
+        string $before = null,
+        OpportunityFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
         /** @noinspection PhpUnhandledExceptionInspection */
         return $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
     }
@@ -130,11 +143,26 @@ class PipelinerOpportunityIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function scrollGenerator(string                 $after = null,
-                                       string                 $before = null,
-                                       OpportunityFilterInput $filter = null,
-                                       int                    $first = 10): \Generator
-    {
+    protected function scrollGenerator(
+        string $after = null,
+        string $before = null,
+        OpportunityFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
+        yield from LazyCollection::make(function () use ($first, $filter, $before, $after): \Generator {
+            yield from $this->rawScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
+        })
+            ->map(static function (array $item): OpportunityEntity {
+                return OpportunityEntity::fromArray($item);
+            });
+    }
+
+    protected function rawScrollGenerator(
+        string $after = null,
+        string $before = null,
+        OpportunityFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
             ->setVariable('before', 'String')
@@ -186,11 +214,13 @@ class PipelinerOpportunityIntegration
         $after = $response->json('data.entities.opportunity.getByCriteria.pageInfo.endCursor');
 
         foreach ($response->json('data.entities.opportunity.getByCriteria.edges.*.node') as $node) {
-            yield $after => OpportunityEntity::fromArray($node);
+            yield $after => $node;
         }
 
+        unset($builder, $response);
+
         if ($hasNextPage) {
-            yield from $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
+            yield from $this->rawScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
     }
 
@@ -198,11 +228,12 @@ class PipelinerOpportunityIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function simpleScrollGenerator(string                 $after = null,
-                                             string                 $before = null,
-                                             OpportunityFilterInput $filter = null,
-                                             int                    $first = 10): \Generator
-    {
+    protected function simpleScrollGenerator(
+        string $after = null,
+        string $before = null,
+        OpportunityFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
             ->setVariable('before', 'String')
@@ -259,20 +290,24 @@ class PipelinerOpportunityIntegration
             yield $after => $node;
         }
 
+        unset($builder, $response);
+
         if ($hasNextPage) {
             yield from $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
     }
 
     /**
-     * @param CreateOpportunityInput $input
-     * @param ValidationLevelCollection|null $validationLevel
+     * @param  CreateOpportunityInput  $input
+     * @param  ValidationLevelCollection|null  $validationLevel
      * @return OpportunityEntity
      * @throws GraphQlRequestException
      * @throws \Illuminate\Http\Client\RequestException
      */
-    public function create(CreateOpportunityInput $input, ValidationLevelCollection $validationLevel = null): OpportunityEntity
-    {
+    public function create(
+        CreateOpportunityInput $input,
+        ValidationLevelCollection $validationLevel = null
+    ): OpportunityEntity {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: 'CreateOpportunityInput', isRequired: true)
             ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
@@ -302,14 +337,16 @@ class PipelinerOpportunityIntegration
     }
 
     /**
-     * @param UpdateOpportunityInput $input
-     * @param ValidationLevelCollection|null $validationLevel
+     * @param  UpdateOpportunityInput  $input
+     * @param  ValidationLevelCollection|null  $validationLevel
      * @return OpportunityEntity
      * @throws GraphQlRequestException
      * @throws \Illuminate\Http\Client\RequestException
      */
-    public function update(UpdateOpportunityInput $input, ValidationLevelCollection $validationLevel = null): OpportunityEntity
-    {
+    public function update(
+        UpdateOpportunityInput $input,
+        ValidationLevelCollection $validationLevel = null
+    ): OpportunityEntity {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: 'UpdateOpportunityInput', isRequired: true)
             ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
@@ -338,8 +375,42 @@ class PipelinerOpportunityIntegration
         return OpportunityEntity::fromArray($response->json('data.updateOpportunity.opportunity'));
     }
 
-    public function bulkUpdate(UpdateOpportunityInputCollection $input, ValidationLevelCollection $validationLevel = null): array
+    /**
+     * @param  string  $id
+     * @return void
+     * @throws GraphQlRequestException
+     * @throws RequestException
+     */
+    public function restore(string $id): void
     {
+        $builder = (new MutationBuilder())
+            ->setVariable(name: 'input', type: 'RestoreOpportunityInput', isRequired: true)
+            ->selectField(
+                (new Mutation('restoreOpportunity'))
+                    ->setArguments(['input' => '$input'])
+                    ->setSelectionSet([
+                        (new Query('result'))
+                            ->setSelectionSet(static::getOpportunityEntitySelectionSet()),
+                    ])
+            );
+
+        $response = $this->client
+            ->post($this->client->buildSpaceEndpoint(), [
+                'query' => $builder->getQuery()->__toString(),
+                'variables' => [
+                    'input' => ['id' => $id],
+                ],
+            ]);
+
+        GraphQlRequestException::throwIfHasErrors($response);
+
+        $response->throw();
+    }
+
+    public function bulkUpdate(
+        UpdateOpportunityInputCollection $input,
+        ValidationLevelCollection $validationLevel = null
+    ): array {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: '[CreateOrUpdateOpportunityInput!]', isRequired: true)
             ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
@@ -351,7 +422,7 @@ class PipelinerOpportunityIntegration
                             ->setSelectionSet([
                                 'updated',
                                 (new Query('errors'))
-                                ->setSelectionSet(['entityId', 'code', 'message', 'index', 'message'])
+                                    ->setSelectionSet(['entityId', 'code', 'message', 'index', 'message']),
                             ]),
                     ])
             );
@@ -396,6 +467,7 @@ class PipelinerOpportunityIntegration
             'created',
             'modified',
             'revision',
+            'isArchived',
 
             (new Query('accountRelations'))
                 ->setSelectionSet([

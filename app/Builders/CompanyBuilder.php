@@ -22,4 +22,20 @@ class CompanyBuilder extends Builder
     {
         return $this->whereSystem(false);
     }
+
+    public function whereSyncProtected(bool $value = true): static
+    {
+        $operator = $value ? '=' : '!=';
+        $column = $this->qualifyColumn('flags');
+        $bits = Company::SYNC_PROTECTED;
+
+        $this->whereRaw("$column & $bits $operator $bits");
+
+        return $this;
+    }
+
+    public function whereSyncNotProtected(): static
+    {
+        return $this->whereSyncProtected(false);
+    }
 }

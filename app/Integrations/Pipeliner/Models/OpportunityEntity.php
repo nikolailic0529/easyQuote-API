@@ -38,6 +38,7 @@ class OpportunityEntity
         public readonly array $contactRelations,
         public readonly array $documents,
         public readonly array $customFields,
+        public readonly bool $isArchived,
         public readonly DateTimeImmutable $created,
         public readonly DateTimeImmutable $modified,
         public readonly int $revision
@@ -76,6 +77,7 @@ class OpportunityEntity
             documents: array_map(CloudObjectEntity::fromArray(...),
                 data_get($array, 'documents.edges.*.node.cloudObject', [])),
             customFields: json_decode($array['customFields'], true),
+            isArchived: $array['isArchived'],
             created: Entity::parseDateTime($array['created']),
             modified: Entity::parseDateTime($array['modified']),
             revision: $array['revision'],

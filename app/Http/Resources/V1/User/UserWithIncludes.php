@@ -5,6 +5,9 @@ namespace App\Http\Resources\V1\User;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin User
+ */
 class UserWithIncludes extends JsonResource
 {
     /**
@@ -15,8 +18,6 @@ class UserWithIncludes extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var User|UserWithIncludes $this */
-
         return [
             'id' => $this->getKey(),
 
@@ -52,7 +53,7 @@ class UserWithIncludes extends JsonResource
             'timezone_text' => $this->timezone_text,
             'timezone' => $this->timezone,
 
-            'country' => $this->country,
+            'country' => $this->country->exists ? $this->country : null,
 
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

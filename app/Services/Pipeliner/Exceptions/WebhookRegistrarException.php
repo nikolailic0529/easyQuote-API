@@ -2,7 +2,7 @@
 
 namespace App\Services\Pipeliner\Exceptions;
 
-class WebhookRegistrarException extends \Exception
+class WebhookRegistrarException extends PipelinerException
 {
     public static function webhookNotFound(string $reference): static
     {

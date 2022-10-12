@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Builders\OpportunityBuilder;
 use App\Contracts\HasOwnAppointments;
 use App\Contracts\HasOwner;
 use App\Contracts\HasOwnNotes;
@@ -114,11 +115,14 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property int|null $order_in_pipeline_stage
  * @property string|null $sale_action_name // {"Preparation", "Special Bid Required", "Quote Ready", "Customer Contact", "Customer Order OK", "PO Placed", "Processed on BC", "Closed"}
  *
+ * @property int|null $flags
+ *
  * @property OpportunityStatus|null $status
  * @property string|null $status_reason
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property Carbon|null $archived_at
  *
  * @property-read SalesUnit|null $salesUnit
  * @property-read \App\Models\Pipeline\Pipeline|null $pipeline
@@ -143,11 +147,36 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
 {
     use Uuid, SoftDeletes, HasRelationships, HasFactory, HasTimestamps;
 
+    const SYNC_PROTECTED = 1 << 2;
+
     protected $guarded = [];
 
     protected $casts = [
         'status' => OpportunityStatus::class,
+        'archived_at' => 'datetime',
     ];
+
+    public function getFlag(int $flag): bool
+    {
+        return ($this->flags & $flag) === $flag;
+    }
+
+    public static function query(): OpportunityBuilder
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return parent::query();
+    }
+
+    public function newQuery(): OpportunityBuilder
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return parent::newQuery();
+    }
+
+    public function newEloquentBuilder($query): OpportunityBuilder
+    {
+        return new OpportunityBuilder($query);
+    }
 
     protected static function newFactory(): OpportunityFactory
     {
@@ -216,7 +245,7 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
 
     public function opportunitySuppliers(): HasMany
     {
-        return $this->hasMany(OpportunitySupplier::class)->oldest();
+        return $this->hasMany(OpportunitySupplier::class)->oldest('entity_order');
     }
 
 //    public function worldwideQuote(): HasOne

@@ -21,6 +21,12 @@ return [
 
     ],
 
+    'client' => [
+        'throttle' => [
+            'rpm' => 100_000 / 5,
+        ]
+    ],
+
     'sync' => [
 
         'schedule' => [
@@ -63,10 +69,10 @@ return [
         ],
 
         'aggregate_strategies' => [
-            'PushOpportunityStrategy',
             'PullOpportunityStrategy',
-            'PushCompanyStrategy',
+            'PushOpportunityStrategy',
             'PullCompanyStrategy',
+            'PushCompanyStrategy',
         ],
 
         'default_strategies' => [

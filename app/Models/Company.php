@@ -122,6 +122,7 @@ class Company extends Model implements
 
     const SYSTEM = 1 << 0;
     const FROZEN_SOURCE = 1 << 1;
+    const SYNC_PROTECTED = 1 << 2;
 
     protected $fillable = [
         'name', 'short_code', 'type', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id',

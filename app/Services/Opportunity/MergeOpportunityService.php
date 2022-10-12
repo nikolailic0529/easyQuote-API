@@ -154,28 +154,28 @@ class MergeOpportunityService implements LoggerAware
                     $recurrence->setUpdatedAt($anotherRecurrence->{$anotherRecurrence->getUpdatedAtColumn()});
                 });
 
-            $recurrence->saveQuietly();
+            $recurrence->save();
 
             $opportunity->setRelation('recurrence', $recurrence);
         }
 
         $tasks = $another->tasks->map(static function (Task $anotherTask): Task {
-            return tap(static::replicateModelWithTimestamps($anotherTask))->saveQuietly();
+            return tap(static::replicateModelWithTimestamps($anotherTask))->save();
         });
 
         $opportunity->tasks()->attach($tasks);
 
         $ownAppointments = $another->ownAppointments->map(static function (Appointment $anotherAppointment
-        ): Task {
-            return tap(static::replicateModelWithTimestamps($anotherAppointment))->saveQuietly();
+        ): Appointment {
+            return tap(static::replicateModelWithTimestamps($anotherAppointment))->save();
         });
 
         $opportunity->ownAppointments()->attach($ownAppointments);
 
         $notes = $another->loadMissing('notes')->getRelation('notes')->map(static function (
             Note $anotherNote
-        ): Task {
-            return tap(static::replicateModelWithTimestamps($anotherNote))->saveQuietly();
+        ): Note {
+            return tap(static::replicateModelWithTimestamps($anotherNote))->save();
         });
 
         $opportunity->notes()->attach($notes);
@@ -202,7 +202,7 @@ class MergeOpportunityService implements LoggerAware
                             $opportunity
                         ): void {
                             $supplier->opportunity()->associate($opportunity);
-                            $supplier->saveQuietly();
+                            $supplier->save();
                         });
                 }
             )

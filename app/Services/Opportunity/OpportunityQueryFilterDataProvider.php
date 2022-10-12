@@ -89,6 +89,24 @@ class OpportunityQueryFilterDataProvider
                     'possible_values' => [],
                 ])
             );
+
+            $collection->push(
+                FilterData::from([
+                    'label' => __('Include Archived'),
+                    'type' => FilterTypeEnum::Checkbox,
+                    'parameter' => 'include_archived',
+                    'possible_values' => [],
+                ])
+            );
+
+            $collection->push(
+                FilterData::from([
+                    'label' => __('Only Archived'),
+                    'type' => FilterTypeEnum::Checkbox,
+                    'parameter' => 'only_archived',
+                    'possible_values' => [],
+                ])
+            );
         });
 
         return (new DataCollection(FilterData::class, $collection))->wrap('data');

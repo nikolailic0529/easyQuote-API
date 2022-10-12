@@ -5,15 +5,14 @@ namespace App\Jobs\Pipeliner;
 use App\Events\Pipeliner\QueuedPipelinerSyncEntitySkipped;
 use App\Events\Pipeliner\QueuedPipelinerSyncProgress;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
-use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
-use App\Services\Pipeliner\Strategies\StrategyNameResolver;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -102,12 +101,6 @@ class SyncPipelinerEntity implements ShouldQueue
                 $status->incrementTotal($addedJobsCount);
             }
 
-            $model = $strategy instanceof PullStrategy
-                ? $result
-                : $entity;
-
-            $this->persistSyncStrategyLog($model, $strategy);
-
             $logger->info(sprintf('Syncing [%s]: success', class_basename($entity)), [
                 'id' => $entity->id,
                 'strategy' => class_basename($this->strategyClass),
@@ -132,12 +125,22 @@ class SyncPipelinerEntity implements ShouldQueue
 
         $status->incrementProcessed();
 
-        $eventDispatcher->dispatch(
-            new QueuedPipelinerSyncProgress(
-                total: $status->total(),
-                pending: $status->pending(),
-            )
-        );
+        if ($this->batch()->cancelled()) {
+            return;
+        }
+
+        try {
+            $lockProvider->lock(QueuedPipelinerSyncProgress::class, 5)
+                ->block(5, static function () use ($status, $eventDispatcher): void {
+                    $eventDispatcher->dispatch(
+                        new QueuedPipelinerSyncProgress(
+                            total: $status->total(),
+                            pending: $status->pending(),
+                        )
+                    );
+                });
+        } catch (LockTimeoutException) {
+        }
     }
 
     private function strategyHasOptions(): bool
@@ -153,17 +156,6 @@ class SyncPipelinerEntity implements ShouldQueue
         }
 
         return false;
-    }
-
-    private function persistSyncStrategyLog(Model $model, SyncStrategy $strategy): void
-    {
-        tap(new PipelinerSyncStrategyLog(),
-            static function (PipelinerSyncStrategyLog $log) use ($model, $strategy): void {
-                $log->model()->associate($model);
-                $log->strategy_name = (string) StrategyNameResolver::from($strategy);
-
-                $log->save();
-            });
     }
 
     protected function syncHigherHierarchyEntities(

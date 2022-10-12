@@ -12,7 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 
-class IndexSearchableEntity implements ShouldQueue
+class IndexSearchableEntity
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 

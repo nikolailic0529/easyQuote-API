@@ -17,6 +17,7 @@ use GraphQL\Query;
 use GraphQL\QueryBuilder\MutationBuilder;
 use GraphQL\QueryBuilder\QueryBuilder;
 use GraphQL\RawObject;
+use Illuminate\Support\LazyCollection;
 
 class PipelinerAccountIntegration
 {
@@ -24,22 +25,34 @@ class PipelinerAccountIntegration
     {
     }
 
-    public function scroll(string             $after = null,
-                           string             $before = null,
-                           AccountFilterInput $filter = null,
-                           int                $first = 10): AccountEntityScrollIterator
-    {
+    public function scroll(
+        string $after = null,
+        string $before = null,
+        AccountFilterInput $filter = null,
+        int $first = 10
+    ): AccountEntityScrollIterator {
         /** @noinspection PhpUnhandledExceptionInspection */
         $iterator = $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
 
         return new AccountEntityScrollIterator($iterator);
     }
 
-    public function simpleScroll(string             $after = null,
-                                 string             $before = null,
-                                 AccountFilterInput $filter = null,
-                                 int                $first = 10): \Generator
-    {
+    public function rawScroll(
+        string $after = null,
+        string $before = null,
+        AccountFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
+        /** @noinspection PhpUnhandledExceptionInspection */
+        return $this->rawScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
+    }
+
+    public function simpleScroll(
+        string $after = null,
+        string $before = null,
+        AccountFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
         /** @noinspection PhpUnhandledExceptionInspection */
         return $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
     }
@@ -48,11 +61,30 @@ class PipelinerAccountIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function scrollGenerator(string             $after = null,
-                                       string             $before = null,
-                                       AccountFilterInput $filter = null,
-                                       int                $first = 10): \Generator
-    {
+    protected function scrollGenerator(
+        string $after = null,
+        string $before = null,
+        AccountFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
+        yield from LazyCollection::make(function () use ($after, $before, $filter, $first): \Generator {
+            yield from $this->rawScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
+        })
+            ->map(static function (array $item): AccountEntity {
+                return AccountEntity::fromArray($item);
+            });
+    }
+
+    /**
+     * @throws \Illuminate\Http\Client\RequestException
+     * @throws GraphQlRequestException
+     */
+    protected function rawScrollGenerator(
+        string $after = null,
+        string $before = null,
+        AccountFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
             ->setVariable('before', 'String')
@@ -104,11 +136,13 @@ class PipelinerAccountIntegration
         $after = $response->json('data.entities.account.getByCriteria.pageInfo.endCursor');
 
         foreach ($response->json('data.entities.account.getByCriteria.edges.*.node') as $node) {
-            yield $after => AccountEntity::fromArray($node);
+            yield $after => $node;
         }
 
+        unset($builder, $response);
+
         if ($hasNextPage) {
-            yield from $this->scrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
+            yield from $this->rawScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
     }
 
@@ -116,11 +150,12 @@ class PipelinerAccountIntegration
      * @throws \Illuminate\Http\Client\RequestException
      * @throws GraphQlRequestException
      */
-    protected function simpleScrollGenerator(string             $after = null,
-                                             string             $before = null,
-                                             AccountFilterInput $filter = null,
-                                             int                $first = 10): \Generator
-    {
+    protected function simpleScrollGenerator(
+        string $after = null,
+        string $before = null,
+        AccountFilterInput $filter = null,
+        int $first = 10
+    ): \Generator {
         $builder = (new QueryBuilder())
             ->setVariable('after', 'String')
             ->setVariable('before', 'String')
@@ -176,6 +211,8 @@ class PipelinerAccountIntegration
             yield $after => $node;
         }
 
+        unset($builder, $response);
+
         if ($hasNextPage) {
             yield from $this->simpleScrollGenerator(after: $after, before: $before, filter: $filter, first: $first);
         }
@@ -224,7 +261,7 @@ class PipelinerAccountIntegration
     }
 
     /**
-     * @param string ...$ids
+     * @param  string  ...$ids
      * @return AccountEntity[]
      * @throws GraphQlRequestException
      * @throws \Illuminate\Http\Client\RequestException
@@ -377,9 +414,10 @@ class PipelinerAccountIntegration
         return AccountEntity::fromArray($response->json('data.updateAccount.account'));
     }
 
-    public function bulkUpdate(UpdateAccountInputCollection $input,
-                               ValidationLevelCollection    $validationLevel = null): array
-    {
+    public function bulkUpdate(
+        UpdateAccountInputCollection $input,
+        ValidationLevelCollection $validationLevel = null
+    ): array {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: '[CreateOrUpdateAccountInput!]', isRequired: true)
             ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')
@@ -412,9 +450,10 @@ class PipelinerAccountIntegration
         return $response->json('data.bulkUpdateAccount.result');
     }
 
-    public function bulkUpdateContactAccountRelation(CreateOrUpdateContactAccountRelationInputCollection $input,
-                                                     ValidationLevelCollection                           $validationLevel = null): array
-    {
+    public function bulkUpdateContactAccountRelation(
+        CreateOrUpdateContactAccountRelationInputCollection $input,
+        ValidationLevelCollection $validationLevel = null
+    ): array {
         $builder = (new MutationBuilder())
             ->setVariable(name: 'input', type: '[CreateOrUpdateContactAccountRelationInput!]', isRequired: true)
             ->setVariable(name: 'validationLevel', type: '[ValidationLevel!]')

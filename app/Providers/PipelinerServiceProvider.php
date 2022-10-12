@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Contracts\LoggerAware;
+use App\Foundation\Http\Client\RateLimiter\CacheStore;
+use App\Foundation\Http\Client\RateLimiter\Store as RateLimiterStore;
 use App\Foundation\Settings\DatabaseSettingsStatus;
 use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
@@ -54,6 +56,12 @@ class PipelinerServiceProvider extends ServiceProvider
         $this->app->bindMethod([SyncPipelinerEntity::class, 'handle'],
             static function (SyncPipelinerEntity $concrete, Container $container): mixed {
                 return $container->call($concrete->handle(...), ['logger' => $container['log']->driver('pipeliner')]);
+            });
+
+        $this->app->when(PipelinerGraphQlClient::class)
+            ->needs(RateLimiterStore::class)
+            ->give(static function (Container $container): RateLimiterStore {
+                return $container->make(CacheStore::class, ['prefix' => PipelinerGraphQlClient::class]);
             });
     }
 

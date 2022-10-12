@@ -31,6 +31,7 @@ use App\Services\ExchangeRate\CurrencyConverter;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Carbon;
@@ -76,6 +77,7 @@ class OpportunityEntityService implements CauserAware
         }
 
         return tap(new Opportunity(), function (Opportunity $opportunity) use ($data) {
+            $opportunity->{$opportunity->getKeyName()} = Uuid::generate(4)->string;
             $opportunity->salesUnit()->associate($data->sales_unit_id);
             $opportunity->pipeline()->associate($data->pipeline_id);
             $opportunity->user()->associate($data->user_id);
@@ -194,31 +196,30 @@ class OpportunityEntityService implements CauserAware
                     })
                 : null;
 
+            $suppliers = Collection::make($data->create_suppliers)
+                ->values()
+                ->map(static function (CreateSupplierData $data, int $i) use ($opportunity): OpportunitySupplier {
+                    return tap(new OpportunitySupplier(),
+                        function (OpportunitySupplier $supplier) use ($opportunity, $i, $data): void {
+                            $supplier->entity_order = $i;
+                            $supplier->opportunity()->associate($opportunity);
+                            $supplier->forceFill($data->toArray());
+                        });
+                });
+
+            $opportunity->setRelation('opportunitySuppliers', $suppliers);
+
             $this->connection->transaction(static function () use ($data, $opportunity, $recurrence): void {
                 $opportunity->save();
 
                 $recurrence?->opportunity()?->associate($opportunity)?->save();
 
-                if (false === empty($data->create_suppliers)) {
-                    $suppliersData = array_map(static fn(CreateSupplierData $supplierData): array => [
-                        'id' => (string) Uuid::generate(4),
-                        'opportunity_id' => $opportunity->getKey(),
-                        'supplier_name' => $supplierData->supplier_name,
-                        'country_name' => $supplierData->country_name,
-                        'contact_name' => $supplierData->contact_name,
-                        'contact_email' => $supplierData->contact_email,
-                        'created_at' => Carbon::now(),
-                        'updated_at' => Carbon::now(),
-                    ], $data->create_suppliers);
-
-                    OpportunitySupplier::query()->insert($suppliersData);
-                }
+                $opportunity->opportunitySuppliers->each->save();
             });
 
             $this->eventDispatcher->dispatch(
                 new OpportunityCreated($opportunity, $this->causer)
             );
-
         });
     }
 
@@ -378,6 +379,12 @@ class OpportunityEntityService implements CauserAware
                         $opportunity->opportunitySuppliers->push($supplier);
                     });
             }
+
+            $opportunity->opportunitySuppliers
+                ->values()
+                ->each(static function (OpportunitySupplier $supplier, int $i): void {
+                    $supplier->entity_order = $i;
+                });
 
             $lock->block(30, function () use ($opportunity, $recurrence, $data) {
                 $this->connection->transaction(static function () use ($recurrence, $data, $opportunity): void {

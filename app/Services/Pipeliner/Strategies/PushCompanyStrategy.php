@@ -99,6 +99,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
                     ->orWhereColumn($model->getQualifiedUpdatedAtColumn(), '>',
                         "latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}");
             })
+            ->whereSyncNotProtected()
             ->unless(is_null($lastUpdatedAt), static function (Builder $builder) use ($model, $lastUpdatedAt): void {
                 $builder->where($model->getQualifiedUpdatedAtColumn(), '>', $lastUpdatedAt);
             });
@@ -114,8 +115,12 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             throw new \TypeError(sprintf("Model must be an instance of %s.", Company::class));
         }
 
+        if ($model->getFlag(Company::SYNC_PROTECTED)) {
+            throw new PipelinerSyncException("Company [{$model->getIdForHumans()}] is protected from sync.");
+        }
+
         if (null === $model->salesUnit) {
-            throw new PipelinerSyncException("Company [$model->name] doesn't have assigned sales unit.");
+            throw new PipelinerSyncException("Company [{$model->getIdForHumans()}] doesn't have assigned sales unit.");
         }
 
         $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($model->getKey()), 120);
@@ -183,6 +188,17 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             collect($tasks)->each(static function (callable $task): void {
                 $task();
             });
+        });
+
+        $this->persistSyncLog($model);
+    }
+
+    private function persistSyncLog(Model $model): void
+    {
+        tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
+            $log->model()->associate($model);
+            $log->strategy_name = (string)StrategyNameResolver::from($this);
+            $log->save();
         });
     }
 

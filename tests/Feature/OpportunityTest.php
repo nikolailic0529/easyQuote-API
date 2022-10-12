@@ -2505,11 +2505,11 @@ class OpportunityTest extends TestCase
         }
 
 
-        // Assert pipeline view does not contain opportunities with quotes.
+        // Assert pipeline view contain opportunities with quotes.
         $opportunityKeys = $response->json('*.opportunities.*.id');
 
         foreach ($oppsWithQuote as $opp) {
-            $this->assertNotContains($opp->getKey(), $opportunityKeys);
+            $this->assertContains($opp->getKey(), $opportunityKeys);
         }
     }
 

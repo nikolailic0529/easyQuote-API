@@ -55,6 +55,8 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 {
     use SalesUnitsAware;
 
+    protected array $options = [];
+
     public function __construct(
         protected ConnectionInterface $connection,
         protected PipelinerPipelineIntegration $pipelineIntegration,
@@ -156,6 +158,8 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
             throw new \TypeError(sprintf("Entity must be an instance of %s.", AccountEntity::class));
         }
 
+        $this->options = $options;
+
         /** @var LazyCollection $accounts */
         $accounts = Company::query()
             ->withTrashed()
@@ -171,6 +175,8 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
                 ];
             })
             ->all();
+
+        $contactRelations = [...$contactRelations, ...$this->collectContactRelationsFromAccountEntity($entity)];
 
         if ($accounts->isEmpty()) {
             return $this->performSync($entity, contactRelations: $contactRelations);
@@ -188,30 +194,32 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
     private function performSync(AccountEntity $entity, Company $account = null, array $contactRelations = []): Model
     {
-        $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 120);
+        if ($account !== null && $account->getFlag(Company::SYNC_PROTECTED)) {
+            throw new PipelinerSyncException("Company [{$account->getIdForHumans()}] is protected from sync.");
+        }
 
-        $account = $lock->block(120, function () use ($entity, $account, $contactRelations): Company {
-            $contacts = [...$contactRelations, ...$this->collectContactRelationsFromAccountEntity($entity)];
+        $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 180);
 
-            $newAccount = $this->dataMapper->mapImportedCompanyFromAccountEntity($entity, $contacts);
+        $newAccount = $this->dataMapper->mapImportedCompanyFromAccountEntity($entity, $contactRelations);
 
-            $this->connection->transaction(static function () use ($newAccount): void {
-                $newAccount->addresses->each(static function (ImportedAddress $address) {
-                    $address->owner?->save();
-                    $address->save();
-                });
-
-                $newAccount->contacts->each(static function (ImportedContact $contact) {
-                    $contact->owner?->save();
-                    $contact->save();
-                });
-
-                $newAccount->save();
-
-                $newAccount->addresses()->syncWithoutDetaching($newAccount->addresses);
-                $newAccount->contacts()->syncWithoutDetaching($newAccount->contacts);
+        $this->connection->transaction(static function () use ($newAccount): void {
+            $newAccount->addresses->each(static function (ImportedAddress $address) {
+                $address->owner?->save();
+                $address->save();
             });
 
+            $newAccount->contacts->each(static function (ImportedContact $contact) {
+                $contact->owner?->save();
+                $contact->save();
+            });
+
+            $newAccount->save();
+
+            $newAccount->addresses()->syncWithoutDetaching($newAccount->addresses);
+            $newAccount->contacts()->syncWithoutDetaching($newAccount->contacts);
+        });
+
+        $account = $lock->block(180, function () use ($entity, $newAccount, $account, $contactRelations): Company {
             // Merge attributes when a model exists already.
             if (null !== $account) {
                 $this->dataMapper->mergeAttributesFrom($account, $newAccount);
@@ -250,11 +258,74 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
             return $account;
         });
 
-        return tap($account, function () use ($account, $entity) {
-            $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id).'relations', 120)
-                ->block(120, function () use ($account, $entity) {
-                    $this->syncRelationsOfAccountEntity($entity, $account);
+        tap($account, function (Company $account) use ($entity): void {
+            if ($this->hasBatchId()) {
+                $key = static::class.$this->getBatchId().'relations'.$entity->id;
+
+                if (!$this->cache->add(key: $key, value: true, ttl: now()->addHours(8))) {
+                    return;
+                }
+            }
+
+            $relations = [
+                'notes' => $this->collectNotesOfAccountEntity($entity),
+                'tasks' => $this->collectTasksOfAccountEntity($entity),
+                'appointments' => $this->collectAppointmentsOfAccountEntity($entity),
+            ];
+
+            $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id).'notes', 120)
+                ->block(120, function () use ($relations, $account, $entity): void {
+                    foreach ($relations['notes'] as $item) {
+                        $this->pullNoteStrategy->sync($item);
+                    }
                 });
+
+            $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id).'tasks', 120)
+                ->block(120, function () use ($relations, $account, $entity): void {
+                    foreach ($relations['tasks'] as $item) {
+                        $this->pullTaskStrategy->sync($item);
+                    }
+                });
+
+            $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id).'appointments', 120)
+                ->block(120, function () use ($relations, $account, $entity): void {
+                    foreach ($relations['appointments'] as $item) {
+                        $this->pullAppointmentStrategy->sync($item);
+                    }
+                });
+
+            $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id).'attachments', 120)
+                ->block(120, function () use ($account, $entity): void {
+                    $attachments = collect($entity->documents)
+                        ->lazy()
+                        ->chunk(50)
+                        ->map(function (LazyCollection $collection): array {
+                            return $this->pullAttachmentStrategy->batch(...$collection->all());
+                        })
+                        ->collapse()
+                        ->pipe(static function (LazyCollection $collection) {
+                            return Collection::make($collection->all());
+                        });
+
+                    if ($attachments->isNotEmpty()) {
+                        $this->connection->transaction(
+                            static fn() => $account->attachments()->syncWithoutDetaching($attachments)
+                        );
+                    }
+                });
+        });
+
+        $this->persistSyncLog($account);
+
+        return $account;
+    }
+
+    private function persistSyncLog(Model $model): void
+    {
+        tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
+            $log->model()->associate($model);
+            $log->strategy_name = (string)StrategyNameResolver::from($this);
+            $log->save();
         });
     }
 
@@ -270,89 +341,51 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         return (new Company())->getMorphClass();
     }
 
-    private function syncRelationsOfAccountEntity(AccountEntity $entity, Company $model): void
+    private function collectNotesOfAccountEntity(AccountEntity $entity): array
     {
-        $tasks = [
-            function () use ($entity): void {
-                $cacheKey = static::class.$this->noteIntegration::class.$entity->id.$entity->modified->getTimestamp();
+        $iterator = $this->noteIntegration->scroll(filter: NoteFilterInput::new()->accountId(
+            EntityFilterStringField::eq($entity->id)
+        ), first: 100);
 
-                $items = $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
-                    $iterator = $this->noteIntegration->scroll(filter: NoteFilterInput::new()->accountId(
-                        EntityFilterStringField::eq($entity->id)
-                    ), first: 100);
+        return LazyCollection::make(static function () use ($iterator) {
+            yield from $iterator;
+        })
+            ->values()
+            ->all();
+    }
 
-                    return LazyCollection::make(static function () use ($iterator) {
-                        yield from $iterator;
-                    })
-                        ->values()
-                        ->all();
-                });
+    private function collectTasksOfAccountEntity(AccountEntity $entity): array
+    {
+        $cacheKey = static::class.$this->taskIntegration::class.$entity->id.$entity->modified->getTimestamp();
 
-                foreach ($items as $item) {
-                    $this->pullNoteStrategy->sync($item);
-                }
-            },
-            function () use ($entity): void {
-                $cacheKey = static::class.$this->taskIntegration::class.$entity->id.$entity->modified->getTimestamp();
+        return $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
+            $iterator = $this->taskIntegration->scroll(filter: TaskFilterInput::new()->accountRelations(
+                ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
+            ), first: 100);
 
-                $items = $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
-                    $iterator = $this->taskIntegration->scroll(filter: TaskFilterInput::new()->accountRelations(
-                        ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
-                    ), first: 100);
+            return LazyCollection::make(static function () use ($iterator) {
+                yield from $iterator;
+            })
+                ->values()
+                ->all();
+        });
+    }
 
-                    return LazyCollection::make(static function () use ($iterator) {
-                        yield from $iterator;
-                    })
-                        ->values()
-                        ->all();
-                });
+    private function collectAppointmentsOfAccountEntity(AccountEntity $entity): array
+    {
+        $cacheKey = static::class.$this->appointmentIntegration::class.$entity->id.$entity->modified->getTimestamp();
 
-                foreach ($items as $item) {
-                    $this->pullTaskStrategy->sync($item);
-                }
-            },
-            function () use ($entity): void {
-                $cacheKey = static::class.$this->appointmentIntegration::class.$entity->id.$entity->modified->getTimestamp();
+        return $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
+            $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()
+                ->accountRelations(
+                    ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
+                ), first: 100);
 
-                $items = $this->cache->remember($cacheKey, now()->addHour(), function () use ($entity): array {
-                    $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()
-                        ->accountRelations(
-                            ActivityRelationFilterInput::new()->accountId(EntityFilterStringField::eq($entity->id))
-                        ), first: 100);
-
-                    return LazyCollection::make(static function () use ($iterator) {
-                        yield from $iterator;
-                    })
-                        ->values()
-                        ->all();
-                });
-
-                foreach ($items as $item) {
-                    $this->pullAppointmentStrategy->sync($item);
-                }
-            },
-            function () use ($model, $entity): void {
-                $attachments = collect($entity->documents)
-                    ->lazy()
-                    ->chunk(50)
-                    ->map(function (LazyCollection $collection): array {
-                        return $this->pullAttachmentStrategy->batch(...$collection->all());
-                    })
-                    ->collapse()
-                    ->pipe(static function (LazyCollection $collection) {
-                        return Collection::make($collection->all());
-                    });
-
-                if ($attachments->isNotEmpty()) {
-                    $this->connection->transaction(
-                        static fn() => $model->attachments()->syncWithoutDetaching($attachments)
-                    );
-                }
-            },
-        ];
-
-        collect($tasks)->each(static function (callable $task): void {
-            $task();
+            return LazyCollection::make(static function () use ($iterator) {
+                yield from $iterator;
+            })
+                ->values()
+                ->all();
         });
     }
 
@@ -383,6 +416,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
     {
         $companyModel = new Company();
 
+        /** @var Company|null $model */
         $model = $companyModel->newQuery()
             ->where('pl_reference', $plReference)
             ->withTrashed()
@@ -392,6 +426,10 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         // Assume the strategy as not applied, if the model doesn't exist yet.
         if (null === $model) {
             return true;
+        }
+
+        if ($model->getFlag(Company::SYNC_PROTECTED)) {
+            return false;
         }
 
         $syncStrategyLogModel = new PipelinerSyncStrategyLog();
@@ -413,6 +451,16 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
             ->where('model_type', $this->getModelType())
             ->latest()
             ->first();
+    }
+
+    private function getBatchId(): ?string
+    {
+        return $this->options['batchId'] ?? null;
+    }
+
+    private function hasBatchId(): bool
+    {
+        return $this->getBatchId() !== null;
     }
 
     public function isApplicableTo(object $entity): bool

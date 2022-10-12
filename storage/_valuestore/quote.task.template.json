@@ -6,15 +6,39 @@
       {
         "id": "ed16b47c-8ee5-43fb-bb9a-6795b9879e5f",
         "class": "col-lg-12",
+        "controls": [],
+        "position": 1
+      }
+    ],
+    "class": "single-column field-dragger",
+    "order": 1,
+    "controls": [],
+    "is_field": false,
+    "droppable": false,
+    "decoration": "1"
+  },
+  {
+    "id": "a37d7c46-6c38-4dd1-850b-07e9ede5331f",
+    "droppable": false,
+    "name": "two Column",
+    "class": "two-column field-dragger",
+    "decoration": "2",
+    "order": 6,
+    "is_field": false,
+    "child": [
+      {
+        "class": "col-lg-3",
+        "position": 1,
+        "id": "af7c897c-e301-49ec-ba06-e5796a97aff5",
         "controls": [
           {
             "type": "label",
             "name": "l-1",
-            "class": null,
+            "class": "control-label-task",
             "droppable": false,
             "is_field": true,
-            "attached_element_id": "0044af50-4bab-4c19-bfc3-269fded3b70d",
-            "attached_child_id": "ed16b47c-8ee5-43fb-bb9a-6795b9879e5f",
+            "attached_element_id": "a37d7c46-6c38-4dd1-850b-07e9ede5331f",
+            "attached_child_id": "af7c897c-e301-49ec-ba06-e5796a97aff5",
             "id": "24714d89-dcb4-4600-88b6-f3b4699972b7",
             "is_system": false,
             "label": "Label",
@@ -24,7 +48,14 @@
             "src": null,
             "css": null,
             "show": false
-          },
+          }
+        ]
+      },
+      {
+        "class": "col-lg-7 border-right",
+        "position": 4,
+        "id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
+        "controls": [
           {
             "id": "cd2a2155-5cc8-4c37-8a1f-403697bd56c5",
             "css": null,
@@ -40,43 +71,37 @@
             "droppable": false,
             "is_system": false,
             "is_required": false,
-            "attached_child_id": "ed16b47c-8ee5-43fb-bb9a-6795b9879e5f",
-            "attached_element_id": "0044af50-4bab-4c19-bfc3-269fded3b70d",
+            "attached_child_id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
+            "attached_element_id": "a37d7c46-6c38-4dd1-850b-07e9ede5331f",
             "field_required": "true"
           }
-        ],
-        "position": 1
+        ]
       }
     ],
-    "class": "single-column field-dragger",
-    "order": 1,
-    "controls": [],
-    "is_field": false,
-    "droppable": false,
-    "decoration": "1"
+    "controls": []
   },
   {
-    "id": "53c54c8a-1858-470a-ac57-7915e230ce83",
+    "id": "201257df-2303-404a-a463-d161dd1a53b0",
     "droppable": false,
-    "name": "Two Column",
+    "name": "two Column",
     "class": "two-column field-dragger",
     "decoration": "2",
-    "order": 2,
+    "order": 6,
     "is_field": false,
     "child": [
       {
-        "class": "col-lg-6",
+        "class": "col-lg-3",
         "position": 1,
-        "id": "82822f81-9582-4d3d-a2f9-c7bfff3835e4",
+        "id": "af7c897c-e301-49ec-ba06-e5796a97aff5",
         "controls": [
           {
             "type": "label",
             "name": "l-1",
-            "class": "Blue",
+            "class": "control-label-task",
             "droppable": false,
             "is_field": true,
-            "attached_element_id": "53c54c8a-1858-470a-ac57-7915e230ce83",
-            "attached_child_id": "82822f81-9582-4d3d-a2f9-c7bfff3835e4",
+            "attached_element_id": "201257df-2303-404a-a463-d161dd1a53b0",
+            "attached_child_id": "af7c897c-e301-49ec-ba06-e5796a97aff5",
             "id": "ae8d18d6-b797-479a-b24f-4b1321ba10c1",
             "is_system": false,
             "label": "Label",
@@ -86,7 +111,14 @@
             "src": null,
             "css": null,
             "show": false
-          },
+          }
+        ]
+      },
+      {
+        "class": "col-lg-7 border-right",
+        "position": 4,
+        "id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
+        "controls": [
           {
             "type": "dropdown",
             "placeholder": null,
@@ -94,8 +126,8 @@
             "class": "form-control",
             "droppable": false,
             "is_field": true,
-            "attached_element_id": "53c54c8a-1858-470a-ac57-7915e230ce83",
-            "attached_child_id": "82822f81-9582-4d3d-a2f9-c7bfff3835e4",
+            "attached_element_id": "201257df-2303-404a-a463-d161dd1a53b0",
+            "attached_child_id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
             "id": "2a9a0728-0719-4fbf-b724-eb601f43e59a",
             "is_system": false,
             "label": "Dropdown",
@@ -110,12 +142,6 @@
             "possible_values": null
           }
         ]
-      },
-      {
-        "class": "col-lg-6",
-        "id": "36e2e1ec-38cb-4d31-9b92-4808b1cca81a",
-        "position": 2,
-        "controls": []
       }
     ],
     "controls": []
