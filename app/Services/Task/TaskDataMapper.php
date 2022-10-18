@@ -6,6 +6,7 @@ use App\Contracts\CauserAware;
 use App\Enum\Priority;
 use App\Enum\ReminderStatus;
 use App\Enum\TaskTypeEnum;
+use App\Integrations\Pipeliner\Enum\ActivityStatusEnum;
 use App\Integrations\Pipeliner\Enum\DateDayEnum;
 use App\Integrations\Pipeliner\Enum\DateMonthEnum;
 use App\Integrations\Pipeliner\Enum\DateWeekEnum;
@@ -44,10 +45,9 @@ use App\Models\Task\TaskReminder;
 use App\Models\User;
 use App\Repositories\TaskTemplate\QuoteTaskTemplateStore;
 use App\Services\Attachment\AttachmentDataMapper;
-use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
 use App\Services\Pipeliner\CachedSalesUnitResolver;
 use App\Services\Pipeliner\CachedTaskTypeResolver;
-use App\Services\Template\Models\TemplateControlFilter;
+use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
 use App\Services\Template\TemplateSchemaDataMapper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -61,12 +61,13 @@ class TaskDataMapper implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected QuoteTaskTemplateStore         $taskTemplateStore,
-                                protected TemplateSchemaDataMapper       $templateSchemaMapper,
-                                protected CachedSalesUnitResolver $salesUnitResolver,
-                                protected CachedTaskTypeResolver  $pipelinerTaskTypeResolver,
-                                protected AttachmentDataMapper           $attachmentDataMapper)
-    {
+    public function __construct(
+        protected QuoteTaskTemplateStore $taskTemplateStore,
+        protected TemplateSchemaDataMapper $templateSchemaMapper,
+        protected CachedSalesUnitResolver $salesUnitResolver,
+        protected CachedTaskTypeResolver $pipelinerTaskTypeResolver,
+        protected AttachmentDataMapper $attachmentDataMapper
+    ) {
     }
 
     public function mapPipelinerCreateTaskInput(Task $task): CreateTaskInput
@@ -74,12 +75,15 @@ class TaskDataMapper implements CauserAware
         $attributes = [];
 
         if (null !== $task->user) {
-            $attributes['ownerId'] = (string)$task->user->pl_reference;
+            $attributes['ownerId'] = (string) $task->user->pl_reference;
         }
 
         $attributes['activityTypeId'] = ($this->pipelinerTaskTypeResolver)($task->activity_type->value)?->id ?? InputValueEnum::Miss;
         $attributes['subject'] = $task->name;
-        $attributes['description'] = $this->getDescriptionFromTaskContent($task->content);
+        $attributes['description'] = $task->content['details'] ?? InputValueEnum::Miss;
+        $attributes['status'] = isset($task->content['status'])
+            ? $this->mapStatusToActivityStatusEnum($task->content['status']) ?? InputValueEnum::Miss
+            : InputValueEnum::Miss;
         $attributes['dueDate'] = $task->expiry_date?->toDateTimeImmutable() ?? InputValueEnum::Miss;
         $attributes['priority'] = match ($task->priority) {
             Priority::Low => PriorityEnum::Low,
@@ -103,7 +107,8 @@ class TaskDataMapper implements CauserAware
             }, []);
 
         if (count($accountRelations) > 0) {
-            $attributes['accountRelations'] = new CreateActivityAccountRelationInputCollection(...array_values($accountRelations));
+            $attributes['accountRelations'] = new CreateActivityAccountRelationInputCollection(...
+                array_values($accountRelations));
         }
 
         $contactRelations = $task->contacts
@@ -116,7 +121,8 @@ class TaskDataMapper implements CauserAware
             }, []);
 
         if (count($contactRelations) > 0) {
-            $attributes['contactRelations'] = new CreateActivityContactRelationInputCollection(...array_values($contactRelations));
+            $attributes['contactRelations'] = new CreateActivityContactRelationInputCollection(...
+                array_values($contactRelations));
         }
 
         $opportunityRelations = $task->opportunities
@@ -129,7 +135,8 @@ class TaskDataMapper implements CauserAware
             }, []);
 
         if (count($opportunityRelations) > 0) {
-            $attributes['opportunityRelations'] = new CreateActivityLeadOpptyRelationInputCollection(...array_values($opportunityRelations));
+            $attributes['opportunityRelations'] = new CreateActivityLeadOpptyRelationInputCollection(...
+                array_values($opportunityRelations));
         }
 
         $attributes['unitId'] = $task->salesUnit?->pl_reference ?? InputValueEnum::Miss;
@@ -153,7 +160,10 @@ class TaskDataMapper implements CauserAware
         $attributes = [];
 
         $attributes['id'] = $entity->id;
-        $attributes['unitId'] = value(static function (?SalesUnit $unit, ?SalesUnitEntity $entity): InputValueEnum|string {
+        $attributes['unitId'] = value(static function (
+            ?SalesUnit $unit,
+            ?SalesUnitEntity $entity
+        ): InputValueEnum|string {
             if (null === $unit || $unit->pl_reference === $entity?->id) {
                 return InputValueEnum::Miss;
             }
@@ -162,7 +172,10 @@ class TaskDataMapper implements CauserAware
         }, $task->salesUnit, $entity->unit);
         $attributes['activityTypeId'] = ($this->pipelinerTaskTypeResolver)($task->activity_type->value)?->id ?? InputValueEnum::Miss;
         $attributes['subject'] = $task->name;
-        $attributes['description'] = $this->getDescriptionFromTaskContent($task->content);
+        $attributes['description'] = $task->content['details'] ?? InputValueEnum::Miss;
+        $attributes['status'] = isset($task->content['status'])
+            ? $this->mapStatusToActivityStatusEnum($task->content['status']) ?? InputValueEnum::Miss
+            : InputValueEnum::Miss;
         $attributes['dueDate'] = $task->expiry_date?->toDateTimeImmutable() ?? InputValueEnum::Miss;
         $attributes['priority'] = match ($task->priority) {
             Priority::Low => PriorityEnum::Low,
@@ -268,10 +281,12 @@ class TaskDataMapper implements CauserAware
         return new UpdateTaskInput(...$attributes);
     }
 
-    public function mapPipelinerCreateTaskReminderInput(TaskReminder $reminder, ?User $defaultOwner): CreateTaskReminderInput
-    {
+    public function mapPipelinerCreateTaskReminderInput(
+        TaskReminder $reminder,
+        ?User $defaultOwner
+    ): CreateTaskReminderInput {
         return new CreateTaskReminderInput(
-            ownerId: (string)($reminder->user?->pl_reference ?? $defaultOwner?->pl_reference),
+            ownerId: (string) ($reminder->user?->pl_reference ?? $defaultOwner?->pl_reference),
             setDate: Carbon::instance($reminder->set_date)->toDateTimeImmutable(),
             status: ReminderStatusEnum::from($reminder->status->name),
         );
@@ -298,7 +313,8 @@ class TaskDataMapper implements CauserAware
         $recurrenceAttributes = [];
 
         $recurrenceAttributes['startDate'] = Carbon::instance($recurrence->start_date)->toDateTimeImmutable();
-        $recurrenceAttributes['endDate'] = isset($recurrence->end_date) ? Carbon::instance($recurrence->end_date)->toDateTimeImmutable() : InputValueEnum::Miss;
+        $recurrenceAttributes['endDate'] = isset($recurrence->end_date) ? Carbon::instance($recurrence->end_date)
+            ->toDateTimeImmutable() : InputValueEnum::Miss;
         $recurrenceAttributes['type'] = RecurrenceTypeEnum::from($recurrence->type->value);
         $recurrenceAttributes['day'] = DateDayEnum::from($recurrence->day->toEnum()->value);
         $recurrenceAttributes['week'] = DateWeekEnum::from($recurrence->week->toEnum()->value);
@@ -310,10 +326,15 @@ class TaskDataMapper implements CauserAware
         return new CreateTaskRecurrenceInput(...$recurrenceAttributes);
     }
 
+    public function mapStatusToActivityStatusEnum(string $status): ?ActivityStatusEnum
+    {
+        return ActivityStatusEnum::tryFrom(Str::studly($status));
+    }
+
     public function mapFromTaskEntity(TaskEntity $entity): Task
     {
         return tap(new Task(), function (Task $task) use ($entity): void {
-            $task->{$task->getKeyName()} = (string)Uuid::generate(4);
+            $task->{$task->getKeyName()} = (string) Uuid::generate(4);
 
             if (null !== $entity->unit) {
                 $task->salesUnit()->associate(
@@ -325,10 +346,10 @@ class TaskDataMapper implements CauserAware
             $task->activity_type = TaskTypeEnum::tryFrom($entity->activityType->name) ?? TaskTypeEnum::Task;
             $task->name = $entity->subject;
 
-            $task->content = tap($this->taskTemplateStore->all(), function (array &$tpl) use ($entity): void {
-                $this->setDescriptionInTemplate($entity->description, $tpl);
-                $this->setStatusInTemplate(Str::headline($entity->status->name), $tpl);
-            });
+            $task->content = [
+                'details' => $entity->description,
+                'status' => Str::headline($entity->status->name),
+            ];
 
             $task->priority = match ($entity->priority) {
                 PriorityEnum::Low => Priority::Low,
@@ -360,10 +381,18 @@ class TaskDataMapper implements CauserAware
                 ? tap(new TaskRecurrence(), static function (TaskRecurrence $recurrence) use ($task, $entity): void {
                     $recurrence->task()->associate($task);
 
-                    $recurrence->type()->associate(RecurrenceType::query()->where('value', $entity->taskRecurrence->type)->sole());
-                    $recurrence->day()->associate(DateDay::query()->where('value', $entity->taskRecurrence->day)->sole());
-                    $recurrence->week()->associate(DateWeek::query()->where('value', $entity->taskRecurrence->week)->sole());
-                    $recurrence->month()->associate(DateMonth::query()->where('value', $entity->taskRecurrence->month)->sole());
+                    $recurrence->type()->associate(RecurrenceType::query()
+                        ->where('value', $entity->taskRecurrence->type)
+                        ->sole());
+                    $recurrence->day()->associate(DateDay::query()
+                        ->where('value', $entity->taskRecurrence->day)
+                        ->sole());
+                    $recurrence->week()->associate(DateWeek::query()
+                        ->where('value', $entity->taskRecurrence->week)
+                        ->sole());
+                    $recurrence->month()->associate(DateMonth::query()
+                        ->where('value', $entity->taskRecurrence->month)
+                        ->sole());
                     $recurrence->day_of_week = $entity->taskRecurrence->dayOfWeek;
                     $recurrence->occur_every = $entity->taskRecurrence->occurEvery;
                     $recurrence->occurrences_count = $entity->taskRecurrence->occurrencesCount;
@@ -472,7 +501,7 @@ class TaskDataMapper implements CauserAware
         }
 
         $toBeMergedBelongsToRelations = [
-            'salesUnit'
+            'salesUnit',
         ];
 
         foreach ($toBeMergedBelongsToRelations as $relation) {
@@ -497,50 +526,6 @@ class TaskDataMapper implements CauserAware
             $relatedOriginal->push(...$relatedChanged);
         }
     }
-
-    private function getDescriptionFromTaskContent(array $content): string
-    {
-        foreach ($content as $col) {
-
-            foreach ($col['child'] as $child) {
-
-                foreach ($child['controls'] as $control) {
-
-                    if ('richtext' === $control['type']) {
-
-                        return (string)$control['value'];
-
-                    }
-
-                }
-            }
-        }
-
-        return '';
-    }
-
-    public function setDescriptionInTemplate(string $description, array &$template): void
-    {
-        $this->templateSchemaMapper->setControlValue(
-            TemplateControlFilter::new()->type('richtext'),
-            $description,
-            $template,
-            1
-        );
-    }
-
-    public function setStatusInTemplate(string $status, array &$template): void
-    {
-        $this->templateSchemaMapper->setControlValue(
-            TemplateControlFilter::new()
-                ->after(TemplateControlFilter::new()->value('status')->type('label'))
-                ->type('dropdown'),
-            $status,
-            $template,
-            1
-        );
-    }
-
 
     public function setCauser(?Model $causer): static
     {

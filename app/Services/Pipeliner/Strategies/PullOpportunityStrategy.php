@@ -355,7 +355,7 @@ class PullOpportunityStrategy implements PullStrategy
         $model = $oppModel->newQuery()
             ->where('pl_reference', $plReference)
             ->withTrashed()
-            ->select([$oppModel->getKeyName()])
+            ->select([$oppModel->getKeyName(), 'flags'])
             ->first();
 
         // Assume the strategy as not applied, if the model doesn't exist yet.

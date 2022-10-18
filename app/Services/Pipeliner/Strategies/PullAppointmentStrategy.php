@@ -137,9 +137,12 @@ class PullAppointmentStrategy implements PullStrategy
 
     public function iteratePending(): \Traversable
     {
-        return $this->appointmentIntegration->scroll(
-            ...$this->resolveScrollParameters()
-        );
+        return LazyCollection::make(function (): \Generator {
+            yield from $this->appointmentIntegration->simpleScroll(
+                ...$this->resolveScrollParameters()
+            );
+        })
+            ->values();
     }
 
     public function getModelType(): string

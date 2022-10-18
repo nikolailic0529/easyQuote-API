@@ -420,7 +420,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         $model = $companyModel->newQuery()
             ->where('pl_reference', $plReference)
             ->withTrashed()
-            ->select([$companyModel->getKeyName()])
+            ->select([$companyModel->getKeyName(), 'flags'])
             ->first();
 
         // Assume the strategy as not applied, if the model doesn't exist yet.

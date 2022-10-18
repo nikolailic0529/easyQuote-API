@@ -13,7 +13,7 @@ class UserWithIncludes extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return array
      */
     public function toArray($request)
@@ -59,6 +59,9 @@ class UserWithIncludes extends JsonResource
             'updated_at' => $this->updated_at,
             'email_verified_at' => $this->email_verified_at,
             'password_changed_at' => $this->password_changed_at,
+            'last_login_at' => isset($this->latestLogin)
+                ? $this->latestLogin->{$this->latestLogin->getCreatedAtColumn()}
+                : null,
             'activated_at' => $this->activated_at,
         ];
     }

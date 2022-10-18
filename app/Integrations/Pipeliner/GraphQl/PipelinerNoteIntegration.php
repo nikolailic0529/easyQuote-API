@@ -203,7 +203,7 @@ class PipelinerNoteIntegration
                                         (new Query('edges'))
                                             ->setSelectionSet([
                                                 (new Query('node'))
-                                                    ->setSelectionSet(['id']),
+                                                    ->setSelectionSet(['id', 'modified']),
                                             ]),
                                         (new Query('pageInfo'))
                                             ->setSelectionSet([
@@ -233,7 +233,7 @@ class PipelinerNoteIntegration
         $after = $response->json('data.entities.note.getByCriteria.pageInfo.endCursor');
 
         foreach ($response->json('data.entities.note.getByCriteria.edges.*.node') as $node) {
-            yield $after => $node['id'];
+            yield $after => $node;
         }
 
         if ($hasNextPage) {

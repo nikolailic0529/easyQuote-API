@@ -57,23 +57,24 @@
         "id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
         "controls": [
           {
-            "id": "cd2a2155-5cc8-4c37-8a1f-403697bd56c5",
-            "css": null,
-            "src": null,
-            "name": "richtext-1",
-            "show": false,
             "type": "richtext",
+            "placeholder": null,
+            "name": "richtext-1",
             "class": null,
-            "label": "Rich Text",
-            "value": null,
-            "is_field": true,
-            "is_image": false,
             "droppable": false,
-            "is_system": false,
-            "is_required": false,
-            "attached_child_id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
+            "is_field": true,
             "attached_element_id": "a37d7c46-6c38-4dd1-850b-07e9ede5331f",
-            "field_required": "true"
+            "attached_child_id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
+            "id": "details",
+            "is_system": false,
+            "label": "Rich Text",
+            "is_required": false,
+            "value": null,
+            "is_image": false,
+            "src": null,
+            "css": null,
+            "show": false,
+            "field_required": false
           }
         ]
       }
@@ -128,7 +129,7 @@
             "is_field": true,
             "attached_element_id": "201257df-2303-404a-a463-d161dd1a53b0",
             "attached_child_id": "90918ed7-de2f-44b9-87f7-a4f53d123afc",
-            "id": "2a9a0728-0719-4fbf-b724-eb601f43e59a",
+            "id": "status",
             "is_system": false,
             "label": "Dropdown",
             "is_required": false,

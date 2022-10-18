@@ -102,7 +102,11 @@ class PullSalesUnitStrategy implements PullStrategy
 
     public function iteratePending(): \Traversable
     {
-        return collect($this->salesUnitIntegration->getAll());
+        return collect($this->salesUnitIntegration->getAll())
+            ->lazy()
+            ->map(static function (SalesUnitEntity $entity): array {
+                return ['id' => $entity->id, 'modified' => $entity->modified];
+            });
     }
 
     public function getModelType(): string

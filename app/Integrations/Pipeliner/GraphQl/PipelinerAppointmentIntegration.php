@@ -217,7 +217,7 @@ class PipelinerAppointmentIntegration
                                         (new Query('edges'))
                                             ->setSelectionSet([
                                                 (new Query('node'))
-                                                    ->setSelectionSet(['id']),
+                                                    ->setSelectionSet(['id', 'modified']),
                                             ]),
                                         (new Query('pageInfo'))
                                             ->setSelectionSet([
@@ -247,7 +247,7 @@ class PipelinerAppointmentIntegration
         $after = $response->json('data.entities.appointment.getByCriteria.pageInfo.endCursor');
 
         foreach ($response->json('data.entities.appointment.getByCriteria.edges.*.node') as $node) {
-            yield $after => $node['id'];
+            yield $after => $node;
         }
 
         if ($hasNextPage) {

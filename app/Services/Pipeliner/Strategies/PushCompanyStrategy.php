@@ -21,6 +21,7 @@ use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelUpdateLog;
 use App\Models\SalesUnit;
 use App\Services\Company\CompanyDataMapper;
+use App\Services\Company\Exceptions\CompanyDataMappingException;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerAccountLookupService;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
@@ -155,7 +156,11 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             $this->syncAttachmentsFromAccount($model);
 
             if (null === $model->pl_reference) {
-                $input = $this->dataMapper->mapPipelinerCreateAccountInput($model);
+                try {
+                    $input = $this->dataMapper->mapPipelinerCreateAccountInput($model);
+                } catch (CompanyDataMappingException $e) {
+                    throw new PipelinerSyncException(message: $e->getMessage(), previous: $e);
+                }
 
                 $accountEntity = $this->accountIntegration->create($input,
                     validationLevel: ValidationLevelCollection::from(ValidationLevel::SKIP_ALL));
@@ -168,7 +173,11 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             } else {
                 $accountEntity = $this->accountIntegration->getById($model->pl_reference);
 
-                $input = $this->dataMapper->mapPipelinerUpdateAccountInput($model, $accountEntity);
+                try {
+                    $input = $this->dataMapper->mapPipelinerUpdateAccountInput($model, $accountEntity);
+                } catch (CompanyDataMappingException $e) {
+                    throw new PipelinerSyncException(message: $e->getMessage(), previous: $e);
+                }
 
                 $modifiedFields = $input->getModifiedFields();
 
@@ -197,7 +206,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
     {
         tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
             $log->model()->associate($model);
-            $log->strategy_name = (string)StrategyNameResolver::from($this);
+            $log->strategy_name = (string) StrategyNameResolver::from($this);
             $log->save();
         });
     }
@@ -258,37 +267,6 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         $input = $this->dataMapper->mapPipelinerCreateOrUpdateContactAccountRelationInputCollection($model);
 
         $this->accountIntegration->bulkUpdateContactAccountRelation($input);
-
-        // Delete detached contact relations from account entity.
-        $contactIdMap = collect($input)->keyBy('contactId');
-
-        $iterator = $this->contactIntegration->scroll(
-            filter: ContactFilterInput::new()->accountRelations(
-                ContactAccountRelationFilterInput::new()->accountId(
-                    EntityFilterStringField::eq($model->pl_reference)
-                )
-            )
-        );
-
-        /** @var string[] $detachedContactRelations */
-        $detachedContactRelations = LazyCollection::make(static fn(): Generator => yield from $iterator)
-            ->filter(static function (ContactEntity $contactEntity) use ($contactIdMap): bool {
-                return $contactIdMap->has($contactEntity->id) === false;
-            })
-            ->reduce(static function (array $relations, ContactEntity $contactEntity) use ($model): array {
-                return collect($contactEntity->accountRelations)
-                    ->filter(static function (ContactAccountRelationEntity $entity) use ($model): bool {
-                        return $entity->accountId === $model->pl_reference;
-                    })
-                    ->pluck('id')
-                    ->merge($relations)
-                    ->all();
-            }, []);
-
-        collect($detachedContactRelations)
-            ->each(function (string $id): void {
-                $this->accountIntegration->deleteContactAccountRelation($id);
-            });
     }
 
     public function setSalesUnits(SalesUnit ...$units): static

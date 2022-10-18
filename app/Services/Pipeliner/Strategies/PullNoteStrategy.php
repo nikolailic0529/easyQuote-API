@@ -13,6 +13,7 @@ use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
 
 class PullNoteStrategy implements PullStrategy
@@ -96,11 +97,12 @@ class PullNoteStrategy implements PullStrategy
 
     public function iteratePending(): \Traversable
     {
-        $latestCursor = $this->getMostRecentScrollCursor();
-
-        return $this->noteIntegration->scroll(
-            ...$this->resolveScrollParameters(),
-        );
+        return LazyCollection::make(function (): \Generator {
+            yield from $this->noteIntegration->simpleScroll(
+                ...$this->resolveScrollParameters(),
+            );
+        })
+            ->values();
     }
 
     public function getModelType(): string

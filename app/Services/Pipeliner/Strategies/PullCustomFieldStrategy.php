@@ -157,6 +157,9 @@ class PullCustomFieldStrategy implements PullStrategy
         ))
             ->sortBy(function (FieldEntity $entity): int {
                 return array_search($entity->apiName, array_values($this->getSyncFieldMap()), true) ?: 0;
+            })
+            ->map(static function (FieldEntity $entity): array {
+                return ['id' => $entity->apiName, 'modified' => $entity->modified];
             });
     }
 

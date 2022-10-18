@@ -36,6 +36,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Services\Address\AddressHashResolver;
 use App\Services\Address\ImportedAddressToAddressProjector;
+use App\Services\Company\Exceptions\CompanyDataMappingException;
 use App\Services\Contact\ContactHashResolver;
 use App\Services\Contact\ImportedContactToContactProjector;
 use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
@@ -59,12 +60,20 @@ class CompanyDataMapper
     {
     }
 
+    /**
+     * @throws CompanyDataMappingException
+     */
     public function mapPipelinerCreateAccountInput(Company $company): CreateAccountInput
     {
         /** @var Address|null $defaultAddress */
         $defaultAddress = $company->addresses
-            ->sortByDesc('pivot.is_default')
+            ->lazy()
+            ->filter(static fn(Address $address): bool => (bool)$address->pivot?->is_default)
             ->first(static fn(Address $address): bool => AddressType::INVOICE === $address->address_type);
+
+        if (null === $defaultAddress) {
+            throw CompanyDataMappingException::defaultInvoiceAddressMissing($company);
+        }
 
         $picture = InputValueEnum::Miss;
 
@@ -106,12 +115,20 @@ class CompanyDataMapper
         );
     }
 
+    /**
+     * @throws CompanyDataMappingException
+     */
     public function mapPipelinerUpdateAccountInput(Company $company, AccountEntity $accountEntity): UpdateAccountInput
     {
         /** @var Address|null $defaultAddress */
         $defaultAddress = $company->addresses
-            ->sortByDesc('pivot.is_default')
+            ->lazy()
+            ->filter(static fn(Address $address): bool => (bool)$address->pivot?->is_default)
             ->first(static fn(Address $address): bool => AddressType::INVOICE === $address->address_type);
+
+        if (null === $defaultAddress) {
+            throw CompanyDataMappingException::defaultInvoiceAddressMissing($company);
+        }
 
         $oldFields = [
             'name' => $accountEntity->formattedName,

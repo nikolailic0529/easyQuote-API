@@ -47,7 +47,7 @@ class CompanyWithIncludes extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'website' => $this->website,
-            'logo' => $this->logo,
+            'logo' => filled($this->logo) ? $this->logo : null,
 
             'categories' => $this->categories->pluck('name'),
 

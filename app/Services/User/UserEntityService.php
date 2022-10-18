@@ -7,6 +7,7 @@ use App\DTO\User\UpdateCurrentUserData;
 use App\DTO\User\UpdateUserData;
 use App\Models\Collaboration\Invitation;
 use App\Models\Company;
+use App\Models\Image;
 use App\Models\Role;
 use App\Models\SalesUnit;
 use App\Models\User;
@@ -66,18 +67,12 @@ class UserEntityService
     public function updateCurrentUser(User $user, UpdateCurrentUserData $data): User
     {
         return tap($user, function (User $user) use ($data): void {
-            if ($data->picture instanceof \SplFileInfo && true !== $data->delete_picture) {
-                $this->thumbnailService->createResizedImageFor($data->picture, $user, [
-                    'width' => 120,
-                    'height' => 120,
-                ]);
-
-                $user->image()->flushQueryCache();
-                $user->load('image');
-            } elseif (true === $data->delete_picture && null !== $user->image) {
-                $user->image->delete();
-                $user->image()->flushQueryCache();
-                $user->load('image');
+            if ($data->picture instanceof \SplFileInfo) {
+                $user->image()->associate(
+                    $this->createPictureForUser($user, $data->picture)
+                );
+            } elseif (true === $data->delete_picture) {
+                $user->image()->disassociate();
             }
 
             $user->forceFill($data->except('picture', 'delete_picture', 'password', 'current_password', 'change_password')->all());
@@ -95,13 +90,24 @@ class UserEntityService
     public function updateUser(User $user, UpdateUserData $data): User
     {
         return tap($user, function (User $user) use ($data): void {
-            $user->forceFill($data->except('sales_units', 'companies', 'role_id')->all());
+            if ($data->picture instanceof \SplFileInfo) {
+                $user->image()->associate(
+                    $this->createPictureForUser($user, $data->picture)
+                );
+            } elseif (true === $data->delete_picture) {
+                $user->image()->disassociate();
+            }
+
+            $user->forceFill($data->except('picture', 'delete_picture', 'sales_units', 'companies', 'role_id')->all());
+
             $user->setRelation('salesUnits',
                 SalesUnit::query()->findMany($data->sales_units->toCollection()->pluck('id'))
             );
+
             $user->setRelation('companies',
                 Company::query()->findMany($data->companies->toCollection()->pluck('id'))
             );
+
             $role = Role::query()->findOrFail($data->role_id);
 
             $this->connection->transaction(static function () use ($user, $role): void {
@@ -111,6 +117,14 @@ class UserEntityService
                 $user->syncRoles($role);
             });
         });
+    }
+
+    protected function createPictureForUser(User $user, \SplFileInfo $file): Image
+    {
+        return $this->thumbnailService->createResizedImageFor($file, $user, [
+            'width' => 120,
+            'height' => 120,
+        ]);
     }
 
     public static function determineInvitationExpired(Invitation $invitation): bool

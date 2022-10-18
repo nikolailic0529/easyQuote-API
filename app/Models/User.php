@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Contracts\{ActivatableInterface, HasImagesDirectory, SearchableEntity};
 use App\Facades\Permission;
-use App\Models\{Collaboration\Invitation, Data\Country, Data\Timezone};
+use App\Models\{Collaboration\Invitation, Data\Country, Data\Timezone, System\Activity};
 use App\Models\Template\HpeContractTemplate;
 use App\Traits\{Activatable,
     Activity\LogsActivity,
@@ -40,6 +40,8 @@ use Illuminate\Database\Eloquent\{Builder,
     Factories\HasFactory,
     Model,
     Relations\BelongsToMany,
+    Relations\HasMany,
+    Relations\MorphOne,
     Relations\MorphToMany,
     SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -69,11 +71,13 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<int, Permission>|Permission[] $permissions
  * @property-read Timezone $timezone
  * @property-read Image|null $image
+ * @property-read Image|null $picture
  * @property-read Collection<int, User> $ledTeamUsers
  * @property-read Collection<int, Role> $roles
  * @property-read Collection<int, Team> $ledTeams
  * @property-read Collection<int, SalesUnit> $salesUnitsFromLedTeams
  * @property-read Country $country
+ * @property-read Activity|null $latestLogin
  */
 class User extends Model implements
     ActivatableInterface,
@@ -188,6 +192,11 @@ class User extends Model implements
     public function ledTeamUsers(): HasManyDeep
     {
         return $this->hasManyDeepFromRelations($this->ledTeams(), (new Team())->users());
+    }
+
+    public function latestLogin(): MorphOne
+    {
+        return $this->morphOne(Activity::class, 'causer')->latestOfMany('created_at');
     }
 
     public function salesUnits(): MorphToMany
@@ -321,14 +330,14 @@ class User extends Model implements
         return $this->append(array_merge($appends, $attributes));
     }
 
-    public function image()
+    public function image(): BelongsTo
     {
-        return $this->morphOne(Image::class, 'imageable')->cacheForever();
+        return $this->belongsTo(Image::class, 'picture_id');
     }
 
-    public function getPictureAttribute()
+    public function getPictureAttribute(): ?string
     {
-        if (!isset($this->image->original_image)) {
+        if (null === $this->image) {
             return null;
         }
 

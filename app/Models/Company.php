@@ -91,6 +91,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property-read Collection<int, CompanyCategory> $categories
  * @property-read User|null $user
  * @property-read SalesUnit|null $salesUnit
+ * @property-read array $logo
  */
 class Company extends Model implements
     HasImagesDirectory,

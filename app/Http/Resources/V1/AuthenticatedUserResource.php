@@ -58,9 +58,13 @@ class AuthenticatedUserResource extends JsonResource
                 'build_number' => data_get($this->additional, 'build.build_number'),
             ],
 
-            'created_at' => $this->created_at,
+            'created_at' => $this->{$this->getCreatedAtColumn()},
+            'updated_at' => $this->{$this->getUpdatedAtColumn()},
             'activated_at' => $this->activated_at,
             'last_activity_at' => $this->last_activity_at?->format(config('date.format_time')),
+            'last_login_at' => isset($this->latestLogin)
+                ? $this->latestLogin->{$this->latestLogin->getCreatedAtColumn()}
+                : null,
             'password_changed_at' => $this->password_changed_at?->format(config('date.format_time')),
         ];
     }

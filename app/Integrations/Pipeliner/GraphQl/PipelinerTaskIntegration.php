@@ -276,7 +276,7 @@ class PipelinerTaskIntegration
                                         (new Query('edges'))
                                             ->setSelectionSet([
                                                 (new Query('node'))
-                                                    ->setSelectionSet(['id']),
+                                                    ->setSelectionSet(['id', 'modified']),
                                             ]),
                                         (new Query('pageInfo'))
                                             ->setSelectionSet([
@@ -306,7 +306,7 @@ class PipelinerTaskIntegration
         $after = $response->json('data.entities.task.getByCriteria.pageInfo.endCursor');
 
         foreach ($response->json('data.entities.task.getByCriteria.edges.*.node') as $node) {
-            yield $after => $node['id'];
+            yield $after => $node;
         }
 
         if ($hasNextPage) {
