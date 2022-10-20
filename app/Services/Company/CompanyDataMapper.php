@@ -52,12 +52,14 @@ use Webpatser\Uuid\Uuid;
 
 class CompanyDataMapper
 {
-    public function __construct(protected CachedFieldApiNameResolver $fieldApiNameResolver,
-                                protected CachedFieldEntityResolver  $pipelinerFieldResolver,
-                                protected CachedDataEntityResolver   $pipelinerDataResolver,
-                                protected ImportedAddressToAddressProjector $addressProjector,
-                                protected ImportedContactToContactProjector $contactProjector)
-    {
+    public function __construct(
+        protected CachedFieldApiNameResolver $fieldApiNameResolver,
+        protected CachedFieldEntityResolver $pipelinerFieldResolver,
+        protected CachedDataEntityResolver $pipelinerDataResolver,
+        protected ImportedAddressToAddressProjector $addressProjector,
+        protected ImportedContactToContactProjector $contactProjector,
+        protected PipelinerClientEntityToUserProjector $clientProjector,
+    ) {
     }
 
     /**
@@ -563,7 +565,7 @@ class CompanyDataMapper
         $newContacts = new Collection();
 
         foreach ($entities as $contactRelation) {
-            $owner = PipelinerClientEntityToUserProjector::from($contactRelation->contact->owner)();
+            $owner = ($this->clientProjector)($contactRelation->contact->owner);
 
             $address = $this->mapImportedAddressFromContactRelationEntity($contactRelation, $owner);
             $contact = $this->mapImportedContactFromContactRelationEntity($contactRelation, $owner);

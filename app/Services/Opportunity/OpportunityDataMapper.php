@@ -85,7 +85,7 @@ class OpportunityDataMapper implements CauserAware
         protected CachedPipelineResolver $pipelineResolver,
         protected CachedStepResolver $stepResolver,
         protected PipelineQueries $pipelineQueries,
-        protected AccountOwnerResolver $accountOwnerResolver,
+        protected UserResolver $userResolver,
         protected ContractTypeResolver $contractTypeResolver
     ) {
     }
@@ -515,7 +515,7 @@ class OpportunityDataMapper implements CauserAware
                     'cfOpportunityTypeId'))));
 
             $accountManagerName = $resolveDataFieldOptionName(Arr::get($entity->customFields, 'cfAccountManagerId'));
-            $opportunity->accountManager()->associate(($this->accountOwnerResolver)($accountManagerName));
+            $opportunity->accountManager()->associate(($this->userResolver)($accountManagerName));
 
             /** @var Company|null $primaryAccount */
             /** @var Company|null $endUser */
@@ -1002,7 +1002,7 @@ class OpportunityDataMapper implements CauserAware
             'sales_unit_id' => $unit?->getKey(),
             'contract_type_id' => ($this->contractTypeResolver)(OpportunityDataMapper::coalesceMap($row,
                 PipelinerOppMap::CONTRACT_TYPE)),
-            'account_manager_id' => ($this->accountOwnerResolver)(OpportunityDataMapper::coalesceMap($row,
+            'account_manager_id' => ($this->userResolver)(OpportunityDataMapper::coalesceMap($row,
                 PipelinerOppMap::ACCOUNT_MANAGER))?->getKey(),
             'imported_primary_account_id' => $primaryAccount?->getKey(),
             'imported_primary_account_contact_id' => $primaryAccount->primaryContact?->getKey(),

@@ -66,7 +66,8 @@ class TaskDataMapper implements CauserAware
         protected TemplateSchemaDataMapper $templateSchemaMapper,
         protected CachedSalesUnitResolver $salesUnitResolver,
         protected CachedTaskTypeResolver $pipelinerTaskTypeResolver,
-        protected AttachmentDataMapper $attachmentDataMapper
+        protected AttachmentDataMapper $attachmentDataMapper,
+        protected PipelinerClientEntityToUserProjector $clientProjector,
     ) {
     }
 
@@ -361,7 +362,7 @@ class TaskDataMapper implements CauserAware
                 : null;
 
             if (null !== $entity->owner) {
-                $task->user()->associate(PipelinerClientEntityToUserProjector::from($entity->owner)());
+                $task->user()->associate(($this->clientProjector)($entity->owner));
             }
 
             $reminder = isset($entity->reminder)

@@ -57,7 +57,7 @@ class OpportunityTest extends TestCase
         $this->authenticateApi();
 
         Opportunity::factory()->count(10)
-            ->for($this->app['auth.driver']->user())
+            ->for($this->app['auth']->user())
             ->create();
 
         $this->getJson('api/opportunities')
@@ -2285,8 +2285,8 @@ class OpportunityTest extends TestCase
                 ],
             ]);
 
-        $this->assertSame($this->app['auth.driver']->id(), $response->json('user_id'));
-        $this->assertSame($this->app['auth.driver']->id(), $response->json('primary_account.user_id'));
+        $this->assertSame($this->app['auth']->id(), $response->json('user_id'));
+        $this->assertSame($this->app['auth']->id(), $response->json('primary_account.user_id'));
         $this->assertSame($ownCompany->getKey(), $response->json('primary_account.id'));
     }
 

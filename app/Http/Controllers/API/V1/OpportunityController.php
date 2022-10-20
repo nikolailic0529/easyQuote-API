@@ -193,14 +193,14 @@ class OpportunityController extends Controller
      * @throws AuthorizationException
      */
     public function batchUploadOpportunities(
-        Guard $guard,
+        Request $request,
         ImportFilesData $data,
         OpportunityImportService $service
     ): JsonResponse {
         $this->authorize('create', Opportunity::class);
 
         $result = $service
-            ->setCauser($guard->user())
+            ->setCauser($request->user())
             ->import($data);
 
         return response()->json(UploadedOpportunities::make($result), R::HTTP_CREATED);

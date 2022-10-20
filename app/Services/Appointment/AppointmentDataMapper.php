@@ -50,7 +50,10 @@ class AppointmentDataMapper implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected CachedAppointmentTypeResolver $pipelinerAppointmentTypeResolver)
+    public function __construct(
+        protected CachedAppointmentTypeResolver $pipelinerAppointmentTypeResolver,
+        protected PipelinerClientEntityToUserProjector $clientProjector
+    )
     {
     }
 
@@ -94,7 +97,7 @@ class AppointmentDataMapper implements CauserAware
 
             $appointment->setRelation('reminder', $reminder);
 
-            $appointment->owner()->associate(PipelinerClientEntityToUserProjector::from($entity->owner)());
+            $appointment->owner()->associate(($this->clientProjector)($entity->owner));
 
             $appointment->setRelation('companies', value(function () use ($entity): Collection {
                 $relations = new Collection();

@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
-use App\Contracts\{ActivatableInterface, HasImagesDirectory, SearchableEntity};
+use App\Contracts\ActivatableInterface;
+use App\Contracts\HasImagesDirectory;
+use App\Contracts\ProvidesIdForHumans;
+use App\Contracts\SearchableEntity;
 use App\Facades\Permission;
 use App\Models\{Collaboration\Invitation, Data\Country, Data\Timezone, System\Activity};
 use App\Models\Template\HpeContractTemplate;
@@ -85,7 +88,8 @@ class User extends Model implements
     AuthorizableContract,
     CanResetPasswordContract,
     HasImagesDirectory,
-    SearchableEntity
+    SearchableEntity,
+    ProvidesIdForHumans
 {
     use Uuid,
         Authenticatable,
@@ -354,5 +358,10 @@ class User extends Model implements
         if ($this->isActive()) {
             $this->performNotify($instance);
         }
+    }
+
+    public function getIdForHumans(): string
+    {
+        return $this->email;
     }
 }

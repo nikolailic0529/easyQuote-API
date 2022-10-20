@@ -13,4 +13,10 @@ return [
 
     ],
 
+    'date_time' => [
+
+        'default' => 'd/m/Y H:i:s',
+
+    ],
+
 ];

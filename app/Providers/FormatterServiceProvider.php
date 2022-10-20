@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Formatters\DateFormatter;
+use App\Formatters\DateTimeFormatter;
 use App\Formatters\Formatter;
 use App\Formatters\NumberFormatter;
 use App\Services\Formatter\FormatterDelegatorService;
@@ -21,6 +22,7 @@ class FormatterServiceProvider extends ServiceProvider
             ->needs(Formatter::class)
             ->give([
                 'date' => DateFormatter::class,
+                'date_time' => DateTimeFormatter::class,
                 'number' => NumberFormatter::class,
             ]);
 

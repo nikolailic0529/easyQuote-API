@@ -60,6 +60,7 @@ return [
 //        'quote_note' => \App\Models\Note\QuoteNote::class,
         'note' => \App\Models\Note\Note::class,
         'task' => \App\Models\Task\Task::class,
+        'appointment' => \App\Models\Appointment\Appointment::class,
         'contract' => [
             \App\Models\Quote\Contract::class,
             \App\Models\HpeContract::class,

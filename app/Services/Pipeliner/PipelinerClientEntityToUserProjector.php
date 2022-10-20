@@ -5,35 +5,76 @@ namespace App\Services\Pipeliner;
 use App\Integrations\Pipeliner\Models\ClientEntity;
 use App\Models\Data\Timezone;
 use App\Models\User;
-use Webpatser\Uuid\Uuid;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PipelinerClientEntityToUserProjector
 {
-    public function __construct(protected ClientEntity $entity)
-    {
+    const TIMEZONE_ABBR = 'UTC';
+    const TEAM_ID = UT_EPD_WW;
+
+    public function __construct(
+        protected readonly Cache $cache,
+        protected readonly LockProvider $lockProvider,
+    ) {
     }
 
-    public static function from(ClientEntity $entity): static
+    public function __invoke(ClientEntity $entity): User
     {
-        return new static($entity);
-    }
+        $userId = $this->cache->get($this->getCacheKeyForEntity($entity));
 
-    public function __invoke(): User
-    {
-        /** @var User|null $user */
-        $user = User::query()->where('pl_reference', $this->entity->id)->first();
+        if (null !== $userId) {
+            try {
+                /** @noinspection PhpIncompatibleReturnTypeInspection */
+                return User::query()->findOrFail($userId);
+            } catch (ModelNotFoundException) {
+                $this->cache->forget($this->getCacheKeyForEntity($entity));
+            }
+        }
 
-        return $user ?? tap(User::query()->where('email', $this->entity->email)->firstOrNew(), function (User $user): void {
-                if (false === $user->exists) {
-                    $user->{$user->getKeyName()} = (string)Uuid::generate(4);
+        return $this->lockProvider->lock($this->getLockNameForEntity($entity), 30)
+            ->block(30, function () use ($entity): User {
+                $user = $this->tryFindUser($entity) ?? new User();
 
-                    $user->timezone()->associate(Timezone::query()->where('abbr', 'UTC')->first());
-                }
+                $this->mapUser($user, $entity)->save();
 
-                $user->pl_reference = $this->entity->id;
-                $user->first_name = $this->entity->firstName;
-                $user->last_name = $this->entity->lastName;
-                $user->email = $this->entity->email;
+                return tap($user, function (User $user) use ($entity): void {
+                    $this->cache->add($this->getCacheKeyForEntity($entity), $user->getKey(), now()->addHours(8));
+                });
             });
+    }
+
+    private function getCacheKeyForEntity(ClientEntity $entity): string
+    {
+        return static::class.$entity->id;
+    }
+
+    private function getLockNameForEntity(ClientEntity $entity): string
+    {
+        return static::class.':lock'.$entity->id;
+    }
+
+    private function tryFindUser(ClientEntity $entity): ?User
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return User::query()->where('pl_reference', $entity->id)->first()
+            ?? User::query()->where('email', $entity->email)->first();
+    }
+
+    private function mapUser(User $user, ClientEntity $entity): User
+    {
+        return tap($user, function (User $user) use ($entity): void {
+            if (false === $user->exists) {
+                $user->setId();
+                $user->timezone()->associate(Timezone::query()->where('abbr', self::TIMEZONE_ABBR)->first());
+                $user->team()->associate(self::TEAM_ID);
+                $user->first_name = $entity->firstName;
+                $user->last_name = $entity->lastName;
+                $user->email = $entity->email;
+            }
+
+            $user->pl_reference = $entity->id;
+        });
     }
 }

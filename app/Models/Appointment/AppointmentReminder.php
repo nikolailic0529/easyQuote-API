@@ -3,9 +3,11 @@
 namespace App\Models\Appointment;
 
 use App\Contracts\HasOwner;
+use App\Contracts\ProvidesIdForHumans;
 use App\Enum\ReminderStatus;
 use App\Models\User;
 use App\Traits\Uuid;
+use Carbon\CarbonInterval;
 use Database\Factories\AppointmentReminderFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read User|null $owner
  * @property-read Appointment|null $appointment
  */
-class AppointmentReminder extends Model implements HasOwner
+class AppointmentReminder extends Model implements HasOwner, ProvidesIdForHumans
 {
     use Uuid, HasFactory, SoftDeletes;
 
@@ -46,5 +48,12 @@ class AppointmentReminder extends Model implements HasOwner
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
+    }
+
+    public function getIdForHumans(): string
+    {
+        $interval = CarbonInterval::seconds($this->start_date_offset)->floor()->forHumans();
+
+        return "$interval before";
     }
 }

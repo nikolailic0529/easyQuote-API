@@ -162,7 +162,7 @@ class OpportunityQueries
                         $builder->where(static function (Builder $builder) use ($request): void {
                             $builder
                                 ->unless(
-                                    value: $request->boolean('include_archived'),
+                                    value: $request->boolean('include_archived') || $request->boolean('only_archived'),
                                     callback: static fn(Builder $builder): Builder => $builder->whereNull(
                                         $builder->qualifyColumn('archived_at')
                                     )

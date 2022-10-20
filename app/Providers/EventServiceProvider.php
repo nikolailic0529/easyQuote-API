@@ -9,9 +9,9 @@ use App\Events\{Company\CompanyUpdated,
     Permission\GrantedModulePermission,
     RfqReceived,
     SalesUnit\SalesUnitsUpdated,
-    WorldwideQuote\WorldwideQuoteNoteCreated,
     WorldwideQuote\WorldwideQuoteSubmitted};
 use App\Listeners\{AddressEventAuditor,
+    AppointmentEventAuditor,
     AttachmentEventAuditor,
     CompanyEventAuditor,
     CompanyNoteAuditor,
@@ -26,7 +26,6 @@ use App\Listeners\{AddressEventAuditor,
     MigrateWorldwideQuoteAssets,
     ModulePermissionListener,
     NoteEventAuditor,
-    NotifyNoteCreatedOnWorldwideQuote,
     OpportunityEventAuditor,
     OpportunityFormEventAuditor,
     PipelineEventAuditor,
@@ -139,6 +138,8 @@ class EventServiceProvider extends ServiceProvider
         PipelinerSyncEventSubscriber::class,
 
         NoteEventAuditor::class,
+
+        AppointmentEventAuditor::class,
 
     ];
 

@@ -20,13 +20,19 @@ class NoteDataMapper implements CauserAware
 {
     protected ?Model $causer = null;
 
+    public function __construct(
+        protected readonly PipelinerClientEntityToUserProjector $clientProjector,
+    )
+    {
+    }
+
     public function mapFromNoteEntity(NoteEntity $entity): Note
     {
         return tap(new Note(), function (Note $note) use ($entity): void {
             $note->{$note->getKeyName()} = (string)Uuid::generate(4);
             $note->pl_reference = $entity->id;
 
-            $note->owner()->associate(PipelinerClientEntityToUserProjector::from($entity->owner)());
+            $note->owner()->associate(($this->clientProjector)($entity->owner));
 
             $note->note = $entity->note;
 

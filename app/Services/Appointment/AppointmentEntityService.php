@@ -22,34 +22,43 @@ class AppointmentEntityService implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface $connection,
-                                protected EventDispatcher     $eventDispatcher)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected EventDispatcher $eventDispatcher
+    ) {
     }
 
-    public function createAppointment(CreateAppointmentData $data, HasOwnAppointments&Model $modelHasAppointment): Appointment
-    {
+    public function createAppointment(
+        CreateAppointmentData $data,
+        HasOwnAppointments&Model $modelHasAppointment
+    ): Appointment {
         return tap(new Appointment(), function (Appointment $appointment) use ($data, $modelHasAppointment): void {
-            $appointment->{$appointment->getKeyName()} = (string)Uuid::generate(4);
+            $appointment->{$appointment->getKeyName()} = (string) Uuid::generate(4);
             $appointment->salesUnit()->associate($data->sales_unit_id);
             $appointment->owner()->associate($this->causer);
             $appointment->activity_type = $data->activity_type;
             $appointment->subject = $data->subject;
             $appointment->description = $data->description;
-            $appointment->location = (string)$data->location;
+            $appointment->location = (string) $data->location;
 
             $appointment->start_date = Carbon::instance($data->start_date);
             $appointment->end_date = Carbon::instance($data->end_date);
 
             $reminder = isset($data->reminder)
-                ? tap(new AppointmentReminder(), static function (AppointmentReminder $reminder) use ($appointment, $data): void {
-                    $reminder->appointment()->associate($appointment);
-                    $reminder->start_date_offset = $data->reminder->start_date_offset;
-                    $reminder->status = $data->reminder->status;
-                })
+                ? tap(new AppointmentReminder(),
+                    static function (AppointmentReminder $reminder) use ($appointment, $data): void {
+                        $reminder->appointment()->associate($appointment);
+                        $reminder->start_date_offset = $data->reminder->start_date_offset;
+                        $reminder->status = $data->reminder->status;
+                    })
                 : null;
 
-            $this->connection->transaction(function () use ($modelHasAppointment, $appointment, $reminder, $data): void {
+            $this->connection->transaction(function () use (
+                $modelHasAppointment,
+                $appointment,
+                $reminder,
+                $data
+            ): void {
                 $appointment->save();
 
                 $reminder?->save();
@@ -96,7 +105,7 @@ class AppointmentEntityService implements CauserAware
             });
 
             $this->eventDispatcher->dispatch(
-                new AppointmentCreated($appointment)
+                new AppointmentCreated($appointment, $this->causer)
             );
         });
     }
@@ -104,30 +113,39 @@ class AppointmentEntityService implements CauserAware
     public function updateAppointment(Appointment $appointment, UpdateAppointmentData $data): Appointment
     {
         return tap($appointment, function (Appointment $appointment) use ($data): void {
-
             $oldAppointment = tap(new Appointment(), function (Appointment $old) use ($appointment): void {
                 $old->setRawAttributes($appointment->getRawOriginal());
 
-                foreach (['inviteesUsers', 'inviteesContacts', 'companies', 'opportunities', 'contacts', 'users'] as $relationName) {
-                    $old->setRelation($relationName, $appointment->$relationName);
-                }
+                collect([
+                    'salesUnit',
+                    'inviteesUsers',
+                    'inviteesContacts',
+                    'reminder',
+                    'companies',
+                    'opportunities',
+                    'contacts',
+                    'users',
+                ])->each(static function (string $relation) use ($old, $appointment): void {
+                    $old->setRelation($relation, $appointment->$relation);
+                });
             });
 
             $appointment->salesUnit()->associate($data->sales_unit_id);
             $appointment->activity_type = $data->activity_type;
             $appointment->subject = $data->subject;
             $appointment->description = $data->description;
-            $appointment->location = (string)$data->location;
+            $appointment->location = (string) $data->location;
 
             $appointment->start_date = Carbon::instance($data->start_date);
             $appointment->end_date = Carbon::instance($data->end_date);
 
             $reminder = isset($data->reminder)
-                ? tap($appointment->reminder ?? new AppointmentReminder(), static function (AppointmentReminder $reminder) use ($appointment, $data): void {
-                    $reminder->appointment()->associate($appointment);
-                    $reminder->start_date_offset = $data->reminder->start_date_offset;
-                    $reminder->status = $data->reminder->status;
-                })
+                ? tap($appointment->reminder ?? new AppointmentReminder(),
+                    static function (AppointmentReminder $reminder) use ($appointment, $data): void {
+                        $reminder->appointment()->associate($appointment);
+                        $reminder->start_date_offset = $data->reminder->start_date_offset;
+                        $reminder->status = $data->reminder->status;
+                    })
                 : null;
 
             $this->connection->transaction(function () use ($appointment, $reminder, $data): void {
@@ -184,6 +202,7 @@ class AppointmentEntityService implements CauserAware
             $this->eventDispatcher->dispatch(new AppointmentUpdated(
                 appointment: $appointment,
                 oldAppointment: $oldAppointment,
+                causer: $this->causer,
             ));
         });
     }
@@ -195,7 +214,7 @@ class AppointmentEntityService implements CauserAware
             $this->touchRelated($appointment);
         });
 
-        $this->eventDispatcher->dispatch(new AppointmentDeleted(appointment: $appointment));
+        $this->eventDispatcher->dispatch(new AppointmentDeleted(appointment: $appointment, causer: $this->causer));
     }
 
     protected function touchRelated(Appointment $appointment): void
@@ -208,6 +227,6 @@ class AppointmentEntityService implements CauserAware
 
     public function setCauser(?Model $causer): static
     {
-        return tap($this, fn () => $this->causer = $causer);
+        return tap($this, fn() => $this->causer = $causer);
     }
 }

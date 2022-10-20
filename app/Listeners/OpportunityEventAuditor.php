@@ -2,7 +2,7 @@
 
 namespace App\Listeners;
 
-use App\Services\Opportunity\ValidateOpportunityService;
+use Illuminate\Contracts\Auth\Guard;
 use App\Events\{Opportunity\OpportunityBatchFilesImported,
     Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
@@ -13,6 +13,7 @@ use App\Events\{Opportunity\OpportunityBatchFilesImported,
 use App\Jobs\IndexSearchableEntity;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
+use App\Services\Opportunity\ValidateOpportunityService;
 use Illuminate\Bus\Dispatcher;
 
 class OpportunityEventAuditor
@@ -66,17 +67,19 @@ class OpportunityEventAuditor
         'sale_action_name',
     ];
 
-    public function __construct(protected Dispatcher                 $dispatcher,
-                                protected ActivityLogger             $activityLogger,
-                                protected ChangesDetector            $changesDetector,
-                                protected ValidateOpportunityService $validateOpportunityService)
-    {
+    public function __construct(
+        protected Dispatcher $dispatcher,
+        protected ActivityLogger $activityLogger,
+        protected ChangesDetector $changesDetector,
+        protected Guard $guard,
+        protected ValidateOpportunityService $validateOpportunityService
+    ) {
     }
 
     /**
      * Register the listeners for the subscriber.
      *
-     * @param \Illuminate\Events\Dispatcher $events
+     * @param  \Illuminate\Events\Dispatcher  $events
      */
     public function subscribe(\Illuminate\Events\Dispatcher $events)
     {
@@ -98,6 +101,7 @@ class OpportunityEventAuditor
         $opportunity = $event->getOpportunity();
 
         $this->activityLogger
+            ->by($event->getCauser()  ?? $this->guard->user())
             ->performedOn($opportunity)
             ->withProperties([
                 ChangesDetector::OLD_ATTRS_KEY => [
@@ -116,6 +120,7 @@ class OpportunityEventAuditor
         $opportunity = $event->getOpportunity();
 
         $this->activityLogger
+            ->by($event->getCauser()  ?? $this->guard->user())
             ->performedOn($opportunity)
             ->withProperties([
                 ChangesDetector::OLD_ATTRS_KEY => [
@@ -134,7 +139,7 @@ class OpportunityEventAuditor
 
         $this->activityLogger
             ->performedOn($opportunity)
-            ->by($event->getCauser())
+            ->by($event->getCauser() ?? $this->guard->user())
             ->withProperties(
                 $this->changesDetector->getAttributeValuesToBeLogged(
                     $opportunity,
@@ -156,7 +161,7 @@ class OpportunityEventAuditor
             $oldOpportunity = $event->getOldOpportunity();
             $this->activityLogger
                 ->performedOn($opportunity)
-                ->by($event->getCauser())
+                ->by($event->getCauser() ?? $this->guard->user())
                 ->withProperties(
                     $this->changesDetector->getAttributeValuesToBeLogged(
                         $opportunity,
@@ -180,7 +185,7 @@ class OpportunityEventAuditor
 
         $this->activityLogger
             ->performedOn($opportunity)
-            ->by($event->getCauser())
+            ->by($event->getCauser() ?? $this->guard->user())
             ->log('deleted');
     }
 }
