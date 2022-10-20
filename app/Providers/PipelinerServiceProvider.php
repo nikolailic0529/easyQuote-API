@@ -3,13 +3,16 @@
 namespace App\Providers;
 
 use App\Contracts\LoggerAware;
-use App\Foundation\Http\Client\RateLimiter\CacheStore;
+use App\Foundation\Http\Client\ConnectionLimiter\CacheStore as ConnLimiterCacheStore;
+use App\Foundation\Http\Client\ConnectionLimiter\Store as ConnLimiterStore;
+use App\Foundation\Http\Client\RateLimiter\CacheStore as RateLimiterCacheStore;
 use App\Foundation\Http\Client\RateLimiter\Store as RateLimiterStore;
 use App\Foundation\Settings\DatabaseSettingsStatus;
 use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
 use App\Jobs\Pipeliner\SyncPipelinerEntity;
 use App\Services\Pipeliner\PipelinerDataSyncService;
+use App\Services\Pipeliner\PipelinerSyncBatch;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
@@ -31,6 +34,8 @@ class PipelinerServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton(SyncPipelinerDataStatus::class);
+
+        $this->app->singleton(PipelinerSyncBatch::class);
 
         $this->app->afterResolving(PipelinerDataSyncService::class,
             function (PipelinerDataSyncService $concrete): void {
@@ -61,7 +66,13 @@ class PipelinerServiceProvider extends ServiceProvider
         $this->app->when(PipelinerGraphQlClient::class)
             ->needs(RateLimiterStore::class)
             ->give(static function (Container $container): RateLimiterStore {
-                return $container->make(CacheStore::class, ['prefix' => PipelinerGraphQlClient::class]);
+                return $container->make(RateLimiterCacheStore::class, ['prefix' => PipelinerGraphQlClient::class]);
+            });
+
+        $this->app->when(PipelinerGraphQlClient::class)
+            ->needs(ConnLimiterStore::class)
+            ->give(static function (Container $container): ConnLimiterStore {
+                return $container->make(ConnLimiterCacheStore::class, ['prefix' => PipelinerGraphQlClient::class]);
             });
     }
 

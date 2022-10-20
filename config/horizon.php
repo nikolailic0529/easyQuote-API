@@ -235,7 +235,7 @@ return [
                 'balanceCooldown' => 3,
             ],
             'pipeliner-sync' => [
-                'maxProcesses' => 50,
+                'maxProcesses' => 15,
                 'balanceMaxShift' => 4,
                 'balanceCooldown' => 1,
             ],

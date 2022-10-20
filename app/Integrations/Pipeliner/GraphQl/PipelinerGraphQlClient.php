@@ -3,11 +3,15 @@
 namespace App\Integrations\Pipeliner\GraphQl;
 
 use App\Contracts\LoggerAware;
+use App\Foundation\Http\Client\ConnectionLimiter\ConnectionLimiterMiddleware;
+use App\Foundation\Http\Client\ConnectionLimiter\Store as ConnStore;
 use App\Foundation\Http\Client\RateLimiter\RateLimiterMiddleware;
-use App\Foundation\Http\Client\RateLimiter\Store;
+use App\Foundation\Http\Client\RateLimiter\Store as RateStore;
 use GuzzleHttp\MessageFormatter;
 use GuzzleHttp\Middleware;
 use Illuminate\Config\Repository as Config;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\PendingRequest;
@@ -23,8 +27,11 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
     ];
 
     public function __construct(
-        protected Config $config,
-        protected Store $rateLimiterStore,
+        protected readonly Config $config,
+        protected readonly Cache $cache,
+        protected readonly LockProvider $lockProvider,
+        protected readonly RateStore $rateLimiterStore,
+        protected readonly ConnStore $connLimiterStore,
         protected LoggerInterface $logger = new NullLogger(),
         Dispatcher $dispatcher = null
     ) {
@@ -80,6 +87,13 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
 
     protected function setupRateLimiterMiddleware(PendingRequest $request): void
     {
+        $request->withMiddleware(
+            ConnectionLimiterMiddleware::max(
+                limit: (int) $this->config->get('pipeliner.client.throttle.max_connections'),
+                store: $this->connLimiterStore,
+            )
+        );
+
         $request->withMiddleware(
             RateLimiterMiddleware::perMinute(
                 limit: (int) $this->config->get('pipeliner.client.throttle.rpm'),

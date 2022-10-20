@@ -6,6 +6,7 @@ use App\Events\Pipeliner\QueuedPipelinerSyncEntitySkipped;
 use App\Events\Pipeliner\QueuedPipelinerSyncProgress;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\PipelinerSyncBatch;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
@@ -63,6 +64,7 @@ class SyncPipelinerEntity implements ShouldQueue
     public function handle(
         SyncStrategyCollection $strategies,
         SyncPipelinerDataStatus $status,
+        PipelinerSyncBatch $syncBatch,
         LoggerInterface $logger,
         EventDispatcher $eventDispatcher,
         Cache $cache,
@@ -71,6 +73,8 @@ class SyncPipelinerEntity implements ShouldQueue
         if ($this->batch()->canceled()) {
             return;
         }
+
+        $syncBatch->id = $this->batchId;
 
         $this->strategies = $strategies;
 

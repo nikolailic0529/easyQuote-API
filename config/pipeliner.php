@@ -24,6 +24,7 @@ return [
     'client' => [
         'throttle' => [
             'rpm' => 100_000 / 5,
+            'max_connections' => 10,
         ]
     ],
 
