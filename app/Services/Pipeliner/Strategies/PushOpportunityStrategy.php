@@ -2,6 +2,7 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
+use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
@@ -23,6 +24,7 @@ use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\User\DefaultUserResolver;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -55,6 +57,7 @@ class PushOpportunityStrategy implements PushStrategy
         protected DefaultUserResolver $defaultUserResolver,
         protected Cache $cache,
         protected LockProvider $lockProvider,
+        protected EventDispatcher $eventDispatcher
     ) {
     }
 
@@ -79,6 +82,8 @@ class PushOpportunityStrategy implements PushStrategy
             ->select([
                 $model->getQualifiedKeyName(),
                 $model->getQualifiedUpdatedAtColumn(),
+                $model->primaryAccount()->getQualifiedForeignKeyName(),
+                $model->endUser()->getQualifiedForeignKeyName(),
             ])
             ->orderBy($model->getQualifiedUpdatedAtColumn())
             ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(),
@@ -130,9 +135,20 @@ class PushOpportunityStrategy implements PushStrategy
         return $this->modelsToBeUpdatedQuery()
             ->lazyById()
             ->map(static function (Opportunity $model): array {
+                $withoutOverlapping = collect([
+                    $model->primaryAccount()->getParentKey(),
+                    $model->endUser()->getParentKey(),
+                ])
+                    ->lazy()
+                    ->filter(static fn(?string $id): bool => $id !== null)
+                    ->unique()
+                    ->values()
+                    ->all();
+
                 return [
                     'id' => $model->getKey(),
                     'modified' => $model->{$model->getUpdatedAtColumn()},
+                    'without_overlapping' => $withoutOverlapping,
                 ];
             });
     }
@@ -238,6 +254,9 @@ class PushOpportunityStrategy implements PushStrategy
         });
 
         $this->persistSyncLog($model);
+        $this->eventDispatcher->dispatch(
+            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $model->getKey())
+        );
     }
 
     private function persistSyncLog(Model $model): void
@@ -306,8 +325,8 @@ class PushOpportunityStrategy implements PushStrategy
         if ($this->hasBatchId()) {
             $key = static::class.$this->getBatchId().$this->pushCompanyStrategy::class.$company->getKey();
 
-            $this->lockProvider->lock($key, 240)
-                ->block(240, function () use ($company, $key) {
+            $this->lockProvider->lock($key, 60 * 8)
+                ->block(60 * 8, function () use ($company, $key) {
                     $this->cache->remember(
                         key: $key.'sync',
                         ttl: now()->addHours(8),

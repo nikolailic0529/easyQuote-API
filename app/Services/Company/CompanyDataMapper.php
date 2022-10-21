@@ -736,4 +736,12 @@ class CompanyDataMapper
 
         return null;
     }
+
+    public function cloneCompany(Company $company): Company
+    {
+        return tap(new Company(), function (Company $oldCompany) use ($company): void {
+            $oldCompany->setRawAttributes($company->getRawOriginal());
+            $oldCompany->load(['addresses', 'contacts', 'vendors']);
+        });
+    }
 }

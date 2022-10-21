@@ -5,6 +5,7 @@ namespace App\Services\Pipeliner\Strategies;
 use App\Enum\Lock;
 use App\Events\Opportunity\OpportunityCreated;
 use App\Events\Opportunity\OpportunityUpdated;
+use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerNoteIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
@@ -31,6 +32,7 @@ use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -61,7 +63,7 @@ class PullOpportunityStrategy implements PullStrategy
         protected PipelinerNoteIntegration $noteIntegration,
         protected OpportunityDataMapper $oppDataMapper,
         protected Cache $cache,
-        protected LockProvider $lockProvider
+        protected LockProvider $lockProvider,
     ) {
     }
 
@@ -187,6 +189,9 @@ class PullOpportunityStrategy implements PullStrategy
         });
 
         $this->persistSyncLog($opportunity);
+        $this->eventDispatcher->dispatch(
+            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $entity->id)
+        );
 
         return $opportunity;
     }

@@ -10,7 +10,7 @@ class ConnectionLimiter
     public function __construct(
         protected readonly int $limit,
         protected readonly Store $store,
-        protected readonly int $waitSeconds = 30,
+        protected readonly int $waitSeconds = 60 * 2,
         protected readonly int $sleepMilliseconds = 250,
     ) {
     }

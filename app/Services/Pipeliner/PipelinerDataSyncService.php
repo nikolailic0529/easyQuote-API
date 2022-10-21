@@ -320,7 +320,12 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             yield from $pending;
         })
             ->map(function (array $item) use ($strategy): SyncPipelinerEntity {
-                return new SyncPipelinerEntity($strategy, $item['id'], $this->causer);
+                return new SyncPipelinerEntity(
+                    strategy: $strategy,
+                    entityReference: $item['id'],
+                    causer: $this->causer,
+                    withoutOverlapping: $item['without_overlapping'] ?? []
+                );
             })
             ->values()
             ->pipe(function (LazyCollection $pending): Batch {

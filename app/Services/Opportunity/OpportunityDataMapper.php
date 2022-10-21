@@ -1138,6 +1138,7 @@ class OpportunityDataMapper implements CauserAware
 
         $documents = $opportunity->attachments
             ->whereNotNull('pl_reference')
+            ->unique('pl_reference')
             ->values()
             ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
                 return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
@@ -1329,6 +1330,7 @@ class OpportunityDataMapper implements CauserAware
 
         $documents = $opportunity->attachments
             ->whereNotNull('pl_reference')
+            ->unique('pl_reference')
             ->values()
             ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
                 return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);

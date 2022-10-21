@@ -4,6 +4,7 @@ namespace App\Jobs\Pipeliner;
 
 use App\Events\Pipeliner\QueuedPipelinerSyncEntitySkipped;
 use App\Events\Pipeliner\QueuedPipelinerSyncProgress;
+use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerSyncBatch;
@@ -13,10 +14,11 @@ use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
-use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -35,12 +37,15 @@ class SyncPipelinerEntity implements ShouldQueue
     public readonly string $strategyClass;
     public readonly array $units;
 
-    protected SyncStrategyCollection $strategies;
+    private ?SyncStrategyCollection $strategies = null;
+    private ?Cache $cache = null;
+    private ?LockProvider $lockProvider = null;
 
     public function __construct(
         SyncStrategy $strategy,
         public readonly string $entityReference,
-        public readonly ?Model $causer,
+        public readonly ?Model $causer = null,
+        public readonly array $withoutOverlapping = [],
     ) {
         $this->strategyClass = $strategy::class;
         $this->units = $strategy->getSalesUnits();
@@ -56,8 +61,10 @@ class SyncPipelinerEntity implements ShouldQueue
      *
      * @param  SyncStrategyCollection  $strategies
      * @param  SyncPipelinerDataStatus  $status
+     * @param  PipelinerSyncBatch  $syncBatch
      * @param  LoggerInterface  $logger
      * @param  EventDispatcher  $eventDispatcher
+     * @param  Cache  $cache
      * @param  LockProvider  $lockProvider
      * @return void
      */
@@ -74,6 +81,33 @@ class SyncPipelinerEntity implements ShouldQueue
             return;
         }
 
+        $this->cache = $cache;
+        $this->lockProvider = $lockProvider;
+
+        if ($this->overlaps()) {
+            $logger->debug('Syncing: overlaps', [
+                'id' => $this->entityReference,
+                'strategy' => class_basename($this->strategyClass),
+                'without_overlapping' => $this->withoutOverlapping,
+            ]);
+
+            $this->releaseLocks();
+
+            usleep(10 * 1000 * 1000);
+
+            $this->batch()->add([
+                    new static(
+                        strategy: $strategies[$this->strategyClass],
+                        entityReference: $this->entityReference,
+                        causer: $this->causer,
+                        withoutOverlapping: $this->withoutOverlapping),
+                ]
+            );
+            $this->delete();
+
+            return;
+        }
+
         $syncBatch->id = $this->batchId;
 
         $this->strategies = $strategies;
@@ -86,12 +120,14 @@ class SyncPipelinerEntity implements ShouldQueue
 
         $entity = $strategy->getByReference($this->entityReference);
 
-        $logger->info(sprintf('Syncing [%s]: starting', class_basename($entity)), [
+        $logger->info('Syncing: starting', [
             'id' => $entity->id,
             'strategy' => class_basename($this->strategyClass),
         ]);
 
         try {
+            $eventDispatcher->listen(SyncStrategyPerformed::class, $this->incrementOverlappingCounterOnEvent(...));
+
             $arguments = $this->strategyHasOptions()
                 ? [$entity, 'batchId' => $this->batchId]
                 : [$entity];
@@ -105,14 +141,14 @@ class SyncPipelinerEntity implements ShouldQueue
                 $status->incrementTotal($addedJobsCount);
             }
 
-            $logger->info(sprintf('Syncing [%s]: success', class_basename($entity)), [
+            $logger->info('Syncing: success', [
                 'id' => $entity->id,
                 'strategy' => class_basename($this->strategyClass),
             ]);
         } catch (PipelinerIntegrationException|PipelinerSyncException $e) {
             report($e);
 
-            $logger->warning(sprintf('Syncing [%s]: skipped', class_basename($entity)), [
+            $logger->warning('Syncing: skipped', [
                 'id' => $entity->id,
                 'error' => trim($e->getMessage()),
                 'strategy' => class_basename($this->strategyClass),
@@ -125,6 +161,8 @@ class SyncPipelinerEntity implements ShouldQueue
                     e: $e,
                 )
             );
+        } finally {
+            $this->releaseLocks();
         }
 
         $status->incrementProcessed();
@@ -212,6 +250,54 @@ class SyncPipelinerEntity implements ShouldQueue
             })
             ->pipe(function (LazyCollection $collection) {
                 return new SyncStrategyCollection(...$collection->all());
+            });
+    }
+
+    public function incrementOverlappingCounterOnEvent(SyncStrategyPerformed $event): void
+    {
+        $this->cache->increment(
+            $this->getOverlappingCounterKey($event->entityReference)
+        );
+    }
+
+    private function getOverlappingCounterKey(string $key): string
+    {
+        return static::class.':overlapping-counter'.$this->batchId.$key.$this->strategyClass;
+    }
+
+    private function getOverlappingLock(string $key): Lock
+    {
+        $name = static::class.':overlapping-lock'.$this->batchId.$key.$this->strategyClass;
+
+        return $this->lockProvider->lock($name, owner: $this->job->uuid());
+    }
+
+    private function overlaps(): bool
+    {
+        $keys = collect($this->withoutOverlapping);
+
+        if ($keys->isEmpty()) {
+            return false;
+        }
+
+        return $keys
+            ->map(function (string $key): bool {
+                $count = (int)$this->cache->get($this->getOverlappingCounterKey($key), 0);
+
+                if ($count > 0) {
+                    return true;
+                }
+
+                return $this->getOverlappingLock($key)->get();
+            })
+            ->containsStrict(false);
+    }
+
+    private function releaseLocks(): void
+    {
+        collect($this->withoutOverlapping)
+            ->each(function (string $key): void {
+                $this->getOverlappingLock($key)->release();
             });
     }
 }

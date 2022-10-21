@@ -37,8 +37,8 @@ use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\SalesUnit;
 use App\Models\User;
-use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
 use App\Services\Pipeliner\CachedAppointmentTypeResolver;
+use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -53,14 +53,13 @@ class AppointmentDataMapper implements CauserAware
     public function __construct(
         protected CachedAppointmentTypeResolver $pipelinerAppointmentTypeResolver,
         protected PipelinerClientEntityToUserProjector $clientProjector
-    )
-    {
+    ) {
     }
 
     public function mapFromAppointmentEntity(AppointmentEntity $entity): Appointment
     {
         return tap(new Appointment(), function (Appointment $appointment) use ($entity): void {
-            $appointment->{$appointment->getKeyName()} = (string)Uuid::generate(4);
+            $appointment->{$appointment->getKeyName()} = (string) Uuid::generate(4);
             $appointment->pl_reference = $entity->id;
             $appointment->activity_type = AppointmentTypeEnum::tryFrom($entity->activityType->name) ?? AppointmentTypeEnum::Appointment;
             $appointment->subject = $entity->subject;
@@ -133,33 +132,33 @@ class AppointmentDataMapper implements CauserAware
                 $relations = new Collection();
 
                 foreach ($entity->inviteesContacts as $contactRelation) {
-                    $relations[] = tap(new AppointmentContactInvitee(), static function (AppointmentContactInvitee $invitee) use
-                    (
-                        $appointment,
-                        $contactRelation
-                    ): void {
-                        $invitee->appointment()->associate($appointment);
-                        $invitee->pl_reference = $contactRelation->id;
+                    $relations[] = tap(new AppointmentContactInvitee(),
+                        static function (AppointmentContactInvitee $invitee) use (
+                            $appointment,
+                            $contactRelation
+                        ): void {
+                            $invitee->appointment()->associate($appointment);
+                            $invitee->pl_reference = $contactRelation->id;
 
-                        if (null !== $contactRelation->contactId) {
-                            $invitee->contact()->associate(
-                                Contact::query()->where('pl_reference', $contactRelation->contactId)->first()
-                            );
-                        }
+                            if (null !== $contactRelation->contactId) {
+                                $invitee->contact()->associate(
+                                    Contact::query()->where('pl_reference', $contactRelation->contactId)->first()
+                                );
+                            }
 
-                        $invitee->email = $contactRelation->email;
-                        $invitee->first_name = $contactRelation->firstName;
-                        $invitee->last_name = $contactRelation->lastName;
-                        $invitee->invitee_type = match ($contactRelation->inviteeType) {
-                            InviteeTypeEnum::Standard => InviteeType::Standard,
-                            InviteeTypeEnum::Scheduled => InviteeType::Scheduled,
-                        };
-                        $invitee->response = match ($contactRelation->response) {
-                            InviteeResponseEnum::NoResponse => InviteeResponse::NoResponse,
-                            InviteeResponseEnum::Accepted => InviteeResponse::Accepted,
-                            InviteeResponseEnum::Rejected => InviteeResponse::Rejected,
-                        };
-                    });
+                            $invitee->email = $contactRelation->email;
+                            $invitee->first_name = $contactRelation->firstName;
+                            $invitee->last_name = $contactRelation->lastName;
+                            $invitee->invitee_type = match ($contactRelation->inviteeType) {
+                                InviteeTypeEnum::Standard => InviteeType::Standard,
+                                InviteeTypeEnum::Scheduled => InviteeType::Scheduled,
+                            };
+                            $invitee->response = match ($contactRelation->response) {
+                                InviteeResponseEnum::NoResponse => InviteeResponse::NoResponse,
+                                InviteeResponseEnum::Accepted => InviteeResponse::Accepted,
+                                InviteeResponseEnum::Rejected => InviteeResponse::Rejected,
+                            };
+                        });
                 }
 
                 return $relations;
@@ -286,7 +285,7 @@ class AppointmentDataMapper implements CauserAware
         $attributes = [];
 
         if (null !== $appointment->owner) {
-            $attributes['ownerId'] = (string)$appointment->owner->pl_reference;
+            $attributes['ownerId'] = (string) $appointment->owner->pl_reference;
         }
 
         $attributes['activityTypeId'] = ($this->pipelinerAppointmentTypeResolver)($appointment->activity_type->value)?->id ?? InputValueEnum::Miss;
@@ -332,14 +331,17 @@ class AppointmentDataMapper implements CauserAware
             ->whereNotNull('pl_reference')
             ->unique('pl_reference')
             ->values()
-            ->map(static function (AppointmentContactInvitee $contact): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput {
+            ->map(static function (AppointmentContactInvitee $contact
+            ): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput {
                 return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput(
                     contactId: $contact->pl_reference,
                     email: $contact->email ?? '',
                 );
             })
-            ->pipe(static function (BaseCollection $collection): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection {
-                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection(...$collection->all());
+            ->pipe(static function (BaseCollection $collection
+            ): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection {
+                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection(...
+                    $collection->all());
             });
         $attributes['reminder'] = value(static function () use ($appointment
         ): CreateAppointmentReminderInput|InputValueEnum {
@@ -379,13 +381,17 @@ class AppointmentDataMapper implements CauserAware
         );
     }
 
-    public function mapPipelinerUpdateAppointmentInput(Appointment $appointment,
-                                                       AppointmentEntity $entity): UpdateAppointmentInput
-    {
+    public function mapPipelinerUpdateAppointmentInput(
+        Appointment $appointment,
+        AppointmentEntity $entity
+    ): UpdateAppointmentInput {
         $attributes = [];
 
         $attributes['id'] = $entity->id;
-        $attributes['unitId'] = value(static function (?SalesUnit $unit, ?SalesUnitEntity $entity): InputValueEnum|string {
+        $attributes['unitId'] = value(static function (
+            ?SalesUnit $unit,
+            ?SalesUnitEntity $entity
+        ): InputValueEnum|string {
             if (null === $unit || $unit->pl_reference === $entity?->id) {
                 return InputValueEnum::Miss;
             }
@@ -443,16 +449,19 @@ class AppointmentDataMapper implements CauserAware
             ->whereNotNull('pl_reference')
             ->unique('pl_reference')
             ->values()
-            ->map(static function (AppointmentContactInvitee $contact): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput {
+            ->map(static function (AppointmentContactInvitee $contact
+            ): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput {
                 return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInput(
                     contactId: $contact->pl_reference,
                     email: $contact->email ?? '',
                 );
             })
-            ->pipe(static function (BaseCollection $collection): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection {
-                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection(...$collection->all());
+            ->pipe(static function (BaseCollection $collection
+            ): CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection {
+                return new CreateAppointmentContactInviteesRelationNoAppointmentBackrefInputCollection(...
+                    $collection->all());
             });
-        $attributes['documents'] =  $appointment->attachments
+        $attributes['documents'] = $appointment->attachments
             ->whereNotNull('pl_reference')
             ->values()
             ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
@@ -484,6 +493,26 @@ class AppointmentDataMapper implements CauserAware
 //        });
 
         return new UpdateAppointmentInput(...$attributes);
+    }
+
+    public function cloneAppointment(Appointment $appointment): Appointment
+    {
+        return tap(new Appointment(), function (Appointment $old) use ($appointment): void {
+            $old->setRawAttributes($appointment->getRawOriginal());
+
+            collect([
+                'salesUnit',
+                'inviteesUsers',
+                'inviteesContacts',
+                'reminder',
+                'companies',
+                'opportunities',
+                'contacts',
+                'users',
+            ])->each(static function (string $relation) use ($old, $appointment): void {
+                $old->setRelation($relation, $appointment->$relation);
+            });
+        });
     }
 
     public function setCauser(?Model $causer): static

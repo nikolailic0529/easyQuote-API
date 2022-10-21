@@ -88,13 +88,6 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
     protected function setupRateLimiterMiddleware(PendingRequest $request): void
     {
         $request->withMiddleware(
-            ConnectionLimiterMiddleware::max(
-                limit: (int) $this->config->get('pipeliner.client.throttle.max_connections'),
-                store: $this->connLimiterStore,
-            )
-        );
-
-        $request->withMiddleware(
             RateLimiterMiddleware::perMinute(
                 limit: (int) $this->config->get('pipeliner.client.throttle.rpm'),
                 store: $this->rateLimiterStore,

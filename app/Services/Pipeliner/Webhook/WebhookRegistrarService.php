@@ -60,7 +60,7 @@ class WebhookRegistrarService
             ],
             insecureSsl: true,
             signature: Str::uuid(),
-            options: json_encode(config('pipeliner.webhook.options') ?? [], JSON_FORCE_OBJECT)
+            options: json_encode(config('pipeliner.webhook.options') ?? [])
         );
 
         $webhook = $this->integration->create($input);

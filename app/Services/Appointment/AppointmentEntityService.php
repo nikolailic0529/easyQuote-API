@@ -24,7 +24,8 @@ class AppointmentEntityService implements CauserAware
 
     public function __construct(
         protected ConnectionInterface $connection,
-        protected EventDispatcher $eventDispatcher
+        protected EventDispatcher $eventDispatcher,
+        protected readonly AppointmentDataMapper $dataMapper,
     ) {
     }
 
@@ -113,22 +114,7 @@ class AppointmentEntityService implements CauserAware
     public function updateAppointment(Appointment $appointment, UpdateAppointmentData $data): Appointment
     {
         return tap($appointment, function (Appointment $appointment) use ($data): void {
-            $oldAppointment = tap(new Appointment(), function (Appointment $old) use ($appointment): void {
-                $old->setRawAttributes($appointment->getRawOriginal());
-
-                collect([
-                    'salesUnit',
-                    'inviteesUsers',
-                    'inviteesContacts',
-                    'reminder',
-                    'companies',
-                    'opportunities',
-                    'contacts',
-                    'users',
-                ])->each(static function (string $relation) use ($old, $appointment): void {
-                    $old->setRelation($relation, $appointment->$relation);
-                });
-            });
+            $oldAppointment = $this->dataMapper->cloneAppointment($appointment);
 
             $appointment->salesUnit()->associate($data->sales_unit_id);
             $appointment->activity_type = $data->activity_type;

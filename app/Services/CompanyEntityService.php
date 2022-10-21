@@ -18,6 +18,7 @@ use App\Models\Company;
 use App\Models\CompanyCategory;
 use App\Models\Contact;
 use App\Models\User;
+use App\Services\Company\CompanyDataMapper;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
@@ -33,6 +34,7 @@ class CompanyEntityService implements CauserAware
 
     public function __construct(
         protected LoggerInterface $logger,
+        protected CompanyDataMapper $dataMapper,
         protected ValidatorInterface $validator,
         protected ConnectionInterface $connection,
         protected LockProvider $lockProvider,
@@ -157,10 +159,7 @@ class CompanyEntityService implements CauserAware
     public function updateCompany(Company $company, UpdateCompanyData $data): Company
     {
         return tap($company, function (Company $company) use ($data) {
-            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
-                $oldCompany->setRawAttributes($company->getRawOriginal());
-                $oldCompany->load(['addresses', 'contacts', 'vendors']);
-            });
+            $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $company->name = $data->name;
             $company->vat = $data->vat;

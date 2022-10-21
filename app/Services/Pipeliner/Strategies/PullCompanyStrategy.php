@@ -3,6 +3,9 @@
 namespace App\Services\Pipeliner\Strategies;
 
 use App\Enum\Lock;
+use App\Events\Company\CompanyCreated;
+use App\Events\Company\CompanyUpdated;
+use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
@@ -43,6 +46,7 @@ use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use DateTimeInterface;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -75,6 +79,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         protected ImportedCompanyToPrimaryAccountProjector $accountProjector,
         protected LockProvider $lockProvider,
         protected Cache $cache,
+        protected EventDispatcher $eventDispatcher,
     ) {
     }
 
@@ -219,6 +224,9 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
             $newAccount->contacts()->syncWithoutDetaching($newAccount->contacts);
         });
 
+        $oldAccount = $this->dataMapper->cloneCompany($account ?? new Company());
+
+        /** @var Company $account */
         $account = $lock->block(180, function () use ($entity, $newAccount, $account, $contactRelations): Company {
             // Merge attributes when a model exists already.
             if (null !== $account) {
@@ -315,7 +323,21 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
                 });
         });
 
+        if ($account->wasRecentlyCreated) {
+            $this->eventDispatcher->dispatch(new CompanyCreated(
+                company: $account,
+            ));
+        } else {
+            $this->eventDispatcher->dispatch(new CompanyUpdated(
+                company: $account,
+                oldCompany: $oldAccount,
+            ));
+        }
+
         $this->persistSyncLog($account);
+        $this->eventDispatcher->dispatch(
+            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $entity->id)
+        );
 
         return $account;
     }
@@ -324,7 +346,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
     {
         tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
             $log->model()->associate($model);
-            $log->strategy_name = (string)StrategyNameResolver::from($this);
+            $log->strategy_name = (string) StrategyNameResolver::from($this);
             $log->save();
         });
     }

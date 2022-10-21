@@ -4,6 +4,7 @@ namespace App\Services\Pipeliner\Strategies;
 
 use App\Enum\AddressType;
 use App\Enum\Lock;
+use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
@@ -30,6 +31,7 @@ use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\User\DefaultUserResolver;
 use Generator;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -55,6 +57,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         protected PushTaskStrategy $pushTaskStrategy,
         protected PushAppointmentStrategy $pushAppointmentStrategy,
         protected LockProvider $lockProvider,
+        protected EventDispatcher $eventDispatcher,
     ) {
     }
 
@@ -200,6 +203,10 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         });
 
         $this->persistSyncLog($model);
+
+        $this->eventDispatcher->dispatch(
+            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $model->getKey())
+        );
     }
 
     private function persistSyncLog(Model $model): void

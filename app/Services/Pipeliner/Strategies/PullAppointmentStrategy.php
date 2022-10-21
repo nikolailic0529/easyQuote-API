@@ -2,6 +2,8 @@
 
 namespace App\Services\Pipeliner\Strategies;
 
+use App\Events\Appointment\AppointmentCreated;
+use App\Events\Appointment\AppointmentUpdated;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Integrations\Pipeliner\Models\AppointmentEntity;
 use App\Integrations\Pipeliner\Models\AppointmentFilterInput;
@@ -14,6 +16,7 @@ use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use DateTimeInterface;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +33,7 @@ class PullAppointmentStrategy implements PullStrategy
         protected PipelinerAppointmentIntegration $appointmentIntegration,
         protected PullAttachmentStrategy $pullAttachmentStrategy,
         protected AppointmentDataMapper $dataMapper,
+        protected EventDispatcher $eventDispatcher,
     ) {
     }
 
@@ -51,6 +55,8 @@ class PullAppointmentStrategy implements PullStrategy
             ->first();
 
         if (null !== $appointment) {
+            $oldAppointment = $this->dataMapper->cloneAppointment($appointment);
+
             $updatedAppointment = $this->dataMapper->mapFromAppointmentEntity($entity);
 
             $this->dataMapper->mergeAttributesFrom($appointment, $updatedAppointment);
@@ -73,6 +79,12 @@ class PullAppointmentStrategy implements PullStrategy
             });
 
             $this->syncRelationsOfAppointmentEntity($entity, $appointment);
+
+            $this->eventDispatcher->dispatch(new AppointmentUpdated(
+                appointment: $appointment,
+                oldAppointment: $oldAppointment,
+                causer: null,
+            ));
 
             return $appointment;
         }
@@ -97,6 +109,11 @@ class PullAppointmentStrategy implements PullStrategy
         });
 
         $this->syncRelationsOfAppointmentEntity($entity, $appointment);
+
+        $this->eventDispatcher->dispatch(new AppointmentCreated(
+            appointment: $appointment,
+            causer: null,
+        ));
 
         return $appointment;
     }
