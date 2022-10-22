@@ -160,7 +160,11 @@ class PushContactStrategy implements PushStrategy
                 ...$linkedContacts->pluck('pl_reference')->all()
             ));
 
-            $contactEntityMap = $contactEntities->keyBy('id');
+            $contactEntityMap = $contactEntities
+                ->reject(static function (ContactEntity $entity): bool {
+                    return $entity->isDeleted;
+                })
+                ->keyBy('id');
 
             $newlyUnlinkedContacts = $linkedContacts->reject(static function (Contact $contact) use ($contactEntityMap
             ) {

@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Console\Commands\Pipeliner\ReleasePlSyncStatusCommand;
+use App\Console\Commands\Pipeliner\TerminatePlSyncCommand;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerDataSyncService;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;

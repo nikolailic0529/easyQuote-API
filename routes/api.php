@@ -516,6 +516,9 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::apiResource('ww-customers', WorldwideCustomerController::class, ['only' => ROUTE_R]);
 
     Route::get('pipeliner/pipeliner-sync-status', [PipelinerController::class, 'showPipelinerSyncStatus']);
+    Route::get('pipeliner/sync-errors', [PipelinerController::class, 'paginateSyncErrors']);
+    Route::get('pipeliner/sync-errors/{error}', [PipelinerController::class, 'showSyncError']);
+    Route::patch('pipeliner/sync-errors/{error}/archive', [PipelinerController::class, 'archiveSyncError']);
     Route::patch('pipeliner/queue-pipeliner-sync', [PipelinerController::class, 'queuePipelinerSync']);
     Route::patch('pipeliner/sync-model', [PipelinerController::class, 'syncModel']);
 

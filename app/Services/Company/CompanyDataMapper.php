@@ -505,12 +505,16 @@ class CompanyDataMapper
         }
 
         tap($defaultInvoiceAddress, static function (Address $address) use ($company, $another): void {
-            $address->setRelation($company->addresses()->getPivotAccessor(), $company->addresses()->newPivot([
-                'is_default' => true,
+            $pivot = $company->addresses()->newPivot([
+                'is_default' => (bool)$address->pivot?->is_default,
                 $company->addresses()->getRelatedPivotKeyName() => $address->getKey(),
                 $company->addresses()->getForeignPivotKeyName() => $company->getKey(),
                 $company->addresses()->getMorphType() => $company->getMorphClass(),
-            ], $address->exists));
+            ], $address->exists);
+
+            $pivot->is_default = true;
+
+            $address->setRelation($company->addresses()->getPivotAccessor(), $pivot);
 
             $address->address_type = AddressType::INVOICE;
             $address->address_1 = $another->address_1;

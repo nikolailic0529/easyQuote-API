@@ -34,7 +34,7 @@ class Uniqueness extends FormRequest
             return Asset::query()->whereKey($this->getIgnoreModelKey())->value('user_id');
         }
 
-        return $this->container[Guard::class]->id();
+        return $this->user()->getKey();
     }
 
     public function getVendorKey(): ?string

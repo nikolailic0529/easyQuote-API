@@ -243,7 +243,8 @@ class UserTest extends TestCase
     {
         $this->authenticateApi();
 
-        $this->deleteJson("api/users/".$this->app['auth.driver']->id())
+        $this->deleteJson("api/users/".$this->app['auth']->id())
+//            ->dump()
             ->assertForbidden();
     }
 

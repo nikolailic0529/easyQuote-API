@@ -143,6 +143,7 @@ class TaskDataMapper implements CauserAware
         $attributes['unitId'] = $task->salesUnit?->pl_reference ?? InputValueEnum::Miss;
         $attributes['documents'] = $task->attachments
             ->whereNotNull('pl_reference')
+            ->unique('pl_reference')
             ->values()
             ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
                 return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
@@ -266,6 +267,7 @@ class TaskDataMapper implements CauserAware
         });
         $attributes['documents'] = $task->attachments
             ->whereNotNull('pl_reference')
+            ->unique('pl_reference')
             ->values()
             ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
                 return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);

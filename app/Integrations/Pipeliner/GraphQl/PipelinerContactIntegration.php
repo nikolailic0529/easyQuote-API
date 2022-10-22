@@ -381,6 +381,7 @@ class PipelinerContactIntegration
             'city',
             'gender',
             'customFields',
+            'isDeleted',
 
             (new Query('owner'))
                 ->setSelectionSet(PipelinerClientIntegration::getClientEntitySelectionSet()),

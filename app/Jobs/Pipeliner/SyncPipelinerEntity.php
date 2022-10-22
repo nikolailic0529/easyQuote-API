@@ -84,6 +84,16 @@ class SyncPipelinerEntity implements ShouldQueue
         $this->cache = $cache;
         $this->lockProvider = $lockProvider;
 
+        $syncBatch->id = $this->batchId;
+
+        $this->strategies = $strategies;
+
+        foreach ($strategies as $strategy) {
+            $strategy->setSalesUnits(...$this->units);
+        }
+
+        $strategy = $strategies[$this->strategyClass];
+
         if ($this->overlaps()) {
             $logger->debug('Syncing: overlaps', [
                 'id' => $this->entityReference,
@@ -96,27 +106,15 @@ class SyncPipelinerEntity implements ShouldQueue
             usleep(10 * 1000 * 1000);
 
             $this->batch()->add([
-                    new static(
-                        strategy: $strategies[$this->strategyClass],
-                        entityReference: $this->entityReference,
-                        causer: $this->causer,
-                        withoutOverlapping: $this->withoutOverlapping),
-                ]
-            );
-            $this->delete();
+                new static(
+                    strategy: $strategy,
+                    entityReference: $this->entityReference,
+                    causer: $this->causer,
+                    withoutOverlapping: $this->withoutOverlapping),
+            ]);
 
             return;
         }
-
-        $syncBatch->id = $this->batchId;
-
-        $this->strategies = $strategies;
-
-        foreach ($strategies as $strategy) {
-            $strategy->setSalesUnits(...$this->units);
-        }
-
-        $strategy = $strategies[$this->strategyClass];
 
         $entity = $strategy->getByReference($this->entityReference);
 
@@ -269,7 +267,7 @@ class SyncPipelinerEntity implements ShouldQueue
     {
         $name = static::class.':overlapping-lock'.$this->batchId.$key.$this->strategyClass;
 
-        return $this->lockProvider->lock($name, owner: $this->job->uuid());
+        return $this->lockProvider->lock($name, seconds: 180, owner: $this->job->uuid());
     }
 
     private function overlaps(): bool

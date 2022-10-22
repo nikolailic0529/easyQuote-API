@@ -13,7 +13,7 @@ use App\Http\Resources\{V1\AuthenticatedUserResource,
     V1\User\AuthResource};
 use App\Models\{PasswordReset};
 use App\Services\User\UserEntityService;
-use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
@@ -111,22 +111,22 @@ class AuthController extends Controller
     /**
      * Update current user.
      *
+     * @param  Request  $request
      * @param  UpdateCurrentUserData  $data
      * @param  UserEntityService  $service
      * @param  BuildRepositoryInterface  $build
      * @return JsonResponse
      */
     public function updateCurrentUser(
-        Guard $guard,
+        Request $request,
         UpdateCurrentUserData $data,
         UserEntityService $service,
         BuildRepositoryInterface $build
     ): JsonResponse {
-        /** @noinspection PhpParamsInspection */
         return response()->json(
             AuthenticatedUserResource::make(
                 $service
-                    ->updateCurrentUser($guard->user(), $data)
+                    ->updateCurrentUser($request->user(), $data)
                     ->load('companies:id,name', 'hpeContractTemplate:id,name', 'roles')
                     ->withAppends()
             )

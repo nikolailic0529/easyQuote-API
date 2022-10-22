@@ -322,6 +322,7 @@ class AssetTest extends TestCase
             'vendor_id' => $asset->vendor_id,
             'serial_number' => $asset->serial_number,
             'product_number' => $asset->product_number,
+            'user_id' => $asset->user()->getParentKey(),
         ])
 //            ->dump()
             ->assertOk();

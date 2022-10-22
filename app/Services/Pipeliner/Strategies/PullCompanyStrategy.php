@@ -200,7 +200,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
     private function performSync(AccountEntity $entity, Company $account = null, array $contactRelations = []): Model
     {
         if ($account !== null && $account->getFlag(Company::SYNC_PROTECTED)) {
-            throw new PipelinerSyncException("Company [{$account->getIdForHumans()}] is protected from sync.");
+            throw PipelinerSyncException::modelProtectedFromSync($account)->relatedTo($account);
         }
 
         $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 180);
@@ -236,6 +236,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
                     $account->addresses->each(static function (Address $address): void {
                         $address->user?->save();
                         $address->save();
+                        $address->pivot?->save();
                     });
 
                     $account->contacts->each(static function (Contact $contact): void {

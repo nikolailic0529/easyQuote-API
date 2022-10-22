@@ -12,7 +12,9 @@ use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\Notification\Models\PendingNotification;
+use App\Services\Pipeliner\Contracts\ContainsRelatedEntities;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\PipelinerSyncErrorEntityService;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -22,6 +24,11 @@ use Illuminate\Support\Str;
 
 class PipelinerSyncEventSubscriber
 {
+    public function __construct(
+        protected readonly PipelinerSyncErrorEntityService $errorEntityService,
+    ) {
+    }
+
     public function subscribe(Dispatcher $events): void
     {
         $events->listen(QueuedPipelinerSyncEntitySkipped::class, [self::class, 'handleEntitySkippedEvent']);
@@ -38,16 +45,25 @@ class PipelinerSyncEventSubscriber
 
     protected function handleModelSkippedEvent(Model $model, ?\Throwable $e, ?Model $causer): void
     {
+        $modelName = Str::headline(class_basename($model));
+
+        $errors = isset($e) ? $this->errorsForHumans($e) : null;
+
+        $errorMessage = Blade::render(<<<MSG
+Unable push {{ \$model_name }} [{{ \$model_id }}] to pipeliner due to errors.
+@isset(\$errors)
+{!! \$errors !!}@endisset
+MSG,
+            [
+                'model_id' => $this->modelIdForHumans($model),
+                'model_name' => $modelName,
+                'errors' => $errors?->join("\n"),
+            ]);
+
+        $this->errorEntityService->createSyncErrorFor($model, $errorMessage);
+
         if ($causer instanceof User) {
-            $url = match ($model::class) {
-                Opportunity::class => ui_route('opportunities.update', ['opportunity' => $model]),
-                Company::class => ui_route('companies.update', ['company' => $model]),
-                default => null,
-            };
-
-            $modelName = Str::headline(class_basename($model));
-
-            $errors = isset($e) ? $this->errorsForHumans($e) : null;
+            $url = $this->resolveUrlToModel($model);
 
             notification()
                 ->for($causer)
@@ -55,46 +71,60 @@ class PipelinerSyncEventSubscriber
                 ->unless(is_null($url), static function (PendingNotification $n) use ($url): void {
                     $n->url($url);
                 })
-                ->message(
-                    Blade::render(<<<MSG
-Unable push {{ \$model_name }} [{{ \$model_id }}] to pipeliner due to errors.
-@isset(\$errors)
-{!! \$errors !!}@endisset
-MSG,
-                        [
-                            'model_id' => $this->modelIdForHumans($model),
-                            'model_name' => $modelName,
-                            'errors' => $errors?->join("\n"),
-                        ])
-                )
+                ->message($errorMessage)
                 ->push();
         }
     }
 
     protected function handlePipelinerEntitySkippedEvent(object $entity, ?\Throwable $e, ?Model $causer): void
     {
-        if ($causer instanceof User) {
-            $entityName = Str::of($entity::class)->classBasename()->beforeLast('Entity')->headline();
+        $entityName = Str::of($entity::class)->classBasename()->beforeLast('Entity')->headline();
 
-            $errors = isset($e) ? $this->pipelinerErrorsForHumans($e) : null;
+        $errors = isset($e) ? $this->pipelinerErrorsForHumans($e) : null;
 
-            notification()
-                ->for($causer)
-                ->priority(Priority::High)
-                ->message(
-                    Blade::render(<<<MSG
+        $errorMessage = Blade::render(<<<MSG
 Unable pull {{ \$entity_name }} [{{ \$entity_id }}] from pipeliner due to errors.
 @isset(\$errors)
 {!! \$errors !!}@endisset
 MSG,
-                        [
-                            'entity_id' => $this->entityIdForHumans($entity),
-                            'entity_name' => $entityName,
-                            'errors' => isset($errors) && $errors->isNotEmpty() ? $errors->join("\n") : null,
-                        ])
-                )
+            [
+                'entity_id' => $this->entityIdForHumans($entity),
+                'entity_name' => $entityName,
+                'errors' => isset($errors) && $errors->isNotEmpty() ? $errors->join("\n") : null,
+            ]);
+
+        $relatedModels = $e instanceof ContainsRelatedEntities
+            ? collect($e->getRelated())->whereInstanceOf(Model::class)->values()
+            : collect();
+
+        $relatedModels
+            ->each(function (Model $model) use ($errorMessage): void {
+                $this->errorEntityService->createSyncErrorFor($model, $errorMessage);
+            });
+
+        if ($causer instanceof User) {
+            $relatedModel = $relatedModels->first();
+
+            $url = isset($relatedModel) ? $this->resolveUrlToModel($relatedModel) : null;
+
+            notification()
+                ->for($causer)
+                ->priority(Priority::High)
+                ->unless(is_null($url), static function (PendingNotification $n) use ($url): void {
+                    $n->url($url);
+                })
+                ->message($errorMessage)
                 ->push();
         }
+    }
+
+    protected function resolveUrlToModel(Model $model): ?string
+    {
+        return match ($model::class) {
+            Opportunity::class => ui_route('opportunities.update', ['opportunity' => $model]),
+            Company::class => ui_route('companies.update', ['company' => $model]),
+            default => null,
+        };
     }
 
     protected function modelIdForHumans(Model $model): string
@@ -105,6 +135,7 @@ MSG,
 
         return $model->getKey();
     }
+
 
     protected function entityIdForHumans(object $entity): string
     {

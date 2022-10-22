@@ -13,6 +13,7 @@ use App\Models\HpeContract;
 use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\Pipeline\Pipeline;
+use App\Models\Pipeliner\PipelinerSyncError;
 use App\Models\Quote\Contract;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
@@ -56,6 +57,7 @@ use App\Policies\NotePolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\OpportunityPolicy;
 use App\Policies\PipelinePolicy;
+use App\Policies\PipelinerSyncErrorPolicy;
 use App\Policies\PrePayDiscountPolicy;
 use App\Policies\PromotionalDiscountPolicy;
 use App\Policies\QuoteFilePolicy;
@@ -123,6 +125,7 @@ class AuthServiceProvider extends ServiceProvider
         Note::class                     => NotePolicy::class,
         Pipeline::class                 => PipelinePolicy::class,
         SalesUnit::class                => SalesUnitPolicy::class,
+        PipelinerSyncError::class       => PipelinerSyncErrorPolicy::class,
     ];
 
     public function register()

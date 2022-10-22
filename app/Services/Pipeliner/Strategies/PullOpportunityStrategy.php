@@ -116,7 +116,7 @@ class PullOpportunityStrategy implements PullStrategy
             }
 
             if ($opportunity !== null && $opportunity->getFlag(Opportunity::SYNC_PROTECTED)) {
-                throw new PipelinerSyncException("Opportunity [{$opportunity->getIdForHumans()}] is protected from sync.");
+                throw PipelinerSyncException::modelProtectedFromSync($opportunity)->relatedTo($opportunity);
             }
 
             /** @var Collection|Company[] $accounts */
@@ -233,14 +233,15 @@ class PullOpportunityStrategy implements PullStrategy
             ->get();
 
         if ($matchingOpportunities->count() > 1) {
-            throw new PipelinerSyncException("Multiple opportunities matched. Opportunity name [$entity->name], Unit [$unit->unit_name].");
+            throw (new PipelinerSyncException("Multiple opportunities matched. Opportunity name [$entity->name], Unit [$unit->unit_name]."))
+                        ->relatedTo(...$matchingOpportunities);
         }
 
         /** @var Opportunity $opportunity */
         $opportunity = $matchingOpportunities->first();
 
         if (null !== $opportunity?->pl_reference) {
-            throw new PipelinerSyncException("Opportunity [{$opportunity->getIdForHumans()}] already references to a different entity in Pipeliner.");
+            throw PipelinerSyncException::modelReferencesToDifferentEntity($opportunity)->relatedTo($opportunity);
         }
 
         return $opportunity;

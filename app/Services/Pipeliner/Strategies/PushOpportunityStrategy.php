@@ -170,7 +170,7 @@ class PushOpportunityStrategy implements PushStrategy
         }
 
         if ($model->getFlag(Opportunity::SYNC_PROTECTED)) {
-            throw new PipelinerSyncException("Opportunity [{$model->getIdForHumans()}] is protected from sync.");
+            throw PipelinerSyncException::modelProtectedFromSync($model)->relatedTo($model);
         }
 
         if (null === $model->pipelineStage) {
@@ -212,8 +212,11 @@ class PushOpportunityStrategy implements PushStrategy
             }
 
             $oppEntity = $this->oppIntegration->create($input,
-                ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS,
-                    ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
+                ValidationLevelCollection::from(
+                    ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS,
+                    ValidationLevel::SKIP_FIELD_VALUE_VALIDATION,
+                    ValidationLevel::SKIP_UNCHANGED_FIELDS
+                ));
 
             tap($model, function (Opportunity $opportunity) use ($oppEntity): void {
                 $opportunity->pl_reference = $oppEntity->id;
@@ -236,8 +239,11 @@ class PushOpportunityStrategy implements PushStrategy
 
             if (false === empty($modifiedFields)) {
                 $this->oppIntegration->update($input,
-                    ValidationLevelCollection::from(ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS,
-                        ValidationLevel::SKIP_FIELD_VALUE_VALIDATION));
+                    ValidationLevelCollection::from(
+                        ValidationLevel::SKIP_USER_DEFINED_VALIDATIONS,
+                        ValidationLevel::SKIP_FIELD_VALUE_VALIDATION,
+                        ValidationLevel::SKIP_UNCHANGED_FIELDS
+                    ));
             }
         }
 
@@ -263,7 +269,7 @@ class PushOpportunityStrategy implements PushStrategy
     {
         tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
             $log->model()->associate($model);
-            $log->strategy_name = (string)StrategyNameResolver::from($this);
+            $log->strategy_name = (string) StrategyNameResolver::from($this);
             $log->save();
         });
     }

@@ -30,7 +30,8 @@ class ContactEntity
         public readonly string $country,
         public readonly GenderEnum $gender,
         public readonly array $customFields,
-        public readonly array $accountRelations
+        public readonly array $accountRelations,
+        public readonly bool $isDeleted,
     ) {
     }
 
@@ -58,6 +59,7 @@ class ContactEntity
             customFields: json_decode($array['customFields'] ?? '{}', true),
             accountRelations: array_map(ContactAccountRelationEntity::fromArray(...),
                 array_column($array['accountRelations']['edges'], 'node')),
+            isDeleted: $array['isDeleted'],
         );
     }
 

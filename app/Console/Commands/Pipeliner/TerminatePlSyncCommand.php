@@ -4,23 +4,22 @@ namespace App\Console\Commands\Pipeliner;
 
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
 use Illuminate\Console\Command;
-use Symfony\Component\Console\Input\InputOption;
 
-class ReleasePlSyncStatusCommand extends Command
+class TerminatePlSyncCommand extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $name = 'eq:release-pl-sync-status';
+    protected $name = 'eq:terminate-pl-sync';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Release pipeliner sync status';
+    protected $description = 'Terminate pipeliner sync';
 
     /**
      * Create a new command instance.
@@ -39,9 +38,7 @@ class ReleasePlSyncStatusCommand extends Command
      */
     public function handle(SyncPipelinerDataStatus $status): int
     {
-        $released = $this->option('force')
-            ? $status->forceRelease()
-            : $status->release();
+        $released = $status->forceRelease();
 
         if ($released) {
             $this->info('Sync status: released.');
@@ -50,12 +47,5 @@ class ReleasePlSyncStatusCommand extends Command
         }
 
         return self::SUCCESS;
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            new InputOption('--force', mode: InputOption::VALUE_NONE, description: 'Force release status'),
-        ];
     }
 }

@@ -120,7 +120,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         }
 
         if ($model->getFlag(Company::SYNC_PROTECTED)) {
-            throw new PipelinerSyncException("Company [{$model->getIdForHumans()}] is protected from sync.");
+            throw PipelinerSyncException::modelProtectedFromSync($model)->relatedTo($model);
         }
 
         if (null === $model->salesUnit) {
