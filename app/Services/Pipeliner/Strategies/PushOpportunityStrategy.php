@@ -111,6 +111,10 @@ class PushOpportunityStrategy implements PushStrategy
                         "latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}");
             })
             ->whereSyncNotProtected()
+            ->whereDoesntHave('syncErrors', static function (Builder $builder): void {
+                $builder->whereNull('resolved_at')
+                    ->whereNotNull('archived_at');
+            })
             ->unless(is_null($lastOpportunityUpdatedAt), static function (Builder $builder) use (
                 $model,
                 $lastOpportunityUpdatedAt

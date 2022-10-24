@@ -22,6 +22,7 @@ use App\Models\{Appointment\Appointment,
     Data\Country,
     Note\ModelHasNotes,
     Note\Note,
+    Pipeliner\PipelinerSyncError,
     Quote\WorldwideQuote,
     Task\Task,
     Template\ContractTemplate,
@@ -47,6 +48,7 @@ use Illuminate\Database\Eloquent\{Collection,
     Relations\BelongsTo,
     Relations\BelongsToMany,
     Relations\HasManyThrough,
+    Relations\MorphMany,
     Relations\MorphToMany};
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -449,6 +451,11 @@ class Company extends Model implements
             table: (new ModelHasNotes())->getTable(),
             relatedPivotKey: 'note_id',
         )->using(ModelHasNotes::class);
+    }
+
+    public function syncErrors(): MorphMany
+    {
+        return $this->morphMany(related: PipelinerSyncError::class, name: 'entity');
     }
 
     public function getIdForHumans(): string

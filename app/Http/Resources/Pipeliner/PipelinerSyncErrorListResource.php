@@ -29,6 +29,8 @@ class PipelinerSyncErrorListResource extends JsonResource
             'error_message' => $this->error_message,
             'created_at' => $this->{$this->getCreatedAtColumn()},
             'updated_at' => $this->{$this->getUpdatedAtColumn()},
+            'archived_at' => $this->archived_at,
+            'resolved_at' => $this->resolved_at,
         ];
     }
 }

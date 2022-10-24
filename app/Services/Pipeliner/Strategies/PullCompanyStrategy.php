@@ -464,6 +464,15 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
             return false;
         }
 
+        $archivedUnresolvedErrorsExist = $model->syncErrors()
+            ->whereNull('resolved_at')
+            ->whereNotNull('archived_at')
+            ->exists();
+
+        if ($archivedUnresolvedErrorsExist) {
+            return false;
+        }
+
         $syncStrategyLogModel = new PipelinerSyncStrategyLog();
 
         return $syncStrategyLogModel->newQuery()

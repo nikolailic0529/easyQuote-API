@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\DTO\Pipeliner\BatchArchiveSyncErrorData;
+use App\DTO\Pipeliner\BatchRestoreSyncErrorData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pipeliner\QueuePipelinerSync;
 use App\Http\Requests\Pipeliner\SyncModel;
@@ -11,6 +13,7 @@ use App\Models\Pipeliner\PipelinerSyncError;
 use App\Queries\PipelinerSyncErrorQueries;
 use App\Services\Pipeliner\PipelinerDataSyncService;
 use App\Services\Pipeliner\PipelinerSyncErrorEntityService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -59,6 +62,7 @@ class PipelinerController extends Controller
      * @param  PipelinerSyncErrorEntityService  $service
      * @param  PipelinerSyncError  $error
      * @return Response
+     * @throws AuthorizationException
      */
     public function archiveSyncError(
         Request $request,
@@ -68,6 +72,59 @@ class PipelinerController extends Controller
         $this->authorize('archive', $error);
 
         $service->markSyncErrorArchived($error);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Batch archive sync error.
+     *
+     * @param  BatchArchiveSyncErrorData  $data
+     * @param  PipelinerSyncErrorEntityService  $service
+     * @return Response
+     */
+    public function batchArchiveSyncError(
+        BatchArchiveSyncErrorData $data,
+        PipelinerSyncErrorEntityService $service
+    ): Response {
+        $service->batchMarkSyncErrorArchived($data);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Restore sync error from archive.
+     *
+     * @param  Request  $request
+     * @param  PipelinerSyncErrorEntityService  $service
+     * @param  PipelinerSyncError  $error
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function restoreSyncError(
+        Request $request,
+        PipelinerSyncErrorEntityService $service,
+        PipelinerSyncError $error
+    ): Response {
+        $this->authorize('restoreFromArchive', $error);
+
+        $service->markSyncErrorNotArchived($error);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Batch restore sync error from archive.
+     *
+     * @param  BatchRestoreSyncErrorData  $data
+     * @param  PipelinerSyncErrorEntityService  $service
+     * @return Response
+     */
+    public function batchRestoreSyncError(
+        BatchRestoreSyncErrorData $data,
+        PipelinerSyncErrorEntityService $service
+    ): Response {
+        $service->batchMarkSyncErrorNotArchived($data);
 
         return response()->noContent();
     }

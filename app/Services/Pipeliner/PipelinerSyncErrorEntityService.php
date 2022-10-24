@@ -2,6 +2,8 @@
 
 namespace App\Services\Pipeliner;
 
+use App\DTO\Pipeliner\BatchArchiveSyncErrorData;
+use App\DTO\Pipeliner\BatchRestoreSyncErrorData;
 use App\Models\Pipeliner\PipelinerSyncError;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionResolverInterface;
@@ -96,6 +98,39 @@ class PipelinerSyncErrorEntityService
                     ->transaction(static function () use ($error): void {
                         $error->save();
                     });
+            });
+    }
+
+    public function batchMarkSyncErrorArchived(BatchArchiveSyncErrorData $data): void
+    {
+        PipelinerSyncError::query()
+            ->whereKey($data->syncErrors->toCollection()->pluck('id'))
+            ->lazyById()
+            ->each(function (PipelinerSyncError $error) {
+                $this->markSyncErrorArchived($error);
+            });
+    }
+
+    public function markSyncErrorNotArchived(PipelinerSyncError $error): void
+    {
+        $error->archived_at = null;
+
+        $this->lockProvider->lock($this->getLockKeyFor($error->entity), 10)
+            ->block(30, function () use ($error) {
+                $this->connectionResolver->connection()
+                    ->transaction(static function () use ($error): void {
+                        $error->save();
+                    });
+            });
+    }
+
+    public function batchMarkSyncErrorNotArchived(BatchRestoreSyncErrorData $data): void
+    {
+        PipelinerSyncError::query()
+            ->whereKey($data->syncErrors->toCollection()->pluck('id'))
+            ->lazyById()
+            ->each(function (PipelinerSyncError $error) {
+                $this->markSyncErrorNotArchived($error);
             });
     }
 

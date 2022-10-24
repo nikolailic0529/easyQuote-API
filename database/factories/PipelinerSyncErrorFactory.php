@@ -24,5 +24,10 @@ class PipelinerSyncErrorFactory extends Factory
             },
         ];
     }
+
+    public function archived(): static
+    {
+        return $this->state(['archived_at' => now()]);
+    }
 }
 

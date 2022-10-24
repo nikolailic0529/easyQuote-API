@@ -19,6 +19,7 @@ use App\Models\Note\Note;
 use App\Models\Opportunity\OpportunityRecurrence;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Pipeline\PipelineStage;
+use App\Models\Pipeliner\PipelinerSyncError;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Task\Task;
@@ -335,6 +336,11 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
         return $this->hasOne(OpportunityValidationResult::class)->withDefault(static function (OpportunityValidationResult $result) {
             $result->forceFill(['messages' => new MessageBag(), 'is_passed' => true]);
         });
+    }
+
+    public function syncErrors(): MorphMany
+    {
+        return $this->morphMany(related: PipelinerSyncError::class, name: 'entity');
     }
 
     public function getIdForHumans(): string

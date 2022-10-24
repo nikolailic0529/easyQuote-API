@@ -104,6 +104,10 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
                         "latest_sync_strategy_log.{$syncStrategyLogModel->getUpdatedAtColumn()}");
             })
             ->whereSyncNotProtected()
+            ->whereDoesntHave('syncErrors', static function (Builder $builder): void {
+                $builder->whereNull('resolved_at')
+                    ->whereNotNull('archived_at');
+            })
             ->unless(is_null($lastUpdatedAt), static function (Builder $builder) use ($model, $lastUpdatedAt): void {
                 $builder->where($model->getQualifiedUpdatedAtColumn(), '>', $lastUpdatedAt);
             });

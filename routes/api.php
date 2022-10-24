@@ -519,6 +519,9 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('pipeliner/sync-errors', [PipelinerController::class, 'paginateSyncErrors']);
     Route::get('pipeliner/sync-errors/{error}', [PipelinerController::class, 'showSyncError']);
     Route::patch('pipeliner/sync-errors/{error}/archive', [PipelinerController::class, 'archiveSyncError']);
+    Route::patch('pipeliner/sync-errors/batch-archive', [PipelinerController::class, 'batchArchiveSyncError']);
+    Route::patch('pipeliner/sync-errors/{error}/restore', [PipelinerController::class, 'restoreSyncError']);
+    Route::patch('pipeliner/sync-errors/batch-restore', [PipelinerController::class, 'batchRestoreSyncError']);
     Route::patch('pipeliner/queue-pipeliner-sync', [PipelinerController::class, 'queuePipelinerSync']);
     Route::patch('pipeliner/sync-model', [PipelinerController::class, 'syncModel']);
 

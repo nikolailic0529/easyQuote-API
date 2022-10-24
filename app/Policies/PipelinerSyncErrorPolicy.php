@@ -60,7 +60,7 @@ class PipelinerSyncErrorPolicy
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determine whether the user can archive the model.
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Pipeliner\PipelinerSyncError  $pipelinerSyncError
@@ -77,6 +77,46 @@ class PipelinerSyncErrorPolicy
                 ->action('archive')
                 ->item('sync error')
                 ->reason(__("You don't have access to any sales unit."))
+                ->toResponse();
+        }
+
+        if (null !== $pipelinerSyncError->archived_at) {
+            return ResponseBuilder::deny()
+                ->action('restore from archive')
+                ->item('sync error')
+                ->reason(__("The error has already been archived."))
+                ->toResponse();
+        }
+
+        return $this->allow();
+    }
+
+    /**
+     * Determine whether the user can restore the model from archive.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Pipeliner\PipelinerSyncError  $pipelinerSyncError
+     * @return Response
+     */
+    public function restoreFromArchive(User $user, PipelinerSyncError $pipelinerSyncError): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->salesUnits->isEmpty()) {
+            return ResponseBuilder::deny()
+                ->action('restore from archive')
+                ->item('sync error')
+                ->reason(__("You don't have access to any sales unit."))
+                ->toResponse();
+        }
+
+        if (null === $pipelinerSyncError->archived_at) {
+            return ResponseBuilder::deny()
+                ->action('restore from archive')
+                ->item('sync error')
+                ->reason(__("The error is not archived."))
                 ->toResponse();
         }
 
