@@ -178,7 +178,11 @@ class PushOpportunityStrategy implements PushStrategy
         }
 
         if (null === $model->salesUnit) {
-            throw new PipelinerSyncException("Opportunity [{$model->getIdForHumans()}] doesn't have assigned sales unit.");
+            throw PipelinerSyncException::modelDoesntHaveUnitRelation($model)->relatedTo($model);
+        }
+
+        if (!$model->salesUnit->is_enabled) {
+            throw PipelinerSyncException::modelBelongsToDisabledUnit($model, $model->salesUnit)->relatedTo($model);
         }
 
         if (is_null($model->pl_reference)) {

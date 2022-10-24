@@ -203,6 +203,15 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
             throw PipelinerSyncException::modelProtectedFromSync($account)->relatedTo($account);
         }
 
+        if ($account !== null && null === $account->salesUnit) {
+            throw PipelinerSyncException::modelDoesntHaveUnitRelation($account)->relatedTo($account);
+        }
+
+        if ($account !== null && !$account->salesUnit->is_enabled) {
+            throw PipelinerSyncException::modelBelongsToDisabledUnit($account, $account->salesUnit)
+                ->relatedTo($account);
+        }
+
         $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id), 180);
 
         $newAccount = $this->dataMapper->mapImportedCompanyFromAccountEntity($entity, $contactRelations);

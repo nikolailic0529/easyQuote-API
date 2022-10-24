@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Events\Pipeliner\QueuedPipelinerSyncFailed;
-use App\Events\Pipeliner\QueuedPipelinerSyncProcessed;
-use App\Events\Pipeliner\QueuedPipelinerSyncProgress;
-use App\Events\Pipeliner\QueuedPipelinerSyncStarting;
+use App\Events\Pipeliner\AggregateSyncFailed;
+use App\Events\Pipeliner\AggregateSyncCompleted;
+use App\Events\Pipeliner\AggregateSyncProgress;
+use App\Events\Pipeliner\AggregateSyncStarting;
 use App\Integrations\Pipeliner\GraphQl\PipelinerDataIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
 use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
@@ -50,7 +50,7 @@ class PipelinerTest extends TestCase
 
         $this->authenticateApi();
 
-        Event::fake([QueuedPipelinerSyncProcessed::class, QueuedPipelinerSyncFailed::class, QueuedPipelinerSyncProgress::class, QueuedPipelinerSyncStarting::class]);
+        Event::fake([AggregateSyncCompleted::class, AggregateSyncFailed::class, AggregateSyncProgress::class, AggregateSyncStarting::class]);
 
         /** @var PipelinerGraphQlClient $oppClient */
         $oppClient = $this->app->make(PipelinerGraphQlClient::class);
@@ -118,15 +118,15 @@ class PipelinerTest extends TestCase
             ->assertJsonStructure(['queued'])
             ->assertJson(['queued' => true]);
 
-        Event::assertDispatched(QueuedPipelinerSyncStarting::class, function (QueuedPipelinerSyncStarting $event): bool {
+        Event::assertDispatched(AggregateSyncStarting::class, function (AggregateSyncStarting $event): bool {
             $this->assertArrayHasKey('progress', $event->broadcastWith());
             $this->assertArrayHasKey('total_entities', $event->broadcastWith());
             $this->assertArrayHasKey('pending_entities', $event->broadcastWith());
 
             return true;
         });
-        Event::assertDispatched(QueuedPipelinerSyncProcessed::class);
-        Event::assertDispatched(QueuedPipelinerSyncProgress::class, function (QueuedPipelinerSyncProgress $event): bool {
+        Event::assertDispatched(AggregateSyncCompleted::class);
+        Event::assertDispatched(AggregateSyncProgress::class, function (AggregateSyncProgress $event): bool {
             $this->assertArrayHasKey('progress', $event->broadcastWith());
             $this->assertArrayHasKey('total_entities', $event->broadcastWith());
             $this->assertArrayHasKey('pending_entities', $event->broadcastWith());
@@ -142,7 +142,7 @@ class PipelinerTest extends TestCase
     {
         $this->authenticateApi();
 
-        Event::fake([QueuedPipelinerSyncProcessed::class, QueuedPipelinerSyncFailed::class]);
+        Event::fake([AggregateSyncCompleted::class, AggregateSyncFailed::class]);
 
         /** @var PipelinerGraphQlClient $oppClient */
         $oppClient = $this->app->make(PipelinerGraphQlClient::class);
@@ -200,7 +200,7 @@ class PipelinerTest extends TestCase
 //            ->dump()
             ->assertStatus(500);
 
-        Event::assertDispatched(QueuedPipelinerSyncFailed::class, function (QueuedPipelinerSyncFailed $event) {
+        Event::assertDispatched(AggregateSyncFailed::class, function (AggregateSyncFailed $event) {
             return str_contains($event->getException()->getMessage(), 'A failure happened');
         });
     }

@@ -3,34 +3,104 @@
 namespace App\Services\Pipeliner;
 
 use App\Models\Pipeliner\PipelinerSyncError;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionResolverInterface;
 use Illuminate\Database\Eloquent\Model;
 
 class PipelinerSyncErrorEntityService
 {
     public function __construct(
-        protected readonly ConnectionResolverInterface $connectionResolver
+        protected readonly ConnectionResolverInterface $connectionResolver,
+        protected readonly LockProvider $lockProvider,
     ) {
     }
 
-    public function createSyncErrorFor(Model $model, string $message): PipelinerSyncError
-    {
-        return tap(new PipelinerSyncError(), function (PipelinerSyncError $error) use ($message, $model) {
-            $error->entity()->associate($model);
-            $error->error_message = $message;
+    public function updateOrCreateSyncError(
+        Model $model,
+        string $strategy,
+        string $message
+    ): PipelinerSyncError {
+        return $this->lockProvider->lock($this->getLockKeyFor($model), 10)
+            ->block(30, function () use ($model, $message, $strategy) {
+                $error = PipelinerSyncError::query()
+                    ->whereNull('resolved_at')
+                    ->whereNull('archived_at')
+                    ->where('strategy_name', $strategy)
+                    ->whereBelongsTo($model, 'entity')
+                    ->first();
 
-            $this->connectionResolver->connection()
-                ->transaction(static fn() => $error->save());
-        });
+                return tap($error ?? new PipelinerSyncError(),
+                    function (PipelinerSyncError $error) use ($strategy, $message, $model) {
+                        $error->entity()->associate($model);
+                        $error->error_message = $message;
+                        $error->strategy_name = $strategy;
+
+                        $this->connectionResolver->connection()
+                            ->transaction(static fn() => $error->save());
+                    });
+            });
     }
 
-    public function archiveSyncError(PipelinerSyncError $error): void
+    public function createSyncErrorFor(
+        Model $model,
+        string $strategy,
+        string $message
+    ): PipelinerSyncError {
+        return $this->lockProvider->lock($this->getLockKeyFor($model), 10)
+            ->block(30, function () use ($strategy, $message, $model): PipelinerSyncError {
+                return tap(new PipelinerSyncError(),
+                    function (PipelinerSyncError $error) use ($strategy, $message, $model) {
+                        $error->entity()->associate($model);
+                        $error->error_message = $message;
+                        $error->strategy_name = $strategy;
+
+                        $this->connectionResolver->connection()
+                            ->transaction(static fn() => $error->save());
+                    });
+            });
+    }
+
+    public function markRelatedSyncErrorsResolved(string $entityId, string $strategy): void
+    {
+        PipelinerSyncError::query()
+            ->whereNull('resolved_at')
+            ->whereNull('archived_at')
+            ->where('entity_id', $entityId)
+            ->where('strategy_name', $strategy)
+            ->lazyById()
+            ->each(function (PipelinerSyncError $error): void {
+                $this->markSyncErrorResolved($error);
+            });
+    }
+
+    public function markSyncErrorResolved(PipelinerSyncError $error): void
+    {
+        $error->resolved_at = now();
+
+        $this->lockProvider->lock($this->getLockKeyFor($error->entity), 10)
+            ->block(30, function () use ($error) {
+                $this->connectionResolver->connection()
+                    ->transaction(static function () use ($error): void {
+                        $error->save();
+                    });
+            });
+    }
+
+    public function markSyncErrorArchived(PipelinerSyncError $error): void
     {
         $error->archived_at = now();
 
-        $this->connectionResolver->connection()
-            ->transaction(static function () use ($error): void {
-                $error->save();
+        $this->lockProvider->lock($this->getLockKeyFor($error->entity), 10)
+            ->block(30, function () use ($error) {
+                $this->connectionResolver->connection()
+                    ->transaction(static function () use ($error): void {
+                        $error->save();
+                    });
             });
+    }
+
+    protected function getLockKeyFor(Model $related): string
+    {
+        return static::class.$related->getKey();
     }
 }

@@ -25,6 +25,7 @@ class PipelinerSyncErrorQueries
                 $model->getQualifiedUpdatedAtColumn(),
             ])
             ->whereNull($model->qualifyColumn('archived_at'))
+            ->whereNull($model->qualifyColumn('resolved_at'))
             ->with('entity');
 
         return RequestQueryBuilder::for($query, $request)

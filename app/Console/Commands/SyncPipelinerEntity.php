@@ -9,7 +9,6 @@ use App\Models\Opportunity;
 use App\Models\Task\Task;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerDataSyncService;
-use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Log\LogManager;
@@ -56,8 +55,8 @@ class SyncPipelinerEntity extends Command
     /**
      * Execute the console command.
      *
-     * @param PipelinerDataSyncService $service
-     * @param LogManager $logManager
+     * @param  PipelinerDataSyncService  $service
+     * @param  LogManager  $logManager
      * @return int
      * @throws \Illuminate\Http\Client\RequestException
      */
@@ -65,20 +64,31 @@ class SyncPipelinerEntity extends Command
     {
         $logger = $this->resolveLogger($logManager);
 
-        $correlationId = (string)Str::orderedUuid();
+        $correlationId = (string) Str::orderedUuid();
 
-        $result = $service
+        $service
             ->setCauser($this->resolveCauser())
             ->setLogger($logger)
             ->setFlags($this->resolveSyncMethods())
-            ->setCorrelation($correlationId)
-            ->syncModel($this->resolveModel());
+            ->setCorrelation($correlationId);
 
-        $this->table(['Strategy', 'Ok', 'Errors'], collect($result['applied'])->map(static fn(array $item) => [
-            $item['strategy'],
-            $item['ok'] ? 'true' : 'false',
-            isset($item['errors']) ? json_encode($item['errors']) : '',
-        ]));
+        if ($this->option('queue')) {
+            $result = $service->queueModelSync($this->resolveModel());
+
+            $rows = collect($result['queued'])->map(static fn(array $item): array => [$item['strategy']]);
+
+            $this->getOutput()->horizontalTable(['Strategy'], $rows->all());
+        } else {
+            $result = $service->syncModel($this->resolveModel());
+
+            $rows = collect($result['applied'])->map(static fn(array $item): array => [
+                $item['strategy'],
+                $item['ok'] ? 'true' : 'false',
+                isset($item['errors']) ? json_encode($item['errors']) : '',
+            ]);
+
+            $this->getOutput()->horizontalTable(['Strategy', 'Ok', 'Errors'], $rows->all());
+        }
 
         return self::SUCCESS;
     }
@@ -156,7 +166,10 @@ class SyncPipelinerEntity extends Command
     {
         return [
             new InputOption(name: 'user-id', mode: InputOption::VALUE_REQUIRED, description: 'The acting user id'),
-            new InputOption(name: 'method', mode: InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, description: 'Method to sync (pull/push)'),
+            new InputOption(name: 'method', mode: InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY,
+                description: 'Method to sync (pull/push)'),
+            new InputOption(name: 'queue', mode: InputOption::VALUE_NONE | InputOption::VALUE_NEGATABLE,
+                description: 'Whether to queue sync or not'),
         ];
     }
 }

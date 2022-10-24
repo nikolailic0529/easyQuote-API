@@ -2,7 +2,7 @@
 
 namespace App\Jobs\Pipeliner;
 
-use App\Events\Pipeliner\QueuedPipelinerSyncFailed;
+use App\Events\Pipeliner\AggregateSyncFailed;
 use App\Models\User;
 use App\Services\Pipeliner\PipelinerDataSyncService;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
@@ -87,6 +87,6 @@ class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
             ->setOwner($this->owner)
             ->release();
 
-        event(new QueuedPipelinerSyncFailed($exception));
+        event(new AggregateSyncFailed($exception));
     }
 }

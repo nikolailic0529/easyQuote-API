@@ -124,7 +124,11 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         }
 
         if (null === $model->salesUnit) {
-            throw new PipelinerSyncException("Company [{$model->getIdForHumans()}] doesn't have assigned sales unit.");
+            throw PipelinerSyncException::modelDoesntHaveUnitRelation($model)->relatedTo($model);
+        }
+
+        if (!$model->salesUnit->is_enabled) {
+            throw PipelinerSyncException::modelBelongsToDisabledUnit($model, $model->salesUnit)->relatedTo($model);
         }
 
         $lock = $this->lockProvider->lock(Lock::SYNC_COMPANY($model->getKey()), 120);

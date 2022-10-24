@@ -8,13 +8,12 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class QueuedPipelinerSyncStarting implements ShouldBroadcastNow
+final class AggregateSyncCompleted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
         protected readonly int $total,
-        protected readonly int $pending,
     ) {
     }
 
@@ -25,25 +24,15 @@ final class QueuedPipelinerSyncStarting implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'queued-pipeliner-sync.starting';
+        return 'queued-pipeliner-sync.processed';
     }
 
     public function broadcastWith(): array
     {
         return [
-            'progress' => $this->progress(),
+            'progress' => 100,
             'total_entities' => $this->total,
-            'pending_entities' => $this->pending,
+            'pending_entities' => 0,
         ];
-    }
-
-    private function progress(): int
-    {
-        return $this->total > 0 ? round(($this->processedEntities() / $this->total) * 100) : 0;
-    }
-
-    private function processedEntities(): int
-    {
-        return $this->total - $this->pending;
     }
 }

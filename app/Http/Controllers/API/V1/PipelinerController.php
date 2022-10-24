@@ -67,7 +67,7 @@ class PipelinerController extends Controller
     ): Response {
         $this->authorize('archive', $error);
 
-        $service->archiveSyncError($error);
+        $service->markSyncErrorArchived($error);
 
         return response()->noContent();
     }
@@ -83,7 +83,9 @@ class PipelinerController extends Controller
         SyncModel $request,
         PipelinerDataSyncService $service
     ): JsonResponse {
-        $result = $service->syncModel($request->getModel());
+        $result = $service
+            ->setCauser($request->user())
+            ->queueModelSync($request->getModel());
 
         return response()->json($result);
     }

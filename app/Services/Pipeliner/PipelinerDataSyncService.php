@@ -6,9 +6,10 @@ use App\Contracts\CauserAware;
 use App\Contracts\CorrelationAware;
 use App\Contracts\FlagsAware;
 use App\Contracts\LoggerAware;
-use App\Events\Pipeliner\QueuedPipelinerSyncFailed;
-use App\Events\Pipeliner\QueuedPipelinerSyncProcessed;
-use App\Events\Pipeliner\QueuedPipelinerSyncStarting;
+use App\Events\Pipeliner\AggregateSyncCompleted;
+use App\Events\Pipeliner\AggregateSyncFailed;
+use App\Events\Pipeliner\AggregateSyncStarting;
+use App\Events\Pipeliner\ModelSyncCompleted;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
@@ -28,12 +29,14 @@ use Illuminate\Bus\Batch;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Bus\QueueingDispatcher;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
@@ -61,6 +64,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         protected SyncStrategyCollection $syncStrategies,
         protected QueueingDispatcher $busDispatcher,
         protected EventDispatcher $eventDispatcher,
+        protected LockProvider $lockProvider,
         protected Cache $cache,
         protected Config $config,
         protected Guard $guard,
@@ -96,15 +100,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 return $this->determineStrategyCanBeApplied($strategy);
             })
             ->sortBy(function (SyncStrategy $strategy): int|float {
-                $name = StrategyNameResolver::from($strategy)->__toString();
-
-                $index = array_search($name, $this->config->get('pipeliner.sync.aggregate_strategies'), true);
-
-                if (false === $index) {
-                    return INF;
-                }
-
-                return $index;
+                return $this->valueForStrategySorting($strategy);
             })
             ->map(function (SyncStrategy $strategy): LazyCollection {
                 return LazyCollection::make(static function () use ($strategy): \Generator {
@@ -133,7 +129,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         ]);
 
         $this->eventDispatcher->dispatch(
-            new QueuedPipelinerSyncStarting(total: $pendingCount, pending: $pendingCount)
+            new AggregateSyncStarting(total: $pendingCount, pending: $pendingCount)
         );
 
         foreach ($pendingEntities as $class => $collection) {
@@ -148,7 +144,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             }
         }
 
-        $this->eventDispatcher->dispatch(new QueuedPipelinerSyncProcessed($pendingCount));
+        $this->eventDispatcher->dispatch(new AggregateSyncCompleted($pendingCount));
     }
 
     #[ArrayShape(['applied' => "array[]"])]
@@ -170,6 +166,9 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         }
 
         $applicableStrategies = collect($applicableStrategies)
+            ->sortBy(function (SyncStrategy $strategy): int|float {
+                return $this->valueForStrategySorting($strategy);
+            })
             ->sortByDesc(static function (SyncStrategy $strategy) use ($model): int|float {
                 // When the model doesn't have the pipeliner reference yet,
                 // the pull strategy must be applied at the end.
@@ -233,6 +232,138 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                     'applied' => $collection->all(),
                 ];
             });
+    }
+
+    /**
+     * @throws PipelinerSyncException
+     * @throws Throwable
+     */
+    public function queueModelSync(Model $model): array
+    {
+        if (method_exists($this->logger, 'withContext')) {
+            $this->logger->withContext([
+                'model_id' => $model->getKey(),
+                'model_type' => class_basename($model),
+                'causer_id' => $this->causer?->getKey(),
+                'causer_email' => $this->causer?->email,
+            ]);
+        }
+
+        $this->logger->info('Model sync: queueing...');
+
+        $this->prepareStrategies();
+
+        $applicableStrategies = [];
+
+        foreach ($this->syncStrategies as $strategy) {
+            if ($strategy->isApplicableTo($model) && $this->determineStrategyCanBeApplied($strategy)) {
+                $applicableStrategies[] = $strategy;
+            }
+        }
+
+        $applicableStrategies = collect($applicableStrategies)
+            ->sortBy(function (SyncStrategy $strategy): int|float {
+                return $this->valueForStrategySorting($strategy);
+            })
+            ->sortByDesc(static function (SyncStrategy $strategy) use ($model): int|float {
+                // When the model doesn't have the pipeliner reference yet,
+                // the pull strategy must be applied at the end.
+                if ($strategy instanceof PullStrategy && null === $model->pl_reference) {
+                    return -INF;
+                }
+
+                $metadata = $strategy instanceof PullStrategy
+                    ? $strategy->getMetadata($model->pl_reference)
+                    : [
+                        'id' => $model->getKey(),
+                        'created' => Carbon::instance($model->{$model->getCreatedAtColumn()}),
+                        'modified' => Carbon::instance($model->{$model->getUpdatedAtColumn()}),
+                    ];
+
+                return Carbon::instance($metadata['modified'])->roundSeconds(1)->getTimestamp();
+            });
+
+        /** @var BaseCollection $chain */
+        $chain = $applicableStrategies
+            ->lazy()
+            ->filter(static function (SyncStrategy $strategy) use ($model): bool {
+                if ($strategy instanceof PullStrategy && null === $model->pl_reference) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->map(function (SyncStrategy $strategy) use ($model): SyncPipelinerEntity {
+                $entityReference = $strategy instanceof PullStrategy
+                    ? $model->pl_reference
+                    : $model->getKey();
+
+                return new SyncPipelinerEntity(
+                    strategy: $strategy,
+                    entityReference: $entityReference,
+                    causer: $this->causer,
+                );
+            })
+            ->values()
+            ->pipe(static function (LazyCollection $collection): BaseCollection {
+                return collect($collection->all());
+            });
+
+        $queuedStrategies = $chain
+            ->map(static function (SyncPipelinerEntity $entity): array {
+                return [
+                    'strategy' => (string) StrategyNameResolver::from($entity->strategyClass),
+                ];
+            });
+
+        $pendingBatch = $this->busDispatcher->batch([
+            $chain->all(),
+        ]);
+
+        $lockKey = 'queue-model-sync:'.PipelinerDataSyncService::class.$model->getKey();
+
+        if (!$this->lockProvider->lock($lockKey, 60 * 60)->get()) {
+            throw PipelinerSyncException::modelAlreadyInSyncQueue($model);
+        }
+
+        $batch = $pendingBatch
+            ->onQueue('pipeliner-sync')
+            ->withOption('__model', $model->withoutRelations())
+            ->withOption('__causer', $this->causer?->withoutRelations())
+            ->withOption('__lock_key', $lockKey)
+            ->finally(static function (Batch $batch): void {
+                /** @var $model Model */
+                /** @var $causer User|null */
+                [$model, $causer] = [$batch->options['__model'], $batch->options['__causer']];
+
+                app(LockProvider::class)
+                    ->lock($batch->options['__lock_key'])
+                    ->forceRelease();
+
+                logger()->channel('pipeliner')->info('Model sync: completed.', [
+                    'model_id' => $model->getKey(),
+                    'model_type' => class_basename($model),
+                    'causer_id' => $causer?->getKey(),
+                    'causer_email' => $causer?->email,
+                    'batch_id' => $batch->id,
+                ]);
+
+                event(new ModelSyncCompleted(
+                    model: $model,
+                    causer: $causer,
+                ));
+            })
+            ->dispatch();
+
+        $this->logger->info('Model sync: queued.', [
+            'batch_id' => $batch->id,
+            'queued_strategies' => $queuedStrategies->all(),
+        ]);
+
+        return [
+            'batch' => Arr::except($batch->toArray(), 'options'),
+            'queued' => $queuedStrategies->all(),
+        ];
     }
 
     protected function prepareSyncException(?Throwable $e): array|null
@@ -320,12 +451,13 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             yield from $pending;
         })
             ->map(function (array $item) use ($strategy): SyncPipelinerEntity {
-                return new SyncPipelinerEntity(
+                return (new SyncPipelinerEntity(
                     strategy: $strategy,
                     entityReference: $item['id'],
                     causer: $this->causer,
-                    withoutOverlapping: $item['without_overlapping'] ?? []
-                );
+                    withoutOverlapping: $item['without_overlapping'] ?? [],
+                    withProgress: true,
+                ));
             })
             ->values()
             ->pipe(function (LazyCollection $pending): Batch {
@@ -333,7 +465,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
                 return $this->busDispatcher
                     ->batch($pending->all())
-                    ->onQueue('pipeliner-sync')
+                    ->onQueue('pipeliner-aggregate-sync')
                     ->catch(static function (Batch $batch, Throwable $e) use ($statusOwner): void {
                         app('log')->channel('pipeliner')->error($e);
 
@@ -341,7 +473,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                             ->setOwner($statusOwner)
                             ->release();
 
-                        event(new QueuedPipelinerSyncFailed($e));
+                        event(new AggregateSyncFailed($e));
                     })
                     ->dispatch();
             });
@@ -374,6 +506,19 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
             usleep(1000 * 1000);
         }
+    }
+
+    private function valueForStrategySorting(SyncStrategy $strategy): int|float
+    {
+        $name = StrategyNameResolver::from($strategy)->__toString();
+
+        $index = array_search($name, $this->config->get('pipeliner.sync.aggregate_strategies'), true);
+
+        if (false === $index) {
+            return INF;
+        }
+
+        return $index;
     }
 
     private function resolveSuitableStrategiesFor(mixed $entity, string|object $methodInterface): SyncStrategyCollection

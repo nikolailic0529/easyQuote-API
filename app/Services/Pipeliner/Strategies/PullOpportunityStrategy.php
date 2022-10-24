@@ -119,6 +119,10 @@ class PullOpportunityStrategy implements PullStrategy
                 throw PipelinerSyncException::modelProtectedFromSync($opportunity)->relatedTo($opportunity);
             }
 
+            if ($opportunity !== null && !$opportunity->salesUnit->is_enabled) {
+                throw PipelinerSyncException::modelBelongsToDisabledUnit($opportunity, $opportunity->salesUnit)->relatedTo($opportunity);
+            }
+
             /** @var Collection|Company[] $accounts */
             $accounts = Collection::make($entity->accountRelations)
                 ->map(function (LeadOpptyAccountRelationEntity $relationEntity) use ($entity): Company {

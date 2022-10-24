@@ -8,7 +8,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class QueuedPipelinerSyncProgress implements ShouldBroadcastNow
+final class AggregateSyncStarting implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -25,7 +25,7 @@ final class QueuedPipelinerSyncProgress implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'queued-pipeliner-sync.progress';
+        return 'queued-pipeliner-sync.starting';
     }
 
     public function broadcastWith(): array

@@ -15,8 +15,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $id
  * @property string $entity_type
  * @property string $entity_id
+ * @property string $strategy_name
  * @property string $error_message Error message text
  * @property \Illuminate\Support\Carbon|null $archived_at
+ * @property \Illuminate\Support\Carbon|null $resolved_at
+ *
+ * @property-read Model $entity
  */
 class PipelinerSyncError extends Model
 {
@@ -26,6 +30,7 @@ class PipelinerSyncError extends Model
 
     protected $casts = [
         'archived_at' => 'datetime',
+        'resolved_at' => 'datetime',
     ];
 
     protected static function newFactory(): PipelinerSyncErrorFactory

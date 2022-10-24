@@ -53,6 +53,29 @@ class PipelinerSyncException extends PipelinerException implements ContainsRelat
         return new static("$modelName [$idForHumans] is protected from sync.");
     }
 
+    public static function modelBelongsToDisabledUnit(Model $model, SalesUnit $unit): static
+    {
+        $modelName = class_basename($model);
+        $idForHumans = $model instanceof ProvidesIdForHumans ? $model->getIdForHumans() : $model->getKey();
+
+        return new static("$modelName [$idForHumans] is related to disabled sales unit [$unit->unit_name].");
+    }
+
+    public static function modelDoesntHaveUnitRelation(Model $model): static
+    {
+        $modelName = class_basename($model);
+        $idForHumans = $model instanceof ProvidesIdForHumans ? $model->getIdForHumans() : $model->getKey();
+
+        return new static("$modelName [$idForHumans] is not associated with sales unit.");
+    }
+
+    public static function modelAlreadyInSyncQueue(Model $model): static
+    {
+        $modelName = class_basename($model);
+
+        return new static("$modelName is already in the sync queue.");
+    }
+
     public function render(Request $request): JsonResponse
     {
         return response()->json(['message' => $this->message], Response::HTTP_UNPROCESSABLE_ENTITY);
