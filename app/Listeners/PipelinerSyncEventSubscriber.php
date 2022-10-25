@@ -39,7 +39,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
     {
         return [
             SyncStrategyEntitySkipped::class => [
-                [static::class, 'updateUnresolvedSyncErrorsOnSyncStrategySkipped'],
+                [static::class, 'ensureUnresolvedSyncErrorCreated'],
                 [static::class, 'notifyCauserAboutSyncStrategySkipped'],
             ],
             SyncStrategyPerformed::class => [
@@ -51,7 +51,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         ];
     }
 
-    public function updateUnresolvedSyncErrorsOnSyncStrategySkipped(SyncStrategyEntitySkipped $event): void
+    public function ensureUnresolvedSyncErrorCreated(SyncStrategyEntitySkipped $event): void
     {
         $relatedModels = Collection::empty();
         $strategy = StrategyNameResolver::from($event->strategy);
@@ -78,7 +78,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
 
         $relatedModels
             ->each(function (Model $model) use ($strategy, $errorMessage): void {
-                $this->errorEntityService->updateOrCreateSyncError(
+                $this->errorEntityService->ensureSyncErrorCreatedForMessage(
                     model: $model,
                     strategy: $strategy,
                     message: $errorMessage

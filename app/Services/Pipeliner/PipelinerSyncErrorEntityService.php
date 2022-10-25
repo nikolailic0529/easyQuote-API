@@ -17,7 +17,7 @@ class PipelinerSyncErrorEntityService
     ) {
     }
 
-    public function updateOrCreateSyncError(
+    public function ensureSyncErrorCreatedForMessage(
         Model $model,
         string $strategy,
         string $message
@@ -28,10 +28,15 @@ class PipelinerSyncErrorEntityService
                     ->whereNull('resolved_at')
                     ->whereNull('archived_at')
                     ->where('strategy_name', $strategy)
-                    ->whereBelongsTo($model, 'entity')
+                    ->whereMorphedTo( 'entity', $model)
+                    ->where('error_message_hash', sha1($message))
                     ->first();
 
-                return tap($error ?? new PipelinerSyncError(),
+                if ($error !== null) {
+                    return $error;
+                }
+
+                return tap(new PipelinerSyncError(),
                     function (PipelinerSyncError $error) use ($strategy, $message, $model) {
                         $error->entity()->associate($model);
                         $error->error_message = $message;
