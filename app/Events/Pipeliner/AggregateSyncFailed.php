@@ -13,10 +13,13 @@ final class AggregateSyncFailed implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public readonly \DateTimeImmutable $occurrence;
+
     public function __construct(
-        protected readonly Throwable $exception,
+        public readonly string $aggregateId,
+        public readonly Throwable $exception,
     ) {
-        //
+        $this->occurrence = now()->toDateTimeImmutable();
     }
 
     public function broadcastOn(): array

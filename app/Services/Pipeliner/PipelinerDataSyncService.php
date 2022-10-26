@@ -61,6 +61,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
     public function __construct(
         protected ConnectionInterface $connection,
         protected SyncPipelinerDataStatus $dataSyncStatus,
+        protected PipelinerSyncAggregate $syncAggregate,
         protected SyncStrategyCollection $syncStrategies,
         protected QueueingDispatcher $busDispatcher,
         protected EventDispatcher $eventDispatcher,
@@ -88,6 +89,8 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         if ($this->causer instanceof Authenticatable) {
             $this->guard->setUser($this->causer);
         }
+
+        $this->syncAggregate->withId(Str::orderedUuid()->toString());
 
         $this->prepareStrategies();
 
@@ -129,8 +132,15 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         ]);
 
         $this->eventDispatcher->dispatch(
-            new AggregateSyncStarting(total: $pendingCount, pending: $pendingCount)
+            new AggregateSyncStarting(
+                aggregateId: $this->syncAggregate->id,
+                total: $pendingCount,
+                pending: $pendingCount,
+                counts: $counts->all(),
+            )
         );
+
+        $success = true;
 
         foreach ($pendingEntities as $class => $collection) {
             if (!$this->dataSyncStatus->running()) {
@@ -140,11 +150,20 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             if ($collection->isNotEmpty()) {
                 $this->logger->info(sprintf('Syncing entities using: %s', class_basename($class)));
 
-                $this->syncUsing($this->syncStrategies[$class], $collection);
+                if (false === $this->syncUsing($this->syncStrategies[$class], $collection)) {
+                    $success = false;
+
+                    break;
+                }
             }
         }
 
-        $this->eventDispatcher->dispatch(new AggregateSyncCompleted($pendingCount));
+        if ($success) {
+            $this->eventDispatcher->dispatch(new AggregateSyncCompleted(
+                aggregateId: $this->syncAggregate->id,
+                total: $pendingCount,
+            ));
+        }
     }
 
     #[ArrayShape(['applied' => "array[]"])]
@@ -251,6 +270,8 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
         $this->logger->info('Model sync: queueing...');
 
+        $this->syncAggregate->withId(Str::orderedUuid()->toString());
+
         $this->prepareStrategies();
 
         $applicableStrategies = [];
@@ -301,6 +322,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 return new SyncPipelinerEntity(
                     strategy: $strategy,
                     entityReference: $entityReference,
+                    aggregateId: $this->syncAggregate->id,
                     causer: $this->causer,
                 );
             })
@@ -440,7 +462,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         }
     }
 
-    protected function syncUsing(SyncStrategy $strategy, \Traversable $pending): void
+    protected function syncUsing(SyncStrategy $strategy, \Traversable $pending): bool
     {
         $this->logger->info("Loading pending entities...", [
             'strategy' => class_basename($strategy),
@@ -454,6 +476,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 return (new SyncPipelinerEntity(
                     strategy: $strategy,
                     entityReference: $item['id'],
+                    aggregateId: $this->syncAggregate->id,
                     causer: $this->causer,
                     withoutOverlapping: $item['without_overlapping'] ?? [],
                     withProgress: true,
@@ -462,18 +485,19 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             ->values()
             ->pipe(function (LazyCollection $pending): Batch {
                 $statusOwner = $this->dataSyncStatus->getOwner();
+                $aggregateId = $this->syncAggregate->id;
 
                 return $this->busDispatcher
                     ->batch($pending->all())
                     ->onQueue('pipeliner-aggregate-sync')
-                    ->catch(static function (Batch $batch, Throwable $e) use ($statusOwner): void {
+                    ->catch(static function (Batch $batch, Throwable $e) use ($statusOwner, $aggregateId): void {
                         app('log')->channel('pipeliner')->error($e);
 
                         app(SyncPipelinerDataStatus::class)
                             ->setOwner($statusOwner)
                             ->release();
 
-                        event(new AggregateSyncFailed($e));
+                        event(new AggregateSyncFailed($aggregateId, $e));
                     })
                     ->dispatch();
             });
@@ -485,6 +509,14 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
         while (true) {
             $batch = $batch->fresh();
+
+            if ($batch->hasFailures()) {
+                $this->logger->warning("Batch: failed.", [
+                    'batch' => $batch->toArray(),
+                ]);
+
+                return false;
+            }
 
             if ($batch->finished()) {
                 $this->logger->info("Batch: finished.", [
@@ -504,8 +536,10 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 break;
             }
 
-            usleep(1000 * 1000);
+            usleep(250 * 1000);
         }
+
+        return true;
     }
 
     private function valueForStrategySorting(SyncStrategy $strategy): int|float

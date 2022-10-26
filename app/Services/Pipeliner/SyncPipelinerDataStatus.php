@@ -5,9 +5,10 @@ namespace App\Services\Pipeliner;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Str;
 
-class SyncPipelinerDataStatus implements \JsonSerializable
+class SyncPipelinerDataStatus implements \JsonSerializable, Arrayable
 {
     protected string $owner;
 
@@ -129,6 +130,11 @@ class SyncPipelinerDataStatus implements \JsonSerializable
         return static::class.':total';
     }
 
+    public function progress(): int
+    {
+        return $this->total() > 0 ? round(($this->processed() / $this->total()) * 100) : 0;
+    }
+
     public function jsonSerialize(): array
     {
         return [
@@ -139,8 +145,8 @@ class SyncPipelinerDataStatus implements \JsonSerializable
         ];
     }
 
-    public function progress(): int
+    public function toArray(): array
     {
-        return $this->total() > 0 ? round(($this->processed() / $this->total()) * 100) : 0;
+        return $this->jsonSerialize();
     }
 }

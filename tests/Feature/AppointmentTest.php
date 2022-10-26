@@ -43,6 +43,7 @@ class AppointmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'activity_type',
                         'subject',
                         'start_date',
@@ -90,6 +91,7 @@ class AppointmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'activity_type',
                         'subject',
                         'start_date',
@@ -138,6 +140,7 @@ class AppointmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'activity_type',
                         'subject',
                         'start_date',
@@ -185,6 +188,7 @@ class AppointmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'activity_type',
                         'subject',
                         'start_date',
@@ -232,6 +236,7 @@ class AppointmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'activity_type',
                         'subject',
                         'start_date',

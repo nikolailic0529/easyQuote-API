@@ -4,8 +4,12 @@ namespace App\Listeners;
 
 use App\Contracts\ProvidesIdForHumans;
 use App\Enum\Priority;
+use App\Events\Pipeliner\AggregateSyncCompleted;
+use App\Events\Pipeliner\AggregateSyncEntityProcessed;
+use App\Events\Pipeliner\AggregateSyncEntitySkipped;
+use App\Events\Pipeliner\AggregateSyncFailed;
+use App\Events\Pipeliner\AggregateSyncStarting;
 use App\Events\Pipeliner\ModelSyncCompleted;
-use App\Events\Pipeliner\SyncStrategyEntitySkipped;
 use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Models\AccountEntity;
@@ -13,34 +17,50 @@ use App\Integrations\Pipeliner\Models\OpportunityEntity;
 use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\AppEvent\AppEventEntityService;
 use App\Services\Notification\Models\PendingNotification;
 use App\Services\Pipeliner\Contracts\ContainsRelatedEntities;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\PipelinerAggregateSyncEventService;
 use App\Services\Pipeliner\PipelinerSyncErrorEntityService;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
+use App\Services\Pipeliner\Strategies\PullCompanyStrategy;
+use App\Services\Pipeliner\Strategies\PullOpportunityStrategy;
+use App\Services\Pipeliner\Strategies\PushCompanyStrategy;
+use App\Services\Pipeliner\Strategies\PushOpportunityStrategy;
 use App\Services\Pipeliner\Strategies\StrategyNameResolver;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
+use JetBrains\PhpStorm\ArrayShape;
 
-class PipelinerSyncEventSubscriber implements ShouldQueue
+class PipelinerSyncEventSubscriber
 {
     public function __construct(
         protected readonly PipelinerSyncErrorEntityService $errorEntityService,
+        protected readonly AppEventEntityService $eventEntityService,
+        protected readonly PipelinerAggregateSyncEventService $aggregateSyncEventService,
+        protected readonly Cache $cache,
     ) {
     }
 
     public function subscribe(Dispatcher $events): array
     {
         return [
-            SyncStrategyEntitySkipped::class => [
+            AggregateSyncStarting::class => [
+                [static::class, 'rememberPendingStrategyCounts'],
+            ],
+            AggregateSyncEntitySkipped::class => [
                 [static::class, 'ensureUnresolvedSyncErrorCreated'],
                 [static::class, 'notifyCauserAboutSyncStrategySkipped'],
+            ],
+            AggregateSyncEntityProcessed::class => [
+                [static::class, 'decrementProcessedEntityStrategyPendingCount'],
             ],
             SyncStrategyPerformed::class => [
                 [static::class, 'resolveRelatedSyncErrors'],
@@ -48,10 +68,72 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
             ModelSyncCompleted::class => [
                 [static::class, 'notifyCauserAboutModelSyncCompleted'],
             ],
+            AggregateSyncFailed::class => [
+                [static::class, 'storeAggregateSyncFailedEvent'],
+            ],
+            AggregateSyncCompleted::class => [
+                [static::class, 'storeAggregateSyncCompletedEvent'],
+            ],
         ];
     }
 
-    public function ensureUnresolvedSyncErrorCreated(SyncStrategyEntitySkipped $event): void
+    public function rememberPendingStrategyCounts(AggregateSyncStarting $event): void
+    {
+        $this->aggregateSyncEventService->rememberPendingCounts(
+            $event->aggregateId,
+            $event->counts
+        );
+    }
+
+    public function decrementProcessedEntityStrategyPendingCount(AggregateSyncEntityProcessed $event): void
+    {
+        $this->aggregateSyncEventService->decrementPendingCount(
+            $event->aggregateId,
+            $event->strategy,
+        );
+    }
+
+    public function storeAggregateSyncCompletedEvent(AggregateSyncCompleted $event): void
+    {
+        $counts = $this->calculateAggregateSyncEventCounts($event->aggregateId);
+
+        $this->eventEntityService->createAppEvent(
+            name: 'pipeliner-aggregate-sync-completed',
+            occurrence: $event->occurrence,
+            payload: [
+                'aggregate_id' => $event->aggregateId,
+                'success' => true,
+                'processed_counts' => $counts['processed'],
+                'skipped_counts' => $counts['skipped'],
+            ]
+        );
+    }
+
+    public function storeAggregateSyncFailedEvent(AggregateSyncFailed $event): void
+    {
+        $counts = $this->calculateAggregateSyncEventCounts($event->aggregateId);
+
+        $this->eventEntityService->createAppEvent(
+            name: 'pipeliner-aggregate-sync-completed',
+            occurrence: $event->occurrence,
+            payload: [
+                'aggregate_id' => $event->aggregateId,
+                'success' => false,
+                'processed_counts' => $counts['processed'],
+                'skipped_counts' => $counts['skipped'],
+            ]
+        );
+    }
+
+    public function resolveRelatedSyncErrors(SyncStrategyPerformed $event): void
+    {
+        $this->errorEntityService->markRelatedSyncErrorsResolved(
+            model: $event->model,
+            strategy: StrategyNameResolver::from($event->strategyClass)
+        );
+    }
+
+    public function ensureUnresolvedSyncErrorCreated(AggregateSyncEntitySkipped $event): void
     {
         $relatedModels = Collection::empty();
         $strategy = StrategyNameResolver::from($event->strategy);
@@ -86,14 +168,6 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
             });
     }
 
-    public function resolveRelatedSyncErrors(SyncStrategyPerformed $event): void
-    {
-        $this->errorEntityService->markRelatedSyncErrorsResolved(
-            entityId: $event->entityReference,
-            strategy: StrategyNameResolver::from($event->strategyClass)
-        );
-    }
-
     public function notifyCauserAboutModelSyncCompleted(ModelSyncCompleted $event): void
     {
         if ($event->causer instanceof User) {
@@ -112,7 +186,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         }
     }
 
-    public function notifyCauserAboutSyncStrategySkipped(SyncStrategyEntitySkipped $event): void
+    public function notifyCauserAboutSyncStrategySkipped(AggregateSyncEntitySkipped $event): void
     {
         if ($event->entity instanceof Model) {
             $this->notifyCauserAboutSyncStrategyModelSkipped($event);
@@ -121,7 +195,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         }
     }
 
-    protected function notifyCauserAboutSyncStrategyModelSkipped(SyncStrategyEntitySkipped $event): void
+    private function notifyCauserAboutSyncStrategyModelSkipped(AggregateSyncEntitySkipped $event): void
     {
         /** @var Model $model */
         $model = $event->entity;
@@ -142,7 +216,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         }
     }
 
-    protected function notifyCauserAboutSyncStrategyEntitySkipped(SyncStrategyEntitySkipped $event): void
+    private function notifyCauserAboutSyncStrategyEntitySkipped(AggregateSyncEntitySkipped $event): void
     {
         $errorMessage = $this->renderErrorMessageForEntity($event->entity, $event->e);
 
@@ -166,7 +240,45 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         }
     }
 
-    protected function resolveUrlToModel(Model $model): ?string
+    #[ArrayShape(['processed' => "array", 'skipped' => "array"])]
+    private function calculateAggregateSyncEventCounts(string $aggregateId): array
+    {
+        $pendingCounts = [];
+
+        $pendingCounts['opportunities'] = array_sum([
+            $this->aggregateSyncEventService->getPendingCount($aggregateId, PushOpportunityStrategy::class),
+            $this->aggregateSyncEventService->getPendingCount($aggregateId, PullOpportunityStrategy::class),
+        ]);
+
+        $pendingCounts['companies'] = array_sum([
+            $this->aggregateSyncEventService->getPendingCount($aggregateId, PushCompanyStrategy::class),
+            $this->aggregateSyncEventService->getPendingCount($aggregateId, PullCompanyStrategy::class),
+        ]);
+
+        $mutatedCounts = [];
+
+        $mutatedCounts['opportunities'] = array_sum([
+            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PushOpportunityStrategy::class),
+            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PullOpportunityStrategy::class),
+        ]);
+
+        $mutatedCounts['companies'] = array_sum([
+            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PushCompanyStrategy::class),
+            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PullCompanyStrategy::class),
+        ]);
+
+        $processedCounts = [
+            'opportunities' => abs($pendingCounts['opportunities'] - $mutatedCounts['opportunities']),
+            'companies' => abs($pendingCounts['companies'] - $mutatedCounts['companies']),
+        ];
+
+        return [
+            'processed' => $processedCounts,
+            'skipped' => $mutatedCounts,
+        ];
+    }
+
+    private function resolveUrlToModel(Model $model): ?string
     {
         return match ($model::class) {
             Opportunity::class => ui_route('opportunities.update', ['opportunity' => $model]),
@@ -175,7 +287,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         };
     }
 
-    protected function modelIdForHumans(Model $model): string
+    private function modelIdForHumans(Model $model): string
     {
         if ($model instanceof ProvidesIdForHumans) {
             return $model->getIdForHumans();
@@ -184,7 +296,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         return $model->getKey();
     }
 
-    protected function entityIdForHumans(object $entity): string
+    private function entityIdForHumans(object $entity): string
     {
         if ($entity instanceof OpportunityEntity) {
             return $entity->name;
@@ -197,16 +309,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         return $entity->id;
     }
 
-    protected function pipelinerErrorsForHumans(\Throwable $e): BaseCollection
-    {
-        if ($e instanceof PipelinerSyncException) {
-            return collect([$e->getMessage()]);
-        }
-
-        return BaseCollection::empty();
-    }
-
-    protected function errorsForHumans(\Throwable $e): BaseCollection
+    private function errorsForHumans(\Throwable $e): BaseCollection
     {
         if ($e instanceof GraphQlRequestException) {
             return collect($e->errors)
@@ -231,7 +334,7 @@ class PipelinerSyncEventSubscriber implements ShouldQueue
         return collect([$e->getMessage()]);
     }
 
-    protected function renderErrorMessageForModel(Model $model, ?\Throwable $e): string
+    private function renderErrorMessageForModel(Model $model, ?\Throwable $e): string
     {
         $modelName = class_basename($model);
 
@@ -249,11 +352,11 @@ MSG,
             ]);
     }
 
-    protected function renderErrorMessageForEntity(object $entity, ?\Throwable $e): string
+    private function renderErrorMessageForEntity(object $entity, ?\Throwable $e): string
     {
         $entityName = Str::of($entity::class)->classBasename()->beforeLast('Entity')->headline();
 
-        $errors = isset($event->e) ? $this->pipelinerErrorsForHumans($e) : null;
+        $errors = isset($e) ? $this->errorsForHumans($e) : null;
 
         return Blade::render(<<<MSG
 Unable pull {{ \$entity_name }} [{{ \$entity_id }}] from pipeliner due to errors.
@@ -263,7 +366,7 @@ MSG,
             [
                 'entity_id' => $this->entityIdForHumans($entity),
                 'entity_name' => $entityName,
-                'errors' => isset($errors) && $errors->isNotEmpty() ? $errors->join("\n") : null,
+                'errors' => $errors?->join("\n"),
             ]);
     }
 }

@@ -172,6 +172,39 @@ class PipelinerSyncErrorTest extends TestCase
     }
 
     /**
+     * Test an ability to archive all existing sync errors.
+     */
+    public function testCanArchiveAllSyncErrors(): void
+    {
+        $this->authenticateApi();
+
+        $errors = PipelinerSyncError::factory()->count(2)->create();
+
+        $this->patchJson("api/pipeliner/sync-errors/all-archive")
+//            ->dump()
+            ->assertNoContent();
+
+        foreach ($errors as $error) {
+            $r = $this->getJson("api/pipeliner/sync-errors/{$error->getKey()}")
+//            ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'entity_id',
+                    'entity_type',
+                    'entity_name',
+                    'error_message',
+                    'created_at',
+                    'updated_at',
+                    'archived_at',
+                    'resolved_at',
+                ]);
+
+            $this->assertNotEmpty($r->json('archived_at'), 'archived_at');
+        }
+    }
+
+    /**
      * Test an ability to restore an existing sync error from archive.
      */
     public function testCanRestoreSyncErrorFromArchive(): void
@@ -214,6 +247,39 @@ class PipelinerSyncErrorTest extends TestCase
         $this->patchJson("api/pipeliner/sync-errors/batch-restore", [
             'sync_errors' => $errors->map->only('id')->all(),
         ])
+//            ->dump()
+            ->assertNoContent();
+
+        foreach ($errors as $error) {
+            $r = $this->getJson("api/pipeliner/sync-errors/{$error->getKey()}")
+//            ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'entity_id',
+                    'entity_type',
+                    'entity_name',
+                    'error_message',
+                    'created_at',
+                    'updated_at',
+                    'archived_at',
+                    'resolved_at',
+                ]);
+
+            $this->assertEmpty($r->json('archived_at'), 'archived_at');
+        }
+    }
+
+    /**
+     * Test an ability to restore all existing sync errors from archive.
+     */
+    public function testCanRestoreAllSyncErrorFromArchive(): void
+    {
+        $this->authenticateApi();
+
+        $errors = PipelinerSyncError::factory()->count(2)->archived()->create();
+
+        $this->patchJson("api/pipeliner/sync-errors/all-restore")
 //            ->dump()
             ->assertNoContent();
 

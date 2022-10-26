@@ -40,6 +40,7 @@ use App\Services\Company\CompanyDataMapper;
 use App\Services\Company\ImportedCompanyToPrimaryAccountProjector;
 use App\Services\Opportunity\OpportunityEntityService;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
@@ -80,6 +81,7 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         protected LockProvider $lockProvider,
         protected Cache $cache,
         protected EventDispatcher $eventDispatcher,
+        protected PipelinerSyncAggregate $syncAggregate,
     ) {
     }
 
@@ -346,7 +348,11 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
 
         $this->persistSyncLog($account);
         $this->eventDispatcher->dispatch(
-            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $entity->id)
+            new SyncStrategyPerformed(
+                model: $account,
+                strategyClass: static::class,
+                aggregateId: $this->syncAggregate->id,
+            )
         );
 
         return $account;

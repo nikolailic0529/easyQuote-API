@@ -10,10 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 
 final class ModelSyncCompleted implements ShouldBroadcastNow
 {
+    public readonly \DateTimeImmutable $occurrenceTime;
+
     public function __construct(
         public readonly Model $model,
         public readonly ?Model $causer,
     ) {
+
+        $this->occurrenceTime = now()->toDateTimeImmutable();
     }
 
     public function broadcastOn(): array
@@ -38,7 +42,7 @@ final class ModelSyncCompleted implements ShouldBroadcastNow
             : $this->model->getKey();
 
         return [
-            'message' => "Data sync of $modelName [$modelIdForHumans] has been completed."
+            'message' => "Data sync of $modelName [$modelIdForHumans] has been completed.",
         ];
     }
 }

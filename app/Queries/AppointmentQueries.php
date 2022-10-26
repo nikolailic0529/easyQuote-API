@@ -4,9 +4,11 @@ namespace App\Queries;
 
 use App\Contracts\HasOwnAppointments;
 use App\Models\Appointment\Appointment;
+use App\Models\User;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 
 class AppointmentQueries
@@ -19,6 +21,7 @@ class AppointmentQueries
         $query = $modelHasAppointment->ownAppointments()->getQuery()
             ->select([
                 $model->getQualifiedKeyName(),
+                $model->owner()->getQualifiedForeignKeyName(),
 
                 ...$model->qualifyColumns([
                     'activity_type',
@@ -30,7 +33,19 @@ class AppointmentQueries
 
                 $model->getQualifiedCreatedAtColumn(),
                 $model->getQualifiedUpdatedAtColumn(),
-            ]);
+            ])
+            ->with(['owner' => static function (Relation $relation): void {
+                $model = new User();
+
+                $relation->select([
+                    $model->getQualifiedKeyName(),
+                    $model->qualifyColumn('user_fullname'),
+                    $model->qualifyColumn('first_name'),
+                    $model->qualifyColumn('middle_name'),
+                    $model->qualifyColumn('last_name'),
+                    $model->qualifyColumn('email'),
+                ]);
+            }]);
 
         return RequestQueryBuilder::for(
             $query, $request

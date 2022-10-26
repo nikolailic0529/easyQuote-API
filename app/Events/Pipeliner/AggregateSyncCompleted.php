@@ -2,6 +2,7 @@
 
 namespace App\Events\Pipeliner;
 
+use DateTimeImmutable;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -12,9 +13,13 @@ final class AggregateSyncCompleted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public DateTimeImmutable $occurrence;
+
     public function __construct(
-        protected readonly int $total,
+        public readonly string $aggregateId,
+        public readonly int $total,
     ) {
+        $this->occurrence = now()->toDateTimeImmutable();
     }
 
     public function broadcastOn(): array

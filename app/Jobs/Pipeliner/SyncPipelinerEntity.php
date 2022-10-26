@@ -2,12 +2,13 @@
 
 namespace App\Jobs\Pipeliner;
 
-use App\Events\Pipeliner\SyncStrategyEntitySkipped;
+use App\Events\Pipeliner\AggregateSyncEntityProcessed;
+use App\Events\Pipeliner\AggregateSyncEntitySkipped;
 use App\Events\Pipeliner\AggregateSyncProgress;
 use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
-use App\Services\Pipeliner\PipelinerSyncBatch;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
@@ -43,6 +44,7 @@ class SyncPipelinerEntity implements ShouldQueue
     public function __construct(
         SyncStrategy $strategy,
         public readonly string $entityReference,
+        public readonly string $aggregateId,
         public readonly ?Model $causer = null,
         public readonly array $withoutOverlapping = [],
         public readonly bool $withProgress = false,
@@ -56,7 +58,7 @@ class SyncPipelinerEntity implements ShouldQueue
      *
      * @param  SyncStrategyCollection  $strategies
      * @param  SyncPipelinerDataStatus  $status
-     * @param  PipelinerSyncBatch  $syncBatch
+     * @param  PipelinerSyncAggregate  $aggregate
      * @param  LoggerInterface  $logger
      * @param  EventDispatcher  $eventDispatcher
      * @param  Cache  $cache
@@ -65,7 +67,7 @@ class SyncPipelinerEntity implements ShouldQueue
      */
     public function handle(
         SyncStrategyCollection $strategies,
-        PipelinerSyncBatch $syncBatch,
+        PipelinerSyncAggregate $aggregate,
         SyncPipelinerDataStatus $status,
         LoggerInterface $logger,
         EventDispatcher $eventDispatcher,
@@ -79,7 +81,7 @@ class SyncPipelinerEntity implements ShouldQueue
         $this->cache = $cache;
         $this->lockProvider = $lockProvider;
 
-        $syncBatch->id = $this->batchId;
+        $aggregate->withId($this->aggregateId);
 
         $this->strategies = $strategies;
 
@@ -104,6 +106,7 @@ class SyncPipelinerEntity implements ShouldQueue
                 new static(
                     strategy: $strategy,
                     entityReference: $this->entityReference,
+                    aggregateId: $this->aggregateId,
                     causer: $this->causer,
                     withoutOverlapping: $this->withoutOverlapping,
                     withProgress: $this->withProgress,
@@ -138,6 +141,15 @@ class SyncPipelinerEntity implements ShouldQueue
                 'id' => $entity->id,
                 'strategy' => class_basename($this->strategyClass),
             ]);
+
+            $eventDispatcher->dispatch(
+                new AggregateSyncEntityProcessed(
+                    aggregateId: $this->aggregateId,
+                    entity: $entity,
+                    strategy: $strategy::class,
+                    causer: $this->causer,
+                )
+            );
         } catch (PipelinerIntegrationException|PipelinerSyncException $e) {
             report($e);
 
@@ -148,7 +160,8 @@ class SyncPipelinerEntity implements ShouldQueue
             ]);
 
             $eventDispatcher->dispatch(
-                new SyncStrategyEntitySkipped(
+                new AggregateSyncEntitySkipped(
+                    aggregateId: $this->aggregateId,
                     entity: $entity,
                     strategy: $strategy::class,
                     causer: $this->causer,
@@ -244,7 +257,7 @@ class SyncPipelinerEntity implements ShouldQueue
     public function incrementOverlappingCounterOnEvent(SyncStrategyPerformed $event): void
     {
         $this->cache->increment(
-            $this->getOverlappingCounterKey($event->entityReference)
+            $this->getOverlappingCounterKey($event->model->getKey())
         );
     }
 

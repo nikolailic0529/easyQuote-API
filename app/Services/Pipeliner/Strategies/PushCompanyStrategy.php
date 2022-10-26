@@ -25,6 +25,7 @@ use App\Services\Company\CompanyDataMapper;
 use App\Services\Company\Exceptions\CompanyDataMappingException;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerAccountLookupService;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
@@ -58,6 +59,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         protected PushAppointmentStrategy $pushAppointmentStrategy,
         protected LockProvider $lockProvider,
         protected EventDispatcher $eventDispatcher,
+        protected PipelinerSyncAggregate $syncAggregate,
     ) {
     }
 
@@ -213,7 +215,11 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         $this->persistSyncLog($model);
 
         $this->eventDispatcher->dispatch(
-            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $model->getKey())
+            new SyncStrategyPerformed(
+                model: $model,
+                strategyClass: static::class,
+                aggregateId: $this->syncAggregate->id,
+            )
         );
     }
 

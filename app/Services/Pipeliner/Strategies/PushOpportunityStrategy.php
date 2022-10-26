@@ -19,6 +19,7 @@ use App\Services\Opportunity\OpportunityDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerAccountLookupService;
 use App\Services\Pipeliner\PipelinerOpportunityLookupService;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\User\DefaultUserResolver;
@@ -57,7 +58,8 @@ class PushOpportunityStrategy implements PushStrategy
         protected DefaultUserResolver $defaultUserResolver,
         protected Cache $cache,
         protected LockProvider $lockProvider,
-        protected EventDispatcher $eventDispatcher
+        protected EventDispatcher $eventDispatcher,
+        protected PipelinerSyncAggregate $syncAggregate,
     ) {
     }
 
@@ -269,7 +271,11 @@ class PushOpportunityStrategy implements PushStrategy
 
         $this->persistSyncLog($model);
         $this->eventDispatcher->dispatch(
-            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $model->getKey())
+            new SyncStrategyPerformed(
+                model: $model,
+                strategyClass: static::class,
+                aggregateId: $this->syncAggregate->id,
+            )
         );
     }
 

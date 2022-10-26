@@ -67,12 +67,12 @@ class PipelinerSyncErrorEntityService
             });
     }
 
-    public function markRelatedSyncErrorsResolved(string $entityId, string $strategy): void
+    public function markRelatedSyncErrorsResolved(Model $model, string $strategy): void
     {
         PipelinerSyncError::query()
             ->whereNull('resolved_at')
             ->whereNull('archived_at')
-            ->where('entity_id', $entityId)
+            ->whereMorphedTo('entity', $model)
             ->where('strategy_name', $strategy)
             ->lazyById()
             ->each(function (PipelinerSyncError $error): void {
@@ -113,6 +113,28 @@ class PipelinerSyncErrorEntityService
             ->lazyById()
             ->each(function (PipelinerSyncError $error) {
                 $this->markSyncErrorArchived($error);
+            });
+    }
+
+    public function markAllSyncErrorsArchived(): void
+    {
+        PipelinerSyncError::query()
+            ->whereNull('archived_at')
+            ->whereNull('resolved_at')
+            ->lazyById()
+            ->each(function (PipelinerSyncError $error): void {
+                $this->markSyncErrorArchived($error);
+            });
+    }
+
+    public function markAllSyncErrorNotArchived(): void
+    {
+        PipelinerSyncError::query()
+            ->whereNotNull('archived_at')
+            ->whereNull('resolved_at')
+            ->lazyById()
+            ->each(function (PipelinerSyncError $error): void {
+                $this->markSyncErrorNotArchived($error);
             });
     }
 

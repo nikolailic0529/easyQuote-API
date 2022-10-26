@@ -12,7 +12,7 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
 use App\Jobs\Pipeliner\SyncPipelinerEntity;
 use App\Services\Pipeliner\PipelinerDataSyncService;
-use App\Services\Pipeliner\PipelinerSyncBatch;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
@@ -35,7 +35,7 @@ class PipelinerServiceProvider extends ServiceProvider
     {
         $this->app->singleton(SyncPipelinerDataStatus::class);
 
-        $this->app->singleton(PipelinerSyncBatch::class);
+        $this->app->singleton(PipelinerSyncAggregate::class);
 
         $this->app->afterResolving(PipelinerDataSyncService::class,
             function (PipelinerDataSyncService $concrete): void {

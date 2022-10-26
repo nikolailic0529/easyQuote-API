@@ -14,7 +14,7 @@ use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
 use App\Models\Contact;
 use App\Services\Contact\ContactDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
-use App\Services\Pipeliner\PipelinerSyncBatch;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -32,7 +32,7 @@ class PushContactStrategy implements PushStrategy
         protected readonly ConnectionInterface $connection,
         protected readonly Cache $cache,
         protected readonly LockProvider $lockProvider,
-        protected readonly PipelinerSyncBatch $batch,
+        protected readonly PipelinerSyncAggregate $batch,
         protected readonly PipelinerContactIntegration $contactIntegration,
         protected readonly PushSalesUnitStrategy $pushSalesUnitStrategy,
         protected readonly PushClientStrategy $pushClientStrategy,

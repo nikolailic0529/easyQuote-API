@@ -2,14 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Events\Pipeliner\AggregateSyncFailed;
 use App\Events\Pipeliner\AggregateSyncCompleted;
+use App\Events\Pipeliner\AggregateSyncFailed;
 use App\Events\Pipeliner\AggregateSyncProgress;
 use App\Events\Pipeliner\AggregateSyncStarting;
 use App\Integrations\Pipeliner\GraphQl\PipelinerDataIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
 use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
-use App\Models\Company;
 use App\Models\Opportunity;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\Request;
@@ -50,7 +49,10 @@ class PipelinerTest extends TestCase
 
         $this->authenticateApi();
 
-        Event::fake([AggregateSyncCompleted::class, AggregateSyncFailed::class, AggregateSyncProgress::class, AggregateSyncStarting::class]);
+        Event::fake([
+            AggregateSyncCompleted::class, AggregateSyncFailed::class, AggregateSyncProgress::class,
+            AggregateSyncStarting::class,
+        ]);
 
         /** @var PipelinerGraphQlClient $oppClient */
         $oppClient = $this->app->make(PipelinerGraphQlClient::class);
@@ -67,9 +69,11 @@ class PipelinerTest extends TestCase
             '*' => json_decode(file_get_contents(__DIR__.'/Data/pipeliner/opportunities-getByCriteria.json'), true),
         ]);
 
-        $this->app->when(PipelinerOpportunityIntegration::class)->needs(PipelinerGraphQlClient::class)->give(static function () use ($oppClient) {
-            return $oppClient;
-        });
+        $this->app->when(PipelinerOpportunityIntegration::class)
+            ->needs(PipelinerGraphQlClient::class)
+            ->give(static function () use ($oppClient) {
+                return $oppClient;
+            });
 //
         /** @var PipelinerGraphQlClient $dataClient */
         $dataClient = $this->app->make(PipelinerGraphQlClient::class);
@@ -106,12 +110,13 @@ class PipelinerTest extends TestCase
             return null;
         });
 
-        $this->app->when(PipelinerDataIntegration::class)->needs(PipelinerGraphQlClient::class)->give(static function () use ($dataClient) {
+        $this->app->when(PipelinerDataIntegration::class)->needs(PipelinerGraphQlClient::class)->give(static function (
+        ) use ($dataClient) {
             return $dataClient;
         });
 
         $this->patchJson('api/opportunities/queue-pipeliner-sync', [
-            'strategies' => ['PullTaskStrategy']
+            'strategies' => ['PullTaskStrategy'],
         ])
             ->dump()
             ->assertOk()
@@ -140,6 +145,8 @@ class PipelinerTest extends TestCase
      */
     public function testCanReceiveNotificationWhenQueuedOpportunitySyncJobFailed(): void
     {
+        $this->markTestSkipped();
+
         $this->authenticateApi();
 
         Event::fake([AggregateSyncCompleted::class, AggregateSyncFailed::class]);
@@ -148,14 +155,18 @@ class PipelinerTest extends TestCase
         $oppClient = $this->app->make(PipelinerGraphQlClient::class);
 
         $oppClient->fake([
-            '*' => $oppClient::response(['errors' => [
-                'message' => 'A failure happened...',
-            ]], 404),
+            '*' => $oppClient::response([
+                'errors' => [
+                    'message' => 'A failure happened...',
+                ],
+            ], 404),
         ]);
 
-        $this->app->when(PipelinerOpportunityIntegration::class)->needs(PipelinerGraphQlClient::class)->give(static function () use ($oppClient) {
-            return $oppClient;
-        });
+        $this->app->when(PipelinerOpportunityIntegration::class)
+            ->needs(PipelinerGraphQlClient::class)
+            ->give(static function () use ($oppClient) {
+                return $oppClient;
+            });
 //
         /** @var PipelinerGraphQlClient $dataClient */
         $dataClient = $this->app->make(PipelinerGraphQlClient::class);
@@ -192,7 +203,8 @@ class PipelinerTest extends TestCase
             return null;
         });
 
-        $this->app->when(PipelinerDataIntegration::class)->needs(PipelinerGraphQlClient::class)->give(static function () use ($dataClient) {
+        $this->app->when(PipelinerDataIntegration::class)->needs(PipelinerGraphQlClient::class)->give(static function (
+        ) use ($dataClient) {
             return $dataClient;
         });
 
@@ -215,5 +227,34 @@ class PipelinerTest extends TestCase
         $this->getJson('api/opportunities/pipeliner-sync-status')
             ->assertJsonStructure(['running'])
             ->assertJson(['running' => false]);
+    }
+
+    /**
+     * Test an ability to view pipeliner sync statistics.
+     */
+    public function testCanViewPipelinerSyncStatistics(): void
+    {
+        $this->authenticateApi();
+
+        $this->getJson('api/pipeliner/pipeliner-sync-statistics')
+//            ->dump()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'aggregate_id',
+                        'success',
+                        'processed_counts' => [
+                            'opportunities',
+                            'companies',
+                        ],
+                        'skipped_counts' => [
+                            'opportunities',
+                            'companies',
+                        ],
+                        'occurred_at',
+                    ],
+                ],
+            ]);
     }
 }

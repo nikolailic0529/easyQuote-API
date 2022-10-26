@@ -7,7 +7,7 @@ use App\Integrations\Pipeliner\GraphQl\PipelinerClientIntegration;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\MultiplePipelinerEntitiesFoundException;
 use App\Services\Pipeliner\PipelinerClientLookupService;
-use App\Services\Pipeliner\PipelinerSyncBatch;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\User\UserDataMapper;
@@ -24,7 +24,7 @@ class PushClientStrategy implements PushStrategy
         protected readonly ConnectionInterface $connection,
         protected readonly Cache $cache,
         protected readonly LockProvider $lockProvider,
-        protected readonly PipelinerSyncBatch $batch,
+        protected readonly PipelinerSyncAggregate $batch,
         protected readonly PipelinerClientLookupService $clientLookupService,
         protected readonly PipelinerClientIntegration $clientIntegration,
         protected readonly UserDataMapper $userDataMapper

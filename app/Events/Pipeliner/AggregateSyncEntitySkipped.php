@@ -10,16 +10,20 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Throwable;
 
-final class SyncStrategyEntitySkipped implements ShouldBroadcastNow
+final class AggregateSyncEntitySkipped implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+    public \DateTimeImmutable $occurrence;
+
     public function __construct(
+        public readonly string $aggregateId,
         public readonly object $entity,
         public readonly string $strategy,
         public readonly ?Model $causer,
         public readonly ?Throwable $e,
     ) {
+        $this->occurrence = now()->toDateTimeImmutable();
     }
 
     public function broadcastOn(): array

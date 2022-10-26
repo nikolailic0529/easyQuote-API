@@ -28,6 +28,7 @@ use App\Models\PipelinerModelScrollCursor;
 use App\Models\SalesUnit;
 use App\Services\Opportunity\OpportunityDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -64,6 +65,7 @@ class PullOpportunityStrategy implements PullStrategy
         protected OpportunityDataMapper $oppDataMapper,
         protected Cache $cache,
         protected LockProvider $lockProvider,
+        protected PipelinerSyncAggregate $syncAggregate,
     ) {
     }
 
@@ -194,7 +196,11 @@ class PullOpportunityStrategy implements PullStrategy
 
         $this->persistSyncLog($opportunity);
         $this->eventDispatcher->dispatch(
-            new SyncStrategyPerformed(strategyClass: static::class, entityReference: $entity->id)
+            new SyncStrategyPerformed(
+                model: $opportunity,
+                strategyClass: static::class,
+                aggregateId: $this->syncAggregate->id,
+            )
         );
 
         return $opportunity;

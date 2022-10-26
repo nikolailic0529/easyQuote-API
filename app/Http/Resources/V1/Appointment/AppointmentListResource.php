@@ -2,8 +2,13 @@
 
 namespace App\Http\Resources\V1\Appointment;
 
+use App\Http\Resources\V1\User\UserRelationResource;
+use App\Models\Appointment\Appointment;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Appointment
+ */
 class AppointmentListResource extends JsonResource
 {
     /**
@@ -14,6 +19,16 @@ class AppointmentListResource extends JsonResource
      */
     public function toArray($request)
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->getKey(),
+            'activity_type' => $this->activity_type,
+            'user' => UserRelationResource::make($this->owner),
+            'subject' => $this->subject,
+            'start_date' => $this->start_date,
+            'end_date' => $this->end_date,
+            'location' => $this->location,
+            'created_at' => $this->{$this->getCreatedAtColumn()},
+            'updated_at' => $this->{$this->getUpdatedAtColumn()},
+        ];
     }
 }

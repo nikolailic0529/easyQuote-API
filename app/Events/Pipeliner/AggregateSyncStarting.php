@@ -8,13 +8,18 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * @property-read array<string, int>
+ */
 final class AggregateSyncStarting implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        protected readonly int $total,
-        protected readonly int $pending,
+        public readonly string $aggregateId,
+        public readonly int $total,
+        public readonly int $pending,
+        public readonly array $counts,
     ) {
     }
 

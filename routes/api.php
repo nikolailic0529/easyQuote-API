@@ -516,12 +516,15 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::apiResource('ww-customers', WorldwideCustomerController::class, ['only' => ROUTE_R]);
 
     Route::get('pipeliner/pipeliner-sync-status', [PipelinerController::class, 'showPipelinerSyncStatus']);
+    Route::get('pipeliner/pipeliner-sync-statistics', [PipelinerController::class, 'showPipelinerSyncStatistics']);
     Route::get('pipeliner/sync-errors', [PipelinerController::class, 'paginateSyncErrors']);
     Route::get('pipeliner/sync-errors/{error}', [PipelinerController::class, 'showSyncError']);
     Route::patch('pipeliner/sync-errors/{error}/archive', [PipelinerController::class, 'archiveSyncError']);
     Route::patch('pipeliner/sync-errors/batch-archive', [PipelinerController::class, 'batchArchiveSyncError']);
+    Route::patch('pipeliner/sync-errors/all-archive', [PipelinerController::class, 'archiveAllSyncErrors']);
     Route::patch('pipeliner/sync-errors/{error}/restore', [PipelinerController::class, 'restoreSyncError']);
     Route::patch('pipeliner/sync-errors/batch-restore', [PipelinerController::class, 'batchRestoreSyncError']);
+    Route::patch('pipeliner/sync-errors/all-restore', [PipelinerController::class, 'restoreAllSyncErrors']);
     Route::patch('pipeliner/queue-pipeliner-sync', [PipelinerController::class, 'queuePipelinerSync']);
     Route::patch('pipeliner/sync-model', [PipelinerController::class, 'syncModel']);
 
