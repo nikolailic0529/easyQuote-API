@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\V1;
 
+use App\Models\System\Activity;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Activity
+ */
 class ActivityResource extends JsonResource
 {
     /**
@@ -15,7 +19,7 @@ class ActivityResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id'            => $this->id,
+            'id'            => $this->getKey(),
             'log_name'      => $this->log_name,
             'description'   => $this->description,
             'subject_id'    => $this->subject_id,
@@ -23,7 +27,7 @@ class ActivityResource extends JsonResource
             'subject_type'  => $this->subject_type_base,
             'causer_name'   => $this->causer_name ?? $this->causer_service_name,
             'changes'       => $this->attribute_changes,
-            'created_at'    => optional($this->created_at)->format(config('date.format_time')),
+            'created_at'    => format('date_time', $this->{$this->getCreatedAtColumn()}),
         ];
     }
 }

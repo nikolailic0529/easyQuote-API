@@ -15,6 +15,7 @@ use App\Models\SalesUnit;
 use App\Models\User;
 use App\Traits\HasTimestamps;
 use App\Traits\Uuid;
+use Carbon\Carbon;
 use Database\Factories\AppointmentFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -33,8 +34,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property AppointmentTypeEnum|null $activity_type
  * @property string|null $subject
  * @property string|null $description
- * @property \DateTimeInterface|null $start_date
- * @property \DateTimeInterface|null $end_date
+ * @property Carbon|null $start_date
+ * @property Carbon|null $end_date
  * @property string|null $location
  * @property int|null $flags
  *

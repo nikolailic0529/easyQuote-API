@@ -5,6 +5,7 @@ namespace App\Integrations\Pipeliner\GraphQl;
 use App\Contracts\LoggerAware;
 use App\Foundation\Http\Client\ConnectionLimiter\ConnectionLimiterMiddleware;
 use App\Foundation\Http\Client\ConnectionLimiter\Store as ConnStore;
+use App\Foundation\Http\Client\GuzzleReactBridge\CurlMultiHandler;
 use App\Foundation\Http\Client\RateLimiter\RateLimiterMiddleware;
 use App\Foundation\Http\Client\RateLimiter\Store as RateStore;
 use GuzzleHttp\MessageFormatter;
@@ -56,6 +57,8 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
 
             $this->setupRateLimiterMiddleware($request);
             $this->setupLoggingHandler($request);
+
+            $request->setHandler(new CurlMultiHandler());
         });
     }
 

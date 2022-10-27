@@ -9,6 +9,7 @@ use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
+use App\Queries\Scopes\CurrentUserScope;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\ConnectionInterface;
@@ -111,9 +112,12 @@ class UnifiedQuoteQueries
             ->limit(1);
 
         $worldwideQuotesQuery = WorldwideQuote::query()
-            ->join('opportunities', function (JoinClause $joinClause) use ($company) {
+            ->join('opportunities', static function (JoinClause $joinClause) use ($company): void {
                 $joinClause->on('opportunities.id', 'worldwide_quotes.opportunity_id')
-                    ->where('opportunities.primary_account_id', $company->getKey());
+                    ->where(static function (JoinClause $builder) use ($company): void {
+                        $builder->where('opportunities.primary_account_id', $company->getKey())
+                            ->orWhere('opportunities.end_user_id', $company->getKey());
+                    });
             })
             ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
                 $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
@@ -169,14 +173,7 @@ class UnifiedQuoteQueries
                 'worldwide_quotes.activated_at as activated_at',
                 'worldwide_quotes.is_active as is_active',
             ])
-            ->when($this->gate->denies('viewQuotesOfAnyUser'), function (Builder $builder) use ($user) {
-
-                $builder->where($builder->qualifyColumn('user_id'), $user?->getKey())
-                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->join('team_team_leader', function (JoinClause $join) use ($user) {
-                        $join->on('users.team_id', 'team_team_leader.team_id')
-                            ->where('team_team_leader.team_leader_id', $user?->getKey());
-                    }));
-            });
+            ->tap(CurrentUserScope::from($request, $this->gate));
 
         /** @var Builder[] $queries */
         $queries = [];

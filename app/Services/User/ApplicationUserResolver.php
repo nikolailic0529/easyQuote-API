@@ -8,7 +8,7 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Database\ConnectionResolverInterface;
 
-class DefaultUserResolver
+class ApplicationUserResolver
 {
     public function __construct(
         protected readonly Repository $config,

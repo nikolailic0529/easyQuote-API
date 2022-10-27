@@ -55,9 +55,12 @@ class SalesOrderQueries
             ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
                 $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->join('opportunities', function (JoinClause $join) use ($company) {
+            ->join('opportunities', static function (JoinClause $join) use ($company): void {
                 $join->on('opportunities.id', 'worldwide_quotes.opportunity_id')
-                    ->where('opportunities.primary_account_id', $company->getKey());
+                    ->where(static function (JoinClause $join) use ($company): void {
+                        $join->where('opportunities.primary_account_id', $company->getKey())
+                            ->orWhere('opportunities.end_user_id', $company->getKey());
+                    });
             })
             ->join('companies as primary_account', function (JoinClause $join) {
                 $join->on('primary_account.id', 'opportunities.primary_account_id');
@@ -68,15 +71,7 @@ class SalesOrderQueries
             ->join('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->when($this->gate->denies('viewAnyOwnerEntities', SalesOrder::class), function (Builder $builder) use ($user) {
-
-                $builder->where($builder->qualifyColumn('user_id'), $user?->getKey())
-                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->join('team_team_leader', function (JoinClause $join) use ($user) {
-                        $join->on('users.team_id', 'team_team_leader.team_id')
-                            ->where('team_team_leader.team_leader_id', $user?->getKey());
-                    }));
-
-            });
+            ->tap(CurrentUserScope::from($request, $this->gate));
 
         return tap($query, function (Builder $builder) {
             $builder->orderBy('updated_at', 'desc');

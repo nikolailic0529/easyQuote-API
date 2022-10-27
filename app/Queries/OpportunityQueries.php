@@ -56,7 +56,10 @@ class OpportunityQueries
             $builder
                 ->with(['salesUnit:id,unit_name'])
                 ->withExists('worldwideQuotes')
-                ->where($builder->qualifyColumn('primary_account_id'), $company->getKey());
+                ->where(static function (Builder $builder) use ($company): void {
+                    $builder->whereBelongsTo($company, 'primaryAccount')
+                        ->orWhereBelongsTo($company, 'endUser');
+                });
         });
     }
 

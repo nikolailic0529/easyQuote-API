@@ -8,6 +8,9 @@ use App\Integrations\Pipeliner\Models\CurrencyEntity;
 use App\Models\Data\Currency;
 use App\Services\Currency\CurrencyDataMapper;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
+use Carbon\CarbonInterval;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\LazyCollection;
 
@@ -15,13 +18,20 @@ class PushCurrencyStrategy implements Contracts\PushStrategy
 {
     use SalesUnitsAware;
 
+    private readonly \DateInterval $cacheTtl;
+
     private ?array $currencyCache = null;
     private ?array $exchangeRatesListCache = null;
 
-    public function __construct(protected CurrencyDataMapper                            $dataMapper,
-                                protected PipelinerCurrencyIntegration                  $currencyIntegration,
-                                protected PipelinerCurrencyExchangeRatesListIntegration $exchangeRatesListIntegration)
-    {
+    public function __construct(
+        protected CurrencyDataMapper $dataMapper,
+        protected PipelinerCurrencyIntegration $currencyIntegration,
+        protected PipelinerCurrencyExchangeRatesListIntegration $exchangeRatesListIntegration,
+        protected Cache $cache,
+        protected LockProvider $lockProvider,
+        \DateInterval $cacheTtl = null,
+    ) {
+        $this->cacheTtl = $cacheTtl ?? CarbonInterval::hours(8);
     }
 
     public function sync(Model $model): void
@@ -30,34 +40,65 @@ class PushCurrencyStrategy implements Contracts\PushStrategy
             throw new \TypeError(sprintf("Model must be an instance of %s.", Currency::class));
         }
 
-        $this->ensureCurrencyCacheLoaded();
+        $currenciesCache = $this->getCurrenciesFromCache();
 
         // Pass when currency code already exists in the cache.
-        if (key_exists($model->code, $this->currencyCache)) {
+        if (key_exists($model->code, $currenciesCache)) {
             return;
         }
 
-        $this->ensureExchangeRatesListCacheLoaded();
+        $exchangeRatesList = $this->getExchangeRatesListFromCache();
 
         $baseCurrencyEntity = collect($this->currencyCache)->sole('isBase', true);
 
-        $input = $this->dataMapper->mapPipelinerCreateCurrencyInput($model, $baseCurrencyEntity, $this->exchangeRatesListCache);
+        $input = $this->dataMapper->mapPipelinerCreateCurrencyInput(
+            currency: $model,
+            baseCurrencyEntity: $baseCurrencyEntity,
+            exchangeRatesLists: $exchangeRatesList
+        );
 
-        $entity = $this->currencyIntegration->create($input);
+        $this->currencyIntegration->create($input);
 
-        $this->currencyCache[$entity->code] = $entity;
+        $this->forgetCurrenciesCache();
     }
 
-    private function ensureCurrencyCacheLoaded(): void
+    private function getCurrenciesFromCache(): array
     {
-        $this->currencyCache ??= collect($this->currencyIntegration->getAll())
-            ->keyBy(static fn(CurrencyEntity $entity): string => $entity->code)
-            ->all();
+        return $this->cache->remember(
+            key: $this->getCurrenciesCacheKey(),
+            ttl: $this->cacheTtl,
+            callback: function (): array {
+                return collect($this->currencyIntegration->getAll())
+                    ->keyBy(static fn(CurrencyEntity $entity): string => $entity->code)
+                    ->all();
+            }
+        );
     }
 
-    private function ensureExchangeRatesListCacheLoaded(): void
+    private function getExchangeRatesListFromCache(): array
     {
-        $this->exchangeRatesListCache ??= $this->exchangeRatesListIntegration->getAll();
+        return $this->cache->remember(
+            key: $this->getExchangeRatesCacheKey(),
+            ttl: $this->cacheTtl,
+            callback: function (): array {
+                return $this->exchangeRatesListIntegration->getAll();
+            }
+        );
+    }
+
+    private function forgetCurrenciesCache(): void
+    {
+        $this->cache->forget($this->getCurrenciesCacheKey());
+    }
+
+    private function getCurrenciesCacheKey(): string
+    {
+        return static::class.':currencies-list';
+    }
+
+    private function getExchangeRatesCacheKey(): string
+    {
+        return static::class.':exchange-rates-list';
     }
 
     public function countPending(): int
@@ -73,7 +114,7 @@ class PushCurrencyStrategy implements Contracts\PushStrategy
         return Currency::query()
             ->lazyById(100)
             ->filter(function (Currency $currency): bool {
-                $this->ensureCurrencyCacheLoaded();
+                $this->getCurrenciesFromCache();
 
                 return key_exists($currency->code, $this->currencyCache) === false;
             });

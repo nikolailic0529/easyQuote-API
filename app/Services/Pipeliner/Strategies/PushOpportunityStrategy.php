@@ -22,7 +22,7 @@ use App\Services\Pipeliner\PipelinerOpportunityLookupService;
 use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
-use App\Services\User\DefaultUserResolver;
+use App\Services\User\ApplicationUserResolver;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
@@ -55,7 +55,7 @@ class PushOpportunityStrategy implements PushStrategy
         protected PushAttachmentStrategy $pushAttachmentStrategy,
         protected PushAppointmentStrategy $pushAppointmentStrategy,
         protected OpportunityDataMapper $dataMapper,
-        protected DefaultUserResolver $defaultUserResolver,
+        protected ApplicationUserResolver $defaultUserResolver,
         protected Cache $cache,
         protected LockProvider $lockProvider,
         protected EventDispatcher $eventDispatcher,

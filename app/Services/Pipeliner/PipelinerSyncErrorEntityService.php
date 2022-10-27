@@ -26,7 +26,6 @@ class PipelinerSyncErrorEntityService
             ->block(30, function () use ($model, $message, $strategy) {
                 $error = PipelinerSyncError::query()
                     ->whereNull('resolved_at')
-                    ->whereNull('archived_at')
                     ->where('strategy_name', $strategy)
                     ->whereMorphedTo( 'entity', $model)
                     ->where('error_message_hash', sha1($message))
@@ -71,7 +70,6 @@ class PipelinerSyncErrorEntityService
     {
         PipelinerSyncError::query()
             ->whereNull('resolved_at')
-            ->whereNull('archived_at')
             ->whereMorphedTo('entity', $model)
             ->where('strategy_name', $strategy)
             ->lazyById()

@@ -257,4 +257,19 @@ class PipelinerTest extends TestCase
                 ],
             ]);
     }
+
+    /**
+     * Test an ability to view pipeliner sync queue size.
+     */
+    public function testCanViewPipelinerSyncQueueSize(): void
+    {
+        $this->authenticateApi();
+
+        $this->getJson('api/pipeliner/pipeliner-sync-queue-size')
+//            ->dump()
+            ->assertJsonStructure([
+                'opportunities',
+                'companies'
+            ]);
+    }
 }

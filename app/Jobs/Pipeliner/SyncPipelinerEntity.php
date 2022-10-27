@@ -15,8 +15,11 @@ use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
+use App\Services\User\ApplicationUserResolver;
+use Illuminate\Auth\AuthManager;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Cache\Lock;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
@@ -73,6 +76,8 @@ class SyncPipelinerEntity implements ShouldQueue
         EventDispatcher $eventDispatcher,
         Cache $cache,
         LockProvider $lockProvider,
+        AuthManager $authManager,
+        ApplicationUserResolver $defaultUserResolver,
     ): void {
         if ($this->batch()->canceled()) {
             return;
@@ -80,10 +85,11 @@ class SyncPipelinerEntity implements ShouldQueue
 
         $this->cache = $cache;
         $this->lockProvider = $lockProvider;
+        $this->strategies = $strategies;
 
         $aggregate->withId($this->aggregateId);
 
-        $this->strategies = $strategies;
+        $this->setCauserToGuard($authManager, $defaultUserResolver);
 
         foreach ($strategies as $strategy) {
             $strategy->setSalesUnits(...$this->units);
@@ -300,5 +306,14 @@ class SyncPipelinerEntity implements ShouldQueue
             ->each(function (string $key): void {
                 $this->getOverlappingLock($key)->release();
             });
+    }
+
+    private function setCauserToGuard(AuthManager $authManager, ApplicationUserResolver $defaultUserResolver)
+    {
+        $user = $this->causer instanceof Authenticatable
+            ? $this->causer
+            : $defaultUserResolver->resolve();
+
+        $authManager->guard()->setUser($user);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Integrations\Pipeliner\GraphQl;
 
+use App\Foundation\Http\Client\GuzzleReactBridge\Utils;
 use App\Integrations\Pipeliner\Defaults;
 use App\Integrations\Pipeliner\Exceptions\EntityNotFoundException;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
@@ -14,6 +15,7 @@ use GraphQL\Query;
 use GraphQL\QueryBuilder\MutationBuilder;
 use GraphQL\QueryBuilder\QueryBuilder;
 use GraphQL\RawObject;
+use function React\Async\await;
 
 class PipelinerAppointmentIntegration
 {
@@ -38,13 +40,15 @@ class PipelinerAppointmentIntegration
                     ])
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => $input->jsonSerialize(),
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 
@@ -72,13 +76,15 @@ class PipelinerAppointmentIntegration
                     ])
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => $input->jsonSerialize(),
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 
@@ -110,13 +116,15 @@ class PipelinerAppointmentIntegration
                     )
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'entityId' => $entityId,
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 

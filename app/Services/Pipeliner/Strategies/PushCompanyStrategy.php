@@ -15,12 +15,16 @@ use App\Integrations\Pipeliner\Models\ContactFilterInput;
 use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
 use App\Models\Address;
+use App\Models\Appointment\Appointment;
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelUpdateLog;
 use App\Models\SalesUnit;
+use App\Models\Task\Task;
 use App\Services\Company\CompanyDataMapper;
 use App\Services\Company\Exceptions\CompanyDataMappingException;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
@@ -29,7 +33,8 @@ use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
-use App\Services\User\DefaultUserResolver;
+use App\Services\User\ApplicationUserResolver;
+use Clue\React\Mq\Queue;
 use Generator;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
@@ -38,6 +43,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\LazyCollection;
+use function React\Async\async;
+use function React\Async\await;
 
 class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyEntities
 {
@@ -49,7 +56,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         protected PipelinerAccountIntegration $accountIntegration,
         protected PipelinerContactIntegration $contactIntegration,
         protected CompanyDataMapper $dataMapper,
-        protected DefaultUserResolver $defaultUserResolver,
+        protected ApplicationUserResolver $defaultUserResolver,
         protected PushSalesUnitStrategy $pushSalesUnitStrategy,
         protected PushClientStrategy $pushClientStrategy,
         protected PushContactStrategy $pushContactStrategy,
@@ -234,30 +241,38 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
 
     private function syncNotesFromAccount(Company $model): void
     {
-        foreach ($model->notes as $note) {
-            $this->pushNoteStrategy->sync($note);
-        }
+        $queue = Queue::all(concurrency: 10, jobs: $model->notes->all(), handler: async(function (Note $model): void {
+            $this->pushNoteStrategy->sync($model);
+        }));
+
+        await($queue);
     }
 
     private function syncAttachmentsFromAccount(Company $model): void
     {
-        foreach ($model->attachments as $attachment) {
-            $this->pushAttachmentStrategy->sync($attachment);
-        }
+        $queue = Queue::all(concurrency: 10, jobs: $model->attachments->all(), handler: async(function (Attachment $model): void {
+            $this->pushAttachmentStrategy->sync($model);
+        }));
+
+        await($queue);
     }
 
     private function syncTasksFromAccount(Company $model): void
     {
-        foreach ($model->tasks as $task) {
-            $this->pushTaskStrategy->sync($task);
-        }
+        $queue = Queue::all(concurrency: 10, jobs: $model->tasks->all(), handler: async(function (Task $model): void {
+            $this->pushTaskStrategy->sync($model);
+        }));
+
+        await($queue);
     }
 
     private function syncAppointmentsFromAccount(Company $model): void
     {
-        foreach ($model->ownAppointments as $appointment) {
-            $this->pushAppointmentStrategy->sync($appointment);
-        }
+        $queue = Queue::all(concurrency: 10, jobs: $model->ownAppointments->all(), handler: async(function (Appointment $model): void {
+            $this->pushAppointmentStrategy->sync($model);
+        }));
+
+        await($queue);
     }
 
     private function syncContactRelationsFromAccount(Company $model): void

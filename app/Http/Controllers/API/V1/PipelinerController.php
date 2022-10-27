@@ -225,4 +225,17 @@ class PipelinerController extends Controller
 
         return AggregateSyncEventData::collection($events);
     }
+
+    /**
+     * Show pipeliner in synchronization queue counts.
+     *
+     * @param  PipelinerDataSyncService  $service
+     * @return JsonResponse
+     */
+    public function showPipelinerSyncQueueCounts(PipelinerDataSyncService $service): JsonResponse
+    {
+        $counts = $service->getQueueCounts();
+
+        return response()->json($counts);
+    }
 }

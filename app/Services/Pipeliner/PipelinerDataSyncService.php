@@ -17,11 +17,14 @@ use App\Jobs\Pipeliner\SyncPipelinerEntity;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
+use App\Services\Pipeliner\Models\QueueCounts;
 use App\Services\Pipeliner\Models\QueueSyncResult;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\SyncStrategy;
+use App\Services\Pipeliner\Strategies\PushCompanyStrategy;
+use App\Services\Pipeliner\Strategies\PushOpportunityStrategy;
 use App\Services\Pipeliner\Strategies\StrategyNameResolver;
 use App\Services\Pipeliner\Strategies\SyncStrategyCollection;
 use Carbon\Carbon;
@@ -634,6 +637,23 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
     public function getDataSyncStatus(): SyncPipelinerDataStatus
     {
         return $this->dataSyncStatus;
+    }
+
+    public function getQueueCounts(): QueueCounts
+    {
+        $counts = [
+            'opportunities' => 0,
+            'companies' => 0,
+        ];
+
+        $this->prepareStrategies();
+
+        if ($this->isSyncMethodAllowed('push')) {
+            $counts['opportunities'] = $this->syncStrategies[PushOpportunityStrategy::class]->countPending();
+            $counts['companies'] = $this->syncStrategies[PushCompanyStrategy::class]->countPending();
+        }
+
+        return new QueueCounts(...$counts);
     }
 
     protected function getEnabledSalesUnits(): Collection

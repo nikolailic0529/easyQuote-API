@@ -2,12 +2,14 @@
 
 namespace App\Integrations\Pipeliner\GraphQl;
 
+use App\Foundation\Http\Client\GuzzleReactBridge\Utils;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectInput;
 use GraphQL\Mutation;
 use GraphQL\Query;
 use GraphQL\QueryBuilder\MutationBuilder;
+use function React\Async\await;
 
 class CloudObjectIntegration
 {
@@ -30,13 +32,15 @@ class CloudObjectIntegration
                     ])
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => $input->jsonSerialize(),
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 

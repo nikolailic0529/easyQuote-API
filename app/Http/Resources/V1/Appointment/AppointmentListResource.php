@@ -19,13 +19,15 @@ class AppointmentListResource extends JsonResource
      */
     public function toArray($request)
     {
+        $tz = $request->user()->timezone->utc ?? config('app.timezone');
+
         return [
             'id' => $this->getKey(),
             'activity_type' => $this->activity_type,
             'user' => UserRelationResource::make($this->owner),
             'subject' => $this->subject,
-            'start_date' => $this->start_date,
-            'end_date' => $this->end_date,
+            'start_date' => $this->start_date?->tz($tz)?->toJSON(),
+            'end_date' => $this->end_date?->tz($tz)?->toJSON(),
             'location' => $this->location,
             'created_at' => $this->{$this->getCreatedAtColumn()},
             'updated_at' => $this->{$this->getUpdatedAtColumn()},

@@ -20,7 +20,6 @@ use App\Models\User;
 use App\Services\AppEvent\AppEventEntityService;
 use App\Services\Notification\Models\PendingNotification;
 use App\Services\Pipeliner\Contracts\ContainsRelatedEntities;
-use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerAggregateSyncEventService;
 use App\Services\Pipeliner\PipelinerSyncErrorEntityService;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
@@ -148,7 +147,11 @@ class PipelinerSyncEventSubscriber
         } else {
             $errorMessage = $this->renderErrorMessageForEntity($event->entity, $event->e);
 
-            if ($event->e instanceof ContainsRelatedEntities) {
+            $model = $this->resolvePipelinerEntityRelatedModel($event->entity);
+
+            if ($model !== null) {
+                $relatedModels->push($model);
+            } elseif ($event->e instanceof ContainsRelatedEntities) {
                 collect($event->e->getRelated())
                     ->lazy()
                     ->whereInstanceOf(Model::class)
@@ -238,6 +241,25 @@ class PipelinerSyncEventSubscriber
                 ->message($errorMessage)
                 ->push();
         }
+    }
+
+    private function resolvePipelinerEntityRelatedModel(object $entity): ?Model
+    {
+        return match ($entity::class) {
+            OpportunityEntity::class => (static function () use ($entity): ?Opportunity {
+                return Opportunity::query()->withTrashed()
+                    ->where('pl_reference', $entity->id)
+                    ->latest((new Opportunity())->getUpdatedAtColumn())
+                    ->first();
+            })(),
+            AccountEntity::class => (static function () use ($entity): ?Company {
+                return Company::query()->withTrashed()
+                    ->where('pl_reference', $entity->id)
+                    ->latest((new Company())->getUpdatedAtColumn())
+                    ->first();
+            }),
+            default => null,
+        };
     }
 
     #[ArrayShape(['processed' => "array", 'skipped' => "array"])]
