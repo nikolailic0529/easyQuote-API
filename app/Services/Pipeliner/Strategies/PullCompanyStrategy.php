@@ -55,6 +55,9 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
+use function React\Async\async;
+use function React\Async\await;
+use function React\Async\parallel;
 
 class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyEntities
 {
@@ -105,6 +108,15 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
         })
             ->filter(function (array $item): bool {
                 return $this->isStrategyYetToBeAppliedTo($item['id'], $item['modified']);
+            })
+            ->map(static function (array $item): array {
+                return [
+                    'id' => $item['id'],
+                    'pl_reference' => $item['id'],
+                    'name' => $item['name'],
+                    'modified' => $item['modified'],
+                    'unit_name' => $item['unit']['name']
+                ];
             });
     }
 
@@ -287,11 +299,11 @@ class PullCompanyStrategy implements PullStrategy, ImpliesSyncOfHigherHierarchyE
                 }
             }
 
-            $relations = [
-                'notes' => $this->collectNotesOfAccountEntity($entity),
-                'tasks' => $this->collectTasksOfAccountEntity($entity),
-                'appointments' => $this->collectAppointmentsOfAccountEntity($entity),
-            ];
+            $relations = await(parallel([
+                'notes' => async(fn (): array => $this->collectNotesOfAccountEntity($entity)),
+                'tasks' => async(fn (): array => $this->collectTasksOfAccountEntity($entity)),
+                'appointments' => async(fn (): array => $this->collectAppointmentsOfAccountEntity($entity)),
+            ]));
 
             $this->lockProvider->lock(Lock::SYNC_COMPANY($entity->id).'notes', 120)
                 ->block(120, function () use ($relations, $account, $entity): void {

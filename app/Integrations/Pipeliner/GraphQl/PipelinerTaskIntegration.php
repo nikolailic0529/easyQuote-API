@@ -108,13 +108,15 @@ class PipelinerTaskIntegration
                     ])
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => $input->jsonSerialize(),
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 
@@ -136,13 +138,15 @@ class PipelinerTaskIntegration
                     ])
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => $input->jsonSerialize(),
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 
@@ -360,7 +364,7 @@ class PipelinerTaskIntegration
                     )
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
@@ -370,6 +374,8 @@ class PipelinerTaskIntegration
                     'filter' => $filter?->jsonSerialize(),
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 

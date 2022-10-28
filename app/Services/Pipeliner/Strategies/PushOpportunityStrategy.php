@@ -14,6 +14,7 @@ use App\Models\Data\Currency;
 use App\Models\Opportunity;
 use App\Models\Pipeliner\PipelinerSyncStrategyLog;
 use App\Models\PipelinerModelUpdateLog;
+use App\Models\SalesUnit;
 use App\Services\Opportunity\Exceptions\OpportunityDataMappingException;
 use App\Services\Opportunity\OpportunityDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
@@ -77,6 +78,7 @@ class PushOpportunityStrategy implements PushStrategy
             ->value('latest_model_updated_at');
 
         $model = new Opportunity();
+        $salesUnitModel = new SalesUnit();
 
         $syncStrategyLogModel = new PipelinerSyncStrategyLog();
 
@@ -86,8 +88,12 @@ class PushOpportunityStrategy implements PushStrategy
                 $model->getQualifiedUpdatedAtColumn(),
                 $model->primaryAccount()->getQualifiedForeignKeyName(),
                 $model->endUser()->getQualifiedForeignKeyName(),
+                $model->qualifyColumn('pl_reference'),
+                $model->qualifyColumn('project_name'),
+                $salesUnitModel->qualifyColumn('unit_name')
             ])
             ->orderBy($model->getQualifiedUpdatedAtColumn())
+            ->join($salesUnitModel->getTable(), $model->salesUnit()->getQualifiedForeignKeyName(), $salesUnitModel->getQualifiedKeyName())
             ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(),
                 Collection::make($this->getSalesUnits())->modelKeys())
             ->where(static function (Builder $builder) use ($model): void {
@@ -153,8 +159,11 @@ class PushOpportunityStrategy implements PushStrategy
 
                 return [
                     'id' => $model->getKey(),
-                    'modified' => $model->{$model->getUpdatedAtColumn()},
-                    'without_overlapping' => $withoutOverlapping,
+                    'pl_reference' => $model->pl_reference,
+                    'modified' => $model->{$model->getUpdatedAtColumn()}?->toIso8601String(),
+                    'name' => $model->project_name,
+                    'unit_name' => $model->unit_name,
+//                    'without_overlapping' => $withoutOverlapping,
                 ];
             });
     }

@@ -11,51 +11,30 @@ class PipelinerAggregateSyncEventService
     ) {
     }
 
-    public function rememberPendingCounts(string $aggregateId, iterable $pending): void
-    {
-        foreach ($pending as $strategyClass => $count) {
-            $this->cache->add(
-                key: $this->getStrategyPendingCountCacheKey($aggregateId, $strategyClass),
-                value: $count
-            );
+    public function incrementUnique(
+        string $reference,
+        string $aggregateId,
+        string $entityType,
+    ): void {
+        $key = $this->getStrategyCountCacheKey($aggregateId, $entityType);
 
-            $this->cache->add(
-                key: $this->getMutStrategyPendingCountCacheKey($aggregateId, $strategyClass),
-                value: $count
+        if ($this->cache->add($key.$reference, true)) {
+            $this->cache->increment(
+                $this->getStrategyCountCacheKey($aggregateId, $entityType)
             );
         }
     }
 
-    public function decrementPendingCount(string $aggregateId, string $strategy): void
+    public function count(string $aggregateId, string $entityType): int
     {
-        $this->cache->decrement(
-            $this->getMutStrategyPendingCountCacheKey($aggregateId, $strategy)
-        );
-    }
-
-    public function getPendingCount(string $aggregateId, string $strategy): int
-    {
-        return (int)$this->cache->get(
-            key: $this->getStrategyPendingCountCacheKey($aggregateId, $strategy),
+        return (int) $this->cache->get(
+            key: $this->getStrategyCountCacheKey($aggregateId, $entityType),
             default: 0
         );
     }
 
-    public function getMutatedPendingCount(string $aggregateId, string $strategy): int
+    private function getStrategyCountCacheKey(string $aggregateId, string $entityType): string
     {
-        return (int)$this->cache->get(
-            key: $this->getMutStrategyPendingCountCacheKey($aggregateId, $strategy),
-            default: 0
-        );
-    }
-
-    private function getStrategyPendingCountCacheKey(string $aggregateId, string $strategyClass): string
-    {
-        return static::class.':pending-count'.$strategyClass.$aggregateId;
-    }
-
-    private function getMutStrategyPendingCountCacheKey(string $aggregateId, string $strategyClass): string
-    {
-        return static::class.':pending-count-mut'.$strategyClass.$aggregateId;
+        return static::class.':pending-count'.$entityType.$aggregateId;
     }
 }

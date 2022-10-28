@@ -14,11 +14,13 @@ use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
 use App\Jobs\Pipeliner\SyncPipelinerEntity;
+use App\Models\Opportunity;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Models\QueueCounts;
 use App\Services\Pipeliner\Models\QueueSyncResult;
+use App\Services\Pipeliner\RecordCorrelation\RecordCorrelationService;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
@@ -66,6 +68,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         protected SyncPipelinerDataStatus $dataSyncStatus,
         protected PipelinerSyncAggregate $syncAggregate,
         protected SyncStrategyCollection $syncStrategies,
+        protected RecordCorrelationService $recordCorrelationService,
         protected QueueingDispatcher $busDispatcher,
         protected EventDispatcher $eventDispatcher,
         protected LockProvider $lockProvider,
@@ -93,7 +96,9 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             $this->guard->setUser($this->causer);
         }
 
-        $this->syncAggregate->withId(Str::orderedUuid()->toString());
+        if (!$this->syncAggregate->hasId()) {
+            $this->syncAggregate->withId(Str::orderedUuid()->toString());
+        }
 
         $this->prepareStrategies();
 
@@ -113,25 +118,22 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                     yield from $strategy->iteratePending();
                 })
                     ->values();
-            })
-            ->each(function (LazyCollection $pending, string $class): void {
-                if ($pending->isEmpty()) {
-                    $this->logger->debug(sprintf("Nothing to sync using: %s", class_basename($class)));
-                }
             });
 
-        $counts = $pendingEntities->map(static function (LazyCollection $collection): int {
-            return $collection->eager()->count();
-        });
+        $pendingChains = $this->chainPending($pendingEntities);
 
-        $pendingCount = $counts->sum();
+        $pendingCount = $pendingChains->count();
+        $pendingCountByStrategy = $pendingChains->collapse()
+            ->groupBy('strategy')
+            ->mapWithKeys(static function (iterable $items, string $strategy): array {
+                return [(string)StrategyNameResolver::from($strategy) => collect($items)->count()];
+            })
+            ->all();
 
-        $this->dataSyncStatus->setTotal($counts->sum());
+        $this->dataSyncStatus->setTotal($pendingCount);
 
         $this->logger->debug("Total count of pending entities: $pendingCount.", [
-            'counts' => $counts
-                ->mapWithKeys(static fn(int $count, string $class): array => [class_basename($class) => $count])
-                ->all(),
+            'pending_counts_by_strategy' => $pendingCountByStrategy,
         ]);
 
         $this->eventDispatcher->dispatch(
@@ -139,26 +141,13 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 aggregateId: $this->syncAggregate->id,
                 total: $pendingCount,
                 pending: $pendingCount,
-                counts: $counts->all(),
             )
         );
 
         $success = true;
 
-        foreach ($pendingEntities as $class => $collection) {
-            if (!$this->dataSyncStatus->running()) {
-                break;
-            }
-
-            if ($collection->isNotEmpty()) {
-                $this->logger->info(sprintf('Syncing entities using: %s', class_basename($class)));
-
-                if (false === $this->syncUsing($this->syncStrategies[$class], $collection)) {
-                    $success = false;
-
-                    break;
-                }
-            }
+        if ($pendingChains->isNotEmpty()) {
+            $success = $this->awaitSync($pendingChains);
         }
 
         if ($success) {
@@ -167,6 +156,92 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 total: $pendingCount,
             ));
         }
+
+        $this->dataSyncStatus->release();
+    }
+
+    /**
+     * @param  iterable<class-string, iterable>  $pending
+     * @return BaseCollection
+     */
+    protected function chainPending(iterable $pending): BaseCollection
+    {
+        /** @var BaseCollection{string, BaseCollection} $strategyItemsMap */
+        $strategyItemsMap = LazyCollection::make(static function () use ($pending): \Generator {
+            yield from $pending;
+        })
+            ->map(function (iterable $pending, string $strategy): BaseCollection {
+                return LazyCollection::wrap($pending)->collect();
+            })
+            ->collect();
+
+        $strategiesToBeChained = $strategyItemsMap->keys();
+
+        $chains = collect();
+
+        do {
+            $currentStrategy = $strategiesToBeChained->shift();
+
+            $currentStrategyChains = $strategyItemsMap[$currentStrategy]
+                ->lazy()
+                ->map(function (array $item) use ($currentStrategy) {
+                    return collect([
+                        [
+                            'strategy' => $currentStrategy,
+                            'item' => $item,
+                        ],
+                    ]);
+                });
+
+            if ($strategiesToBeChained->isNotEmpty()) {
+                $currentStrategyChains = $currentStrategyChains
+                    ->map(function (BaseCollection $chain) use ($strategyItemsMap, $strategiesToBeChained) {
+                        $item = $chain->first()['item'];
+
+                        $reference = $item['pl_reference'] ?? null;
+
+                        if (null === $reference) {
+                            return $chain;
+                        }
+
+                        $toBeChainedWithCurrent = $strategiesToBeChained
+                            ->map(function (string $strategy) use ($item, $reference, $strategyItemsMap) {
+                                /** @var BaseCollection $itemsOfStrategy */
+                                $itemsOfStrategy = $strategyItemsMap[$strategy];
+
+                                return $itemsOfStrategy
+                                    ->lazy()
+                                    ->filter(function (array $another) use ($strategy, $item): bool {
+                                        return $this->recordCorrelationService->matches($strategy, $item, $another);
+                                    })
+                                    ->keys()
+                                    ->map(static function (int $key) use ($strategy, $itemsOfStrategy) {
+                                        $item = $itemsOfStrategy->pull($key);
+
+                                        return [
+                                            'strategy' => $strategy,
+                                            'item' => $item
+                                        ];
+                                    })
+                                    ->all();
+                            })
+                            ->values()
+                            ->collapse();
+
+                        if ($toBeChainedWithCurrent->isNotEmpty()) {
+                            $chain->push(...$toBeChainedWithCurrent);
+                        }
+
+                        return $chain;
+                });
+            }
+
+            $currentStrategyChains = $currentStrategyChains->collect();
+
+            $chains = $chains->merge($currentStrategyChains);
+        } while ($strategiesToBeChained->isNotEmpty());
+
+        return $chains;
     }
 
     #[ArrayShape(['applied' => "array[]"])]
@@ -465,48 +540,54 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         }
     }
 
-    protected function syncUsing(SyncStrategy $strategy, \Traversable $pending): bool
+    protected function awaitSync(iterable $pending): bool
     {
-        $this->logger->info("Loading pending entities...", [
-            'strategy' => class_basename($strategy),
-        ]);
+        $this->logger->info("Loading pending entities...");
 
-        /** @var Batch $batch */
-        $batch = LazyCollection::make(static function () use ($pending): \Generator {
+        $statusOwner = $this->dataSyncStatus->getOwner();
+        $aggregateId = $this->syncAggregate->id;
+
+        $batch = $this->busDispatcher
+            ->batch([])
+            ->onQueue('pipeliner-aggregate-sync')
+            ->catch(static function (Batch $batch, Throwable $e) use ($statusOwner, $aggregateId): void {
+                app('log')->channel('pipeliner')->error($e);
+
+                app(SyncPipelinerDataStatus::class)
+                    ->setOwner($statusOwner)
+                    ->release();
+
+                event(new AggregateSyncFailed($aggregateId, $e));
+            })
+            ->dispatch();
+
+        LazyCollection::make(static function () use ($pending): \Generator {
             yield from $pending;
         })
-            ->map(function (array $item) use ($strategy): SyncPipelinerEntity {
-                return (new SyncPipelinerEntity(
-                    strategy: $strategy,
-                    entityReference: $item['id'],
-                    aggregateId: $this->syncAggregate->id,
-                    causer: $this->causer,
-                    withoutOverlapping: $item['without_overlapping'] ?? [],
-                    withProgress: true,
-                ));
+            ->map(function (iterable $chain): array {
+                $jobs = [];
+
+                foreach ($chain as ['item' => $item, 'strategy' => $strategy]) {
+                    $jobs[] = (new SyncPipelinerEntity(
+                        strategy: $this->syncStrategies[$strategy],
+                        entityReference: $item['id'],
+                        aggregateId: $this->syncAggregate->id,
+                        causer: $this->causer,
+                        withoutOverlapping: $item['without_overlapping'] ?? [],
+                        withProgress: true,
+                    ));
+                }
+
+                return $jobs;
             })
-            ->values()
-            ->pipe(function (LazyCollection $pending): Batch {
-                $statusOwner = $this->dataSyncStatus->getOwner();
-                $aggregateId = $this->syncAggregate->id;
-
-                return $this->busDispatcher
-                    ->batch($pending->all())
-                    ->onQueue('pipeliner-aggregate-sync')
-                    ->catch(static function (Batch $batch, Throwable $e) use ($statusOwner, $aggregateId): void {
-                        app('log')->channel('pipeliner')->error($e);
-
-                        app(SyncPipelinerDataStatus::class)
-                            ->setOwner($statusOwner)
-                            ->release();
-
-                        event(new AggregateSyncFailed($aggregateId, $e));
-                    })
-                    ->dispatch();
+            ->chunk(10)
+            ->each(function (LazyCollection $chunk) use ($batch): void {
+                $batch->add($chunk->all());
             });
 
+        $batch = $batch->fresh();
+
         $this->logger->info("Pending entities are loaded into batch. Waiting...", [
-            'strategy' => class_basename($strategy),
             'batch' => $batch->toArray(),
         ]);
 
@@ -616,6 +697,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         $this->dataSyncStatus->setOwner($owner = Str::random());
 
         $job = new QueuedPipelinerDataSync(
+            Str::orderedUuid()->toString(),
             $this->causer,
             $strategies,
             $owner,

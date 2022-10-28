@@ -3,11 +3,9 @@
 namespace App\Jobs\Pipeliner;
 
 use App\Events\Pipeliner\AggregateSyncFailed;
-use App\Models\User;
 use App\Services\Pipeliner\PipelinerDataSyncService;
+use App\Services\Pipeliner\PipelinerSyncAggregate;
 use App\Services\Pipeliner\SyncPipelinerDataStatus;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +27,7 @@ class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
     protected string $owner;
 
     public function __construct(
+        protected readonly string $aggregateId,
         protected ?Model $causer = null,
         protected array $strategies = [],
         string $owner = null
@@ -38,10 +37,13 @@ class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
 
     public function handle(
         SyncPipelinerDataStatus $status,
+        PipelinerSyncAggregate $syncAggregate,
         PipelinerDataSyncService $service,
         LogManager $logManager,
     ): void {
         $status->setOwner($this->owner);
+
+        $syncAggregate->withId($this->aggregateId);
 
         try {
             $service
@@ -87,6 +89,6 @@ class QueuedPipelinerDataSync implements ShouldQueue, ShouldBeUnique
             ->setOwner($this->owner)
             ->release();
 
-        event(new AggregateSyncFailed($exception));
+        event(new AggregateSyncFailed($this->aggregateId, $exception));
     }
 }

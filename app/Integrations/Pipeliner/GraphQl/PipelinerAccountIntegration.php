@@ -179,6 +179,9 @@ class PipelinerAccountIntegration
                                                 (new Query('node'))
                                                     ->setSelectionSet([
                                                         'id', 'modified',
+                                                        'name',
+                                                        (new Query('unit'))
+                                                            ->setSelectionSet(['name'])
                                                     ]),
                                             ]),
                                         (new Query('pageInfo'))

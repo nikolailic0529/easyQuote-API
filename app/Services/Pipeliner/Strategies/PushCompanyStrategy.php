@@ -8,11 +8,6 @@ use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Enum\ValidationLevel;
 use App\Integrations\Pipeliner\GraphQl\PipelinerAccountIntegration;
 use App\Integrations\Pipeliner\GraphQl\PipelinerContactIntegration;
-use App\Integrations\Pipeliner\Models\ContactAccountRelationEntity;
-use App\Integrations\Pipeliner\Models\ContactAccountRelationFilterInput;
-use App\Integrations\Pipeliner\Models\ContactEntity;
-use App\Integrations\Pipeliner\Models\ContactFilterInput;
-use App\Integrations\Pipeliner\Models\EntityFilterStringField;
 use App\Integrations\Pipeliner\Models\ValidationLevelCollection;
 use App\Models\Address;
 use App\Models\Appointment\Appointment;
@@ -78,6 +73,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             ->value('latest_model_updated_at');
 
         $model = new Company();
+        $salesUnitModel = new SalesUnit();
 
         $syncStrategyLogModel = new PipelinerSyncStrategyLog();
 
@@ -85,9 +81,14 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             ->select([
                 $model->getQualifiedKeyName(),
                 $model->getQualifiedUpdatedAtColumn(),
+                $model->qualifyColumn('pl_reference'),
+                $model->qualifyColumn('name'),
+                $salesUnitModel->qualifyColumn('unit_name'),
             ])
             ->orderBy($model->getQualifiedUpdatedAtColumn())
             ->whereNonSystem()
+            ->join($salesUnitModel->getTable(), $model->salesUnit()->getQualifiedForeignKeyName(),
+                $salesUnitModel->getQualifiedKeyName())
             ->whereIn($model->salesUnit()->getQualifiedForeignKeyName(),
                 Collection::make($this->getSalesUnits())->modelKeys())
             ->where(static function (Builder $builder) use ($model): void {
@@ -250,7 +251,9 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
 
     private function syncAttachmentsFromAccount(Company $model): void
     {
-        $queue = Queue::all(concurrency: 10, jobs: $model->attachments->all(), handler: async(function (Attachment $model): void {
+        $queue = Queue::all(concurrency: 10, jobs: $model->attachments->all(), handler: async(function (
+            Attachment $model
+        ): void {
             $this->pushAttachmentStrategy->sync($model);
         }));
 
@@ -268,7 +271,9 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
 
     private function syncAppointmentsFromAccount(Company $model): void
     {
-        $queue = Queue::all(concurrency: 10, jobs: $model->ownAppointments->all(), handler: async(function (Appointment $model): void {
+        $queue = Queue::all(concurrency: 10, jobs: $model->ownAppointments->all(), handler: async(function (
+            Appointment $model
+        ): void {
             $this->pushAppointmentStrategy->sync($model);
         }));
 
@@ -327,7 +332,10 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
             ->map(static function (Company $model): array {
                 return [
                     'id' => $model->getKey(),
-                    'modified' => $model->{$model->getUpdatedAtColumn()},
+                    'pl_reference' => $model->pl_reference,
+                    'modified' => $model->{$model->getUpdatedAtColumn()}?->toIso8601String(),
+                    'name' => $model->project_name,
+                    'unit_name' => $model->unit_name,
                 ];
             });
     }

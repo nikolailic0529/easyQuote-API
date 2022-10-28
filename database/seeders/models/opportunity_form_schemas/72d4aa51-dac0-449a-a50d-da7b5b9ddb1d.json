@@ -198,7 +198,7 @@
               "is_image": false,
               "droppable": false,
               "is_system": false,
-              "is_required": false,
+              "is_required": true,
               "placeholder": null,
               "field_required": true,
               "possibel_values": null,

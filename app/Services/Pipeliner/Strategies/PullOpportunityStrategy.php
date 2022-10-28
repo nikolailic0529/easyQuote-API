@@ -42,6 +42,9 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\LazyCollection;
 use JetBrains\PhpStorm\ArrayShape;
+use function React\Async\async;
+use function React\Async\await;
+use function React\Async\parallel;
 
 class PullOpportunityStrategy implements PullStrategy
 {
@@ -89,6 +92,15 @@ class PullOpportunityStrategy implements PullStrategy
         })
             ->filter(function (array $item): bool {
                 return $this->isStrategyYetToBeAppliedTo($item['id'], $item['modified']);
+            })
+            ->map(static function (array $item): array {
+                return [
+                    'id' => $item['id'],
+                    'pl_reference' => $item['id'],
+                    'name' => $item['name'],
+                    'modified' => $item['modified'],
+                    'unit_name' => $item['unit']['name']
+                ];
             });
     }
 
@@ -259,32 +271,44 @@ class PullOpportunityStrategy implements PullStrategy
 
     private function syncRelationsOfOpportunityEntity(OpportunityEntity $entity, Opportunity $model): void
     {
-        $tasks = [
-            function () use ($entity): void {
+        $relations = await(parallel([
+            'notes' => async(function () use ($entity): array {
                 $iterator = $this->noteIntegration->scroll(filter: NoteFilterInput::new()->leadOpptyId(
                     EntityFilterStringField::eq($entity->id)
                 ), first: 100);
 
-                foreach ($iterator as $item) {
-                    $this->pullNoteStrategy->sync($item);
-                }
-            },
-            function () use ($entity): void {
+                return iterator_to_array($iterator);
+            }),
+            'tasks' => async(function () use ($entity): array {
                 $iterator = $this->taskIntegration->scroll(filter: TaskFilterInput::new()->opportunityRelations(
                     ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
                 ), first: 100);
 
-                foreach ($iterator as $item) {
-                    $this->pullTaskStrategy->sync($item);
-                }
-            },
-            function () use ($entity): void {
+                return iterator_to_array($iterator);
+            }),
+            'appointments' => async(function () use ($entity): array {
                 $iterator = $this->appointmentIntegration->scroll(filter: AppointmentFilterInput::new()
                     ->opportunityRelations(
                         ActivityRelationFilterInput::new()->leadOpptyId(EntityFilterStringField::eq($entity->id))
                     ), first: 100);
 
-                foreach ($iterator as $item) {
+                return iterator_to_array($iterator);
+            })
+        ]));
+
+        $tasks = [
+            function () use ($relations): void {
+                foreach ($relations['notes'] as $item) {
+                    $this->pullNoteStrategy->sync($item);
+                }
+            },
+            function () use ($relations): void {
+                foreach ($relations['tasks'] as $item) {
+                    $this->pullTaskStrategy->sync($item);
+                }
+            },
+            function () use ($relations): void {
+                foreach ($relations['appointments'] as $item) {
                     $this->pullAppointmentStrategy->sync($item);
                 }
             },

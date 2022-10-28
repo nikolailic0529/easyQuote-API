@@ -23,6 +23,7 @@ use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Log\LogManager;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 
 class PipelinerServiceProvider extends ServiceProvider
 {
@@ -85,20 +86,24 @@ class PipelinerServiceProvider extends ServiceProvider
 
             $frequency = filter_var(setting('pipeliner_sync_schedule') ?? 1, FILTER_SANITIZE_NUMBER_INT);
 
-            $event = $schedule->job(new QueuedPipelinerDataSync())
+            $event = $schedule->job(new QueuedPipelinerDataSync($aggregateId = Str::uuid()->toString()))
                 ->when(static function (Repository $config, SyncPipelinerDataStatus $status): bool {
                     return $config->get('pipeliner.sync.schedule.enabled')
                         && $status->acquire();
                 })
-                ->before(static function (LogManager $logManager): void {
+                ->before(static function (LogManager $logManager) use ($aggregateId): void {
                     $logManager
                         ->channel('pipeliner')
-                        ->info('Scheduled pipeliner sync: starting');
+                        ->info('Scheduled pipeliner sync: starting', [
+                            'aggregate_id' => $aggregateId
+                        ]);
                 })
-                ->after(static function (LogManager $logManager): void {
+                ->after(static function (LogManager $logManager) use ($aggregateId): void {
                     $logManager
                         ->channel('pipeliner')
-                        ->info('Scheduled pipeliner sync: finished');
+                        ->info('Scheduled pipeliner sync: finished', [
+                            'aggregate_id' => $aggregateId
+                        ]);
                 })
                 ->description("Pipeliner sync")
                 ->runInBackground()

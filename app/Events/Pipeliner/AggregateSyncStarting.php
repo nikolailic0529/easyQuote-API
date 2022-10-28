@@ -19,7 +19,6 @@ final class AggregateSyncStarting implements ShouldBroadcastNow
         public readonly string $aggregateId,
         public readonly int $total,
         public readonly int $pending,
-        public readonly array $counts,
     ) {
     }
 

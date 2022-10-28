@@ -97,36 +97,12 @@ class SyncPipelinerEntity implements ShouldQueue
 
         $strategy = $strategies[$this->strategyClass];
 
-        if ($this->overlaps()) {
-            $logger->debug('Syncing: overlaps', [
-                'id' => $this->entityReference,
-                'strategy' => class_basename($this->strategyClass),
-                'without_overlapping' => $this->withoutOverlapping,
-            ]);
-
-            $this->releaseLocks();
-
-            usleep(10 * 1000 * 1000);
-
-            $this->batch()->add([
-                new static(
-                    strategy: $strategy,
-                    entityReference: $this->entityReference,
-                    aggregateId: $this->aggregateId,
-                    causer: $this->causer,
-                    withoutOverlapping: $this->withoutOverlapping,
-                    withProgress: $this->withProgress,
-                ),
-            ]);
-
-            return;
-        }
-
         $entity = $strategy->getByReference($this->entityReference);
 
         $logger->info('Syncing: starting', [
             'id' => $entity->id,
             'strategy' => class_basename($this->strategyClass),
+            'chained_count' => count($this->chained),
         ]);
 
         try {
@@ -163,6 +139,7 @@ class SyncPipelinerEntity implements ShouldQueue
                 'id' => $entity->id,
                 'error' => trim($e->getMessage()),
                 'strategy' => class_basename($this->strategyClass),
+                'chained_count' => count($this->chained),
             ]);
 
             $eventDispatcher->dispatch(
@@ -178,9 +155,11 @@ class SyncPipelinerEntity implements ShouldQueue
             $this->releaseLocks();
         }
 
-        $status->incrementProcessed();
+        if ($this->withProgress && count($this->chained) === 0) {
+            $logger->info('Syncing: chain completed');
 
-        if ($this->withProgress) {
+            $status->incrementProcessed();
+
             if ($this->batch()->cancelled()) {
                 return;
             }

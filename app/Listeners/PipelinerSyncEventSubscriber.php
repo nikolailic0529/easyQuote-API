@@ -8,7 +8,6 @@ use App\Events\Pipeliner\AggregateSyncCompleted;
 use App\Events\Pipeliner\AggregateSyncEntityProcessed;
 use App\Events\Pipeliner\AggregateSyncEntitySkipped;
 use App\Events\Pipeliner\AggregateSyncFailed;
-use App\Events\Pipeliner\AggregateSyncStarting;
 use App\Events\Pipeliner\ModelSyncCompleted;
 use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
@@ -23,10 +22,6 @@ use App\Services\Pipeliner\Contracts\ContainsRelatedEntities;
 use App\Services\Pipeliner\PipelinerAggregateSyncEventService;
 use App\Services\Pipeliner\PipelinerSyncErrorEntityService;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
-use App\Services\Pipeliner\Strategies\PullCompanyStrategy;
-use App\Services\Pipeliner\Strategies\PullOpportunityStrategy;
-use App\Services\Pipeliner\Strategies\PushCompanyStrategy;
-use App\Services\Pipeliner\Strategies\PushOpportunityStrategy;
 use App\Services\Pipeliner\Strategies\StrategyNameResolver;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -51,15 +46,12 @@ class PipelinerSyncEventSubscriber
     public function subscribe(Dispatcher $events): array
     {
         return [
-            AggregateSyncStarting::class => [
-                [static::class, 'rememberPendingStrategyCounts'],
-            ],
             AggregateSyncEntitySkipped::class => [
                 [static::class, 'ensureUnresolvedSyncErrorCreated'],
                 [static::class, 'notifyCauserAboutSyncStrategySkipped'],
             ],
             AggregateSyncEntityProcessed::class => [
-                [static::class, 'decrementProcessedEntityStrategyPendingCount'],
+                [static::class, 'incrementProcessedCount'],
             ],
             SyncStrategyPerformed::class => [
                 [static::class, 'resolveRelatedSyncErrors'],
@@ -76,25 +68,28 @@ class PipelinerSyncEventSubscriber
         ];
     }
 
-    public function rememberPendingStrategyCounts(AggregateSyncStarting $event): void
+    public function incrementProcessedCount(AggregateSyncEntityProcessed $event): void
     {
-        $this->aggregateSyncEventService->rememberPendingCounts(
-            $event->aggregateId,
-            $event->counts
-        );
-    }
+        $reference = $event->entity instanceof Model
+            ? $event->entity->pl_reference
+            : $event->entity->id;
 
-    public function decrementProcessedEntityStrategyPendingCount(AggregateSyncEntityProcessed $event): void
-    {
-        $this->aggregateSyncEventService->decrementPendingCount(
+        $entityType = match ($event->entity::class) {
+            Company::class, AccountEntity::class => 'Company',
+            Opportunity::class, OpportunityEntity::class => 'Opportunity',
+            default => class_basename($event->entity),
+        };
+
+        $this->aggregateSyncEventService->incrementUnique(
+            $reference,
             $event->aggregateId,
-            $event->strategy,
+            $entityType,
         );
     }
 
     public function storeAggregateSyncCompletedEvent(AggregateSyncCompleted $event): void
     {
-        $counts = $this->calculateAggregateSyncEventCounts($event->aggregateId);
+        $counts = $this->countAggregateSyncProcessed($event->aggregateId);
 
         $this->eventEntityService->createAppEvent(
             name: 'pipeliner-aggregate-sync-completed',
@@ -102,15 +97,14 @@ class PipelinerSyncEventSubscriber
             payload: [
                 'aggregate_id' => $event->aggregateId,
                 'success' => true,
-                'processed_counts' => $counts['processed'],
-                'skipped_counts' => $counts['skipped'],
+                'processed_counts' => $counts,
             ]
         );
     }
 
     public function storeAggregateSyncFailedEvent(AggregateSyncFailed $event): void
     {
-        $counts = $this->calculateAggregateSyncEventCounts($event->aggregateId);
+        $counts = $this->countAggregateSyncProcessed($event->aggregateId);
 
         $this->eventEntityService->createAppEvent(
             name: 'pipeliner-aggregate-sync-completed',
@@ -118,8 +112,7 @@ class PipelinerSyncEventSubscriber
             payload: [
                 'aggregate_id' => $event->aggregateId,
                 'success' => false,
-                'processed_counts' => $counts['processed'],
-                'skipped_counts' => $counts['skipped'],
+                'processed_counts' => $counts,
             ]
         );
     }
@@ -257,46 +250,22 @@ class PipelinerSyncEventSubscriber
                     ->where('pl_reference', $entity->id)
                     ->latest((new Company())->getUpdatedAtColumn())
                     ->first();
-            }),
+            })(),
             default => null,
         };
     }
 
-    #[ArrayShape(['processed' => "array", 'skipped' => "array"])]
-    private function calculateAggregateSyncEventCounts(string $aggregateId): array
+    #[ArrayShape(['opportunities' => "int", 'companies' => "int"])]
+    private function countAggregateSyncProcessed(string $aggregateId): array
     {
         $pendingCounts = [];
 
-        $pendingCounts['opportunities'] = array_sum([
-            $this->aggregateSyncEventService->getPendingCount($aggregateId, PushOpportunityStrategy::class),
-            $this->aggregateSyncEventService->getPendingCount($aggregateId, PullOpportunityStrategy::class),
-        ]);
-
-        $pendingCounts['companies'] = array_sum([
-            $this->aggregateSyncEventService->getPendingCount($aggregateId, PushCompanyStrategy::class),
-            $this->aggregateSyncEventService->getPendingCount($aggregateId, PullCompanyStrategy::class),
-        ]);
-
-        $mutatedCounts = [];
-
-        $mutatedCounts['opportunities'] = array_sum([
-            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PushOpportunityStrategy::class),
-            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PullOpportunityStrategy::class),
-        ]);
-
-        $mutatedCounts['companies'] = array_sum([
-            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PushCompanyStrategy::class),
-            $this->aggregateSyncEventService->getMutatedPendingCount($aggregateId, PullCompanyStrategy::class),
-        ]);
-
-        $processedCounts = [
-            'opportunities' => abs($pendingCounts['opportunities'] - $mutatedCounts['opportunities']),
-            'companies' => abs($pendingCounts['companies'] - $mutatedCounts['companies']),
-        ];
+        $pendingCounts['opportunities'] = $this->aggregateSyncEventService->count($aggregateId, 'Opportunity');
+        $pendingCounts['companies'] = $this->aggregateSyncEventService->count($aggregateId, 'Company');
 
         return [
-            'processed' => $processedCounts,
-            'skipped' => $mutatedCounts,
+            'opportunities' => $pendingCounts['opportunities'],
+            'companies' => $pendingCounts['companies'],
         ];
     }
 

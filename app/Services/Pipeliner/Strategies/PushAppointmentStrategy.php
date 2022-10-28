@@ -4,16 +4,20 @@ namespace App\Services\Pipeliner\Strategies;
 
 use App\Integrations\Pipeliner\GraphQl\PipelinerAppointmentIntegration;
 use App\Models\Appointment\Appointment;
+use App\Models\Attachment;
 use App\Models\PipelinerModelUpdateLog;
 use App\Services\Appointment\AppointmentDataMapper;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\Strategies\Concerns\SalesUnitsAware;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
+use Clue\React\Mq\Queue;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use function React\Async\async;
+use function React\Async\await;
 
 class PushAppointmentStrategy implements PushStrategy
 {
@@ -94,9 +98,11 @@ class PushAppointmentStrategy implements PushStrategy
 
     public function pushAttachmentsOfAppointment(Appointment $appointment): void
     {
-        foreach ($appointment->attachments as $attachment) {
+        $queue = Queue::all(10, $appointment->attachments->all(), async(function (Attachment $attachment): void {
             $this->pushAttachmentStrategy->sync($attachment);
-        }
+        }));
+
+        await($queue);
     }
 
     public function countPending(): int

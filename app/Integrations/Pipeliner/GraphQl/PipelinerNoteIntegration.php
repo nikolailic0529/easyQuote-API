@@ -284,7 +284,7 @@ class PipelinerNoteIntegration
                     )
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
@@ -294,6 +294,8 @@ class PipelinerNoteIntegration
                     'filter' => $filter?->jsonSerialize(),
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 
