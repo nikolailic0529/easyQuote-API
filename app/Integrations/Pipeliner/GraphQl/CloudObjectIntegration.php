@@ -53,6 +53,10 @@ class CloudObjectIntegration
     {
         return [
             'id',
+            (new Query('creator'))
+                ->setSelectionSet(
+                    PipelinerClientIntegration::getClientEntitySelectionSet()
+                ),
             'filename',
             'isPublic',
             'mimeType',

@@ -60,6 +60,7 @@ use App\Http\Controllers\API\V1\System\CustomFieldController;
 use App\Http\Controllers\API\V1\System\ImportableColumnController;
 use App\Http\Controllers\API\V1\System\MaintenanceController;
 use App\Http\Controllers\API\V1\System\NotificationController;
+use App\Http\Controllers\API\V1\System\SearchController;
 use App\Http\Controllers\API\V1\System\SystemSettingController;
 use App\Http\Controllers\API\V1\TaskController;
 use App\Http\Controllers\API\V1\TeamController;
@@ -194,15 +195,20 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::apiResource('settings', SystemSettingController::class, ['only' => ROUTE_RU]);
         Route::patch('settings', [SystemSettingController::class, 'updateMany']);
 
+        Route::patch('search/queue-rebuild', [SearchController::class, 'queueSearchRebuild']);
+
         Route::match(['get', 'post'], 'activities', [ActivityController::class, 'paginateActivities']);
         Route::get('activities/meta', [ActivityController::class, 'showActivityLogMetaData']);
-        Route::match(['get', 'post'], 'activities/subject/{subject}', [ActivityController::class, 'paginateActivitiesOfSubject']);
+        Route::match(['get', 'post'], 'activities/subject/{subject}',
+            [ActivityController::class, 'paginateActivitiesOfSubject']);
 
         Route::match(['get', 'post'], 'activities/export/pdf', [ActivityController::class, 'exportActivityLogToPdf']);
         Route::match(['get', 'post'], 'activities/export/csv', [ActivityController::class, 'exportActivityLogToCsv']);
 
-        Route::match(['get', 'post'], 'activities/subject/{subject}/export/pdf', [ActivityController::class, 'exportActivityLogOfSubjectToPdf']);
-        Route::match(['get', 'post'], 'activities/subject/{subject}/export/csv', [ActivityController::class, 'exportActivityLogOfSubjectToCsv']);
+        Route::match(['get', 'post'], 'activities/subject/{subject}/export/pdf',
+            [ActivityController::class, 'exportActivityLogOfSubjectToPdf']);
+        Route::match(['get', 'post'], 'activities/subject/{subject}/export/csv',
+            [ActivityController::class, 'exportActivityLogOfSubjectToCsv']);
 
         Route::apiResource('importable-columns', ImportableColumnController::class);
         Route::put('importable-columns/activate/{importable_column}', [ImportableColumnController::class, 'activate']);
@@ -313,7 +319,9 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('companies/{company}/quotes', [CompanyController::class, 'showQuotesOfCompany']);
         Route::get('companies/{company}/sales-orders', [CompanyController::class, 'showSalesOrdersOfCompany']);
         Route::get('companies/{company}/assets', [CompanyController::class, 'showAssetsOfCompany']);
+        Route::patch('companies/{company}/addresses/{address}/attach', [CompanyController::class, 'attachAddressToCompany']);
         Route::patch('companies/{company}/addresses/{address}/detach', [CompanyController::class, 'detachAddressFromCompany'])->scopeBindings();
+        Route::patch('companies/{company}/contacts/{contact}/attach', [CompanyController::class, 'attachContactToCompany']);
         Route::patch('companies/{company}/contacts/{contact}/detach', [CompanyController::class, 'detachContactFromCompany'])->scopeBindings();
 
         Route::get('companies/{company}/notes', [CompanyController::class, 'showUnifiedNotesOfCompany']);

@@ -545,19 +545,7 @@ class PipelinerAccountIntegration
                 ->setSelectionSet(['id', 'optionName', 'calcValue']),
 
             (new Query('picture'))
-                ->setSelectionSet([
-                    'id',
-                    'filename',
-                    'isPublic',
-                    'mimeType',
-                    'params',
-                    'size',
-                    'type',
-                    'url',
-                    'publicUrl',
-                    'created',
-                    'modified',
-                ]),
+                ->setSelectionSet(CloudObjectIntegration::getCloudObjectEntitySelectionSet()),
 
             (new Query('documents'))
                 ->setSelectionSet([
@@ -567,19 +555,7 @@ class PipelinerAccountIntegration
                                 ->setSelectionSet([
                                     'id',
                                     (new Query('cloudObject'))
-                                        ->setSelectionSet([
-                                            'id',
-                                            'filename',
-                                            'isPublic',
-                                            'mimeType',
-                                            'params',
-                                            'size',
-                                            'type',
-                                            'url',
-                                            'publicUrl',
-                                            'created',
-                                            'modified',
-                                        ]),
+                                        ->setSelectionSet(CloudObjectIntegration::getCloudObjectEntitySelectionSet()),
                                     'created',
                                     'modified',
                                 ]),

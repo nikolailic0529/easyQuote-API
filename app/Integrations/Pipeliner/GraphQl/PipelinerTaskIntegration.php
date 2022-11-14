@@ -479,19 +479,7 @@ class PipelinerTaskIntegration
                                 ->setSelectionSet([
                                     'id',
                                     (new Query('cloudObject'))
-                                        ->setSelectionSet([
-                                            'id',
-                                            'filename',
-                                            'isPublic',
-                                            'mimeType',
-                                            'params',
-                                            'size',
-                                            'type',
-                                            'url',
-                                            'publicUrl',
-                                            'created',
-                                            'modified',
-                                        ]),
+                                        ->setSelectionSet(CloudObjectIntegration::getCloudObjectEntitySelectionSet()),
                                     'created',
                                     'modified',
                                 ]),

@@ -50,10 +50,12 @@ class OpportunityAttachmentController extends Controller
         $this->authorize('view', $opportunity);
         $this->authorize('create', Attachment::class);
 
-        $resource = $entityService->createAttachmentForEntity(
-            data: CreateAttachmentData::from($request),
-            entity: $opportunity,
-        );
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->createAttachmentForEntity(
+                data: CreateAttachmentData::from($request),
+                entity: $opportunity,
+            );
 
         return response()->json(
             data: OpportunityAttachmentResource::make($resource),

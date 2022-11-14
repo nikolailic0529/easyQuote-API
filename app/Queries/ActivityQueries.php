@@ -7,21 +7,26 @@ use App\Http\Query\{Activity\FilterActivityByCauser,
     Activity\FilterActivityByDefinedPeriod,
     Activity\FilterActivityByDescriptionPipe,
     Activity\FilterActivityBySubjectTypesPipe};
+use App\Models\Appointment\ModelHasAppointments;
+use App\Models\ModelHasTasks;
+use App\Models\Note\ModelHasNotes;
 use App\Models\System\Activity;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 
 class ActivityQueries
 {
-    public function __construct(protected Config        $config,
-                                protected Elasticsearch $elasticsearch)
-    {
+    public function __construct(
+        protected Config $config,
+        protected Elasticsearch $elasticsearch
+    ) {
     }
 
     public function paginateActivitiesQuery(Request $request = null): Builder
@@ -79,8 +84,38 @@ class ActivityQueries
         $request ??= new Request();
 
         $model = (new Activity());
+        $modelHasTasks = new ModelHasTasks();
+        $modelHasAppointments = new ModelHasAppointments();
+        $modelHasNotes = new ModelHasNotes();
 
-        $query = Activity::query()
+        /** @var \Staudenmeir\LaravelCte\Query\Builder&Builder $query */
+        $query = $model->newQuery();
+
+        $query->withExpression('subject_has_tasks',
+            $modelHasTasks
+                ->newQuery()
+                ->select("{$modelHasTasks->task()->getQualifiedForeignKeyName()} as related_subject_id")
+                ->where($modelHasTasks->related()->getQualifiedForeignKeyName(), $subject)
+                ->toBase()
+        );
+
+        $query->withExpression('subject_has_appointments',
+            $modelHasAppointments
+                ->newQuery()
+                ->select("{$modelHasAppointments->appointment()->getQualifiedForeignKeyName()} as related_subject_id")
+                ->where($modelHasAppointments->related()->getQualifiedForeignKeyName(), $subject)
+                ->toBase()
+        );
+
+        $query->withExpression('subject_has_notes',
+            $modelHasNotes
+                ->newQuery()
+                ->select("{$modelHasNotes->note()->getQualifiedForeignKeyName()} as related_subject_id")
+                ->where($modelHasNotes->related()->getQualifiedForeignKeyName(), $subject)
+                ->toBase()
+        );
+
+        $query = $query
             ->select([
                 "{$model->getQualifiedKeyName()} as id",
                 "{$model->subject()->getForeignKeyName()} as subject_id",
@@ -94,7 +129,30 @@ class ActivityQueries
             ->leftJoin('users', function (JoinClause $join) use ($model) {
                 $join->on('users.id', $model->causer()->getQualifiedForeignKeyName());
             })
-            ->where($model->qualifyColumn('subject_id'), $subject);
+            ->where(static function (Builder $builder) use ($modelHasTasks, $subject, $model) {
+                $builder->where($model->subject()->getQualifiedForeignKeyName(), $subject);
+
+                $builder->orWhereIn($model->subject()->getQualifiedForeignKeyName(),
+                    static function (BaseBuilder $builder) use ($modelHasTasks): void {
+                        $builder
+                            ->select('related_subject_id')
+                            ->from('subject_has_tasks');
+                    });
+
+                $builder->orWhereIn($model->subject()->getQualifiedForeignKeyName(),
+                    static function (BaseBuilder $builder) use ($modelHasTasks): void {
+                        $builder
+                            ->select('related_subject_id')
+                            ->from('subject_has_appointments');
+                    });
+
+                $builder->orWhereIn($model->subject()->getQualifiedForeignKeyName(),
+                    static function (BaseBuilder $builder) use ($modelHasTasks): void {
+                        $builder
+                            ->select('related_subject_id')
+                            ->from('subject_has_notes');
+                    });
+            });
 
         return RequestQueryBuilder::for(
             builder: $query,

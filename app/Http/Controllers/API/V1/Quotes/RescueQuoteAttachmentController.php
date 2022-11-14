@@ -50,10 +50,12 @@ class RescueQuoteAttachmentController extends Controller
         $this->authorize('view', $quote);
         $this->authorize('create', Attachment::class);
 
-        $resource = $entityService->createAttachmentForEntity(
-            data: CreateAttachmentData::from($request),
-            entity: $quote,
-        );
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->createAttachmentForEntity(
+                data: CreateAttachmentData::from($request),
+                entity: $quote,
+            );
 
         return response()->json(
             data: AttachmentOfQuote::make($resource),

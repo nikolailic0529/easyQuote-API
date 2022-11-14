@@ -141,7 +141,7 @@ return [
             'path' => storage_path('/logs/pipeliner-requests.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'tasks' => [
@@ -149,7 +149,15 @@ return [
             'path' => storage_path('/logs/tasks.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
+        ],
+
+        'search' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/search.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
         ],
 
         'slack' => [

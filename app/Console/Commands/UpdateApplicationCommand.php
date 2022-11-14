@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Routine\UpdateExchangeRates;
-use App\Models\CancelSalesOrderReason;
 use Database\Seeders\{AssetCategorySeeder,
     BusinessDivisionSeeder,
     CancelSalesOrderReasonSeeder,
@@ -29,8 +28,9 @@ use Database\Seeders\{AssetCategorySeeder,
     TemplateFieldTypeSeeder,
     TimezoneSeeder,
     VendorSeeder,
-    WorldwideSalesOrderTemplateSeeder,
-    WorldwideQuoteTemplateSeeder};
+    WorldwideQuoteTemplateSeeder,
+    WorldwideSalesOrderTemplateSeeder
+};
 use Illuminate\Console\Command;
 use Illuminate\Database\Console\Seeds\SeedCommand;
 use Illuminate\Foundation\Console\{OptimizeClearCommand, OptimizeCommand};
@@ -226,7 +226,7 @@ class UpdateApplicationCommand extends Command
         $this->call(CreateClientCredentials::class);
 
         if ($this->shouldntSkip('rebuild-search-mapping')) {
-            $this->call(RebuildSearchMapping::class);
+            $this->call(RebuildSearchCommand::class);
         }
 
         $this->call(OptimizeClearCommand::class);

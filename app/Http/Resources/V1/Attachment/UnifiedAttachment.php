@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1\Attachment;
 
+use App\Http\Resources\V1\User\UserRelationResource;
 use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Quote\Quote;
@@ -26,6 +27,7 @@ class UnifiedAttachment extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'user' => UserRelationResource::make($this->owner),
             'type' => $this->type,
             'parent_entity_class' => Str::snake(class_basename($parentModel)),
             'parent_entity_type' => match ($parentModel) {

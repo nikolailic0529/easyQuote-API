@@ -2,7 +2,9 @@
 
 namespace App\Listeners;
 
-use App\Events\RescueQuote\NoteCreated;
+use App\Events\Note\NoteCreated;
+use App\Events\Note\NoteDeleted;
+use App\Events\Note\NoteUpdated;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
 use Illuminate\Events\Dispatcher;
@@ -13,22 +15,56 @@ class NoteEventAuditor
     {
     }
 
-    public function subscribe(Dispatcher $events): void
+    public function subscribe(Dispatcher $events): array
     {
-        $events->listen(NoteCreated::class, [$this, 'handleNoteCreatedEvent']);
+        return [
+            NoteCreated::class => [
+                [static::class, 'auditCreatedEvent'],
+            ],
+            NoteUpdated::class => [
+                [static::class, 'auditUpdatedEvent'],
+            ],
+            NoteDeleted::class => [
+                [static::class, 'auditDeletedEvent'],
+            ],
+        ];
     }
 
-    public function handleNoteCreatedEvent(NoteCreated $event): void
+    public function auditCreatedEvent(NoteCreated $event): void
     {
         $this->activityLogger
-            ->on($event->model)
-            ->by($event->note->owner)
+            ->on($event->note)
+            ->by($event->causer)
             ->withProperties([
                 ChangesDetector::OLD_ATTRS_KEY => [],
                 ChangesDetector::NEW_ATTRS_KEY => [
-                    'new_notes' => $event->note->note,
+                    'note' => $event->note->note,
+                ],
+            ])
+            ->log('created');
+    }
+
+    public function auditUpdatedEvent(NoteUpdated $event): void
+    {
+        $this->activityLogger
+            ->on($event->note)
+            ->by($event->causer)
+            ->withProperties([
+                ChangesDetector::OLD_ATTRS_KEY => [
+                    'note' => $event->oldNote->note,
+                ],
+                ChangesDetector::NEW_ATTRS_KEY => [
+                    'note' => $event->note->note,
                 ],
             ])
             ->log('updated');
+    }
+
+    public function auditDeletedEvent(NoteDeleted $event): void
+    {
+        $this->activityLogger
+            ->on($event->note)
+            ->by($event->causer)
+            ->log('deleted');
     }
 }

@@ -15,10 +15,8 @@ class RescueQuoteAttachmentTest extends TestCase
 {
     /**
      * Test an ability to view a list of the existing attachments of quote.
-     *
-     * @return void
      */
-    public function testCanViewListOfAttachmentsOfQuote()
+    public function testCanViewListOfAttachmentsOfQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create();
@@ -36,6 +34,7 @@ class RescueQuoteAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'parent_entity_type',
                         'filepath',
@@ -58,10 +57,8 @@ class RescueQuoteAttachmentTest extends TestCase
 
     /**
      * Test an ability to create a new attachment for quote.
-     *
-     * @return void
      */
-    public function testCanCreateNewAttachmentForQuote()
+    public function testCanCreateNewAttachmentForQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create();
@@ -78,6 +75,7 @@ class RescueQuoteAttachmentTest extends TestCase
             ->assertCreated()
             ->assertJsonStructure([
                 'id',
+                'user',
                 'type',
                 'filepath',
                 'filename',
@@ -94,6 +92,7 @@ class RescueQuoteAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'filepath',
                         'filename',
@@ -110,7 +109,7 @@ class RescueQuoteAttachmentTest extends TestCase
     /**
      * Test an ability to delete an existing attachment of quote.
      */
-    public function testCanDeleteAttachmentOfQuote()
+    public function testCanDeleteAttachmentOfQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create();
@@ -128,6 +127,7 @@ class RescueQuoteAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'filepath',
                         'filename',

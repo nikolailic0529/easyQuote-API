@@ -102,7 +102,7 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity, Lin
 
     public function companies(): BelongsToMany
     {
-        return $this->belongsToMany(Company::class);
+        return $this->morphedByMany(Company::class, 'contactable')->withPivot('is_default');
     }
 
     public function address(): BelongsTo

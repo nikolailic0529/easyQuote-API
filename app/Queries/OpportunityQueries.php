@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\ContractType;
 use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
+use App\Models\Quote\WorldwideQuote;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\Enums\OperatorEnum;
@@ -22,6 +23,7 @@ use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
@@ -54,7 +56,30 @@ class OpportunityQueries
     {
         return tap($this->baseOpportunitiesQuery($request), function (Builder $builder) use ($company) {
             $builder
-                ->with(['salesUnit:id,unit_name'])
+                ->with([
+                    'salesUnit' => static function (Relation $relation): void {
+                        $relation->select([
+                            $relation->getRelated()->getQualifiedKeyName(),
+                            $relation->getRelated()->qualifyColumn('unit_name'),
+                        ]);
+                    },
+                    'worldwideQuotes' => static function (Relation $relation): void {
+                        $relation->select([
+                            $relation->getRelated()->getQualifiedKeyName(),
+                            (new WorldwideQuote())->user()->getQualifiedForeignKeyName(),
+                            (new WorldwideQuote())->contractType()->getQualifiedForeignKeyName(),
+                            (new WorldwideQuote())->opportunity()->getQualifiedForeignKeyName(),
+                            $relation->getRelated()->qualifyColumn($relation->getParent()->getForeignKey()),
+                            $relation->getRelated()->qualifyColumn('quote_number'),
+                            $relation->getRelated()->qualifyColumn('submitted_at'),
+                            $relation->getRelated()->getQualifiedCreatedAtColumn(),
+                            $relation->getRelated()->getQualifiedUpdatedAtColumn(),
+                        ])
+                            ->with('contractType')
+                            ->with('salesUnit')
+                            ->withExists('salesOrder');
+                    },
+                ])
                 ->withExists('worldwideQuotes')
                 ->where(static function (Builder $builder) use ($company): void {
                     $builder->whereBelongsTo($company, 'primaryAccount')
@@ -94,7 +119,7 @@ class OpportunityQueries
                 "{$contractTypeModel->qualifyColumn('type_short_name')} as opportunity_type",
                 'primary_account.id as company_id',
                 'primary_account.name as account_name',
-                "{$unitModel->qualifyColumn('unit_name')} as unit_name"
+                "{$unitModel->qualifyColumn('unit_name')} as unit_name",
             ])
             ->leftJoin(
                 table: $unitModel->getTable(),

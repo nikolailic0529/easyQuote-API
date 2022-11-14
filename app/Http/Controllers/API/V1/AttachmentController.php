@@ -16,25 +16,29 @@ class AttachmentController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param CreateAttachment $request
-     * @param \App\Services\Attachment\AttachmentEntityService $service
+     * @param  CreateAttachment  $request
+     * @param  \App\Services\Attachment\AttachmentEntityService  $service
      * @return JsonResponse
      */
-    public function __invoke(CreateAttachment        $request,
-                             AttachmentEntityService $service): JsonResponse
-    {
-        $resource = $service->createAttachmentFromFile(
-            CreateAttachmentData::from($request)
-        );
+    public function __invoke(
+        CreateAttachment $request,
+        AttachmentEntityService $service
+    ): JsonResponse {
+        $resource = $service
+            ->setCauser($request->user())
+            ->createAttachmentFromFile(
+                CreateAttachmentData::from($request)
+            );
 
         return response()->json(
             CreatedAttachment::make($resource)
         );
     }
 
-    public function downloadAttachment(Attachment              $attachment,
-                                       AttachmentEntityService $service): StreamedResponse
-    {
+    public function downloadAttachment(
+        Attachment $attachment,
+        AttachmentEntityService $service
+    ): StreamedResponse {
         return $service->downloadAttachment($attachment);
     }
 }

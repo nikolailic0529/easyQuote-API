@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote;
 
+use App\Contracts\CauserAware;
 use App\DTO\Attachment\CreateAttachmentData;
 use App\Enum\AttachmentType;
 use App\Foundation\File\BinaryFileContent;
@@ -12,13 +13,16 @@ use App\Models\QuoteFile\QuoteFile;
 use App\Services\Attachment\AttachmentEntityService;
 use App\Services\QuoteFile\QuoteFileFilesystem;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
 use Webpatser\Uuid\Uuid;
 use ZipArchive;
 
-class WorldwideQuoteAttachmentService
+class WorldwideQuoteAttachmentService implements CauserAware
 {
+    protected ?Model $causer = null;
+
     public function __construct(
         protected readonly WorldwideQuoteExporter $quoteExporter,
         protected readonly WorldwideQuoteDataMapper $dataMapper,
@@ -35,14 +39,16 @@ class WorldwideQuoteAttachmentService
             exportedEntity: $quote,
         );
 
-        $this->attachmentEntityService->createAttachmentForEntity(
-            new CreateAttachmentData(
-                file: new BinaryFileContent($result->content, $result->filename),
-                type: AttachmentType::SubmittedQuote,
-                isDeleteProtected: true,
-            ),
-            $quote->opportunity,
-        );
+        $this->attachmentEntityService
+            ->setCauser($this->causer)
+            ->createAttachmentForEntity(
+                new CreateAttachmentData(
+                    file: new BinaryFileContent($result->content, $result->filename),
+                    type: AttachmentType::SubmittedQuote,
+                    isDeleteProtected: true,
+                ),
+                $quote->opportunity,
+            );
     }
 
     public function createAttachmentFromDistributorFiles(WorldwideQuote $quote): void
@@ -96,14 +102,16 @@ class WorldwideQuoteAttachmentService
                 $file->original_file_name
             );
 
-            $this->attachmentEntityService->createAttachmentForEntity(
-                new CreateAttachmentData(
-                    file: $fileContent,
-                    type: AttachmentType::DistributionQuotation,
-                    isDeleteProtected: true,
-                ),
-                $quote->opportunity,
-            );
+            $this->attachmentEntityService
+                ->setCauser($this->causer)
+                ->createAttachmentForEntity(
+                    new CreateAttachmentData(
+                        file: $fileContent,
+                        type: AttachmentType::DistributionQuotation,
+                        isDeleteProtected: true,
+                    ),
+                    $quote->opportunity,
+                );
 
             return;
         }
@@ -143,13 +151,20 @@ class WorldwideQuoteAttachmentService
             sprintf("%s-distributor-files.zip", $quote->quote_number)
         );
 
-        $this->attachmentEntityService->createAttachmentForEntity(
-            new CreateAttachmentData(
-                file: $fileContent,
-                type: AttachmentType::DistributionQuotation,
-                isDeleteProtected: true,
-            ),
-            $quote->opportunity,
-        );
+        $this->attachmentEntityService
+            ->setCauser($this->causer)
+            ->createAttachmentForEntity(
+                new CreateAttachmentData(
+                    file: $fileContent,
+                    type: AttachmentType::DistributionQuotation,
+                    isDeleteProtected: true,
+                ),
+                $quote->opportunity,
+            );
+    }
+
+    public function setCauser(?Model $causer): static
+    {
+        return tap($this, fn() => $this->causer = $causer);
     }
 }

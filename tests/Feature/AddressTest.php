@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Address;
+use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -27,7 +29,9 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code', 'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at', 'updated_at', 'activated_at',
+                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code',
+                        'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at',
+                        'updated_at', 'activated_at',
                         'country' => [
 //                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
                         ],
@@ -97,7 +101,9 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code', 'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at', 'updated_at', 'activated_at',
+                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code',
+                        'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at',
+                        'updated_at', 'activated_at',
                         'country' => [
 //                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
                         ],
@@ -187,6 +193,76 @@ class AddressTest extends TestCase
     }
 
     /**
+     * Test an ability to create a new address with company relations.
+     *
+     * @return string
+     */
+    public function testCanCreateNewAddressWithCompanyRelations(): string
+    {
+        $this->authenticateApi();
+
+        $data = [
+            'address_type' => 'Equipment',
+            'address_1' => Str::random(40),
+            'address_2' => Str::random(40),
+            'city' => Str::random(20),
+            'post_code' => Str::random(10),
+            'state' => Str::random(10),
+            'state_code' => Str::random(10),
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
+            'company_relations' => Company::factory()->count(2)->create()->map->only('id')->all(),
+        ];
+
+        $response = $this->postJson('api/addresses', $data)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'contact_id',
+                'location_id',
+                'address_type',
+                'address_1',
+                'city',
+                'state',
+                'state_code',
+                'post_code',
+                'address_2',
+                'country_id',
+                'created_at',
+                'updated_at',
+                'activated_at',
+                'country' => [
+                    'id', 'iso_3166_2', 'name',
+                ],
+            ]);
+
+        foreach (Arr::except($data, 'company_relations') as $attribute => $value) {
+            $this->assertSame($response->json($attribute), $value);
+        }
+
+        $this->assertSame($response->json('country.id'), $data['country_id']);
+
+        foreach ($data['company_relations'] as $relation) {
+            $r = $this->getJson('api/companies/'.$relation['id'])
+//                ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ]);
+
+            $this->assertContains($response->json('id'), $r->json('addresses.*.id'));
+        }
+
+        return $response->json('id');
+    }
+
+    /**
      * Test an ability to view an existing address.
      *
      * @return void
@@ -251,6 +327,57 @@ class AddressTest extends TestCase
 
         foreach ($data as $attribute => $value) {
             $this->assertSame($response->json($attribute), $value);
+        }
+
+        $this->assertSame($response->json('country.id'), $data['country_id']);
+    }
+
+    /**
+     * Test an ability to update an existing address.
+     */
+    public function testCanUpdateAddressWithCompanyRelations(): void
+    {
+        $addressID = $this->testCanCreateNewAddress();
+
+        $this->authenticateApi();
+
+        $data = [
+            'address_type' => 'Software',
+            'address_1' => Str::random(40),
+            'address_2' => Str::random(40),
+            'city' => Str::random(20),
+            'post_code' => Str::random(10),
+            'state' => Str::random(10),
+            'state_code' => Str::random(10),
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
+            'company_relations' => Company::factory()->count(2)->create()->map->only('id')->all(),
+        ];
+
+        $this->patchJson('api/addresses/'.$addressID, $data)
+            ->assertOk();
+
+        $response = $this->getJson('api/addresses/'.$addressID)
+            ->assertOk();
+
+        foreach (Arr::except($data, 'company_relations') as $attribute => $value) {
+            $this->assertSame($response->json($attribute), $value);
+        }
+
+        foreach ($data['company_relations'] as $relation) {
+            $r = $this->getJson('api/companies/'.$relation['id'])
+//                ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ]);
+
+            $this->assertContains($response->json('id'), $r->json('addresses.*.id'));
         }
 
         $this->assertSame($response->json('country.id'), $data['country_id']);

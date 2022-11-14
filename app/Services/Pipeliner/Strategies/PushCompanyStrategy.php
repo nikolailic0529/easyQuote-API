@@ -118,6 +118,10 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
                 $builder->whereNull('resolved_at')
                     ->whereNotNull('archived_at');
             })
+            ->where(static function (Builder $builder): void {
+                $builder->has('opportunities')
+                    ->orHas('opportunitiesWhereEndUser');
+            })
             ->unless(is_null($lastUpdatedAt), static function (Builder $builder) use ($model, $lastUpdatedAt): void {
                 $builder->where($model->getQualifiedUpdatedAtColumn(), '>', $lastUpdatedAt);
             });
@@ -328,7 +332,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
     public function iteratePending(): \Traversable
     {
         return $this->modelsToBeUpdatedQuery()
-            ->lazyById()
+            ->lazyById(column: (new Company())->getQualifiedKeyName())
             ->map(static function (Company $model): array {
                 return [
                     'id' => $model->getKey(),

@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\{Builder,
     Model,
     Relations\BelongsTo,
     Relations\BelongsToMany,
+    Relations\MorphMany,
+    Relations\MorphToMany,
     SoftDeletes};
 
 /**
@@ -85,9 +87,9 @@ class Address extends Model implements SearchableEntity
         return $this->belongsTo(User::class);
     }
 
-    public function companies(): BelongsToMany
+    public function companies(): MorphToMany
     {
-        return $this->belongsToMany(Company::class);
+        return $this->morphedByMany(Company::class, 'addressable')->withPivot('is_default');
     }
 
     public function scopeType(Builder $query, string $type): Builder

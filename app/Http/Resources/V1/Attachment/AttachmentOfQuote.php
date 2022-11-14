@@ -2,9 +2,13 @@
 
 namespace App\Http\Resources\V1\Attachment;
 
+use App\Http\Resources\V1\User\UserRelationResource;
 use App\Models\Attachment;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin Attachment
+ */
 class AttachmentOfQuote extends JsonResource
 {
     /**
@@ -15,10 +19,9 @@ class AttachmentOfQuote extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var Attachment|self $this */
-
         return [
             'id' => $this->getKey(),
+            'user' => UserRelationResource::make($this->owner),
             'type' => $this->type,
             'parent_entity_type' => 'Quote',
             'filepath' => asset('storage/attachments/'.$this->filepath),

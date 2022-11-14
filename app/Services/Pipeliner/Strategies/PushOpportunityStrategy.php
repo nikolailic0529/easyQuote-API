@@ -145,7 +145,7 @@ class PushOpportunityStrategy implements PushStrategy
     public function iteratePending(): \Traversable
     {
         return $this->modelsToBeUpdatedQuery()
-            ->lazyById()
+            ->lazyById(column: (new Opportunity())->getQualifiedKeyName())
             ->map(static function (Opportunity $model): array {
                 $withoutOverlapping = collect([
                     $model->primaryAccount()->getParentKey(),

@@ -36,7 +36,8 @@ class TaskExpiredNotification extends Notification
     public function toMail($notifiable)
     {
         $message = sprintf(
-            'Task has been expired: `%s`',
+            '%s [%s] has been expired',
+            $this->task->activity_type->value,
             $this->task->name,
         );
 

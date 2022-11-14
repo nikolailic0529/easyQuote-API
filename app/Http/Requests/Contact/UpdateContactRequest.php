@@ -3,10 +3,10 @@
 namespace App\Http\Requests\Contact;
 
 use App\DTO\Contact\UpdateContactData;
-use App\DTO\MissingValue;
 use App\Enum\ContactType;
 use App\Enum\GenderEnum;
 use App\Models\Address;
+use App\Models\Company;
 use App\Models\SalesUnit;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
@@ -25,10 +25,14 @@ class UpdateContactRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sales_unit_id' => ['bail', 'required', 'uuid',
-                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed()],
-            'address_id' => ['bail', 'nullable', 'uuid',
-                Rule::exists(Address::class, (new Address())->getKeyName())->withoutTrashed()],
+            'sales_unit_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed(),
+            ],
+            'address_id' => [
+                'bail', 'nullable', 'uuid',
+                Rule::exists(Address::class, (new Address())->getKeyName())->withoutTrashed(),
+            ],
             'contact_type' => ['required', 'string', Rule::in(ContactType::getValues())],
             'gender' => ['nullable', 'string', new Enum(GenderEnum::class)],
             'first_name' => ['required', 'string', 'filled', 'max:100'],
@@ -39,6 +43,13 @@ class UpdateContactRequest extends FormRequest
             'job_title' => ['nullable', 'string', 'max:150'],
             'picture' => ['nullable', 'file', 'image', 'max:2048'],
             'is_verified' => ['nullable', 'boolean'],
+            'company_relations' => ['bail', 'nullable', 'array'],
+            'company_relations.*.id' => [
+                'bail', 'uuid', 'distinct', Rule::exists(Company::class, 'id')->withoutTrashed(),
+            ],
+            'company_relations.*.is_default' => [
+                'bail', 'boolean',
+            ],
         ];
     }
 
@@ -58,23 +69,13 @@ class UpdateContactRequest extends FormRequest
 
     public function getUpdateContactData(): UpdateContactData
     {
-        $missing = new MissingValue();
+        $payload = $this->all();
 
-        return new UpdateContactData([
-            'sales_unit_id' => $this->input('sales_unit_id'),
-            'address_id' => $this->whenFilled('address_id', value(...), static fn() => $missing),
-            'contact_type' => $this->input('contact_type'),
-            'gender' => $this->filled('gender')
-                ? GenderEnum::from($this->input('gender'))
-                : GenderEnum::Unknown,
-            'first_name' => $this->input('first_name'),
-            'last_name' => $this->input('last_name'),
-            'phone' => $this->input('phone'),
-            'mobile' => $this->input('mobile'),
-            'email' => $this->input('email'),
-            'job_title' => $this->input('job_title'),
-            'picture' => $this->file('picture'),
-            'is_verified' => $this->boolean('is_verified'),
-        ]);
+        if ($this->isNotFilled('address_id')) {
+            unset($payload['address_id']);
+            $this->offsetUnset('address_id');
+        }
+
+        return UpdateContactData::from($this);
     }
 }

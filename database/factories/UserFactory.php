@@ -16,7 +16,7 @@ class UserFactory extends Factory
         return [
             'first_name' => Str::filterLetters($this->faker->firstName()),
             'last_name' => Str::filterLetters($this->faker->lastName()),
-            'email' => $this->faker->unique()->safeEmail(),
+            'email' => Str::random(100).'@example.com',
             'email_verified_at' => now(),
             'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
             'timezone_id' => DB::table('timezones')->value('id'),

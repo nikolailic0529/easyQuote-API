@@ -2,11 +2,14 @@
 
 namespace App\Http\Resources\V1\Attachment;
 
+use App\Models\Attachment;
 use Illuminate\Http\Resources\Json\JsonResource;
 use function asset;
 use function config;
-use function optional;
 
+/**
+ * @mixin Attachment
+ */
 class CreatedAttachment extends JsonResource
 {
     /**
@@ -18,13 +21,14 @@ class CreatedAttachment extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
+            'id' => $this->getKey(),
+            'user' => $this->owner,
             'type' => $this->type,
             'filepath' => asset('storage/attachments/'.$this->filepath),
             'filename' => $this->filename,
             'extension' => $this->extension,
             'size' => $this->size,
-            'created_at' => optional($this->created_at)->format(config('date.format_time')),
+            'created_at' => $this->{$this->getCreatedAtColumn()}?->format(config('date.format_time')),
         ];
     }
 }

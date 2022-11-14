@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1\Attachment;
 
+use App\Http\Resources\V1\User\UserRelationResource;
 use App\Models\Attachment;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,6 +25,7 @@ class OpportunityAttachmentResource extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'user' => UserRelationResource::make($this->owner),
             'type' => $this->type,
             'parent_entity_type' => 'Opportunity',
             'filepath' => asset('storage/attachments/'.$this->filepath),

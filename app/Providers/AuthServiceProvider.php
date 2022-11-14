@@ -68,6 +68,7 @@ use App\Policies\RolePolicy;
 use App\Policies\SalesOrderPolicy;
 use App\Policies\SalesOrderTemplatePolicy;
 use App\Policies\SalesUnitPolicy;
+use App\Policies\SearchPolicy;
 use App\Policies\SNDPolicy;
 use App\Policies\SystemSettingPolicy;
 use App\Policies\TaskPolicy;
@@ -170,5 +171,6 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('update_quote_task_template', [QuoteTaskTemplatePolicy::class, 'update']);
         Gate::define('viewQuotesOfAnyBusinessDivision', [UnifiedQuotePolicy::class, 'viewEntitiesOfAnyBusinessDivision']);
         Gate::define('viewQuotesOfAnyUser', [UnifiedQuotePolicy::class, 'viewEntitiesOfAnyUser']);
+        Gate::define('rebuildSearch', [SearchPolicy::class, 'rebuildSearch']);
     }
 }

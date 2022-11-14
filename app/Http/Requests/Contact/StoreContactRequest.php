@@ -3,10 +3,10 @@
 namespace App\Http\Requests\Contact;
 
 use App\DTO\Contact\CreateContactData;
-use App\DTO\MissingValue;
 use App\Enum\ContactType;
 use App\Enum\GenderEnum;
 use App\Models\Address;
+use App\Models\Company;
 use App\Models\SalesUnit;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
@@ -39,6 +39,13 @@ class StoreContactRequest extends FormRequest
             'job_title' => ['nullable', 'string', 'max:150'],
             'picture' => ['nullable', 'file', 'image', 'max:2048'],
             'is_verified' => ['nullable', 'boolean'],
+            'company_relations' => ['bail', 'nullable', 'array'],
+            'company_relations.*.id' => [
+                'bail', 'uuid', 'distinct', Rule::exists(Company::class, 'id')->withoutTrashed(),
+            ],
+            'company_relations.*.is_default' => [
+                'bail', 'boolean',
+            ],
         ];
     }
 
@@ -58,23 +65,13 @@ class StoreContactRequest extends FormRequest
 
     public function getCreateContactData(): CreateContactData
     {
-        $missing = new MissingValue();
+        $payload = $this->all();
 
-        return new CreateContactData([
-            'sales_unit_id' => $this->input('sales_unit_id'),
-            'address_id' => $this->whenFilled('address_id', value(...), static fn() => $missing),
-            'contact_type' => $this->input('contact_type'),
-            'gender' => $this->filled('gender')
-                ? GenderEnum::from($this->input('gender'))
-                : GenderEnum::Unknown,
-            'first_name' => $this->input('first_name'),
-            'last_name' => $this->input('last_name'),
-            'phone' => $this->input('phone'),
-            'mobile' => $this->input('mobile'),
-            'email' => $this->input('email'),
-            'job_title' => $this->input('job_title'),
-            'picture' => $this->file('picture'),
-            'is_verified' => $this->boolean('is_verified'),
-        ]);
+        if ($this->isNotFilled('address_id')) {
+            unset($payload['address_id']);
+            $this->offsetUnset('address_id');
+        }
+
+        return CreateContactData::from($this);
     }
 }

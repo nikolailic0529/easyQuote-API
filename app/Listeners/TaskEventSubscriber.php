@@ -2,27 +2,22 @@
 
 namespace App\Listeners;
 
-use App\Events\Task\{TaskCreated, TaskDeleted, TaskExpired, TaskUpdated,};
+use App\Events\Task\TaskCreated;
+use App\Events\Task\TaskDeleted;
+use App\Events\Task\TaskExpired;
+use App\Events\Task\TaskUpdated;
 use App\Models\User;
-use App\Notifications\Task\{InvitedToTaskNotification,
-    RevokedInvitationFromTaskNotification,
-    TaskCreatedNotification,
-    TaskDeletedNotification,
-    TaskExpiredNotification};
+use App\Notifications\Task\InvitedToTaskNotification;
+use App\Notifications\Task\RevokedInvitationFromTaskNotification;
+use App\Notifications\Task\TaskCreatedNotification;
+use App\Notifications\Task\TaskDeletedNotification;
+use App\Notifications\Task\TaskExpiredNotification;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Arr;
 
-class TaskEventSubscriber
+class TaskEventSubscriber implements ShouldQueue
 {
-    public function __construct()
-    {
-    }
-
-    /**
-     * Register the listeners for the subscriber.
-     *
-     * @param \Illuminate\Events\Dispatcher $events
-     */
     public function subscribe(Dispatcher $events): void
     {
         $events->listen(TaskCreated::class, [self::class, 'handleCreatedEvent']);
@@ -31,12 +26,13 @@ class TaskEventSubscriber
         $events->listen(TaskExpired::class, [self::class, 'handleExpiredEvent']);
     }
 
-    public function handleCreatedEvent(TaskCreated $event)
+    public function handleCreatedEvent(TaskCreated $event): void
     {
         $task = $event->task;
 
         $message = sprintf(
-            'New task created: `%s`',
+            'New %s [%s] created',
+            $task->activity_type->value,
             $task->name,
         );
 
@@ -54,7 +50,8 @@ class TaskEventSubscriber
          */
         $task->users->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'You have been invited to the task task: `%s`',
+                'You have been invited to the %s [%s]',
+                $task->activity_type->value,
                 $task->name,
             );
 
@@ -70,7 +67,7 @@ class TaskEventSubscriber
         });
     }
 
-    public function handleUpdatedEvent(TaskUpdated $event)
+    public function handleUpdatedEvent(TaskUpdated $event): void
     {
         $task = $event->task;
 
@@ -84,7 +81,8 @@ class TaskEventSubscriber
          */
         $attachedUsers->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'You have been invited to the task task: `%s`',
+                'You have been invited to the %s [%s]',
+                $task->activity_type->value,
                 $task->name,
             );
 
@@ -101,7 +99,8 @@ class TaskEventSubscriber
 
         $detachedUsers->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'Your invitation has been revoked from task: `%s`',
+                'Your invitation has been revoked from the %s [%s]',
+                $task->activity_type->value,
                 $task->name,
             );
 
@@ -116,12 +115,13 @@ class TaskEventSubscriber
         });
     }
 
-    public function handleDeletedEvent(TaskDeleted $event)
+    public function handleDeletedEvent(TaskDeleted $event): void
     {
         $task = $event->task;
 
         $message = sprintf(
-            'Task has been deleted: `%s`',
+            '%s [%s] deleted',
+            $task->activity_type->value,
             $task->name,
         );
 
@@ -139,7 +139,8 @@ class TaskEventSubscriber
          */
         $task->users->each(function (User $user) use ($task) {
             $message = sprintf(
-                'Task you were assigned to has been deleted: `%s`',
+                '%s [%s] deleted',
+                $task->activity_type->value,
                 $task->name,
             );
 
@@ -154,7 +155,7 @@ class TaskEventSubscriber
         });
     }
 
-    public function handleExpiredEvent(TaskExpired $event)
+    public function handleExpiredEvent(TaskExpired $event): void
     {
         $task = $event->task;
 
@@ -169,7 +170,8 @@ class TaskEventSubscriber
 
         $users->each(function (User $user) use ($task): void {
             $message = sprintf(
-                'Task has been expired: `%s`',
+                '%s [%s] has been expired',
+                $task->activity_type->value,
                 $task->name,
             );
 

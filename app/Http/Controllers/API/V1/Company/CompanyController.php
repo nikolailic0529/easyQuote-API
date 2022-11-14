@@ -6,18 +6,15 @@ use App\DTO\Attachment\CreateAttachmentData;
 use App\Enum\CompanySource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
-use App\Models\Opportunity;
-use App\Services\Company\CompanyQueryFilterDataProvider;
-use App\Services\Opportunity\OpportunityQueryFilterDataProvider;
 use App\Http\Requests\Company\{DeleteCompany,
     PaginateCompanies,
     PartialUpdateCompany,
     ShowCompanyFormData,
     StoreCompanyRequest,
     UpdateCompanyContact,
-    UpdateCompanyRequest};
+    UpdateCompanyRequest
+};
 use App\Http\Requests\Opportunity\PaginateOpportunities;
-use Spatie\LaravelData\DataCollection;
 use App\Http\Resources\{V1\Appointment\AppointmentListResource,
     V1\Asset\AssetOfCompany,
     V1\Attachment\AttachmentOfCompany,
@@ -25,9 +22,10 @@ use App\Http\Resources\{V1\Appointment\AppointmentListResource,
     V1\Company\CompanyCollection,
     V1\Company\CompanyWithIncludes,
     V1\Note\UnifiedNoteOfCompany,
-    V1\Opportunity\OpportunityList,
+    V1\Opportunity\OpportunityAsRelationResource,
     V1\SalesOrder\SalesOrderOfCompany,
-    V1\UnifiedQuote\UnifiedQuoteOfCompany};
+    V1\UnifiedQuote\UnifiedQuoteOfCompany
+};
 use App\Models\Address;
 use App\Models\Attachment;
 use App\Models\Company;
@@ -41,6 +39,7 @@ use App\Queries\SalesOrderQueries;
 use App\Queries\UnifiedNoteQueries;
 use App\Queries\UnifiedQuoteQueries;
 use App\Services\Attachment\AttachmentEntityService;
+use App\Services\Company\CompanyQueryFilterDataProvider;
 use App\Services\CompanyEntityService;
 use App\Services\UnifiedAttachment\UnifiedAttachmentDataMapper;
 use App\Services\UnifiedNote\UnifiedNoteDataMapper;
@@ -50,6 +49,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Spatie\LaravelData\DataCollection;
 use function response;
 
 class CompanyController extends Controller
@@ -219,7 +219,7 @@ class CompanyController extends Controller
             ->listOpportunitiesOfCompanyQuery(company: $company, request: $request)
             ->get();
 
-        return OpportunityList::collection($resource);
+        return OpportunityAsRelationResource::collection($resource);
     }
 
     /**
@@ -413,6 +413,27 @@ class CompanyController extends Controller
         );
     }
 
+    /**
+     * Attach address to company.
+     *
+     * @param  CompanyEntityService  $service
+     * @param  Company  $company
+     * @param  Address  $address
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function attachAddressToCompany(
+        CompanyEntityService $service,
+        Company $company,
+        Address $address,
+    ): Response {
+        $this->authorize('update', $company);
+
+        $service->attachAddressToCompany($company, $address);
+
+        return response()->noContent();
+    }
+
 
     /**
      * Detach address from company.
@@ -431,6 +452,27 @@ class CompanyController extends Controller
         $this->authorize('update', $company);
 
         $service->detachAddressFromCompany($company, $address);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Attach contact to company.
+     *
+     * @param  CompanyEntityService  $service
+     * @param  Company  $company
+     * @param  Contact  $contact
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function attachContactToCompany(
+        CompanyEntityService $service,
+        Company $company,
+        Contact $contact,
+    ): Response {
+        $this->authorize('update', $company);
+
+        $service->attachContactToCompany($company, $contact);
 
         return response()->noContent();
     }
@@ -496,10 +538,12 @@ class CompanyController extends Controller
     ): JsonResponse {
         $this->authorize('view', $company);
 
-        $resource = $entityService->createAttachmentForEntity(
-            data: CreateAttachmentData::from($request),
-            entity: $company,
-        );
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->createAttachmentForEntity(
+                data: CreateAttachmentData::from($request),
+                entity: $company,
+            );
 
         return response()->json(
             data: AttachmentOfCompany::make($resource),

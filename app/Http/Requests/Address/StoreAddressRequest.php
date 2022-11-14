@@ -4,6 +4,7 @@ namespace App\Http\Requests\Address;
 
 use App\DTO\Address\CreateAddressData;
 use App\Enum\AddressType;
+use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Traits\Request\PreparesNullValues;
@@ -19,7 +20,7 @@ class StoreAddressRequest extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'address_type' => ['required', 'string', Rule::in(AddressType::getValues())],
@@ -29,8 +30,17 @@ class StoreAddressRequest extends FormRequest
             'state' => ['nullable', 'string', 'max:191'],
             'state_code' => ['nullable', 'string', 'max:191'],
             'post_code' => ['nullable', 'string', 'max:191'],
-            'country_id' => ['required_without:country_code', 'string', 'uuid', Rule::exists(Country::class, 'id')->withoutTrashed()],
+            'country_id' => [
+                'required_without:country_code', 'string', 'uuid', Rule::exists(Country::class, 'id')->withoutTrashed(),
+            ],
             'contact_id' => ['nullable', 'uuid', Rule::exists(Contact::class, 'id')->withoutTrashed()],
+            'company_relations' => ['bail', 'nullable', 'array'],
+            'company_relations.*.id' => [
+                'bail', 'uuid', 'distinct', Rule::exists(Company::class, 'id')->withoutTrashed(),
+            ],
+            'company_relations.*.is_default' => [
+                'bail', 'boolean',
+            ],
         ];
     }
 
@@ -41,16 +51,13 @@ class StoreAddressRequest extends FormRequest
 
     public function getCreateAddressData(): CreateAddressData
     {
-        return new CreateAddressData([
-            'address_type' => $this->input('address_type'),
-            'address_1' => $this->input('address_1'),
-            'address_2' => $this->input('address_2'),
-            'city' => $this->input('city'),
-            'state' => $this->input('state'),
-            'state_code' => $this->input('state_code'),
-            'post_code' => $this->input('post_code'),
-            'country_id' => $this->input('country_id'),
-            'contact_id' => $this->input('contact_id'),
-        ]);
+        $payload = $this->all();
+
+        if ($this->isNotFilled('contact_id')) {
+            unset($payload['contact_id']);
+            $this->offsetUnset('contact_id');
+        }
+
+        return CreateAddressData::from($payload);
     }
 }

@@ -237,8 +237,8 @@ class CompanyEntityService implements CauserAware
 
                 $relationChanges = [
                     'vendors' => $company->vendors()->sync($data->vendors),
-                    'addresses' => $company->addresses()->sync($addressesData),
-                    'contacts' => $company->contacts()->sync($contactsData),
+//                    'addresses' => $company->addresses()->sync($addressesData),
+//                    'contacts' => $company->contacts()->sync($contactsData),
                     'categories' => $company->categories()->sync($categories),
                 ];
 
@@ -325,6 +325,24 @@ class CompanyEntityService implements CauserAware
         });
     }
 
+    public function attachAddressToCompany(Company $company, Address $address): Company
+    {
+        return tap($company, function (Company $company) use ($address): void {
+            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+                $oldCompany->setRawAttributes($company->getRawOriginal());
+                $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            });
+
+            $this->connection->transaction(static function () use ($company, $address) {
+                $company->addresses()->syncWithoutDetaching($address);
+            });
+
+            $this->eventDispatcher->dispatch(
+                new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
+            );
+        });
+    }
+
     public function detachAddressFromCompany(Company $company, Address $address): Company
     {
         return tap($company, function (Company $company) use ($address): void {
@@ -335,6 +353,24 @@ class CompanyEntityService implements CauserAware
 
             $this->connection->transaction(static function () use ($company, $address) {
                 $company->addresses()->detach($address);
+            });
+
+            $this->eventDispatcher->dispatch(
+                new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
+            );
+        });
+    }
+
+    public function attachContactToCompany(Company $company, Contact $contact): Company
+    {
+        return tap($company, function (Company $company) use ($contact): void {
+            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+                $oldCompany->setRawAttributes($company->getRawOriginal());
+                $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            });
+
+            $this->connection->transaction(static function () use ($company, $contact) {
+                $company->contacts()->syncWithoutDetaching($contact);
             });
 
             $this->eventDispatcher->dispatch(

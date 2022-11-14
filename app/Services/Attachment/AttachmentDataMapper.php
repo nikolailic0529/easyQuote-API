@@ -7,31 +7,37 @@ use App\Integrations\Pipeliner\Enum\CloudObjectTypeEnum;
 use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectInput;
 use App\Models\Attachment;
-use App\Models\Company;
-use App\Services\ThumbHelper;
+use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Webpatser\Uuid\Uuid;
 
 class AttachmentDataMapper
 {
-    public function __construct(protected FilesystemAdapter $filesystem)
-    {
+    public function __construct(
+        protected readonly FilesystemAdapter $filesystem,
+        protected readonly PipelinerClientEntityToUserProjector $clientProjector
+    ) {
     }
 
     public function mapFromCloudObjectEntity(CloudObjectEntity $entity, array $metadata): Attachment
     {
-        return tap($this->mapFromMetadata($metadata, AttachmentType::PipelinerDocument), function (Attachment $attachment) use ($entity) {
-            $attachment->pl_reference = $entity->id;
-            $attachment->filename = static::truncateFilename($entity->filename);
-            $attachment->extension = pathinfo($entity->filename, PATHINFO_EXTENSION);
-        });
+        return tap($this->mapFromMetadata($metadata, AttachmentType::PipelinerDocument),
+            function (Attachment $attachment) use ($entity) {
+                $attachment->pl_reference = $entity->id;
+                $attachment->filename = static::truncateFilename($entity->filename);
+                $attachment->extension = pathinfo($entity->filename, PATHINFO_EXTENSION);
+
+                if ($entity->creator !== null) {
+                    $attachment->owner()->associate(($this->clientProjector)($entity->creator));
+                }
+            });
     }
 
     public function mapPipelinerCreateCloudObjectInput(Attachment $attachment): CreateCloudObjectInput
     {
         $stream = $this->filesystem->readStream($attachment->filepath);
 
-        stream_filter_append($stream,  'convert.base64-encode', STREAM_FILTER_READ);
+        stream_filter_append($stream, 'convert.base64-encode', STREAM_FILTER_READ);
 
         $content = stream_get_contents($stream);
 
@@ -45,9 +51,10 @@ class AttachmentDataMapper
     public function mapFromMetadata(array $metadata, AttachmentType $type, bool $isDeleteProtected = false): Attachment
     {
         return tap(new Attachment(), function (Attachment $attachment) use ($isDeleteProtected, $metadata, $type) {
-            $attachment->{$attachment->getKeyName()} = (string)Uuid::generate(4);
+            $attachment->{$attachment->getKeyName()} = (string) Uuid::generate(4);
             $attachment->filepath = $metadata['path'];
-            $attachment->filename = static::truncateFilename($metadata['filename'] ?? pathinfo($metadata['path'], PATHINFO_FILENAME));
+            $attachment->filename = static::truncateFilename($metadata['filename'] ?? pathinfo($metadata['path'],
+                PATHINFO_FILENAME));
             $attachment->extension = pathinfo($metadata['path'], PATHINFO_EXTENSION);
             $attachment->size = $metadata['size'];
             $attachment->type = $type;

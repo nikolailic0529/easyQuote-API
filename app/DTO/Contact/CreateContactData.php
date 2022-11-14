@@ -2,35 +2,30 @@
 
 namespace App\DTO\Contact;
 
-use App\DTO\Enum\DataTransferValueOption;
-use App\DTO\MissingValue;
 use App\Enum\GenderEnum;
 use Illuminate\Http\UploadedFile;
-use Spatie\DataTransferObject\DataTransferObject;
-use Symfony\Component\Validator\Constraints;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Optional;
 
-final class CreateContactData extends DataTransferObject
+final class CreateContactData extends Data
 {
-    #[Constraints\Uuid]
-    public string $sales_unit_id;
-    /** @var string|\App\DTO\MissingValue */
-    public string|MissingValue $address_id;
-    public string $contact_type;
-    public GenderEnum $gender;
-    public string $first_name;
-    public string $last_name;
-    public ?string $phone;
-    public ?string $mobile;
-    public ?string $email;
-    public ?string $job_title;
-    public ?UploadedFile $picture;
-    public bool $is_verified;
-
-    protected function parseArray(array $array): array
-    {
-        return array_filter(
-            parent::parseArray($array),
-            static fn (mixed $value): bool => !$value instanceof MissingValue
-        );
+    public function __construct(
+        public readonly string $sales_unit_id,
+        public readonly string|Optional $address_id,
+        public readonly string $contact_type,
+        public readonly string $first_name,
+        public readonly string $last_name,
+        public readonly ?string $phone,
+        public readonly ?string $mobile,
+        public readonly ?string $email,
+        public readonly ?string $job_title,
+        public readonly ?UploadedFile $picture,
+        public readonly bool $is_verified,
+        #[DataCollectionOf(CreateContactCompanyRelationNoBackrefData::class)]
+        public readonly DataCollection|Optional $company_relations,
+        public readonly GenderEnum|Optional $gender = GenderEnum::Unknown,
+    ) {
     }
 }

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enum\GenderEnum;
 use App\Models\Address;
+use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Role;
 use App\Models\SalesUnit;
@@ -54,8 +55,10 @@ class ContactTest extends TestCase
                 'total',
             ]);
 
-        $orderFields = ['created_at', 'email', 'first_name', 'last_name', 'is_verified', 'job_title', 'mobile',
-            'phone'];
+        $orderFields = [
+            'created_at', 'email', 'first_name', 'last_name', 'is_verified', 'job_title', 'mobile',
+            'phone',
+        ];
 
         foreach ($orderFields as $field) {
             $this->getJson('api/contacts?order_by_'.$field.'=desc')->assertOk();
@@ -283,6 +286,94 @@ class ContactTest extends TestCase
     }
 
     /**
+     * Test an ability to create a new contact with company relations
+     *
+     * @return string
+     */
+    public function testCanCreateContactAssociatedWithCompanyRelations(): string
+    {
+        $this->authenticateApi();
+
+        $image = UploadedFile::fake()->image('contact.jpg');
+
+        $response = $this->postJson('api/contacts', $data = [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
+            'contact_type' => $this->faker->randomElement(['Invoice', 'Hardware', 'Software']),
+            'gender' => $this->faker->randomElement(GenderEnum::cases())->value,
+            'first_name' => $this->faker->firstName(),
+            'last_name' => $this->faker->lastName(),
+            'picture' => $image,
+            'company_relations' => Company::factory()->count(2)->create()->map->only('id')->all(),
+        ])
+//                ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'sales_unit_id',
+                'address_id',
+                'contact_type',
+                'gender',
+                'first_name',
+                'last_name',
+                'is_verified',
+                'picture',
+                'image',
+                'created_at',
+            ])
+            ->assertJson([
+                'sales_unit_id' => $data['sales_unit_id'],
+                'contact_type' => $data['contact_type'],
+                'gender' => $data['gender'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+            ])
+            ->assertOk();
+
+        $contactModelKey = $response->json('id');
+
+        $this->assertNotEmpty($contactModelKey);
+
+        $this->getJson('api/contacts/'.$contactModelKey)
+//            ->dump()
+            ->assertJsonStructure([
+                'id',
+                'sales_unit_id',
+                'address_id',
+                'contact_type',
+                'first_name',
+                'last_name',
+                'is_verified',
+                'picture',
+                'image',
+                'created_at',
+            ])
+            ->assertJson([
+                'sales_unit_id' => $data['sales_unit_id'],
+                'contact_type' => $data['contact_type'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+            ]);
+
+        foreach ($data['company_relations'] as $relation) {
+            $r = $this->getJson('api/companies/'.$relation['id'])
+//                ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ]);
+
+            $this->assertContains($contactModelKey, $r->json('contacts.*.id'));
+        }
+
+        return $contactModelKey;
+    }
+
+    /**
      * Test an ability to update an existing contact.
      */
     public function testCanUpdateContact(): void
@@ -291,11 +382,13 @@ class ContactTest extends TestCase
 
         $contact = Contact::factory()->create();
 
-        $performContactUpdate = function (string $contactKey,
-                                          string $gender,
-                                          string $contactType,
-                                          string $firstName,
-                                          string $lastName) {
+        $performContactUpdate = function (
+            string $contactKey,
+            string $gender,
+            string $contactType,
+            string $firstName,
+            string $lastName
+        ) {
             $image = UploadedFile::fake()->image('contact.jpg');
 
             $response = $this->patchJson('api/contacts/'.$contactKey, [
@@ -426,6 +519,90 @@ class ContactTest extends TestCase
     }
 
     /**
+     * Test an ability to update an existing contact with company relations.
+     */
+    public function testCanUpdateContactAssociatedWithCompanyRelations(): void
+    {
+        $this->authenticateApi();
+
+        $image = UploadedFile::fake()->image('contact.jpg');
+
+        $contact = Contact::factory()
+            ->for(Address::factory())
+            ->create();
+
+        $response = $this->patchJson('api/contacts/'.$contact->getKey(), $data = [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
+            'contact_type' => $this->faker->randomElement(['Invoice', 'Hardware', 'Software']),
+            'first_name' => $this->faker->firstName(),
+            'last_name' => $this->faker->lastName(),
+            'picture' => $image,
+            'company_relations' => Company::factory()->count(2)->create()->map->only('id')->all(),
+        ])
+//                ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'sales_unit_id',
+                'address_id',
+                'contact_type',
+                'first_name',
+                'last_name',
+                'is_verified',
+                'picture',
+                'image',
+                'created_at',
+            ])
+            ->assertJson([
+                'sales_unit_id' => $data['sales_unit_id'],
+                'contact_type' => $data['contact_type'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+            ]);
+
+        $contactModelKey = $response->json('id');
+
+        $this->assertNotEmpty($contactModelKey);
+
+        $this->getJson('api/contacts/'.$contactModelKey)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'sales_unit_id',
+                'contact_type',
+                'first_name',
+                'last_name',
+                'is_verified',
+                'picture',
+                'image',
+                'created_at',
+            ])
+            ->assertJson([
+                'sales_unit_id' => $data['sales_unit_id'],
+                'contact_type' => $data['contact_type'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+            ]);
+
+        foreach ($data['company_relations'] as $relation) {
+            $r = $this->getJson('api/companies/'.$relation['id'])
+//                ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ]);
+
+            $this->assertContains($contactModelKey, $r->json('contacts.*.id'));
+        }
+    }
+
+    /**
      * Test an ability to associate an existing contact with the address.
      */
     public function testCanAssociateContactWithAddress(): void
@@ -438,7 +615,7 @@ class ContactTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'address_id'
+                'address_id',
             ])
             ->assertJsonPath('address_id', null);
 
@@ -451,7 +628,7 @@ class ContactTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'address_id'
+                'address_id',
             ])
             ->assertJsonPath('address_id', $address->getKey());
     }

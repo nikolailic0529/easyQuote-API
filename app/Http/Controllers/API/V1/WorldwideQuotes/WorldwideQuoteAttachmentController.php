@@ -50,10 +50,12 @@ class WorldwideQuoteAttachmentController extends Controller
         $this->authorize('view', $worldwideQuote);
         $this->authorize('create', Attachment::class);
 
-        $resource = $entityService->createAttachmentForEntity(
-            data: CreateAttachmentData::from($request),
-            entity: $worldwideQuote,
-        );
+        $resource = $entityService
+            ->setCauser($request->user())
+            ->createAttachmentForEntity(
+                data: CreateAttachmentData::from($request),
+                entity: $worldwideQuote,
+            );
 
         return response()->json(
             data: AttachmentOfQuote::make($resource),

@@ -3,9 +3,9 @@
 namespace App\Services\Address;
 
 use App\Contracts\CauserAware;
+use App\DTO\Address\CreateAddressCompanyRelationNoBackrefData;
 use App\DTO\Address\CreateAddressData;
 use App\DTO\Address\UpdateAddressData;
-use App\DTO\Enum\DataTransferValueOption;
 use App\Events\Address\AddressCreated;
 use App\Events\Address\AddressDeleted;
 use App\Events\Address\AddressUpdated;
@@ -13,37 +13,38 @@ use App\Models\Address;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection as BaseCollection;
+use Spatie\LaravelData\DataCollection;
 use Webpatser\Uuid\Uuid;
 
 class AddressEntityService implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface $connection,
-                                protected EventDispatcher     $eventDispatcher)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected EventDispatcher $eventDispatcher
+    ) {
     }
 
     public function createAddress(CreateAddressData $data): Address
     {
         return tap(new Address(), function (Address $address) use ($data) {
-            $address->{$address->getKeyName()} = (string)Uuid::generate(4);
+            $address->{$address->getKeyName()} = (string) Uuid::generate(4);
+
             $address->user()->associate($this->causer);
-            $address->address_type = $data->address_type;
-            $address->address_1 = $data->address_1;
-            $address->address_2 = $data->address_2;
-            $address->city = $data->city;
-            $address->state = $data->state;
-            $address->state_code = $data->state_code;
-            $address->post_code = $data->post_code;
+            $address->forceFill($data->except('company_relations')->all());
 
-            $address->country()->associate($data->country_id);
+            $companyRelations = collect();
 
-            if (DataTransferValueOption::Miss !== $data->contact_id) {
-                $address->contact()->associate($data->contact_id);
+            if ($data->company_relations instanceof DataCollection) {
+                $companyRelations = $this->mapCompanyRelations($data->company_relations);
             }
 
-            $this->connection->transaction(static fn() => $address->save());
+            $this->connection->transaction(static function () use ($companyRelations, $address): void {
+                $address->save();
+                $address->companies()->syncWithoutDetaching($companyRelations->all());
+            });
 
             $this->eventDispatcher->dispatch(
                 new AddressCreated(address: $address, causer: $this->causer)
@@ -56,26 +57,34 @@ class AddressEntityService implements CauserAware
         return tap($address, function (Address $address) use ($data) {
             $oldAddress = (new Address())->setRawAttributes($address->getRawOriginal());
 
-            $address->address_type = $data->address_type;
-            $address->address_1 = $data->address_1;
-            $address->address_2 = $data->address_2;
-            $address->city = $data->city;
-            $address->state = $data->state;
-            $address->state_code = $data->state_code;
-            $address->post_code = $data->post_code;
+            $address->forceFill($data->except('company_relations')->all());
 
-            $address->country()->associate($data->country_id);
+            $companyRelations = collect();
 
-            if (DataTransferValueOption::Miss !== $data->contact_id) {
-                $address->contact()->associate($data->contact_id);
+            if ($data->company_relations instanceof DataCollection) {
+                $companyRelations = $this->mapCompanyRelations($data->company_relations);
             }
 
-            $this->connection->transaction(static fn() => $address->save());
+            $this->connection->transaction(static function () use ($companyRelations, $address): void {
+                $address->save();
+                $address->companies()->syncWithoutDetaching($companyRelations->all());
+            });
 
             $this->eventDispatcher->dispatch(
                 new AddressUpdated(address: $oldAddress, newAddress: $address, causer: $this->causer)
             );
         });
+    }
+
+    protected function mapCompanyRelations(DataCollection $relations): BaseCollection
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return $relations->toCollection()
+            ->mapWithKeys(function (CreateAddressCompanyRelationNoBackrefData $data): array {
+                $attributes = $data->except('id')->all();
+
+                return [$data->id => $attributes];
+            });
     }
 
     public function deleteAddress(Address $address): void

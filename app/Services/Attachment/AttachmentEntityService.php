@@ -2,6 +2,7 @@
 
 namespace App\Services\Attachment;
 
+use App\Contracts\CauserAware;
 use App\DTO\Attachment\CreateAttachmentData;
 use App\Events\Attachment\AttachmentCreated;
 use App\Events\Attachment\AttachmentDeleted;
@@ -9,6 +10,7 @@ use App\Events\Attachment\AttachmentExported;
 use App\Foundation\File\BinaryFileContent;
 use App\Models\Attachable;
 use App\Models\Attachment;
+use App\Models\User;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -19,8 +21,10 @@ use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use function tap;
 
-class AttachmentEntityService
+class AttachmentEntityService implements CauserAware
 {
+    protected ?Model $causer = null;
+
     public function __construct(
         protected readonly FilesystemAdapter $filesystem,
         protected readonly ConnectionInterface $connection,
@@ -35,6 +39,10 @@ class AttachmentEntityService
 
         return tap($this->dataMapper->mapFromMetadata($metadata, $data->type, $data->isDeleteProtected),
             function (Attachment $attachment): void {
+                if ($this->causer instanceof User) {
+                    $attachment->owner()->associate($this->causer);
+                }
+
                 $this->connection->transaction(static fn() => $attachment->save());
             });
     }
@@ -45,6 +53,10 @@ class AttachmentEntityService
 
         return tap($this->dataMapper->mapFromMetadata($metadata, $data->type, $data->isDeleteProtected),
             function (Attachment $attachment) use ($entity, $data): void {
+                if ($this->causer instanceof User) {
+                    $attachment->owner()->associate($this->causer);
+                }
+
                 $this->connection->transaction(function () use ($attachment, $entity) {
                     $attachment->save();
 
@@ -140,5 +152,10 @@ class AttachmentEntityService
         $filename = substr(File::name($filename), 0, $maxBasenameLength);
 
         return implode('.', [$filename, $ext]);
+    }
+
+    public function setCauser(?Model $causer): static
+    {
+        return tap($this, fn() => $this->causer = $causer);
     }
 }

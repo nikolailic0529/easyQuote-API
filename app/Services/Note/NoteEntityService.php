@@ -6,7 +6,9 @@ use App\Contracts\CauserAware;
 use App\Contracts\HasOwnNotes;
 use App\DTO\Note\CreateNoteData;
 use App\DTO\Note\UpdateNoteData;
-use App\Events\RescueQuote\NoteCreated;
+use App\Events\Note\NoteCreated;
+use App\Events\Note\NoteDeleted;
+use App\Events\Note\NoteUpdated;
 use App\Models\Note\ModelHasNotes;
 use App\Models\Note\Note;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
@@ -17,9 +19,10 @@ class NoteEntityService implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface $connection,
-                                protected EventDispatcher     $eventDispatcher)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected EventDispatcher $eventDispatcher
+    ) {
     }
 
     public function createNoteForModel(CreateNoteData $data, Model&HasOwnNotes $model): Note
@@ -35,7 +38,7 @@ class NoteEntityService implements CauserAware
             });
 
             $this->eventDispatcher->dispatch(
-                new NoteCreated($note, $model),
+                new NoteCreated($note, $model, $this->causer),
             );
         });
     }
@@ -43,12 +46,18 @@ class NoteEntityService implements CauserAware
     public function updateNote(Note $note, UpdateNoteData $data): Note
     {
         return tap($note, function (Note $note) use ($data): void {
+            $old = (new Note)->setRawAttributes($note->getRawOriginal());
+
             $note->note = $data->note;
 
             $this->connection->transaction(function () use ($note) {
                 $note->save();
                 $this->touchRelated($note);
             });
+
+            $this->eventDispatcher->dispatch(
+                new NoteUpdated($old, $note, $this->causer)
+            );
         });
     }
 
@@ -58,6 +67,10 @@ class NoteEntityService implements CauserAware
             $note->delete();
             $this->touchRelated($note);
         });
+
+        $this->eventDispatcher->dispatch(
+            new NoteDeleted($note, $this->causer)
+        );
     }
 
     protected function touchRelated(Note $note): void
@@ -70,6 +83,6 @@ class NoteEntityService implements CauserAware
 
     public function setCauser(?Model $causer): static
     {
-        return tap($this, fn () => $this->causer = $causer);
+        return tap($this, fn() => $this->causer = $causer);
     }
 }

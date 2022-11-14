@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Contracts\HasOwner;
 use App\Enum\AttachmentType;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -18,9 +20,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property AttachmentType|null $type
  * @property int|null $flags
  *
+ * @property-read User|null $owner
  * @property-read Collection<int, Attachable> $attachables
  */
-class Attachment extends Model
+class Attachment extends Model implements HasOwner
 {
     use Uuid, SoftDeletes;
 
@@ -37,6 +40,11 @@ class Attachment extends Model
     public function getFlag(int $flag): bool
     {
         return ($this->flags & $flag) === $flag;
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function attachables(): HasMany

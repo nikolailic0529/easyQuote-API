@@ -37,6 +37,7 @@ class OpportunityAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'parent_entity_type',
                         'filepath',
@@ -81,6 +82,7 @@ class OpportunityAttachmentTest extends TestCase
             ->assertCreated()
             ->assertJsonStructure([
                 'id',
+                'user',
                 'type',
                 'filepath',
                 'filename',
@@ -131,6 +133,7 @@ class OpportunityAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'filepath',
                         'filename',
@@ -153,6 +156,7 @@ class OpportunityAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'filepath',
                         'filename',
