@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Queries\Pipeline\FilterFieldPipe;
 use App\Queries\Pipeline\FilterRelationPipe;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\Contracts\RequestQueryBuilderPipe;
+use Devengine\RequestQueryBuilder\Models\BuildQueryParameters;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,6 +64,18 @@ class UserQueries
                     "{$model->companies()->getRelationName()}.{$model->companies()->getRelatedKeyName()}"
                 ),
                 new FilterFieldPipe('business_division_id', $divisionModel->getQualifiedKeyName()),
+                new class implements RequestQueryBuilderPipe {
+                    public function __invoke(BuildQueryParameters $parameters): void
+                    {
+                        [$request, $builder] = [$parameters->getRequest(), $parameters->getBuilder()];
+
+                        $builder->where(static function (Builder $builder) use ($request): void {
+                            if ($request->has('active')) {
+                                $builder->where('is_active', $request->boolean('active'));
+                            }
+                        });
+                    }
+                }
             )
             ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
             ->process();

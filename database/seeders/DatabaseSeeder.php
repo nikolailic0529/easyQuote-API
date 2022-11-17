@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Spatie\Activitylog\ActivityLogStatus;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,7 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        activity()->disableLogging();
+        app(ActivityLogStatus::class)->disable();
 
         $this->call(DateDaySeeder::class);
         $this->command->info('Seeded the date days');
@@ -114,6 +115,6 @@ class DatabaseSeeder extends Seeder
         $this->call(PipelineSeeder::class);
         $this->command->info('Seeded the default pipelines');
 
-        activity()->enableLogging();
+        app(ActivityLogStatus::class)->enable();
     }
 }

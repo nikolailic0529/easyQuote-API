@@ -375,5 +375,32 @@ class UserTest extends TestCase
 
         $r->assertJsonCount(1);
         $this->assertContains($userFromCompany->getKey(), $r->json('*.id'));
+
+        // active/non-active
+        $activeUser = User::factory()->create();
+        $inactiveUser = User::factory()->create();
+        $inactiveUser->forceFill(['activated_at' => null])->save();
+
+        $r = $this->getJson('api/users/list?active=true')
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                ]
+            ]);
+
+        $this->assertContains($activeUser->getKey(), $r->json('*.id'));
+        $this->assertNotContains($inactiveUser->getKey(), $r->json('*.id'));
+
+        $r = $this->getJson('api/users/list?active=false')
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                ]
+            ]);
+
+        $this->assertNotContains($activeUser->getKey(), $r->json('*.id'));
+        $this->assertContains($inactiveUser->getKey(), $r->json('*.id'));
     }
 }

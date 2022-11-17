@@ -200,7 +200,7 @@
               "is_system": false,
               "is_required": true,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "2645d8df-334c-4d24-a6be-d680e37ebf91",
               "attached_element_id": "e9e57717-0a58-4b25-ad05-3d7231c50e8a"
