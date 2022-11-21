@@ -1875,12 +1875,13 @@ class WorldwideContractQuoteTest extends TestCase
             ]);
 
         $wwQuote->activeVersion->quoteTemplate()->associate(QuoteTemplate::query()->first());
-        $wwQuote->activeVersion->user()->associate($this->app['auth.driver']->user());
+        $wwQuote->activeVersion->user()->associate($this->app['auth']->user());
         $wwQuote->activeVersion->save();
 
         $noteForDraftedQuote = Note::factory()
             ->hasAttached($wwQuote, relationship: 'worldwideQuotesHaveNote')
             ->hasAttached($wwQuote->activeVersion, relationship: 'worldwideQuoteVersionsHaveNote')
+            ->hasAttached($wwQuote->opportunity, relationship: 'opportunitiesHaveNote')
             ->create([
                 'note' => 'Note for drafted quote',
             ]);

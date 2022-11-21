@@ -419,10 +419,15 @@ class WorldwideQuoteDataMapper
             }
 
             if ($quote->contract_type_id === CT_CONTRACT) {
-
-                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
-                    $relationship->has('image');
-                }])->pluck('vendors')->collapse();
+                $vendors = $quote->activeVersion->worldwideDistributions
+                    ->lazy()
+                    ->pluck('vendors')
+                    ->collapse()
+                    ->filter(static function (Vendor $vendor): bool {
+                        return $vendor->image !== null;
+                    })
+                    ->values()
+                    ->collect();
 
                 $vendors = new Collection($vendors);
 
@@ -1555,16 +1560,16 @@ class WorldwideQuoteDataMapper
             ->map(function (BaseCollection $group) use ($duration, $outputCurrency) {
 
                 /** @var Vendor $vendor */
-                $vendor = Vendor::query()->where('short_code', $group[0]->vendor_short_code)->sole();
+                $vendor = Vendor::query()->where('short_code', $group[0]->vendor_short_code)->first();
                 /** @var Country $country */
-                $country = Country::query()->where('iso_3166_2', $group[0]->country_code)->sole();
+                $country = Country::query()->where('iso_3166_2', $group[0]->country_code)->first();
 
                 $totalPrice = $group->sum('price_float');
 
                 return new QuoteAggregation([
-                    'vendor_name' => $vendor->name,
-                    'country_name' => $country->name,
-                    'country_code' => $country->iso_3166_2,
+                    'vendor_name' => $vendor?->name ?? '',
+                    'country_name' => $country?->name ?? '',
+                    'country_code' => $country?->iso_3166_2 ?? '',
                     'duration' => $duration,
                     'qty' => $group->count(),
                     'total_price' => $this->formatter->format('number', $totalPrice, prepend: $outputCurrency->symbol),
@@ -1608,16 +1613,16 @@ class WorldwideQuoteDataMapper
             ->map(function (BaseCollection $group) use ($outputCurrency, $duration) {
 
                 /** @var Vendor $vendor */
-                $vendor = Vendor::query()->where('short_code', $group[0]->vendor_short_code)->sole();
+                $vendor = Vendor::query()->where('short_code', $group[0]->vendor_short_code)->first();
                 /** @var Country $country */
-                $country = Country::query()->where('iso_3166_2', $group[0]->country_code)->sole();
+                $country = Country::query()->where('iso_3166_2', $group[0]->country_code)->first();
 
                 $totalPrice = $group->sum('price_float');
 
                 return new QuoteAggregation([
-                    'vendor_name' => $vendor->name,
-                    'country_name' => $country->name,
-                    'country_code' => $country->iso_3166_2,
+                    'vendor_name' => $vendor?->name ?? '',
+                    'country_name' => $country?->name ?? '',
+                    'country_code' => $country?->iso_3166_2 ?? '',
                     'duration' => $duration,
                     'qty' => $group->count(),
                     'total_price' => $this->formatter->format('number', $totalPrice, prepend: $outputCurrency->symbol),

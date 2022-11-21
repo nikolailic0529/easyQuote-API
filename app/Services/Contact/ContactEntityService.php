@@ -51,7 +51,7 @@ class ContactEntityService implements CauserAware
 
             $this->connection->transaction(static function () use ($companyRelations, $contact): void {
                 $contact->save();
-                $contact->companies()->sync($companyRelations->all());
+                $contact->companies()->syncWithoutDetaching($companyRelations->all());
             });
 
             if (false === is_null($data->picture)) {
@@ -83,7 +83,7 @@ class ContactEntityService implements CauserAware
 
             $this->connection->transaction(static function () use ($contact, $companyRelations): void {
                 $contact->save();
-                $contact->companies()->sync($companyRelations->all());
+                $contact->companies()->syncWithoutDetaching($companyRelations->all());
             });
 
             if (false === is_null($data->picture)) {

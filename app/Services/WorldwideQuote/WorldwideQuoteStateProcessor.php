@@ -1182,6 +1182,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
                         $quoteNote->worldwideQuotesHaveNote()->sync($quote->worldwideQuote);
                         $quoteNote->worldwideQuoteVersionsHaveNote()->sync($quote);
+                        $quoteNote->opportunitiesHaveNote()->sync($quote->worldwideQuote->opportunity);
                     }
                 });
             });
@@ -1243,6 +1244,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
                         $quoteNote->worldwideQuotesHaveNote()->sync($quote->worldwideQuote);
                         $quoteNote->worldwideQuoteVersionsHaveNote()->sync($quote);
+                        $quoteNote->opportunitiesHaveNote()->sync($quote->worldwideQuote->opportunity);
                     }
                 });
             });

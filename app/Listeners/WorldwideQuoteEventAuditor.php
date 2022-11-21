@@ -210,12 +210,16 @@ class WorldwideQuoteEventAuditor
 
     public function createAttachmentFromSubmittedQuote(WorldwideQuoteSubmitted $event): void
     {
-        $this->quoteAttachmentService->createAttachmentFromSubmittedQuote($event->getQuote());
+        $this->quoteAttachmentService
+            ->setCauser($event->getActingUser())
+            ->createAttachmentFromSubmittedQuote($event->getQuote());
     }
 
     public function createAttachmentFromDistributorFiles(WorldwideQuoteSubmitted $event): void
     {
-        $this->quoteAttachmentService->createAttachmentFromDistributorFiles($event->getQuote());
+        $this->quoteAttachmentService
+            ->setCauser($event->getActingUser())
+            ->createAttachmentFromDistributorFiles($event->getQuote());
     }
 
     public function handleUnraveledEvent(WorldwideQuoteUnraveled $event): void
