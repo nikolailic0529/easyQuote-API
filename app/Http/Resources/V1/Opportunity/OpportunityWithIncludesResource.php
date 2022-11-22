@@ -135,6 +135,7 @@ class OpportunityWithIncludesResource extends JsonResource
 
             'status' => $this->status,
             'status_reason' => $this->status_reason,
+            'quotes_exist' => (bool)$this->quotes_exist,
 
             'validation_result' => $this->validationResult,
 

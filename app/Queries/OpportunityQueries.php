@@ -307,6 +307,7 @@ class OpportunityQueries
                 'salesUnit:id,unit_name',
                 'validationResult:id,opportunity_id,messages,is_passed',
             ])
+            ->withExists('worldwideQuotes as quotes_exist')
             ->leftJoin('contacts as primary_account_contact', function (JoinClause $join) {
                 $join->on('primary_account_contact.id', 'opportunities.primary_account_contact_id');
             })

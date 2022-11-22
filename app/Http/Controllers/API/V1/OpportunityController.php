@@ -10,8 +10,8 @@ use App\Http\Requests\Opportunity\{BatchSave,
     MarkOpportunityAsLost,
     PaginateOpportunities,
     SetStageOfOpportunity,
-    UpdateOpportunity
-};
+    ShowOpportunityRequest,
+    UpdateOpportunity};
 use App\Http\Resources\V1\Appointment\AppointmentListResource;
 use App\Http\Resources\V1\Opportunity\GroupedOpportunityCollection;
 use App\Http\Resources\V1\Opportunity\OpportunityList;
@@ -147,12 +147,12 @@ class OpportunityController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function showOpportunity(Opportunity $opportunity): JsonResponse
+    public function showOpportunity(ShowOpportunityRequest $request, Opportunity $opportunity): JsonResponse
     {
         $this->authorize('view', $opportunity);
 
         return response()->json(
-            OpportunityWithIncludesResource::make($opportunity),
+            OpportunityWithIncludesResource::make($request->loadOpportunity($opportunity)),
             R::HTTP_OK
         );
     }

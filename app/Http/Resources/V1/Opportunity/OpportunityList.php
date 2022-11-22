@@ -42,7 +42,7 @@ class OpportunityList extends JsonResource
                     return 'Lost';
                 }
 
-                if ($this->worldwide_quotes_exists) {
+                if ($this->quotes_exist) {
                     return 'Quoted';
                 }
 
@@ -59,6 +59,7 @@ class OpportunityList extends JsonResource
             'project_name' => $this->project_name,
             'status' => $this->status,
             'status_reason' => $this->status_reason,
+            'quotes_exist' => (bool)$this->quotes_exist,
             'permissions' => [
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),

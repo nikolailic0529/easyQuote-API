@@ -27,6 +27,7 @@ class AuthenticatedUserResource extends JsonResource
             'phone' => $this->phone,
 
             'timezone_id' => $this->timezone()->getParentKey(),
+            'timezone' => $this->timezone,
             'hpe_contract_template_id' => $this->hpeContractTemplate()->getParentKey(),
             'sales_units' => $this->salesUnits,
             'company_id' => $this->company()->getParentKey(),
