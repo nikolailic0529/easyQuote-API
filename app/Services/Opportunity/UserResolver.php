@@ -54,10 +54,13 @@ class UserResolver
 
     private function tryFindUser(string $name): ?User
     {
-        return User::query()->where('user_fullname', $name)->firstOr(callback: function () use ($name): ?User {
+        return User::query()
+            ->orderByDesc('is_active')
+            ->where('user_fullname', $name)->firstOr(callback: function () use ($name): ?User {
             /** @noinspection PhpIncompatibleReturnTypeInspection */
             return User::query()
                 ->where('email', $this->generateEmail($name))
+                ->orderByDesc('is_active')
                 ->first();
         });
     }

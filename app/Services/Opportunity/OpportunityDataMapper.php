@@ -163,6 +163,15 @@ class OpportunityDataMapper implements CauserAware
             $account->vendors_cs = self::coalesceMap($accountData, PipelinerOppMap::VENDOR);
             $account->vat_type = self::coalesceMap($accountData, PipelinerOppMap::VAT_TYPE);
             $account->vat = self::coalesceMap($accountData, PipelinerOppMap::VAT);
+            $account->address_1 = $accountData['street_address'] ?? null;
+            $account->address_2 = self::coalesceMap($accountData, ['address_2', 'address_two']);
+            $account->city = $accountData['city'] ?? null;
+            $account->post_code = $accountData['zip_code'] ?? null;
+            $account->state = self::coalesceMap($accountData, ['state_province', 'stateprovince']);
+            $account->state_code = $accountData['state_code'] ?? null;
+            $account->country_name = $accountData['country'] ?? null;
+            $account->hw_country_code = $accountData['hardware_country_code'] ?? null;
+            $account->sw_country_code = $accountData['software_country_code'] ?? null;
 
             if (self::getFlag(self::coalesceMap($accountData, PipelinerOppMap::IS_RESELLER))) {
                 $account->flags |= ImportedCompany::IS_RESELLER;
@@ -275,18 +284,6 @@ class OpportunityDataMapper implements CauserAware
     {
         $newAddresses = new Collection();
         $newContacts = new Collection();
-
-        $newAddresses[] = $this->mapImportedAddressFromAttributes(
-            type: null,
-            plReference: null,
-            addressOne: $account['street_address'] ?? null,
-            addressTwo: self::coalesceMap($account, ['address_2', 'address_two']),
-            city: $account['city'] ?? null,
-            zipCode: $account['zip_code'] ?? null,
-            stateProvince: self::coalesceMap($account, ['state_province', 'stateprovince']),
-            stateCode: $account['state_code'] ?? null,
-            country: $account['country'] ?? null,
-        );
 
         foreach ($contacts as $contactData) {
             [$addressOne, $addressTwo] = self::splitStreetAddress($contactData['street_address'] ?? null);

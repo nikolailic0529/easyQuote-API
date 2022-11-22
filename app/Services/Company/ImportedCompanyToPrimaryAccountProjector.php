@@ -173,6 +173,10 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         [$importedAddressesHaveRelThroughPlRef, $importedAddressesDontHaveRelThroughPlRef] =
             $importedCompany->addresses
                 ->partition(static function (ImportedAddress $importedAddress) use ($company): bool {
+                    if (null === $importedAddress->pl_reference) {
+                        return false;
+                    }
+
                     return $company->addresses->containsStrict('pl_reference', $importedAddress->pl_reference);
                 });
 
@@ -194,8 +198,12 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         /** @var $importedContactsDontHaveRelThroughPlRef Collection */
         [$importedContactsHaveRelThroughPlRef, $importedContactsDontHaveRelThroughPlRef] =
             $importedCompany->contacts
-                ->partition(static function (ImportedContact $importedAddress) use ($company): bool {
-                    return $company->contacts->containsStrict('pl_reference', $importedAddress->pl_reference);
+                ->partition(static function (ImportedContact $importedContact) use ($company): bool {
+                    if (null === $importedContact->pl_reference) {
+                        return false;
+                    }
+
+                    return $company->contacts->containsStrict('pl_reference', $importedContact->pl_reference);
                 });
 
         $importedContactsHaveRelThroughPlRef->each(static function (ImportedContact $importedContact) use ($company) {
