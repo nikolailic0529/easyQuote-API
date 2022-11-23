@@ -148,6 +148,7 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
 
         $vendors = Vendor::query()
             ->whereIn('name', $vendorNames)
+            ->orWhereIn('short_code', $vendorNames)
             ->get();
 
         $categories = CompanyCategory::query()

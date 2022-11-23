@@ -173,6 +173,14 @@ class OpportunityDataMapper implements CauserAware
             $account->hw_country_code = $accountData['hardware_country_code'] ?? null;
             $account->sw_country_code = $accountData['software_country_code'] ?? null;
 
+            $salesUnitName = self::coalesceMap($accountData, PipelinerOppMap::SALE_UNIT_NAME);
+
+            if ($salesUnitName !== null) {
+                $account->salesUnit()->associate(
+                    SalesUnit::query()->where('unit_name', $salesUnitName)->first()
+                );
+            }
+
             if (self::getFlag(self::coalesceMap($accountData, PipelinerOppMap::IS_RESELLER))) {
                 $account->flags |= ImportedCompany::IS_RESELLER;
             }
@@ -189,7 +197,7 @@ class OpportunityDataMapper implements CauserAware
             $account->setRelation('addresses', $newAddressDataOfCompany);
             $account->setRelation('contacts', $newContactDataOfCompany);
 
-            $primaryContact = $this->mapPrimaryAccountContact($primaryContactName);
+            $primaryContact = $this->mapPrimaryAccountContact($accountData, $primaryContactName);
 
             if (!is_null($primaryContact)) {
 
@@ -211,9 +219,9 @@ class OpportunityDataMapper implements CauserAware
         });
     }
 
-    public function mapPrimaryAccountContact(string $primaryContactName): ?ImportedContact
+    public function mapPrimaryAccountContact(array $accountData, string $primaryContactName): ?ImportedContact
     {
-        return transform($primaryContactName, static function (string $primaryContactName): ImportedContact {
+        return transform($primaryContactName, static function (string $primaryContactName) use ($accountData): ImportedContact {
             $primaryContactName = trim($primaryContactName);
 
             [$contactFirstName, $contactLastName] = value(function () use ($primaryContactName): array {
@@ -226,6 +234,7 @@ class OpportunityDataMapper implements CauserAware
             });
 
             return tap(new ImportedContact(), static function (ImportedContact $contact) use (
+                $accountData,
                 $contactLastName,
                 $contactFirstName,
                 $primaryContactName
@@ -234,40 +243,43 @@ class OpportunityDataMapper implements CauserAware
                 $contact->first_name = $contactFirstName;
                 $contact->last_name = $contactLastName;
                 $contact->is_verified = true;
+
+                $salesUnitName = self::coalesceMap($accountData, PipelinerOppMap::SALE_UNIT_NAME);
+
+                if ($salesUnitName !== null) {
+                    $contact->salesUnit()->associate(
+                        SalesUnit::query()->where('unit_name', $salesUnitName)->first()
+                    );
+                }
             });
 
         });
     }
 
-    private function mapImportedAddressFromAttributes(
-        ?string $type,
-        ?string $plReference,
-        ?string $addressOne,
-        ?string $addressTwo,
-        ?string $city,
-        ?string $zipCode,
-        ?string $stateProvince,
-        ?string $stateCode,
-        ?string $country
-    ): ImportedAddress {
+    private function mapImportedAddressFromArray(array $array): ImportedAddress
+    {
         $address = new ImportedAddress();
 
         $address->{$address->getKeyName()} = (string) Uuid::generate(4);
-        $address->pl_reference = $plReference;
+        $address->pl_reference = null;
 
-        $address->address_type = match (trim(strtolower($type ?? ''))) {
+        $address->address_type = match (trim(strtolower($array['type'] ?? ''))) {
             'hardware' => AddressType::HARDWARE,
             'software' => AddressType::SOFTWARE,
             default => AddressType::INVOICE
         };
 
+        [$addressOne, $addressTwo] = self::splitStreetAddress($array['street_address'] ?? null);
+
         $address->address_1 = $addressOne;
         $address->address_2 = $addressTwo;
 
-        $address->city = $city;
-        $address->post_code = $zipCode;
-        $address->state = $stateProvince;
-        $address->state_code = $stateCode;
+        $address->city = $array['city'] ?? null;
+        $address->post_code = $array['zip_code'] ?? null;
+        $address->state = self::coalesceMap($array, ['state_province', 'stateprovince']);
+        $address->state_code = $array['state_code'] ?? null;
+
+        $country = $array['country'] ?? null;
 
         if (filled($country)) {
             $address->country()->associate(
@@ -286,28 +298,8 @@ class OpportunityDataMapper implements CauserAware
         $newContacts = new Collection();
 
         foreach ($contacts as $contactData) {
-            [$addressOne, $addressTwo] = self::splitStreetAddress($contactData['street_address'] ?? null);
-
-            $newAddress = $this->mapImportedAddressFromAttributes(
-                type: $contactData['type'] ?? null,
-                plReference: null,
-                addressOne: $addressOne,
-                addressTwo: $addressTwo,
-                city: $contactData['city'] ?? null,
-                zipCode: $contactData['zip_code'] ?? null,
-                stateProvince: self::coalesceMap($contactData, ['state_province', 'stateprovince']),
-                stateCode: $contactData['state_code'] ?? null,
-                country: $contactData['country'] ?? null,
-            );
-
-            $newContact = $this->mapImportedContactFromAttributes(
-                plReference: null,
-                firstName: $contactData['first_name'] ?? null,
-                lastName: $contactData['last_name'] ?? null,
-                email: $contactData['primary_e_mail'] ?? null,
-                phone: $contactData['primary_phone'] ?? null,
-                title: $contactData['titlesalutation'] ?? null,
-            );
+            $newAddress = $this->mapImportedAddressFromArray($contactData);
+            $newContact = $this->mapImportedContactFromArray($contactData);
 
             $newAddresses[] = $newAddress;
             $newContacts[] = $newContact->address()->associate($newAddress->getKey());
@@ -337,36 +329,29 @@ class OpportunityDataMapper implements CauserAware
         return array_map($sanitize, [$streetAddress, null]);
     }
 
-    private function mapImportedContactFromAttributes(
-        ?string $plReference,
-        ?string $firstName,
-        ?string $lastName,
-        ?string $email,
-        ?string $phone,
-        ?string $title,
-        bool $isPrimary = false
-    ): ImportedContact {
-        return tap(new ImportedContact(), static function (ImportedContact $contact) use (
-            $plReference,
-            $isPrimary,
-            $firstName,
-            $lastName,
-            $email,
-            $phone,
-            $title
-        ) {
+    private function mapImportedContactFromArray(array $array): ImportedContact {
+
+        return tap(new ImportedContact(), static function (ImportedContact $contact) use ($array) {
             $contact->{$contact->getKeyName()} = (string) Uuid::generate(4);
-            $contact->pl_reference = $plReference;
-
+            $contact->pl_reference = null;
             $contact->contact_type = ContactType::HARDWARE;
-            $contact->first_name = $firstName;
-            $contact->last_name = $lastName;
-            $contact->email = $email;
-            $contact->phone = $phone;
-            $contact->job_title = $title;
-            $contact->is_verified = false;
 
-            $contact->is_primary = $isPrimary;
+            $contact->first_name = $array['first_name'] ?? null;
+            $contact->last_name = $array['last_name'] ?? null;
+            $contact->email = $array['primary_e_mail'] ?? null;
+            $contact->phone = $array['primary_phone'] ?? null;
+            $contact->job_title = $array['titlesalutation'] ?? null;
+
+            $salesUnitName = self::coalesceMap($array, PipelinerOppMap::SALE_UNIT_NAME);
+
+            if ($salesUnitName !== null) {
+                $contact->salesUnit()->associate(
+                    SalesUnit::query()->where('unit_name', $salesUnitName)->first()
+                );
+            }
+
+            $contact->is_verified = false;
+            $contact->is_primary = false;
         });
     }
 

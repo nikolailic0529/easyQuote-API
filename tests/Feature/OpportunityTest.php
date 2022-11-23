@@ -1920,7 +1920,7 @@ class OpportunityTest extends TestCase
             ->toArray();
 
         $this->assertArrayHasKey('Invoice', $groupedAddresses);
-        $this->assertCount(3, $groupedAddresses['Invoice']);
+        $this->assertCount(2, $groupedAddresses['Invoice']);
 
         $expectedAddresses = [
             [
@@ -2027,7 +2027,8 @@ class OpportunityTest extends TestCase
                 ],
             ]);
 
-        $this->assertSame('Worldwide', $response->json('sales_unit.unit_name'));
+        $this->assertNotNull($response->json('primary_account.sales_unit_id'));
+        $this->assertSame('DEV', $response->json('sales_unit.unit_name'));
 
         $this->assertSame('Foster and Partners', $response->json('primary_account.name'));
         $this->assertSame('Foster and Partners', $response->json('end_user.name'));
@@ -2059,13 +2060,10 @@ class OpportunityTest extends TestCase
         $this->assertSame('GB', $hardwareAddress['country']['iso_3166_2']);
 
         $this->assertSame('Invoice', $invoiceAddress['address_type']);
-//        $this->assertSame('b5cohmuDjaXXQLAB', $invoiceAddress['address_1']);
-//        $this->assertSame('q7MP5mllTHffSyGZ', $invoiceAddress['address_2']);
-//        $this->assertSame('9lGBq3bflmjwClUz', $invoiceAddress['city']);
-//        $this->assertSame('sNhUs3kLbEMYZVvZ', $invoiceAddress['post_code']);
-//        $this->assertSame('5rne8e6cCnsF834v', $invoiceAddress['state_code']);
-//        $this->assertSame('wFohxABSHPIWQyC3', $invoiceAddress['state']);
-//        $this->assertSame('GB', $invoiceAddress['country']['iso_3166_2']);
+
+        foreach ($response->json('primary_account.contacts') as $contact) {
+            $this->assertNotNull($contact['sales_unit_id']);
+        }
     }
 
     /**
