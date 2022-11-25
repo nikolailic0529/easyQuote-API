@@ -7,7 +7,10 @@ use App\Enum\DateMonthEnum;
 use App\Enum\DateWeekEnum;
 use App\Enum\DayOfWeekEnum;
 use App\Enum\RecurrenceTypeEnum;
-use App\Events\Task\{TaskCreated, TaskDeleted, TaskUpdated,};
+use App\Enum\TaskTypeEnum;
+use App\Events\Task\TaskCreated;
+use App\Events\Task\TaskDeleted;
+use App\Events\Task\TaskUpdated;
 use App\Listeners\TaskEventSubscriber;
 use App\Models\Data\Timezone;
 use App\Models\Quote\Quote;
@@ -19,9 +22,11 @@ use App\Models\User;
 use App\Notifications\Task\RevokedInvitationFromTaskNotification as RevokedNotification;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Support\{Carbon, Facades\Event, Facades\Notification};
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing,};
+use Tests\Unit\Traits\AssertsListing;
 
 /**
  * @group build
@@ -51,20 +56,13 @@ class QuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
-        $quote = factory(Quote::class)->create();
-
-        /** @var Task $task */
-        $task = Task::factory()->create();
-
-        $task->rescueQuotes()->attach($quote);
-
-        $recurrence = factory(TaskRecurrence::class)->create([
-            'task_id' => $task->getKey(),
-        ]);
-
-        $reminder = factory(TaskReminder::class)->create([
-            'task_id' => $task->getKey(),
-        ]);
+        $quote = Quote::factory()
+            ->hasAttached($task = Task::factory()
+                ->has(TaskRecurrence::factory(), relationship: 'recurrence')
+                ->has(TaskReminder::factory()->forCurrentUser()->scheduled(), relationship: 'reminder')
+                ->create()
+            )
+            ->create();
 
         $this->getJson('api/quotes/tasks/'.$quote->getKey().'/'.$task->getKey())
 //            ->dump()
@@ -136,8 +134,6 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanCreateTaskForQuoteWithReminder(): void
     {
-        $this->markTestSkipped('TaskReminder factory to be created');
-
         $this->authenticateApi();
 
         /** @var User $user */
@@ -149,9 +145,11 @@ class QuoteTaskTest extends TestCase
 
         $task = Task::factory()->raw();
 
-        $reminder = factory(TaskReminder::class)->raw();
+        $reminder = TaskReminder::factory()->raw();
 
         $data = [
+            'sales_unit_id' => SalesUnit::query()->first()->getKey(),
+            'activity_type' => TaskTypeEnum::Task,
             'name' => $task['name'],
             'content' => $task['content'],
             'expiry_date' => $task['expiry_date'],
@@ -222,7 +220,8 @@ class QuoteTaskTest extends TestCase
 
         $this->assertSame(Carbon::parse($data['expiry_date'])->format('m/d/y H:i:s'), $expiryDateFromResponse);
 
-        $this->assertSame(Carbon::parse($data['reminder']['set_date'], $user->timezone->utc)->format('m/d/y H:i:s'), $reminderSetDateFromResponse);
+        $this->assertSame(Carbon::parse($data['reminder']['set_date'], $user->timezone->utc)->format('m/d/y H:i:s'),
+            $reminderSetDateFromResponse);
         $this->assertSame($data['reminder']['status']->value, $response->json('reminder.status'));
 
         $user->timezone()->associate(Timezone::query()->whereKeyNot($user->timezone->getKey())->first());
@@ -240,8 +239,6 @@ class QuoteTaskTest extends TestCase
      */
     public function testCanUpdateTaskForQuoteWithReminder(): void
     {
-        $this->markTestSkipped('TaskReminder factory to be created');
-
         $this->authenticateApi();
 
         /** @var User $user */
@@ -254,9 +251,11 @@ class QuoteTaskTest extends TestCase
 
         $taskAttrs = Task::factory()->raw();
 
-        $reminderAttrs = factory(TaskReminder::class)->raw();
+        $reminderAttrs = TaskReminder::factory()->raw();
 
         $data = [
+            'sales_unit_id' => SalesUnit::query()->first()->getKey(),
+            'activity_type' => TaskTypeEnum::Task,
             'name' => $taskAttrs['name'],
             'content' => $taskAttrs['content'],
             'expiry_date' => $taskAttrs['expiry_date'],
@@ -296,60 +295,9 @@ class QuoteTaskTest extends TestCase
 
         $this->assertSame(Carbon::parse($data['expiry_date'])->format('m/d/y H:i:s'), $response->json('expiry_date'));
 
-        $this->assertSame(Carbon::parse($data['reminder']['set_date'], $user->timezone->utc)->format('m/d/y H:i:s'), $response->json('reminder.set_date'));
+        $this->assertSame(Carbon::parse($data['reminder']['set_date'], $user->timezone->utc)->format('m/d/y H:i:s'),
+            $response->json('reminder.set_date'));
         $this->assertSame($data['reminder']['status']->value, $response->json('reminder.status'));
-    }
-
-    /**
-     * Test an ability to unset a reminder from an existing task for a quote with reminder data.
-     */
-    public function testCanUnsetReminderFromTaskForQuote(): void
-    {
-        $this->authenticateApi();
-
-        $quote = factory(Quote::class)->create();
-        /** @var Task $task */
-        $task = Task::factory()->create();
-        $task->rescueQuotes()->attach($quote);
-
-        $reminder = factory(TaskReminder::class)->create([
-            'task_id' => $task->getKey(),
-        ]);
-
-        $response = $this->getJson('api/quotes/tasks/'.$quote->getKey().'/'.$task->getKey())
-//            ->dump()
-            ->assertJsonStructure([
-                'id',
-                'reminder' => [
-                    'id',
-                    'set_date',
-                    'status',
-                ],
-            ]);
-
-        $this->assertNotNull($response->json('reminder'));
-
-        $this->patchJson('api/quotes/tasks/'.$quote->getKey().'/'.$task->getKey(), [
-            'sales_unit_id' => SalesUnit::factory()->create()->getKey(),
-            'activity_type' => 'Task',
-            'name' => $task->name,
-            'content' => $task->content,
-            'expiry_date' => $task->expiry_date->format('Y-m-d H:i:s'),
-            'users' => $task->users->modelKeys(),
-            'attachments' => $task->attachments->modelKeys(),
-            'priority' => $task->priority->value,
-        ])
-//            ->dump()
-            ->assertOk();
-
-        $response = $this->getJson('api/quotes/tasks/'.$quote->getKey().'/'.$task->getKey())
-//            ->dump()
-            ->assertJsonStructure([
-                'id',
-                'reminder',
-            ]);
-
-        $this->assertNull($response->json('reminder'));
     }
 
     /**
@@ -465,8 +413,10 @@ class QuoteTaskTest extends TestCase
         $this->assertSame(Carbon::parse($data['expiry_date'])->format('m/d/y H:i:s'), $response->json('expiry_date'));
         $this->assertSame($data['recurrence']['occur_every'], $response->json('recurrence.occur_every'));
         $this->assertSame($data['recurrence']['occurrences_count'], $response->json('recurrence.occurrences_count'));
-        $this->assertSame(Carbon::parse($data['recurrence']['start_date'])->format('m/d/y H:i:s'), $response->json('recurrence.start_date'));
-        $this->assertSame(Carbon::parse($data['recurrence']['end_date'])->format('m/d/y H:i:s'), $response->json('recurrence.end_date'));
+        $this->assertSame(Carbon::parse($data['recurrence']['start_date'])->format('m/d/y H:i:s'),
+            $response->json('recurrence.start_date'));
+        $this->assertSame(Carbon::parse($data['recurrence']['end_date'])->format('m/d/y H:i:s'),
+            $response->json('recurrence.end_date'));
         $this->assertSame($data['recurrence']['day'], $response->json('recurrence.day'));
         $this->assertSame($data['recurrence']['month'], $response->json('recurrence.month'));
         $this->assertSame($data['recurrence']['week'], $response->json('recurrence.week'));
@@ -555,8 +505,10 @@ class QuoteTaskTest extends TestCase
         $this->assertSame(Carbon::parse($data['expiry_date'])->format('m/d/y H:i:s'), $response->json('expiry_date'));
         $this->assertSame($data['recurrence']['occur_every'], $response->json('recurrence.occur_every'));
         $this->assertSame($data['recurrence']['occurrences_count'], $response->json('recurrence.occurrences_count'));
-        $this->assertSame(Carbon::parse($data['recurrence']['start_date'])->format('m/d/y H:i:s'), $response->json('recurrence.start_date'));
-        $this->assertSame(Carbon::parse($data['recurrence']['end_date'])->format('m/d/y H:i:s'), $response->json('recurrence.end_date'));
+        $this->assertSame(Carbon::parse($data['recurrence']['start_date'])->format('m/d/y H:i:s'),
+            $response->json('recurrence.start_date'));
+        $this->assertSame(Carbon::parse($data['recurrence']['end_date'])->format('m/d/y H:i:s'),
+            $response->json('recurrence.end_date'));
         $this->assertSame($data['recurrence']['day'], $response->json('recurrence.day'));
         $this->assertSame($data['recurrence']['month'], $response->json('recurrence.month'));
         $this->assertSame($data['recurrence']['week'], $response->json('recurrence.week'));
@@ -653,7 +605,8 @@ class QuoteTaskTest extends TestCase
             ->assertJsonStructure(['id', 'name', 'content', 'user_id'])
             ->assertJsonFragment(['content' => $attributes['content']]);
 
-        Event::assertDispatched(TaskUpdated::class, static fn(TaskUpdated $event) => $event->task->getKey() === $task->getKey());
+        Event::assertDispatched(TaskUpdated::class,
+            static fn(TaskUpdated $event) => $event->task->getKey() === $task->getKey());
     }
 
     /**
@@ -713,6 +666,7 @@ class QuoteTaskTest extends TestCase
 
         $this->assertSoftDeleted($task);
 
-        Event::assertDispatched(TaskDeleted::class, static fn(TaskDeleted $event) => $event->task->getKey() === $task->getKey());
+        Event::assertDispatched(TaskDeleted::class,
+            static fn(TaskDeleted $event) => $event->task->getKey() === $task->getKey());
     }
 }

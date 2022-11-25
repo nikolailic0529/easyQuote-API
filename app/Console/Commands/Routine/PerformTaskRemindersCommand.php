@@ -2,25 +2,25 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Services\Task\ProcessTaskRecurrenceService;
+use App\Services\Task\PerformTaskReminderService;
 use Illuminate\Console\Command;
 use Illuminate\Log\LogManager;
 
-class ProcessTaskRecurrences extends Command
+class PerformTaskRemindersCommand extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'eq:process-task-recurrences';
+    protected $signature = 'eq:perform-task-reminders';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Process the due task recurrences';
+    protected $description = 'Perform task reminders';
 
     /**
      * Create a new command instance.
@@ -37,9 +37,12 @@ class ProcessTaskRecurrences extends Command
      *
      * @return mixed
      */
-    public function handle(ProcessTaskRecurrenceService $service, LogManager $logManager)
+    public function handle(PerformTaskReminderService $service, LogManager $logManager): int
     {
-        $service->setLogger($logManager->stack(['stdout', 'tasks']))
+        $logManager->setDefaultDriver('tasks');
+
+        $service
+            ->setLogger($logManager->stack(['stdout', 'tasks']))
             ->process();
 
         return self::SUCCESS;

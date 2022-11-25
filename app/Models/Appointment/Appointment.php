@@ -5,6 +5,7 @@ namespace App\Models\Appointment;
 use App\Contracts\HasOwner;
 use App\Contracts\ProvidesIdForHumans;
 use App\Enum\AppointmentTypeEnum;
+use App\Enum\ReminderStatus;
 use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
@@ -42,6 +43,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read bool $invitees_can_edit
  * @property-read SalesUnit|null $salesUnit
  * @property-read AppointmentReminder|null $reminder
+ * @property-read Collection<int, AppointmentReminder> $reminders
+ * @property-read Collection<int, AppointmentReminder> $activeReminders
  * @property-read Collection<int, ModelHasAppointments> $modelsHaveAppointment
  * @property-read Collection<int, User> $users
  * @property-read Collection<int, AppointmentUser> $userRelations
@@ -127,6 +130,18 @@ class Appointment extends Model implements HasOwner, ProvidesIdForHumans
     public function reminder(): HasOne
     {
         return $this->hasOne(AppointmentReminder::class)->latestOfMany();
+    }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(AppointmentReminder::class)->latest();
+    }
+
+    public function activeReminders(): HasMany
+    {
+        return $this->hasMany(AppointmentReminder::class)
+            ->where('status', '<>', ReminderStatus::Dismissed)
+            ->latest();
     }
 
     public function owner(): BelongsTo

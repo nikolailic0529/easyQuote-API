@@ -2,30 +2,40 @@
 
 namespace App\Http\Controllers\API\V1;
 
+use App\DTO\Tasks\SetTaskReminderData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Task\CreateTaskForTaskableRequest;
+use App\Http\Requests\Task\SetTaskReminderRequest;
 use App\Http\Requests\Task\UpdateTaskRequest;
 use App\Http\Resources\V1\Task\TaskListResource;
+use App\Http\Resources\V1\Task\TaskReminderResource;
 use App\Http\Resources\V1\Task\TaskWithIncludes;
 use App\Models\Task\Task;
+use App\Models\Task\TaskReminder;
 use App\Queries\TaskQueries;
 use App\Services\Task\TaskEntityService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response as BaseResponse;
 
 class TaskController extends Controller
 {
     /**
      * List tasks.
      *
-     * @param Request $request
-     * @param TaskQueries $queries
+     * @param  Request  $request
+     * @param  TaskQueries  $queries
+     * @param  string  $taskable
      * @return AnonymousResourceCollection
      */
-    public function listTasksOfTaskable(Request $request, TaskQueries $queries, string $taskable): AnonymousResourceCollection
-    {
+    public function listTasksOfTaskable(
+        Request $request,
+        TaskQueries $queries,
+        string $taskable
+    ): AnonymousResourceCollection {
         $collection = $queries->listTasksOfTaskableQuery($taskable, $request)->get();
 
         return TaskListResource::collection($collection);
@@ -34,7 +44,7 @@ class TaskController extends Controller
     /**
      * Show task.
      *
-     * @param Task $task
+     * @param  Task  $task
      * @return \App\Http\Resources\V1\Task\TaskWithIncludes
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
@@ -48,15 +58,16 @@ class TaskController extends Controller
     /**
      * Create task for company.
      *
-     * @param CreateTaskForTaskableRequest $request
-     * @param TaskEntityService $entityService
+     * @param  CreateTaskForTaskableRequest  $request
+     * @param  TaskEntityService  $entityService
      * @return TaskWithIncludes
      * @throws \App\Services\Exceptions\ValidationException
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function createTask(CreateTaskForTaskableRequest $request,
-                               TaskEntityService            $entityService): TaskWithIncludes
-    {
+    public function createTask(
+        CreateTaskForTaskableRequest $request,
+        TaskEntityService $entityService
+    ): TaskWithIncludes {
         $this->authorize('view', $request->getTaskable());
         $this->authorize('create', Task::class);
 
@@ -70,17 +81,18 @@ class TaskController extends Controller
     /**
      * Update task.
      *
-     * @param UpdateTaskRequest $request
-     * @param TaskEntityService $entityService
-     * @param Task $task
+     * @param  UpdateTaskRequest  $request
+     * @param  TaskEntityService  $entityService
+     * @param  Task  $task
      * @return TaskWithIncludes
      * @throws \App\Services\Exceptions\ValidationException
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function updateTask(UpdateTaskRequest $request,
-                               TaskEntityService $entityService,
-                               Task              $task): TaskWithIncludes
-    {
+    public function updateTask(
+        UpdateTaskRequest $request,
+        TaskEntityService $entityService,
+        Task $task
+    ): TaskWithIncludes {
         $this->authorize('update', $task);
 
         $task = $entityService
@@ -93,8 +105,8 @@ class TaskController extends Controller
     /**
      * Delete task.
      *
-     * @param TaskEntityService $entityService
-     * @param \App\Models\Task\Task $task
+     * @param  TaskEntityService  $entityService
+     * @param  \App\Models\Task\Task  $task
      * @return JsonResponse
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
@@ -104,6 +116,50 @@ class TaskController extends Controller
 
         $entityService->deleteTask($task);
 
-        return response()->json(status: Response::HTTP_NO_CONTENT);
+        return response()->json(status: BaseResponse::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Set task reminder.
+     *
+     * @param  SetTaskReminderRequest  $request
+     * @param  TaskEntityService  $entityService
+     * @param  TaskReminder  $reminder
+     * @return TaskReminderResource
+     * @throws AuthorizationException
+     */
+    public function setTaskReminder(
+        SetTaskReminderRequest $request,
+        TaskEntityService $entityService,
+        TaskReminder $reminder,
+    ): TaskReminderResource {
+        $this->authorize('update', $reminder);
+
+        $entityService->updateReminder($reminder, $request->getData());
+
+        return TaskReminderResource::make($reminder);
+    }
+
+    /**
+     * Delete task reminder.
+     *
+     * @param  Request  $request
+     * @param  TaskEntityService  $entityService
+     * @param  TaskReminder  $reminder
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function deleteTaskReminder(
+        Request $request,
+        TaskEntityService $entityService,
+        TaskReminder $reminder
+    ): Response {
+        $this->authorize('delete', $reminder);
+
+        $entityService
+            ->setCauser($request->user())
+            ->deleteReminder($reminder);
+
+        return response()->noContent();
     }
 }

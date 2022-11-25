@@ -2,14 +2,10 @@
 
 namespace App\Console;
 
-use App\Console\Commands\Routine\ProcessTaskRecurrences;
-use App\Console\Commands\Routine\ProcessTaskReminders;
-use App\Console\Commands\Routine\UpdateExchangeRates;
-use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
-use App\Services\Pipeliner\PipelinerDataSyncService;
-use App\Services\Pipeliner\SyncPipelinerDataStatus;
+use App\Console\Commands\Routine\PerformAppointmentRemindersCommand;
+use App\Console\Commands\Routine\PerformTaskRecurrencesCommand;
+use App\Console\Commands\Routine\PerformTaskRemindersCommand;
 use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
 class Kernel extends ConsoleKernel
@@ -26,19 +22,25 @@ class Kernel extends ConsoleKernel
     /**
      * Define the application's command schedule.
      *
-     * @param \Illuminate\Console\Scheduling\Schedule $schedule
+     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command(ProcessTaskRecurrences::class)
+        $schedule->command(PerformTaskRecurrencesCommand::class)
             ->when(config('task.recurrence.schedule.enabled'))
             ->dailyAt('8:00')
             ->runInBackground()
             ->withoutOverlapping();
 
-        $schedule->command(ProcessTaskReminders::class)
+        $schedule->command(PerformTaskRemindersCommand::class)
             ->when(config('task.reminder.schedule.enabled'))
+            ->everyMinute()
+            ->runInBackground()
+            ->withoutOverlapping();
+
+        $schedule->command(PerformAppointmentRemindersCommand::class)
+            ->when(config('appointment.reminder.schedule.enabled'))
             ->everyMinute()
             ->runInBackground()
             ->withoutOverlapping();

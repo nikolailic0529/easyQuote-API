@@ -112,11 +112,13 @@ class ProcessDistributions extends FormRequest
         ];
     }
 
-    public function messages()
+    public function messages(): array
     {
         return [
-            'worldwide_distributions.*.distribution_currency_id.required' => 'Currency is required in each distribution',
-            'worldwide_distributions.*.distributor_file_id' => 'Distributor File is required in each distribution',
+            'worldwide_distributions.*.distribution_currency_id.required' => 'Currency is required in each distributor quote',
+            'worldwide_distributions.*.distributor_file_id.required' => 'Distributor File is required in each distributor quote',
+            'worldwide_distributions.*.addresses.required' => 'Addresses are required in each distributor quote',
+            'worldwide_distributions.*.contacts.required' => 'Contacts are required in each distributor quote',
         ];
     }
 

@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Appointment;
 
 use App\DTO\Appointment\CreateAppointmentData;
-use App\DTO\Appointment\CreateAppointmentReminderData;
+use App\DTO\Appointment\SetAppointmentReminderData;
 use App\Enum\AppointmentTypeEnum;
 use App\Enum\ModelTypeHasAppointmentEnum;
 use App\Enum\ReminderStatus;
@@ -20,7 +20,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 
-class CreateAppointment extends FormRequest
+class CreateAppointmentRequest extends FormRequest
 {
     protected readonly ?CreateAppointmentData $createAppointmentData;
 
@@ -126,10 +126,10 @@ class CreateAppointment extends FormRequest
                 'rescue_quote_relations' => $this->input('rescue_quote_relations.*.user_id'),
                 'worldwide_quote_relations' => $this->input('worldwide_quote_relations.*.user_id'),
                 'attachment_relations' => $this->input('attachment_relations.*.attachment_id'),
-                'reminder' => $this->whenHas('reminder', static function (array $reminder): CreateAppointmentReminderData {
-                    return new CreateAppointmentReminderData([
+                'reminder' => $this->whenHas('reminder', static function (array $reminder): SetAppointmentReminderData {
+                    return SetAppointmentReminderData::from([
                         'start_date_offset' => (int)$reminder['start_date_offset'],
-                        'status' => ReminderStatus::from($reminder['status']),
+                        'status' => $reminder['status'],
                     ]);
                 }, static fn() => null),
             ]);

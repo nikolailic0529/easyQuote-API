@@ -183,7 +183,7 @@ final class ImportedOpportunityData extends DataTransferObject
      */
     public ?string $personal_rating;
 
-    public ?float $ranking;
+    public ?int $ranking;
 
     public ?float $margin_value;
 

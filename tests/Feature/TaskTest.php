@@ -2,14 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Enum\ReminderStatus;
 use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\SalesUnit;
 use App\Models\Task\Task;
+use App\Models\Task\TaskReminder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class TaskTest extends TestCase
@@ -127,11 +130,12 @@ class TaskTest extends TestCase
                     'attachments',
                     'created_at',
                     'updated_at',
-                ]
+                ],
             ]);
 
         $this->assertContains((new Company())->getMorphClass(), $response->json('data.linked_relations.*.model_type'));
-        $this->assertContains((new Opportunity())->getMorphClass(), $response->json('data.linked_relations.*.model_type'));
+        $this->assertContains((new Opportunity())->getMorphClass(),
+            $response->json('data.linked_relations.*.model_type'));
     }
 
     /**
@@ -153,6 +157,10 @@ class TaskTest extends TestCase
             'taskable' => [
                 'id' => $taskable->getKey(),
                 'type' => 'Opportunity',
+            ],
+            'reminder' => [
+                'status' => 0,
+                'set_date' => now()->addDay()->toDateTimeString(),
             ],
         ])
             ->assertCreated();
@@ -224,6 +232,10 @@ class TaskTest extends TestCase
             'content' => [],
             'expiry_date' => $this->faker->dateTimeBetween('+1d', '+3day')->format('Y-m-d H:i:s'),
             'priority' => 2,
+            'reminder' => [
+                'status' => 0,
+                'set_date' => now()->addDay()->toDateTimeString(),
+            ],
         ])
 //            ->dump()
             ->assertOk();
@@ -248,6 +260,138 @@ class TaskTest extends TestCase
 
         $this->getJson('api/tasks/'.$task->getKey())
             ->assertNotFound();
+    }
+
+    /**
+     * Test an ability to set task reminder.
+     */
+    public function testCanSetTaskReminder(): void
+    {
+        $this->authenticateApi();
+
+        $reminder = TaskReminder::factory()->create();
+
+        $data = [
+            'set_date' => now()->addMinute()->toDateTimeString(),
+            'status' => ReminderStatus::Snoozed->value,
+        ];
+
+        $this->putJson("api/task-reminders/{$reminder->getKey()}", $data)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'task_id',
+                    'user_id',
+                    'set_date',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJsonPath('data.status', $data['status'])
+            ->assertJsonPath('data.set_date', Carbon::parse($data['set_date'])->format('m/d/y H:i:s'));
+    }
+
+    /**
+     * Test an ability to dismiss task reminder.
+     */
+    public function testCanDismissTaskReminder(): void
+    {
+        $this->authenticateApi();
+
+        $reminder = TaskReminder::factory()->for($this->app['auth']->user())->create([
+            'status' => ReminderStatus::Scheduled,
+        ]);
+
+        $this->getJson("api/tasks/{$reminder->task->getKey()}")
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'reminder' => [
+                        'id',
+                    ]
+                ]
+            ])
+            ->assertJsonPath('data.reminder.id', $reminder->getKey());
+
+        $data = [
+            'status' => ReminderStatus::Dismissed->value,
+        ];
+
+        $this->putJson("api/task-reminders/{$reminder->getKey()}", $data)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'task_id',
+                    'user_id',
+                    'set_date',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJsonPath('data.status', $data['status']);
+
+        $this->getJson("api/tasks/{$reminder->task->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'reminder'
+                ]
+            ])
+            ->assertJsonPath('reminder', null);
+    }
+
+    /**
+     * Test an ability to delete an existing reminder from the task.
+     */
+    public function testCanDeleteReminderFromTask(): void
+    {
+        $this->authenticateApi();
+
+        $task = Task::factory()
+            ->has(
+                TaskReminder::factory()->for($this->app['auth']->user())->state(['status' => ReminderStatus::Scheduled])
+                , relationship: 'reminder')
+            ->create();
+
+        $r = $this->getJson("api/tasks/{$task->getKey()}")
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'reminder' => [
+                        'id',
+                    ],
+                ],
+            ]);
+
+        $reminderId = $r->json('data.reminder.id');
+
+        $this->assertNotNull($reminderId);
+
+        $this->deleteJson("api/task-reminders/$reminderId")
+            ->assertNoContent();
+
+        $this->getJson("api/tasks/{$task->getKey()}")
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'reminder',
+                ],
+            ])
+            ->assertJsonPath('data.reminder', null);
+
     }
 
 }

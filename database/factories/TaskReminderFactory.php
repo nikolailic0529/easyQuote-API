@@ -1,14 +1,43 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
+use App\Enum\ReminderStatus;
+use App\Models\Task\Task;
 use App\Models\Task\TaskReminder;
-use Faker\Generator as Faker;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-$factory->define(TaskReminder::class, function (Faker $faker) {
-    return [
-        'task_id' => factory(\App\Models\Task\Task::class),
-        'set_date' => now()->addDay(),
-        'status' => $faker->randomElement(\App\Enum\ReminderStatus::cases()),
-    ];
-});
+class TaskReminderFactory extends Factory
+{
+    protected $model = TaskReminder::class;
+
+    public function definition(): array
+    {
+        return [
+            'task_id' => Task::factory(),
+            'set_date' => now()->addDay(),
+            'status' => ReminderStatus::Scheduled,
+        ];
+    }
+
+    public function scheduled(): static
+    {
+        return $this->state(['status' => ReminderStatus::Scheduled]);
+    }
+
+    public function snoozed(): static
+    {
+        return $this->state(['status' => ReminderStatus::Snoozed]);
+    }
+
+    public function dismissed(): static
+    {
+        return $this->state(['status' => ReminderStatus::Dismissed]);
+    }
+
+    public function forCurrentUser(): static
+    {
+        return $this->for(auth()->user());
+    }
+}
+

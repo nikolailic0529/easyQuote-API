@@ -6,6 +6,7 @@ use App\Models\AccessAttempt;
 use App\Models\Address;
 use App\Models\Addressable;
 use App\Models\Appointment\Appointment;
+use App\Models\Appointment\AppointmentReminder;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetTotal;
@@ -89,6 +90,7 @@ use App\Models\System\Notification;
 use App\Models\System\Period;
 use App\Models\System\SystemSetting;
 use App\Models\Task\Task;
+use App\Models\Task\TaskReminder;
 use App\Models\Team;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\HpeContractTemplate;
@@ -203,7 +205,9 @@ class EntityServiceProvider extends ServiceProvider
             'fbe7ed33-c972-44ed-b81b-bb44bab8b6b3' => Period::class,
             '24e4b737-df4e-4ef1-bbb7-b3aeb0d80d1b' => SystemSetting::class,
             '8e71e7d1-4fcd-47e7-bc39-f52116f443df' => Task::class,
+            'd1c33ee4-3bb4-46b0-acd8-03c0138cc172' => TaskReminder::class,
             '0733629e-25d4-410a-9304-ee83bca777f6' => Appointment::class,
+            'c74f2a88-8354-4913-97ee-04427e6f19e6' => AppointmentReminder::class,
             '9f5e1437-d7ff-421d-9401-0984cc3bec83' => Team::class,
             '88c14ad7-aebc-488c-a1cb-bf4e2fe8af44' => ContractTemplate::class,
             '272620db-2f77-4efa-a68d-52f6c07beb52' => HpeContractTemplate::class,

@@ -106,11 +106,13 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             // once the company has been created by the current authenticated user,
             // we grant super permissions to him on the newly created company.
 
-            if ($this->causer instanceof User) {
-                $company->user()->associate($this->causer);
+            $owner = $importedCompany->owner ?? ($this->causer instanceof User ? $this->causer : null);
+
+            if ($owner instanceof User) {
+                $company->user()->associate($owner);
 
                 $this->permissionBroker->givePermissionToUser(
-                    user: $this->causer,
+                    user: $owner,
                     name: "companies.*.{$company->getKey()}"
                 );
             }

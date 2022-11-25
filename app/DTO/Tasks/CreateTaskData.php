@@ -24,7 +24,7 @@ final class CreateTaskData extends DataTransferObject
 
     public Priority $priority;
 
-    public ?CreateTaskReminderData $reminder;
+    public ?SetTaskReminderData $reminder;
 
     public ?CreateTaskRecurrenceData $recurrence;
 

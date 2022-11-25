@@ -21,6 +21,7 @@ use App\Http\Controllers\API\V1\Data\ExchangeRateController;
 use App\Http\Controllers\API\V1\Data\FileFormatsController;
 use App\Http\Controllers\API\V1\Data\LanguagesController;
 use App\Http\Controllers\API\V1\Data\TimezonesController;
+use App\Http\Controllers\API\V1\DataAllocation\DataAllocationController;
 use App\Http\Controllers\API\V1\Discounts\MultiYearDiscountController;
 use App\Http\Controllers\API\V1\Discounts\PrePayDiscountController;
 use App\Http\Controllers\API\V1\Discounts\PromotionalDiscountController;
@@ -752,11 +753,15 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('tasks/{task}', [TaskController::class, 'showTask']);
     Route::patch('tasks/{task}', [TaskController::class, 'updateTask']);
     Route::delete('tasks/{task}', [TaskController::class, 'deleteTask']);
+    Route::put('task-reminders/{reminder}', [TaskController::class, 'setTaskReminder']);
+    Route::delete('task-reminders/{reminder}', [TaskController::class, 'deleteTaskReminder']);
 
     Route::post('appointments', [AppointmentController::class, 'storeAppointment']);
     Route::get('appointments/{appointment}', [AppointmentController::class, 'showAppointment']);
     Route::patch('appointments/{appointment}', [AppointmentController::class, 'updateAppointment']);
     Route::delete('appointments/{appointment}', [AppointmentController::class, 'deleteAppointment']);
+    Route::put('appointment-reminders/{reminder}', [AppointmentController::class, 'setAppointmentReminder']);
+    Route::delete('appointment-reminders/{reminder}', [AppointmentController::class, 'deleteAppointmentReminder']);
 });
 
 Route::post('pipeliner/webhook', [PipelinerWebhookController::class, 'handleWebhookEvent'])->name('pipeliner.webhook');

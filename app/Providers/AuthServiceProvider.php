@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Address;
+use App\Models\Appointment\AppointmentReminder;
 use App\Models\Asset;
 use App\Models\Collaboration\Invitation;
 use App\Models\Company;
@@ -32,6 +33,7 @@ use App\Models\System\Activity;
 use App\Models\System\Notification;
 use App\Models\System\SystemSetting;
 use App\Models\Task\Task;
+use App\Models\Task\TaskReminder;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\HpeContractTemplate;
 use App\Models\Template\QuoteTemplate;
@@ -40,6 +42,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Policies\ActivityPolicy;
 use App\Policies\AddressPolicy;
+use App\Policies\AppointmentReminderPolicy;
 use App\Policies\AssetPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\ContactPolicy;
@@ -72,6 +75,7 @@ use App\Policies\SearchPolicy;
 use App\Policies\SNDPolicy;
 use App\Policies\SystemSettingPolicy;
 use App\Policies\TaskPolicy;
+use App\Policies\TaskReminderPolicy;
 use App\Policies\UnifiedQuotePolicy;
 use App\Policies\UserPolicy;
 use App\Policies\VendorPolicy;
@@ -127,6 +131,8 @@ class AuthServiceProvider extends ServiceProvider
         Pipeline::class                 => PipelinePolicy::class,
         SalesUnit::class                => SalesUnitPolicy::class,
         PipelinerSyncError::class       => PipelinerSyncErrorPolicy::class,
+        AppointmentReminder::class      => AppointmentReminderPolicy::class,
+        TaskReminder::class             => TaskReminderPolicy::class,
     ];
 
     public function register()

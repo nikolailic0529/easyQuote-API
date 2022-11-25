@@ -4,6 +4,7 @@ namespace App\Http\Resources\V1\Task;
 
 use App\Http\Resources\V1\Attachment\CreatedAttachment;
 use App\Http\Resources\V1\User\UserRelationResource;
+use App\Models\Task\TaskReminder;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class TaskWithIncludes extends JsonResource
@@ -11,7 +12,7 @@ class TaskWithIncludes extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return array
      */
     public function toArray($request)
@@ -33,7 +34,11 @@ class TaskWithIncludes extends JsonResource
 
             'sales_unit' => $this->salesUnit,
             'recurrence' => TaskRecurrenceResource::make($this->recurrence),
-            'reminder' => TaskReminderResource::make($this->reminder),
+            'reminder' => TaskReminderResource::make($this->activeReminders->first(
+                static function (TaskReminder $reminder) use ($request): bool {
+                    return $reminder->user()->is($request->user());
+                })
+            ),
 
             'linked_relations' => $this->linkedModelRelations,
 

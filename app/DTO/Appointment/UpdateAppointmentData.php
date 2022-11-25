@@ -63,5 +63,5 @@ final class UpdateAppointmentData extends DataTransferObject
     #[Constraints\All(constraints: [new Constraints\Uuid()])]
     public ?array $attachment_relations;
 
-    public ?CreateAppointmentReminderData $reminder;
+    public ?SetAppointmentReminderData $reminder;
 }

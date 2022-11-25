@@ -152,6 +152,14 @@ return [
             'permission' => 0777,
         ],
 
+        'appointments' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/appointments.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
         'search' => [
             'driver' => 'daily',
             'path' => storage_path('/logs/search.log'),

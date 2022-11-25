@@ -50,6 +50,7 @@ use App\Services\Pipeliner\CachedFieldEntityResolver;
 use App\Services\Pipeliner\CachedPipelineResolver;
 use App\Services\Pipeliner\CachedSalesUnitResolver;
 use App\Services\Pipeliner\CachedStepResolver;
+use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Contracts\Config\Repository as Config;
@@ -86,7 +87,8 @@ class OpportunityDataMapper implements CauserAware
         protected CachedStepResolver $stepResolver,
         protected PipelineQueries $pipelineQueries,
         protected UserResolver $userResolver,
-        protected ContractTypeResolver $contractTypeResolver
+        protected ContractTypeResolver $contractTypeResolver,
+        protected PipelinerClientEntityToUserProjector $clientProjector,
     ) {
     }
 
@@ -486,7 +488,7 @@ class OpportunityDataMapper implements CauserAware
 
             $opportunity->{$opportunity->getKeyName()} = (string) Uuid::generate(4);
             $opportunity->pl_reference = $entity->id;
-            $opportunity->user()->associate($this->causer);
+            $opportunity->owner()->associate(($this->clientProjector)($entity->owner));
             $opportunity->salesUnit()->associate(
                 SalesUnit::query()->where('unit_name', $entity->unit->name)->first()
             );
@@ -630,6 +632,10 @@ class OpportunityDataMapper implements CauserAware
             if (null !== $another->$relation) {
                 $opportunity->$relation()->associate($another->$relation);
             }
+        }
+
+        if (null === $opportunity->owner) {
+            $opportunity->owner()->associate($another->owner);
         }
 
         $toBeMergedAttributes = [
@@ -1030,7 +1036,7 @@ class OpportunityDataMapper implements CauserAware
                 PipelinerOppMap::PURCHASE_PRICE_CURRENCY_CODE),
 
             'ranking' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::RANKING),
-                static fn(string $value) => (float) $value),
+                static fn(string $value) => (int)($value * 100)),
             'estimated_upsell_amount' => transform(OpportunityDataMapper::coalesceMap($row,
                 PipelinerOppMap::ESTIMATED_UPSELL_AMOUNT), static fn(string $value) => (float) $value),
             'estimated_upsell_amount_currency_code' => OpportunityDataMapper::coalesceMap($row,

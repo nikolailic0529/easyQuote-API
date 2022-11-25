@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Appointment\Appointment;
 use App\Models\Appointment\AppointmentReminder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -12,6 +13,7 @@ class AppointmentReminderFactory extends Factory
     public function definition(): array
     {
         return [
+            'appointment_id' => Appointment::factory(),
             'start_date_offset' => $this->faker->randomElement([
                 5 * 60, // 5 minutes before
                 10 * 60, // 10 minutes before

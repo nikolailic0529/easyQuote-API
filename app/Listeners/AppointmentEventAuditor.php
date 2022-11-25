@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\Enum\Priority;
 use App\Events\Appointment\AppointmentCreated;
 use App\Events\Appointment\AppointmentDeleted;
 use App\Events\Appointment\AppointmentUpdated;
@@ -12,10 +13,11 @@ use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Arr;
 
-class AppointmentEventAuditor
+class AppointmentEventAuditor implements ShouldQueue
 {
     public function __construct(
         protected readonly ActivityLogger $activityLogger,
@@ -48,6 +50,16 @@ class AppointmentEventAuditor
                 ChangesDetector::NEW_ATTRS_KEY => $this->attributesToBeLogged($event->appointment),
             ])
             ->log('created');
+
+        notification()
+            ->for($event->appointment->owner)
+            ->message(sprintf(
+                'New %s [%s] created',
+                $event->appointment->activity_type->value,
+                $event->appointment->subject,
+            ))
+            ->priority(Priority::Low)
+            ->push();
     }
 
     public function handleUpdatedEvent(AppointmentUpdated $event): void
@@ -70,6 +82,16 @@ class AppointmentEventAuditor
             ->on($event->appointment)
             ->by($event->causer)
             ->log('deleted');
+
+        notification()
+            ->for($event->appointment->owner)
+            ->message(sprintf(
+                '%s [%s] deleted',
+                $event->appointment->activity_type->value,
+                $event->appointment->subject,
+            ))
+            ->priority(Priority::Low)
+            ->push();
     }
 
     private function attributesToBeLogged(Appointment $appointment): array

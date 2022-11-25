@@ -5,6 +5,7 @@ namespace App\Services\Task;
 use App\Contracts\CauserAware;
 use App\Contracts\LinkedToTasks;
 use App\DTO\Tasks\CreateTaskData;
+use App\DTO\Tasks\SetTaskReminderData;
 use App\DTO\Tasks\UpdateTaskData;
 use App\Events\Task\TaskCreated;
 use App\Events\Task\TaskDeleted;
@@ -16,7 +17,8 @@ use App\Models\{DateDay,
     RecurrenceType,
     Task\Task,
     Task\TaskRecurrence,
-    Task\TaskReminder};
+    Task\TaskReminder,
+    User};
 use App\Services\Exceptions\ValidationException;
 use Carbon\Carbon;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -30,10 +32,11 @@ class TaskEntityService implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface $connection,
-                                protected ValidatorInterface  $validator,
-                                protected Dispatcher          $eventsDispatcher)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected ValidatorInterface $validator,
+        protected Dispatcher $eventsDispatcher
+    ) {
     }
 
     public function createTaskForTaskable(CreateTaskData $data, Model&LinkedToTasks $linkedModel): Task
@@ -45,7 +48,7 @@ class TaskEntityService implements CauserAware
         }
 
         return tap(new Task(), function (Task $task) use ($data, $linkedModel) {
-            $task->{$task->getKeyName()} = (string)Uuid::generate(4);
+            $task->{$task->getKeyName()} = (string) Uuid::generate(4);
             $task->user()->associate($this->causer);
             $task->salesUnit()->associate($data->sales_unit_id);
             $task->activity_type = $data->activity_type;
@@ -58,8 +61,7 @@ class TaskEntityService implements CauserAware
                 ? tap(new TaskReminder(), function (TaskReminder $reminder) use ($data, $task): void {
                     $reminder->user()->associate($this->causer);
                     $reminder->task()->associate($task);
-                    $reminder->set_date = Carbon::instance($data->reminder->set_date);
-                    $reminder->status = $data->reminder->status;
+                    $reminder->forceFill($data->reminder->all());
                 })
                 : null;
 
@@ -67,7 +69,9 @@ class TaskEntityService implements CauserAware
                 ? tap(new TaskRecurrence(), function (TaskRecurrence $recurrence) use ($data, $task): void {
                     $recurrence->user()->associate($this->causer);
                     $recurrence->task()->associate($task);
-                    $recurrence->type()->associate(RecurrenceType::query()->where('value', $data->recurrence->type)->sole());
+                    $recurrence->type()->associate(RecurrenceType::query()
+                        ->where('value', $data->recurrence->type)
+                        ->sole());
                     $recurrence->occur_every = $data->recurrence->occur_every;
                     $recurrence->occurrences_count = $data->recurrence->occurrences_count;
                     $recurrence->start_date = Carbon::instance($data->recurrence->start_date);
@@ -75,7 +79,9 @@ class TaskEntityService implements CauserAware
                         ? Carbon::instance($data->recurrence->end_date)
                         : null;
                     $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
-                    $recurrence->month()->associate(DateMonth::query()->where('value', $data->recurrence->month)->sole());
+                    $recurrence->month()->associate(DateMonth::query()
+                        ->where('value', $data->recurrence->month)
+                        ->sole());
                     $recurrence->week()->associate(DateWeek::query()->where('value', $data->recurrence->week)->sole());
                     $recurrence->day_of_week = $data->recurrence->day_of_week;
                 })
@@ -117,50 +123,63 @@ class TaskEntityService implements CauserAware
             $task->expiry_date = isset($data->expiry_date) ? Carbon::instance($data->expiry_date) : null;
             $task->priority = $data->priority;
 
+            $existingReminder = $this->causer instanceof User
+                ? $task->activeReminders()->whereBelongsTo($this->causer)->first()
+                : null;
+
             $reminder = isset($data->reminder)
-                ? tap($task->reminder ?? new TaskReminder(), function (TaskReminder $reminder) use ($data, $task): void {
-                    if (false === $reminder->exists) {
-                        $reminder->user()->associate($this->causer);
-                    }
-                    $reminder->task()->associate($task);
-                    $reminder->set_date = Carbon::instance($data->reminder->set_date);
-                    $reminder->status = $data->reminder->status;
-                })
+                ? tap($existingReminder ?? new TaskReminder(),
+                    function (TaskReminder $reminder) use ($data, $task): void {
+                        if (false === $reminder->exists) {
+                            $reminder->user()->associate($this->causer);
+                        }
+                        $reminder->task()->associate($task);
+                        $reminder->forceFill($data->reminder->all());
+                    })
                 : null;
 
             $recurrence = isset($data->recurrence)
-                ? tap($task->recurrence ?? new TaskRecurrence(), function (TaskRecurrence $recurrence) use ($data, $task): void {
-                    if (false === $recurrence->exists) {
-                        $recurrence->user()->associate($this->causer);
-                    }
-                    $recurrence->task()->associate($task);
-                    $recurrence->type()->associate(RecurrenceType::query()->where('value', $data->recurrence->type)->sole());
-                    $recurrence->occur_every = $data->recurrence->occur_every;
-                    $recurrence->occurrences_count = $data->recurrence->occurrences_count;
-                    $recurrence->start_date = Carbon::instance($data->recurrence->start_date);
-                    $recurrence->end_date = isset($data->recurrence->end_date)
-                        ? Carbon::instance($data->recurrence->end_date)
-                        : null;
-                    $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
-                    $recurrence->month()->associate(DateMonth::query()->where('value', $data->recurrence->month)->sole());
-                    $recurrence->week()->associate(DateWeek::query()->where('value', $data->recurrence->week)->sole());
-                    $recurrence->day_of_week = $data->recurrence->day_of_week;
-                })
+                ? tap($task->recurrence ?? new TaskRecurrence(),
+                    function (TaskRecurrence $recurrence) use ($data, $task): void {
+                        if (false === $recurrence->exists) {
+                            $recurrence->user()->associate($this->causer);
+                        }
+                        $recurrence->task()->associate($task);
+                        $recurrence->type()->associate(RecurrenceType::query()
+                            ->where('value', $data->recurrence->type)
+                            ->sole());
+                        $recurrence->occur_every = $data->recurrence->occur_every;
+                        $recurrence->occurrences_count = $data->recurrence->occurrences_count;
+                        $recurrence->start_date = Carbon::instance($data->recurrence->start_date);
+                        $recurrence->end_date = isset($data->recurrence->end_date)
+                            ? Carbon::instance($data->recurrence->end_date)
+                            : null;
+                        $recurrence->day()->associate(DateDay::query()->where('value', $data->recurrence->day)->sole());
+                        $recurrence->month()->associate(DateMonth::query()
+                            ->where('value', $data->recurrence->month)
+                            ->sole());
+                        $recurrence->week()->associate(DateWeek::query()
+                            ->where('value', $data->recurrence->week)
+                            ->sole());
+                        $recurrence->day_of_week = $data->recurrence->day_of_week;
+                    })
                 : null;
 
             $task->load(['reminder', 'recurrence']);
 
             $usersSyncResult = [];
 
-            $this->connection->transaction(function () use ($data, $shouldDeleteNotifications, $task, $recurrence, $reminder, &$usersSyncResult): void {
+            $this->connection->transaction(function () use (
+                $data,
+                $shouldDeleteNotifications,
+                $task,
+                $recurrence,
+                $reminder,
+                &$usersSyncResult
+            ): void {
                 $task->save();
 
-                // Delete reminder from the task if null provided
-                if (null === $reminder) {
-                    $task->reminder?->delete();
-                } else {
-                    $reminder->save();
-                }
+                $reminder?->save();
 
                 // Delete recurrence from the task if null provided
                 if (null === $recurrence) {
@@ -194,6 +213,24 @@ class TaskEntityService implements CauserAware
         $this->eventsDispatcher->dispatch(new TaskDeleted($task));
     }
 
+    public function updateReminder(TaskReminder $reminder, SetTaskReminderData $data): TaskReminder
+    {
+        return tap($reminder, function (TaskReminder $reminder) use ($data): void {
+            $reminder->forceFill($data->all());
+
+            $this->connection->transaction(static function () use ($reminder): void {
+                $reminder->save();
+            });
+        });
+    }
+
+    public function deleteReminder(TaskReminder $reminder): void
+    {
+        $this->connection->transaction(static function () use ($reminder): void {
+            $reminder->delete();
+        });
+    }
+
     protected function touchRelated(Task $task): void
     {
         foreach ($task->linkedModelRelations as $relation) {
@@ -204,6 +241,6 @@ class TaskEntityService implements CauserAware
 
     public function setCauser(?Model $causer): static
     {
-        return tap($this, fn () => $this->causer = $causer);
+        return tap($this, fn() => $this->causer = $causer);
     }
 }

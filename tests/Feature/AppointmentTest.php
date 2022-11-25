@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enum\ReminderStatus;
 use App\Models\Appointment\Appointment;
 use App\Models\Appointment\AppointmentContactInvitee;
 use App\Models\Appointment\AppointmentReminder;
@@ -13,6 +14,7 @@ use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -20,7 +22,7 @@ use Tests\TestCase;
 
 class AppointmentTest extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions, WithFaker;
 
     /**
      * Test an ability to view a list of appointments linked to company.
@@ -33,7 +35,7 @@ class AppointmentTest extends TestCase
         $appointment = Appointment::factory()
             ->has(Company::factory(), 'companiesHaveAppointment')
             ->create([
-                'subject' => Str::random(40)
+                'subject' => Str::random(40),
             ]);
 
         $response = $this->getJson('api/companies/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
@@ -81,7 +83,7 @@ class AppointmentTest extends TestCase
         $appointment = Appointment::factory()
             ->has(Opportunity::factory(), 'opportunitiesHaveAppointment')
             ->create([
-                'subject' => Str::random(40)
+                'subject' => Str::random(40),
             ]);
 
         $response = $this->getJson('api/opportunities/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
@@ -130,7 +132,7 @@ class AppointmentTest extends TestCase
         $appointment = Appointment::factory()
             ->has(Contact::factory(), 'contactsHaveAppointment')
             ->create([
-                'subject' => Str::random(40)
+                'subject' => Str::random(40),
             ]);
 
         $response = $this->getJson('api/contacts/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
@@ -178,7 +180,7 @@ class AppointmentTest extends TestCase
         $appointment = Appointment::factory()
             ->has(Quote::factory(), 'rescueQuotesHaveAppointment')
             ->create([
-                'subject' => Str::random(40)
+                'subject' => Str::random(40),
             ]);
 
         $response = $this->getJson('api/quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
@@ -226,7 +228,7 @@ class AppointmentTest extends TestCase
         $appointment = Appointment::factory()
             ->has(WorldwideQuote::factory(), 'worldwideQuotesHaveAppointment')
             ->create([
-                'subject' => Str::random(40)
+                'subject' => Str::random(40),
             ]);
 
         $response = $this->getJson('api/ww-quotes/'.$appointment->modelsHaveAppointment->first()->model_id.'/appointments')
@@ -277,7 +279,7 @@ class AppointmentTest extends TestCase
         $this->authenticateApi();
 
         $appointment = Appointment::factory()
-            ->has(AppointmentReminder::factory(), 'reminder')
+            ->has(AppointmentReminder::factory()->for($this->app['auth']->user(), relationship: 'owner'), 'reminder')
             ->has(Contact::factory(), 'contacts')
             ->has(AppointmentContactInvitee::factory(), 'inviteesContacts')
             ->has(User::factory(), 'users')
@@ -384,14 +386,16 @@ class AppointmentTest extends TestCase
                 'updated_at',
             ]);
 
-        foreach (['user_relations',
+        foreach ([
+                     'user_relations',
                      'contact_relations',
                      'company_relations',
                      'opportunity_relations',
 //                     'invitee_contact_relations',
                      'invitee_user_relations',
                      'rescue_quote_relations',
-                     'worldwide_quote_relations'] as $key) {
+                     'worldwide_quote_relations',
+                 ] as $key) {
             $this->assertNotEmpty($response->json($key), $key);
         }
     }
@@ -412,7 +416,7 @@ class AppointmentTest extends TestCase
 
         $data['model_has_appointment'] = [
             'id' => $modelHasAppointment->getKey(),
-            'type' => 'Company'
+            'type' => 'Company',
         ];
 
         $response = $this->postJson('api/appointments', $data)
@@ -480,14 +484,16 @@ class AppointmentTest extends TestCase
 
         $data['model_has_appointment'] = [
             'id' => $modelHasAppointment->getKey(),
-            'type' => 'Company'
+            'type' => 'Company',
         ];
 
         $company = Company::factory()->create();
 
-        $data['company_relations'] = [[
-            'company_id' => $company->getKey(),
-        ]];
+        $data['company_relations'] = [
+            [
+                'company_id' => $company->getKey(),
+            ],
+        ];
 
         $response = $this->postJson('api/appointments', $data)
 //            ->dump()
@@ -556,7 +562,7 @@ class AppointmentTest extends TestCase
 
         $data['model_has_appointment'] = [
             'id' => $modelHasAppointment->getKey(),
-            'type' => 'Company'
+            'type' => 'Company',
         ];
 
         $opportunity = Opportunity::factory()->create();
@@ -631,7 +637,7 @@ class AppointmentTest extends TestCase
 
         $data['model_has_appointment'] = [
             'id' => $modelHasAppointment->getKey(),
-            'type' => 'Company'
+            'type' => 'Company',
         ];
 
         $contact = Contact::factory()->create();
@@ -707,7 +713,7 @@ class AppointmentTest extends TestCase
 
         $data['model_has_appointment'] = [
             'id' => $modelHasAppointment->getKey(),
-            'type' => 'Company'
+            'type' => 'Company',
         ];
 
         $user = User::factory()->create();
@@ -857,7 +863,7 @@ class AppointmentTest extends TestCase
 
         $data['model_has_appointment'] = [
             'id' => $modelHasAppointment->getKey(),
-            'type' => 'Company'
+            'type' => 'Company',
         ];
 
         $attachment = factory(Attachment::class)->create();
@@ -937,12 +943,12 @@ class AppointmentTest extends TestCase
 
         $data['model_has_appointment'] = [
             'id' => $modelHasAppointment->getKey(),
-            'type' => 'Company'
+            'type' => 'Company',
         ];
 
         $reminder = AppointmentReminder::factory()->make()->toArray();
 
-        $data['reminder'] = $reminder;
+        $data['reminder'] = Arr::except($reminder, 'appointment_id');
 
         $response = $this->postJson('api/appointments', $data)
 //            ->dump()
@@ -1065,7 +1071,7 @@ class AppointmentTest extends TestCase
 
         $reminder = AppointmentReminder::factory()->make()->toArray();
 
-        $data['reminder'] = $reminder;
+        $data['reminder'] = Arr::except($reminder, 'appointment_id');
 
         $this->authenticateApi();
 
@@ -1126,60 +1132,122 @@ class AppointmentTest extends TestCase
     }
 
     /**
-     * Test an ability to unset reminder from appointment.
+     * Test an ability to set appointment reminder.
      */
-    public function testCanUnsetReminderFromAppointment(): void
+    public function testCanSetAppointmentReminder(): void
     {
-        $appointment = Appointment::factory()
-            ->has(AppointmentReminder::factory(), 'reminder')
-            ->create();
-
-        $data = Appointment::factory()->make()->toArray();
-
         $this->authenticateApi();
 
-        /** @var User $user */
-        $user = $this->app['auth']->user();
+        $reminder = AppointmentReminder::factory()->create();
 
-        $this->patchJson('api/appointments/'.$appointment->getKey(), $data)
+        $data = [
+            'snooze_date' => now()->addMinutes(5)->format('Y-m-d H:i:s'),
+            'status' => ReminderStatus::Snoozed->value,
+        ];
+
+        $this->putJson("api/appointment-reminders/{$reminder->getKey()}", $data)
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'id',
-                'activity_type',
-                'subject',
-                'description',
-                'start_date',
-                'end_date',
-                'reminder',
-                'created_at',
-                'updated_at',
+                'data' => [
+                    'id',
+                    'appointment_id',
+                    'user_id',
+                    'start_date_offset',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJsonPath('data.status', $data['status'])
+            ->assertJsonPath('data.snooze_date', Carbon::parse($data['snooze_date'])->toJSON());
+    }
+
+    /**
+     * Test an ability to dismiss appointment reminder.
+     */
+    public function testCanDismissAppointmentReminder(): void
+    {
+        $this->authenticateApi();
+
+        $reminder = AppointmentReminder::factory()
+            ->for($this->app['auth']->user(), relationship: 'owner')
+            ->create([
+                'status' => ReminderStatus::Scheduled,
             ]);
 
-        $response = $this->getJson('api/appointments/'.$appointment->getKey())
+        $this->getJson("api/appointments/{$reminder->appointment->getKey()}")
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activity_type',
-                'subject',
-                'description',
-                'start_date',
-                'end_date',
-                'reminder',
-                'created_at',
-                'updated_at',
+                'reminder'
+            ])
+            ->assertJsonPath('reminder.id', $reminder->getKey());
+
+        $data = [
+            'status' => ReminderStatus::Dismissed->value,
+        ];
+
+        $this->putJson("api/appointment-reminders/{$reminder->getKey()}", $data)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'appointment_id',
+                    'user_id',
+                    'start_date_offset',
+                    'status',
+                    'created_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJsonPath('data.status', $data['status']);
+
+        $this->getJson("api/appointments/{$reminder->appointment->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'reminder'
+            ])
+            ->assertJsonPath('reminder', null);
+    }
+
+    /**
+     * Test an ability to delete an existing reminder from appointment.
+     */
+    public function testCanDeleteReminderFromAppointment(): void
+    {
+        $this->authenticateApi();
+
+        $appointment = Appointment::factory()
+            ->has(AppointmentReminder::factory()->for($this->app['auth']->user(), 'owner'), relationship: 'reminder')
+            ->create();
+
+        $r = $this->getJson("api/appointments/{$appointment->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'reminder' => [
+                    'id',
+                ],
             ]);
 
-        $this->assertNull($response->json('reminder'));
+        $reminderId = $r->json('reminder.id');
 
-        foreach (Arr::dot($data) as $key => $value) {
-            $value = match ($key) {
-                'start_date', 'end_date' => Carbon::parse($value)->tz($user->timezone->utc)->format('m/d/y H:i:s'),
-                default => $value,
-            };
+        $this->assertNotNull($reminderId);
 
-            $this->assertSame($value, $response->json($key), $key);
-        }
+        $this->deleteJson("api/appointment-reminders/$reminderId")
+//            ->dump()
+            ->assertNoContent();
+
+        $this->getJson("api/appointments/{$appointment->getKey()}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'reminder',
+            ])
+            ->assertJsonPath('reminder', null);
     }
 
     /**

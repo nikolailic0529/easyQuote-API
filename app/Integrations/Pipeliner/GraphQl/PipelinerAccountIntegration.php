@@ -536,6 +536,11 @@ class PipelinerAccountIntegration
             'modified',
             'revision',
 
+            (new Query('owner'))
+                ->setSelectionSet(
+                    PipelinerClientIntegration::getClientEntitySelectionSet()
+                ),
+
             (new Query('unit'))
                 ->setSelectionSet(
                     PipelinerSalesUnitIntegration::getSalesUnitEntitySelectionSet()

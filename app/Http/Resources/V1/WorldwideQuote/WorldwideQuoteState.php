@@ -314,10 +314,10 @@ class WorldwideQuoteState extends JsonResource
             'are_end_user_addresses_available' => (bool)$this->activeVersion->are_end_user_addresses_available,
             'are_end_user_contacts_available' => (bool)$this->activeVersion->are_end_user_contacts_available,
 
-            'additional_notes' => $this->activeVersion->note?->text,
+            'additional_notes' => $this->activeVersion->note?->note,
 
-            'draft_note' => $this->activeVersion->draftNote?->text,
-            'submit_note' => $this->activeVersion->submitNote?->text,
+            'draft_note' => $this->activeVersion->draftNote?->note,
+            'submit_note' => $this->activeVersion->submitNote?->note,
 
             'status' => $this->status,
             'status_reason' => $this->status_reason,

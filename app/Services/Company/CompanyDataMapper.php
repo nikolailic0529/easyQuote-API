@@ -316,6 +316,9 @@ class CompanyDataMapper
         return tap(new ImportedCompany(), function (ImportedCompany $account) use ($contactRelations, $entity): void {
             $account->{$account->getKeyName()} = (string)Uuid::generate(4);
             $account->pl_reference = $entity->id;
+            if ($entity->owner !== null) {
+                $account->owner()->associate(($this->clientProjector)($entity->owner));
+            }
             $account->company_name = $entity->formattedName;
             $account->company_categories = $this->resolveCategoriesFromCustomFields($entity->customFields);
             $account->customer_type = CustomerTypeEnum::tryFrom($entity->customerType?->optionName ?? '');
@@ -383,6 +386,10 @@ class CompanyDataMapper
         $company->phone = coalesce_blank($another->phone, $company->phone);
         $company->website = coalesce_blank($another->website, $company->website);
         $company->customer_type = $another->customer_type;
+
+        if (null === $company->owner) {
+            $company->owner()->associate($another->owner);
+        }
 
         $vendorNames = Str::of($another->vendors_cs)
             ->explode(',')

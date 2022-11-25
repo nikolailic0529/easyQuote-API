@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Contracts\HasOwner;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
@@ -42,7 +43,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property-read ImportedContact|null $primaryContact
  *
  */
-class ImportedCompany extends Model
+class ImportedCompany extends Model implements HasOwner
 {
     use Uuid;
 
@@ -59,6 +60,11 @@ class ImportedCompany extends Model
     public function getFlag(int $flag): bool
     {
         return ($this->flags & $flag) === $flag;
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function salesUnit(): BelongsTo

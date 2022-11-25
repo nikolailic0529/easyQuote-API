@@ -4,6 +4,7 @@ namespace App\Models\Task;
 
 use App\Contracts\ProvidesIdForHumans;
 use App\Enum\Priority;
+use App\Enum\ReminderStatus;
 use App\Enum\TaskTypeEnum;
 use App\Models\Attachment;
 use App\Models\Company;
@@ -57,6 +58,8 @@ use function config;
  * @property-read Collection<int, Company>|Company[] $companies
  * @property-read Collection<int, Contact>|Contact[] $contacts
  * @property-read Collection<int, Opportunity>|Opportunity[] $opportunities
+ * @property-read Collection<int, TaskReminder> $reminders
+ * @property-read Collection<int, TaskReminder> $activeReminders
  */
 class Task extends Model implements ProvidesIdForHumans
 {
@@ -129,6 +132,16 @@ class Task extends Model implements ProvidesIdForHumans
     public function reminder(): HasOne
     {
         return $this->hasOne(TaskReminder::class)->latestOfMany();
+    }
+
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(TaskReminder::class)->latest();
+    }
+
+    public function activeReminders(): HasMany
+    {
+        return $this->hasMany(TaskReminder::class)->where('status', '<>', ReminderStatus::Dismissed)->latest();
     }
 
     public function recurrence(): HasOne

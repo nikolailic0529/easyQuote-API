@@ -12,6 +12,7 @@ class AccountEntity
 {
     public function __construct(
         public readonly string $id,
+        public readonly ClientEntity|null $owner,
         public readonly SalesUnitEntity|null $unit,
         public readonly string $name,
         public readonly string $formattedName,
@@ -37,6 +38,7 @@ class AccountEntity
     {
         return new static(
             id: $array['id'],
+            owner: ClientEntity::tryFromArray($array['owner']),
             unit: SalesUnitEntity::tryFromArray($array['unit']),
             name: $array['name'],
             formattedName: $array['formattedName'],

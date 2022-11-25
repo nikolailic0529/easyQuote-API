@@ -3,27 +3,38 @@
 namespace App\Services\Task;
 
 use App\Contracts\LoggerAware;
-use App\Contracts\Services\NotificationFactory;
+use App\Enum\ReminderStatus;
+use App\Events\Task\TaskReminderIsDue;
 use App\Models\Task\TaskReminder;
+use App\Services\AppEvent\AppEventEntityService;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Date;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
-class ProcessTaskReminderService implements LoggerAware
+class PerformTaskReminderService implements LoggerAware
 {
-    public function __construct(protected ConnectionInterface $connection,
-                                protected NotificationFactory $notificationFactory,
-                                protected LoggerInterface     $logger = new NullLogger())
-    {
+    public function __construct(
+        protected readonly ConnectionInterface $connection,
+        protected readonly EventDispatcher $eventDispatcher,
+        protected readonly AppEventEntityService $eventEntityService,
+        protected LoggerInterface $logger = new NullLogger()
+    ) {
     }
 
     public function process(): void
     {
         $this->logger->info('Performing task reminders...');
 
-        foreach (TaskReminder::query()->cursor() as $reminder) {
+        $reminders = TaskReminder::query()
+            ->where('status', '<>', ReminderStatus::Dismissed)
+            ->has('task')
+            ->lazy();
+
+        foreach ($reminders as $reminder) {
             $this->processReminder($reminder);
         }
     }
@@ -39,12 +50,15 @@ class ProcessTaskReminderService implements LoggerAware
             'task_id' => $reminder->task()->getParentKey(),
         ]);
 
-        $this->notificationFactory
-            ->for($reminder->user ?? $reminder->task->user)
-            ->priority($reminder->task->priority)
-            ->subject($reminder->task)
-            ->message("[Reminder]: {$reminder->task->name}")
-            ->push();
+        $this->eventDispatcher->dispatch(
+            new TaskReminderIsDue($reminder)
+        );
+
+        $event = $this->eventEntityService->createAppEvent('task-reminder-performed', payload: [
+            'reminder_id' => $reminder->getKey(),
+        ]);
+
+        $reminder->events()->attach($event);
     }
 
     public function isDue(TaskReminder $reminder): bool

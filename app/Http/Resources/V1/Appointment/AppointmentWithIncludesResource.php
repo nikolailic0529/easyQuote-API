@@ -2,9 +2,14 @@
 
 namespace App\Http\Resources\V1\Appointment;
 
+use App\Models\Appointment\Appointment;
+use App\Models\Appointment\AppointmentReminder;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Carbon;
 
+/**
+ * @mixin Appointment
+ */
 class AppointmentWithIncludesResource extends JsonResource
 {
     public static $wrap = null;
@@ -29,8 +34,6 @@ class AppointmentWithIncludesResource extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var \App\Models\Appointment\Appointment|self $this */
-
         $tz = $request->user()->timezone->utc ?? config('app.timezone');
 
         return [
@@ -45,7 +48,9 @@ class AppointmentWithIncludesResource extends JsonResource
             'end_date' => Carbon::instance($this->end_date)->tz($tz)->format(config('date.format_time')),
 
             'sales_unit' => $this->salesUnit,
-            'reminder' => $this->reminder,
+            'reminder' => $this->activeReminders->first(static function (AppointmentReminder $reminder) use ($request): bool {
+                return $reminder->owner()->is($request->user());
+            }),
 
             'user_relations' => $this->userRelations,
             'contact_relations' => $this->contactRelations,

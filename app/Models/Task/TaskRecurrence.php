@@ -8,6 +8,7 @@ use App\Models\DateWeek;
 use App\Models\RecurrenceType;
 use App\Models\User;
 use App\Traits\Uuid;
+use Database\Factories\TaskRecurrenceFactory;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +44,11 @@ class TaskRecurrence extends Model
     ];
 
     protected $guarded = [];
+
+    protected static function newFactory(): TaskRecurrenceFactory
+    {
+        return TaskRecurrenceFactory::new();
+    }
 
     public function user(): BelongsTo
     {

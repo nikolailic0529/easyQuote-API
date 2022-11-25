@@ -4,7 +4,7 @@ namespace App\Http\Requests\Task;
 
 use App\DTO\Tasks\CreateTaskData;
 use App\DTO\Tasks\CreateTaskRecurrenceData;
-use App\DTO\Tasks\CreateTaskReminderData;
+use App\DTO\Tasks\SetTaskReminderData;
 use App\Enum\DateDayEnum;
 use App\Enum\DateMonthEnum;
 use App\Enum\DateWeekEnum;
@@ -79,13 +79,13 @@ class CreateTaskRequest extends FormRequest
                 'priority' => Priority::from((int)$this->input('priority')),
                 'users' => $this->input('users') ?? [],
                 'attachments' => $this->input('attachments') ?? [],
-                'reminder' => $this->whenHas('reminder', function () use ($timezone): CreateTaskReminderData {
-                    return new CreateTaskReminderData([
+                'reminder' => $this->whenHas('reminder', function () use ($timezone): SetTaskReminderData {
+                    return SetTaskReminderData::from([
                         'set_date' => $this->date('reminder.set_date', tz: $timezone)
                             ->tz(config('app.timezone'))
                             ->toDateTimeImmutable(),
 
-                        'status' => ReminderStatus::tryFrom($this->input('reminder.status')),
+                        'status' => $this->input('reminder.status'),
                     ]);
                 }, fn() => null),
                 'recurrence' => $this->whenHas('recurrence', function () use ($timezone): CreateTaskRecurrenceData {

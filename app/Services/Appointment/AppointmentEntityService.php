@@ -5,6 +5,7 @@ namespace App\Services\Appointment;
 use App\Contracts\CauserAware;
 use App\Contracts\HasOwnAppointments;
 use App\DTO\Appointment\CreateAppointmentData;
+use App\DTO\Appointment\SetAppointmentReminderData;
 use App\DTO\Appointment\UpdateAppointmentData;
 use App\Events\Appointment\AppointmentCreated;
 use App\Events\Appointment\AppointmentDeleted;
@@ -12,6 +13,8 @@ use App\Events\Appointment\AppointmentUpdated;
 use App\Models\Appointment\Appointment;
 use App\Models\Appointment\AppointmentReminder;
 use App\Models\Appointment\ModelHasAppointments;
+use App\Models\Task\TaskReminder;
+use App\Models\User;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -47,8 +50,11 @@ class AppointmentEntityService implements CauserAware
 
             $reminder = isset($data->reminder)
                 ? tap(new AppointmentReminder(),
-                    static function (AppointmentReminder $reminder) use ($appointment, $data): void {
+                    function (AppointmentReminder $reminder) use ($appointment, $data): void {
                         $reminder->appointment()->associate($appointment);
+                        if ($this->causer instanceof User) {
+                            $reminder->owner()->associate($this->causer);
+                        }
                         $reminder->start_date_offset = $data->reminder->start_date_offset;
                         $reminder->status = $data->reminder->status;
                     })
@@ -125,10 +131,17 @@ class AppointmentEntityService implements CauserAware
             $appointment->start_date = Carbon::instance($data->start_date);
             $appointment->end_date = Carbon::instance($data->end_date);
 
+            $existingReminder = $this->causer instanceof User
+                ? $appointment->activeReminders()->whereBelongsTo($this->causer, 'owner')->first()
+                : null;
+
             $reminder = isset($data->reminder)
-                ? tap($appointment->reminder ?? new AppointmentReminder(),
-                    static function (AppointmentReminder $reminder) use ($appointment, $data): void {
+                ? tap($existingReminder ?? new AppointmentReminder(),
+                    function (AppointmentReminder $reminder) use ($appointment, $data): void {
                         $reminder->appointment()->associate($appointment);
+                        if (false === $reminder->exists) {
+                            $reminder->owner()->associate($this->causer);
+                        }
                         $reminder->start_date_offset = $data->reminder->start_date_offset;
                         $reminder->status = $data->reminder->status;
                     })
@@ -137,12 +150,7 @@ class AppointmentEntityService implements CauserAware
             $this->connection->transaction(function () use ($appointment, $reminder, $data): void {
                 $appointment->save();
 
-                // Delete reminder from the appointment if null provided
-                if (null === $reminder) {
-                    $appointment->reminder?->delete();
-                } else {
-                    $reminder->save();
-                }
+                $reminder?->save();
 
                 if (is_array($data->invitee_user_relations)) {
                     $appointment->inviteesUsers()->sync($data->invitee_user_relations);
@@ -190,6 +198,26 @@ class AppointmentEntityService implements CauserAware
                 oldAppointment: $oldAppointment,
                 causer: $this->causer,
             ));
+        });
+    }
+
+    public function updateReminder(
+        AppointmentReminder $reminder,
+        SetAppointmentReminderData $data
+    ) {
+        return tap($reminder, function (AppointmentReminder $reminder) use ($data): void {
+            $reminder->forceFill($data->all());
+
+            $this->connection->transaction(static function () use ($reminder): void {
+                $reminder->save();
+            });
+        });
+    }
+
+    public function deleteReminder(AppointmentReminder $reminder): void
+    {
+        $this->connection->transaction(static function () use ($reminder): void {
+            $reminder->delete();
         });
     }
 
