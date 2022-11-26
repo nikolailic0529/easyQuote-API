@@ -10,6 +10,7 @@ use App\DTO\Opportunity\ImportedOpportunityData;
 use App\DTO\Opportunity\ImportFilesData;
 use App\Events\Opportunity\OpportunityBatchFilesImported;
 use App\Events\Opportunity\OpportunityCreated;
+use App\Events\Opportunity\OpportunityUpdated;
 use App\Models\Contact;
 use App\Models\ImportedCompany;
 use App\Models\ImportedContact;
@@ -18,6 +19,7 @@ use App\Models\OpportunitySupplier;
 use App\Models\User;
 use App\Services\Company\ImportedCompanyToPrimaryAccountProjector;
 use App\Services\Exceptions\ValidationException;
+use App\Services\Opportunity\Models\OpportunityLookupParameters;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,7 +40,8 @@ class OpportunityImportService implements CauserAware
         protected EventDispatcher $eventDispatcher,
         protected ValidatorFactory $validatorFactory,
         protected OpportunityDataMapper $dataMapper,
-        protected ImportedCompanyToPrimaryAccountProjector $accountProjector
+        protected OpportunityLookupService $lookupService,
+        protected ImportedCompanyToPrimaryAccountProjector $accountProjector,
     ) {
     }
 
@@ -184,7 +187,7 @@ class OpportunityImportService implements CauserAware
         }
     }
 
-    public function performOpportunitySave(Opportunity $opportunity): void
+    public function performOpportunitySave(Opportunity $opportunity): Opportunity
     {
         if (null !== $opportunity->importedPrimaryAccount) {
             $account = ($this->accountProjector)($opportunity->importedPrimaryAccount);
@@ -198,11 +201,31 @@ class OpportunityImportService implements CauserAware
             ));
         }
 
-        $this->connection->transaction(static fn() => $opportunity->restore());
+        $matchingOpportunity = $this->lookupService->find(OpportunityLookupParameters::from($opportunity));
 
-        $this->eventDispatcher->dispatch(
-            new OpportunityCreated($opportunity, $this->causer)
-        );
+        if (null !== $matchingOpportunity) {
+            return tap($matchingOpportunity, function (Opportunity $matchingOpportunity) use ($opportunity): void {
+                $oldOpportunity = (new Opportunity())->setRawAttributes($matchingOpportunity->getRawOriginal());
+
+                $this->dataMapper->mergeAttributesFrom($matchingOpportunity, $opportunity);
+
+                $this->connection->transaction(static fn() => $matchingOpportunity->save());
+
+                $this->eventDispatcher->dispatch(
+                    new OpportunityUpdated($opportunity, $oldOpportunity, $this->causer)
+                );
+            });
+        }
+
+        return tap($opportunity, function (Opportunity $opportunity): void {
+            $this->connection->transaction(static fn() => $opportunity->restore());
+
+            $opportunity->wasRecentlyCreated = true;
+
+            $this->eventDispatcher->dispatch(
+                new OpportunityCreated($opportunity, $this->causer)
+            );
+        });
     }
 
     private function resolveRelationsForImportedAccount(ImportedCompany $account): BaseCollection
