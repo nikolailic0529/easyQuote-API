@@ -58,6 +58,7 @@ class TaskQueries
                 ...$model->qualifyColumns([
                     'activity_type',
                     'name',
+                    'content',
                     'priority',
                     'expiry_date',
                     'priority',

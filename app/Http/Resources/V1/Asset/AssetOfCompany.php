@@ -11,7 +11,7 @@ class AssetOfCompany extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return array
      */
     public function toArray($request)
@@ -28,6 +28,7 @@ class AssetOfCompany extends JsonResource
             'serial_number' => $this->serial_number,
             'product_image' => $this->product_image,
 
+            'vendor_short_code' => $this->vendor_short_code,
             'asset_category_name' => $this->asset_category_name,
             'base_warranty_start_date' => $this->base_warranty_start_date?->format('Y-m-d'),
             'base_warranty_end_date' => $this->base_warranty_end_date?->format('Y-m-d'),

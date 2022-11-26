@@ -17,14 +17,18 @@ return new class extends Migration
             return;
         }
 
-        copy(
-            storage_path('valuestore/quote.task.template.json'),
-            storage_path(sprintf("valuestore/quote.task.template.json.bak.%s", now()->format('YmdHis')))
-        );
+        $filepath = storage_path('valuestore/quote.task.template.json');
+
+        if (file_exists($filepath)) {
+            copy(
+                $filepath,
+                storage_path(sprintf("valuestore/quote.task.template.json.bak.%s", now()->format('YmdHis')))
+            );
+        }
 
         copy(
             storage_path('_valuestore/quote.task.template.json'),
-            storage_path('valuestore/quote.task.template.json')
+            $filepath
         );
     }
 

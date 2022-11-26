@@ -20,7 +20,7 @@ class ApplicationUserResolver
     public function resolve(): User
     {
         return $this->lockProvider->lock(static::class, 10)
-            ->block(10, function () {
+            ->block(30, function () {
                 $attributes = $this->config->get('user.default', []);
 
                 $user = User::query()->withTrashed()->where('email', $attributes['email'])->first();
