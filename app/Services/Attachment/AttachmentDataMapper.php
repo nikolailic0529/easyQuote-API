@@ -8,6 +8,7 @@ use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectInput;
 use App\Models\Attachment;
 use App\Services\Pipeliner\PipelinerClientEntityToUserProjector;
+use App\Services\User\ApplicationUserResolver;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Webpatser\Uuid\Uuid;
 
@@ -15,7 +16,8 @@ class AttachmentDataMapper
 {
     public function __construct(
         protected readonly FilesystemAdapter $filesystem,
-        protected readonly PipelinerClientEntityToUserProjector $clientProjector
+        protected readonly PipelinerClientEntityToUserProjector $clientProjector,
+        protected readonly ApplicationUserResolver $applicationUserResolver,
     ) {
     }
 
@@ -23,14 +25,19 @@ class AttachmentDataMapper
     {
         return tap($this->mapFromMetadata($metadata, AttachmentType::PipelinerDocument),
             function (Attachment $attachment) use ($entity) {
-                $attachment->pl_reference = $entity->id;
-                $attachment->filename = static::truncateFilename($entity->filename);
-                $attachment->extension = pathinfo($entity->filename, PATHINFO_EXTENSION);
-
-                if ($entity->creator !== null) {
-                    $attachment->owner()->associate(($this->clientProjector)($entity->creator));
-                }
+                $this->mergeAttributesFromCloudObjectEntity($attachment, $entity);
             });
+    }
+
+    public function mergeAttributesFromCloudObjectEntity(Attachment $attachment, CloudObjectEntity $entity): void
+    {
+        $attachment->pl_reference = $entity->id;
+        $attachment->filename = static::truncateFilename($entity->filename);
+        $attachment->extension = pathinfo($entity->filename, PATHINFO_EXTENSION);
+
+        if ($entity->creator !== null) {
+            $attachment->owner()->associate(($this->clientProjector)($entity->creator));
+        }
     }
 
     public function mapPipelinerCreateCloudObjectInput(Attachment $attachment): CreateCloudObjectInput

@@ -47,8 +47,12 @@ class PullAttachmentStrategy implements PullStrategy
             ->withTrashed()
             ->first();
 
-        // skip if already exists
+        // update if already exists
         if (null !== $attachment) {
+            $this->dataMapper->mergeAttributesFromCloudObjectEntity($attachment, $entity);
+
+            $this->connectionResolver->connection()->transaction(static fn () => $attachment->save());
+
             return $attachment;
         }
 
@@ -69,6 +73,8 @@ class PullAttachmentStrategy implements PullStrategy
             }
         }
 
+        $entitiesMap = $entities->keyBy('id')->collect();
+
         /** @var Collection $map */
         $map = Attachment::query()
             ->whereIn('pl_reference', $entities->pluck('id')->all())
@@ -87,6 +93,22 @@ class PullAttachmentStrategy implements PullStrategy
             })
             ->pipe(static function (LazyCollection $collection): BaseCollection {
                 return collect($collection->all());
+            });
+
+        $map->each(function (Attachment $attachment) use ($entitiesMap) {
+            /** @var CloudObjectEntity|null $entity */
+            $entity = $entitiesMap[$attachment->pl_reference] ?? null;
+
+            if (null === $entity) {
+                return;
+            }
+
+            $this->dataMapper->mergeAttributesFromCloudObjectEntity($attachment, $entity);
+        });
+
+        $this->connectionResolver->connection()
+            ->transaction(static function () use ($map): void {
+                $map->each->save();
             });
 
         if ($pending->isEmpty()) {
