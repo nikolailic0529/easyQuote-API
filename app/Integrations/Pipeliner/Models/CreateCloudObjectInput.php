@@ -11,7 +11,8 @@ final class CreateCloudObjectInput extends BaseInput
         public readonly string $filename,
         public readonly CloudObjectTypeEnum $type,
         public readonly InputValueEnum|string $url = InputValueEnum::Miss,
-        public readonly InputValueEnum|string $content = InputValueEnum::Miss
+        public readonly InputValueEnum|string $content = InputValueEnum::Miss,
+        public readonly InputValueEnum|string $creatorId = InputValueEnum::Miss,
     ) {
     }
 }

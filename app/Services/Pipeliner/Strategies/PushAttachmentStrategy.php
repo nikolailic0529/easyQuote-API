@@ -14,14 +14,17 @@ class PushAttachmentStrategy implements PushStrategy
 {
     use SalesUnitsAware;
 
-    public function __construct(protected ConnectionResolverInterface $connectionResolver,
-                                protected AttachmentDataMapper        $dataMapper,
-                                protected CloudObjectIntegration      $cloudObjectIntegration)
+    public function __construct(
+        protected ConnectionResolverInterface $connectionResolver,
+        protected AttachmentDataMapper $dataMapper,
+        protected CloudObjectIntegration $cloudObjectIntegration,
+        protected PushClientStrategy $pushClientStrategy,
+    )
     {
     }
 
     /**
-     * @param Attachment $model
+     * @param  Attachment  $model
      * @return void
      */
     public function sync(Model $model): void
@@ -30,8 +33,12 @@ class PushAttachmentStrategy implements PushStrategy
             throw new \TypeError(sprintf("Model must be an instance of %s.", Attachment::class));
         }
 
-        if (null !== $model->pl_reference) {
+        if ($model->pl_reference !== null) {
             return;
+        }
+
+        if ($model->owner !== null) {
+            $this->pushClientStrategy->sync($model->owner);
         }
 
         $input = $this->dataMapper->mapPipelinerCreateCloudObjectInput($model);

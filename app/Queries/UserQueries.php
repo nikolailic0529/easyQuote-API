@@ -89,7 +89,7 @@ class UserQueries
 
         $query = $model
             ->newQuery()
-            ->with(['roles', 'image'])
+            ->with(['roles', 'salesUnits', 'image'])
             ->leftJoin('teams', function (JoinClause $join) {
                 $join->on('teams.id', 'users.team_id');
             })

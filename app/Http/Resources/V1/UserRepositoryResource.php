@@ -2,8 +2,12 @@
 
 namespace App\Http\Resources\V1;
 
+use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin User
+ */
 class UserRepositoryResource extends JsonResource
 {
     /**
@@ -22,6 +26,7 @@ class UserRepositoryResource extends JsonResource
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
             'role_name' => $this->role_name,
+            'sales_unit_names' => $this->salesUnits->pluck('unit_name')->sort(SORT_NATURAL)->values(),
             'already_logged_in' => (bool) $this->already_logged_in,
             'activated_at' => $this->activated_at
         ];

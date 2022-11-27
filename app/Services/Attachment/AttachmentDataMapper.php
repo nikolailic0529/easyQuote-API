@@ -4,6 +4,7 @@ namespace App\Services\Attachment;
 
 use App\Enum\AttachmentType;
 use App\Integrations\Pipeliner\Enum\CloudObjectTypeEnum;
+use App\Integrations\Pipeliner\Enum\InputValueEnum;
 use App\Integrations\Pipeliner\Models\CloudObjectEntity;
 use App\Integrations\Pipeliner\Models\CreateCloudObjectInput;
 use App\Models\Attachment;
@@ -48,10 +49,13 @@ class AttachmentDataMapper
 
         $content = stream_get_contents($stream);
 
+        $creatorId = $attachment->owner?->pl_reference ?? InputValueEnum::Miss;
+
         return new CreateCloudObjectInput(
             filename: $attachment->filename,
             type: CloudObjectTypeEnum::S3File,
-            content: $content
+            content: $content,
+            creatorId: $creatorId,
         );
     }
 

@@ -431,6 +431,23 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             ->withOption('__model', $model->withoutRelations())
             ->withOption('__causer', $this->causer?->withoutRelations())
             ->withOption('__lock_key', $lockKey)
+            ->catch(static function (Batch $batch): void {
+                /** @var $model Model */
+                /** @var $causer User|null */
+                [$model, $causer] = [$batch->options['__model'], $batch->options['__causer']];
+
+                app(LockProvider::class)
+                    ->lock($batch->options['__lock_key'])
+                    ->forceRelease();
+
+                logger()->channel('pipeliner')->info('Model sync: failed.', [
+                    'model_id' => $model->getKey(),
+                    'model_type' => class_basename($model),
+                    'causer_id' => $causer?->getKey(),
+                    'causer_email' => $causer?->email,
+                    'batch_id' => $batch->id,
+                ]);
+            })
             ->finally(static function (Batch $batch): void {
                 /** @var $model Model */
                 /** @var $causer User|null */

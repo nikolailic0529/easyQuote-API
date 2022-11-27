@@ -353,7 +353,7 @@ class AppointmentDataMapper implements CauserAware
                 ownerId: $appointment->reminder->owner?->pl_reference ?? $appointment->owner->pl_reference ?? '',
                 endDateOffset: $appointment->reminder->start_date_offset,
                 snoozeDate: isset($appointment->reminder->snooze_date)
-                    ? Carbon::instance($appointment->reminder->snooze_date)
+                    ? Carbon::instance($appointment->reminder->snooze_date)->toDateTimeImmutable()
                     : InputValueEnum::Miss,
                 status: match ($appointment->reminder->status) {
                     ReminderStatus::Scheduled => ReminderStatusEnum::Scheduled,

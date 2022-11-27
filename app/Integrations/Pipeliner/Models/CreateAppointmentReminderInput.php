@@ -7,13 +7,14 @@ use App\Integrations\Pipeliner\Enum\InputValueEnum;
 use App\Integrations\Pipeliner\Enum\ReminderStatusEnum;
 use App\Integrations\Pipeliner\Serializers\DateTimeSerializer;
 use DateTimeImmutable;
+use DateTimeInterface;
 
 class CreateAppointmentReminderInput extends BaseInput
 {
     public function __construct(
         public readonly string $ownerId,
         public readonly int $endDateOffset,
-        #[SerializeWith(DateTimeSerializer::class, 'Y-m-d H:i:s')] public readonly DateTimeImmutable|InputValueEnum $snoozeDate = InputValueEnum::Miss,
+        #[SerializeWith(DateTimeSerializer::class, DateTimeInterface::ATOM)] public readonly DateTimeImmutable|InputValueEnum $snoozeDate = InputValueEnum::Miss,
         public readonly ReminderStatusEnum|InputValueEnum $status = InputValueEnum::Miss
     ) {
     }
