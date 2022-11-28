@@ -421,7 +421,11 @@ class WorldwideQuoteValidator
 
     private function mapAddressesOfPackQuote(WorldwideQuote $quote): array
     {
-        $addressDictionary = $quote->activeVersion->addresses->keyBy('address_type');
+        $addressDictionary = $quote->opportunity->primaryAccount->addresses
+            ->filter(static function (Address $address): bool {
+                return (bool)$address->pivot->is_default;
+            })
+            ->keyBy('address_type');
 
         $addresses = [
             'invoice_address' => $addressDictionary['Invoice'] ?? null,

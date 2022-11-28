@@ -395,13 +395,13 @@ class SalesOrderDataMapper
 
         $addresses = [];
 
-        $addresses[] = $quoteActiveVersion->addresses
+        $addresses[] = $quoteActiveVersion->worldwideQuote->opportunity->primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
             ->first(function (Address $address) {
                 return $address->address_type === 'Machine';
             });
 
-        $addresses[] = $quoteActiveVersion->addresses
+        $addresses[] = $quoteActiveVersion->worldwideQuote->opportunity->primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
             ->first(function (Address $address) {
                 return $address->address_type === 'Invoice';
