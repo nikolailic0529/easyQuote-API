@@ -382,6 +382,8 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                 return Carbon::instance($metadata['modified'])->roundSeconds(1)->getTimestamp();
             });
 
+        $chainId = Str::uuid()->toString();
+
         /** @var BaseCollection $chain */
         $chain = $applicableStrategies
             ->lazy()
@@ -392,7 +394,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
                 return true;
             })
-            ->map(function (SyncStrategy $strategy) use ($model): SyncPipelinerEntity {
+            ->map(function (SyncStrategy $strategy) use ($chainId, $model): SyncPipelinerEntity {
                 $entityReference = $strategy instanceof PullStrategy
                     ? $model->pl_reference
                     : $model->getKey();
@@ -401,6 +403,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                     strategy: $strategy,
                     entityReference: $entityReference,
                     aggregateId: $this->syncAggregate->id,
+                    chainId: $chainId,
                     causer: $this->causer,
                 );
             })
@@ -584,11 +587,14 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
             ->map(function (iterable $chain): array {
                 $jobs = [];
 
+                $chainId = Str::uuid()->toString();
+
                 foreach ($chain as ['item' => $item, 'strategy' => $strategy]) {
                     $jobs[] = (new SyncPipelinerEntity(
                         strategy: $this->syncStrategies[$strategy],
                         entityReference: $item['id'],
                         aggregateId: $this->syncAggregate->id,
+                        chainId: $chainId,
                         causer: $this->causer,
                         withoutOverlapping: $item['without_overlapping'] ?? [],
                         withProgress: true,

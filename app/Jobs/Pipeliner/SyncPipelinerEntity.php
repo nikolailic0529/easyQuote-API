@@ -43,11 +43,14 @@ class SyncPipelinerEntity implements ShouldQueue
     private ?SyncStrategyCollection $strategies = null;
     private ?Cache $cache = null;
     private ?LockProvider $lockProvider = null;
+    private ?LoggerInterface $logger = null;
+    private ?EventDispatcher $eventDispatcher = null;
 
     public function __construct(
         SyncStrategy $strategy,
         public readonly string $entityReference,
         public readonly string $aggregateId,
+        public readonly string $chainId,
         public readonly ?Model $causer = null,
         public readonly array $withoutOverlapping = [],
         public readonly bool $withProgress = false,
@@ -83,6 +86,8 @@ class SyncPipelinerEntity implements ShouldQueue
             return;
         }
 
+        $this->logger = $logger;
+        $this->eventDispatcher = $eventDispatcher;
         $this->cache = $cache;
         $this->lockProvider = $lockProvider;
         $this->strategies = $strategies;
@@ -96,6 +101,17 @@ class SyncPipelinerEntity implements ShouldQueue
         }
 
         $strategy = $strategies[$this->strategyClass];
+
+        if ($this->cache->get($this->chainReleaseKey())) {
+            $this->logger->warning('Syncing: skipped because chain was released.', [
+                'id' => $this->entityReference,
+                'strategy' => class_basename($this->strategyClass),
+            ]);
+
+            $this->advanceProgressIfNeeded($status);
+
+            return;
+        }
 
         $entity = $strategy->getByReference($this->entityReference);
 
@@ -151,12 +167,23 @@ class SyncPipelinerEntity implements ShouldQueue
                     e: $e,
                 )
             );
+
+            $cache->add($this->chainReleaseKey(), true);
+
+            $logger->warning('Syncing: chain released.', [
+                'chained' => count($this->chained),
+            ]);
         } finally {
             $this->releaseLocks();
         }
 
+        $this->advanceProgressIfNeeded($status);
+    }
+
+    protected function advanceProgressIfNeeded(SyncPipelinerDataStatus $status): void
+    {
         if ($this->withProgress && count($this->chained) === 0) {
-            $logger->info('Syncing: chain completed');
+            $this->logger->info('Syncing: chain completed');
 
             $status->incrementProcessed();
 
@@ -164,9 +191,9 @@ class SyncPipelinerEntity implements ShouldQueue
                 return;
             }
 
-            $lockProvider->lock(AggregateSyncProgress::class, 5)
-                ->get(static function () use ($status, $eventDispatcher): void {
-                    $eventDispatcher->dispatch(
+            $this->lockProvider->lock(AggregateSyncProgress::class, 5)
+                ->get(function () use ($status): void {
+                    $this->eventDispatcher->dispatch(
                         new AggregateSyncProgress(
                             total: $status->total(),
                             pending: $status->pending(),
@@ -179,6 +206,11 @@ class SyncPipelinerEntity implements ShouldQueue
     public function uniqueId(): string
     {
         return 'pipeliner-sync:'.static::class.$this->batchId.$this->entityReference.$this->strategyClass;
+    }
+
+    public function chainReleaseKey(): string
+    {
+        return 'pipeliner-sync-chain-release:'.static::class.$this->chainId;
     }
 
     private function strategyHasOptions(): bool
@@ -206,10 +238,33 @@ class SyncPipelinerEntity implements ShouldQueue
             foreach ($hhStrategies as $sStrategy) {
                 $lockName = 'pipeliner-sync:'.static::class.$this->batchId.$this->entityReference.$this->strategyClass;
 
-                $this->lockProvider->lock($lockName, 60 * 10)
-                    ->get(static function () use ($entity, $sStrategy): void {
-                        $sStrategy->sync($entity);
-                    });
+                $acquired = $this->lockProvider->lock($lockName, 60 * 10)->get();
+
+                if (!$acquired) {
+                    continue;
+                }
+
+                try {
+                    $sStrategy->sync($entity);
+                } catch (PipelinerIntegrationException|PipelinerSyncException $e) {
+                    report($e);
+
+                    $this->logger->warning('Syncing [higher-hierarchy]: skipped', [
+                        'id' => $entity->id,
+                        'error' => trim($e->getMessage()),
+                        'strategy' => class_basename($sStrategy),
+                    ]);
+
+                    $this->eventDispatcher->dispatch(
+                        new AggregateSyncEntitySkipped(
+                            aggregateId: $this->aggregateId,
+                            entity: $entity,
+                            strategy: $sStrategy::class,
+                            causer: $this->causer,
+                            e: $e,
+                        )
+                    );
+                }
             }
         }
     }
