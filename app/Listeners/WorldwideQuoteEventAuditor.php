@@ -2,6 +2,7 @@
 
 namespace App\Listeners;
 
+use App\DTO\Note\CreateNoteData;
 use App\Enum\ContractQuoteStage;
 use App\Enum\PackQuoteStage;
 use App\Events\WorldwideQuote\NewVersionOfWorldwideQuoteCreated;
@@ -27,6 +28,7 @@ use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Currency;
+use App\Models\Note\Note;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
@@ -39,6 +41,8 @@ use App\Models\QuoteFile\QuoteFile;
 use App\Models\Template\QuoteTemplate;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
+use App\Services\Note\NoteEntityService;
+use App\Services\User\ApplicationUserResolver;
 use App\Services\WorldwideQuote\WorldwideQuoteAttachmentService;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as Config;
@@ -51,6 +55,8 @@ class WorldwideQuoteEventAuditor
         protected readonly BusDispatcher $busDispatcher,
         protected readonly ActivityLogger $activityLogger,
         protected readonly ChangesDetector $changesDetector,
+        protected readonly NoteEntityService $noteEntityService,
+        protected readonly ApplicationUserResolver $appUserResolver,
         protected readonly WorldwideQuoteAttachmentService $quoteAttachmentService,
     ) {
     }
@@ -60,9 +66,11 @@ class WorldwideQuoteEventAuditor
         return [
             WorldwideQuoteInitialized::class => [
                 static::handleInitializedEvent(...),
+                static::createNoteForInitializedQuote(...),
             ],
             WorldwideQuoteSubmitted::class => [
                 static::auditSubmittedEvent(...),
+                static::createNoteForSubmittedQuote(...),
                 static::createAttachmentFromSubmittedQuote(...),
                 static::createAttachmentFromDistributorFiles(...),
             ],
@@ -208,6 +216,18 @@ class WorldwideQuoteEventAuditor
             ->log('submitted');
     }
 
+    public function createNoteForSubmittedQuote(WorldwideQuoteSubmitted $event): void
+    {
+        $quote = $event->getQuote();
+
+        $this->noteEntityService
+            ->setCauser($this->appUserResolver->resolve())
+            ->createNoteForModel(
+                data: new CreateNoteData(['note' => "<p>Quote $quote->quote_number has been submitted.</p>", 'flags' => Note::SYSTEM]),
+                model: $quote->opportunity
+            );
+    }
+
     public function createAttachmentFromSubmittedQuote(WorldwideQuoteSubmitted $event): void
     {
         $this->quoteAttachmentService
@@ -265,6 +285,18 @@ class WorldwideQuoteEventAuditor
                 )
             )
             ->log('updated');
+    }
+
+    public function createNoteForInitializedQuote(WorldwideQuoteInitialized $event): void
+    {
+        $quote = $event->getQuote();
+
+        $this->noteEntityService
+            ->setCauser($this->appUserResolver->resolve())
+            ->createNoteForModel(
+                data: new CreateNoteData(['note' => "<p>Quote $quote->quote_number has been drafted.</p>", 'flags' => Note::SYSTEM]),
+                model: $quote->opportunity
+            );
     }
 
     public function handleDeletedEvent(WorldwideQuoteDeleted $event): void
@@ -612,7 +644,7 @@ class WorldwideQuoteEventAuditor
                 $this->changesDetector->diffAttributeValues(
                     [
                         'stage' => $this->getActiveQuoteVersionStage($oldQuote),
-                        'company' => transform($oldQuote->activeVersion->company,
+                        'company_name' => transform($oldQuote->activeVersion->company,
                             fn(Company $company) => $company->name),
                         'quote_currency' => transform($oldQuote->activeVersion->quoteCurrency,
                             fn(Currency $currency) => $currency->code),
@@ -626,7 +658,7 @@ class WorldwideQuoteEventAuditor
                     ],
                     [
                         'stage' => $this->getActiveQuoteVersionStage($quote),
-                        'company' => transform($quote->activeVersion->company, fn(Company $company) => $company->name),
+                        'company_name' => transform($quote->activeVersion->company, fn(Company $company) => $company->name),
                         'quote_currency' => transform($quote->activeVersion->quoteCurrency,
                             fn(Currency $currency) => $currency->code),
                         'buy_currency' => transform($quote->activeVersion->buyCurrency,
