@@ -13,12 +13,16 @@ use Spatie\Activitylog\Contracts\Activity as ActivityContract;
  * @property-read array|null $attribute_changes
  * @property string|null $subject_type
  * @property string|null $subject_id
+ * @property string|null $causer_service
+ * @property string|null $description
  */
 class Activity extends Model implements ActivityContract, SearchableEntity
 {
     use Uuid, Searchable;
 
-    public $guarded = [];
+    public bool $submitEmptyLogs = true;
+
+    protected $guarded = [];
 
     protected $casts = [
         'properties' => 'collection',

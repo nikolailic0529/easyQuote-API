@@ -45,8 +45,21 @@ class OpportunityTest extends TestCase
     {
         parent::setUp();
 
-        $this->getConnection()->table('opportunities')->delete();
-        $this->getConnection()->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM);
+        while (true) {
+            $deleted = $this->getConnection()->table('opportunities')->take(100)->delete();
+
+            if (!$deleted) {
+                break;
+            }
+        }
+
+        while (true) {
+            $deleted = $this->getConnection()->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->take(100)->delete();
+
+            if (!$deleted) {
+                break;
+            }
+        }
     }
 
     /**
@@ -58,9 +71,10 @@ class OpportunityTest extends TestCase
 
         Opportunity::factory()->count(10)
             ->for($this->app['auth']->user())
+            ->has(WorldwideQuote::factory())
             ->create();
 
-        $this->getJson('api/opportunities')
+        $r = $this->getJson('api/opportunities')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -81,9 +95,36 @@ class OpportunityTest extends TestCase
                         'status',
                         'status_reason',
                         'created_at',
+                        'quotes_exist',
+                        'quote' => [
+//                            'id',
+//                            'quote_number',
+//                            'permissions' => [
+//                                'update',
+//                                'delete',
+//                            ],
+//                            'submitted_at',
+                        ]
                     ],
                 ],
             ]);
+
+        foreach ($r->json('data') as $opp) {
+            if ($opp['quotes_exist']) {
+                $this->assertIsArray($opp['quote']);
+                $this->assertArrayHasKey('id', $opp['quote']);
+                $this->assertArrayHasKey('quote_number', $opp['quote']);
+                $this->assertArrayHasKey('user', $opp['quote']);
+                $this->assertIsArray($opp['quote']['user']);
+                $this->assertArrayHasKey('first_name', $opp['quote']['user']);
+                $this->assertArrayHasKey('last_name', $opp['quote']['user']);
+                $this->assertArrayHasKey('email', $opp['quote']['user']);
+                $this->assertArrayHasKey('permissions', $opp['quote']);
+                $this->assertArrayHasKey('submitted_at', $opp['quote']);
+            } else {
+                $this->assertNull($opp['quote']);
+            }
+        }
 
         $this->getJson('api/opportunities?order_by_account_name=asc')->assertOk();
         $this->getJson('api/opportunities?order_by_project_name=asc')->assertOk();
@@ -519,9 +560,9 @@ class OpportunityTest extends TestCase
         $opportunity = Opportunity::factory()
             ->for($primaryAccount, relationship: 'primaryAccount')
             ->has(OpportunityValidationResult::factory(), relationship: 'validationResult')
+            ->has(OpportunitySupplier::factory(2))
+            ->has(WorldwideQuote::factory()->for(User::factory()))
             ->create();
-
-        factory(OpportunitySupplier::class, 2)->create(['opportunity_id' => $opportunity->getKey()]);
 
         $this->authenticateApi();
 
@@ -529,90 +570,105 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                "id",
-                "user_id",
-                "pipeline_id",
-                "pipeline",
-                "contract_type_id",
-                "contract_type",
-                "primary_account_id",
-                "end_user_id",
-                "primary_account",
-                "primary_account" => [
-                    "vendor_ids",
+                'id',
+                'user_id',
+                'pipeline_id',
+                'pipeline',
+                'contract_type_id',
+                'contract_type',
+                'primary_account_id',
+                'end_user_id',
+                'primary_account',
+                'primary_account' => [
+                    'vendor_ids',
                 ],
-                "end_user",
-                "are_end_user_addresses_available",
-                "are_end_user_contacts_available",
-                "primary_account_contact_id",
-                "primary_account_contact",
-                "account_manager_id",
-                "account_manager",
-                "project_name",
-                "nature_of_service",
-                "renewal_month",
-                "renewal_year",
-                "customer_status",
-                "end_user_name",
-                "hardware_status",
-                "region_name",
-                "opportunity_start_date",
-                "opportunity_end_date",
-                "opportunity_closing_date",
-                "expected_order_date",
-                "customer_order_date",
-                "purchase_order_date",
-                "supplier_order_date",
-                "supplier_order_transaction_date",
-                "supplier_order_confirmation_date",
-                "opportunity_amount",
-                "opportunity_amount_currency_code",
-                "purchase_price",
-                "purchase_price_currency_code",
-                "list_price",
-                "list_price_currency_code",
-                "estimated_upsell_amount",
-                "estimated_upsell_amount_currency_code",
-                "margin_value",
-                "personal_rating",
-                "ranking",
-                "account_manager_name",
-                "service_level_agreement_id",
-                "sale_unit_name",
-                "drop_in",
-                "lead_source_name",
-                "has_higher_sla",
-                "is_multi_year",
-                "has_additional_hardware",
-                "has_service_credits",
-                "remarks",
-                "notes",
-                "campaign_name",
-                "sale_action_name",
-                "competition_name",
-                "updated_at",
-                "created_at",
+                'end_user',
+                'are_end_user_addresses_available',
+                'are_end_user_contacts_available',
+                'primary_account_contact_id',
+                'primary_account_contact',
+                'account_manager_id',
+                'account_manager',
+                'project_name',
+                'nature_of_service',
+                'renewal_month',
+                'renewal_year',
+                'customer_status',
+                'end_user_name',
+                'hardware_status',
+                'region_name',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+                'opportunity_amount',
+                'opportunity_amount_currency_code',
+                'purchase_price',
+                'purchase_price_currency_code',
+                'list_price',
+                'list_price_currency_code',
+                'estimated_upsell_amount',
+                'estimated_upsell_amount_currency_code',
+                'margin_value',
+                'personal_rating',
+                'ranking',
+                'account_manager_name',
+                'service_level_agreement_id',
+                'sale_unit_name',
+                'drop_in',
+                'lead_source_name',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+                'remarks',
+                'notes',
+                'campaign_name',
+                'sale_action_name',
+                'competition_name',
+                'updated_at',
+                'created_at',
 
-                "status",
-                "status_reason",
+                'status',
+                'status_reason',
 
-                "validation_result" => [
-                    "is_passed",
-                    "messages",
+                'validation_result' => [
+                    'is_passed',
+                    'messages',
                 ],
 
-                "base_list_price",
-                "base_purchase_price",
-                "base_opportunity_amount",
+                'base_list_price',
+                'base_purchase_price',
+                'base_opportunity_amount',
 
-                "is_opportunity_start_date_assumed",
-                "is_opportunity_end_date_assumed",
+                'is_opportunity_start_date_assumed',
+                'is_opportunity_end_date_assumed',
 
-                "suppliers_grid" => [
-                    "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                'suppliers_grid' => [
+                    '*' => [
+                        'id', 'supplier_name', 'country_name', 'contact_name', 'contact_email',
                     ],
                 ],
+
+                'quotes_exist',
+                'quote' => [
+                    'id',
+                    'user' => [
+                        'id',
+                        'first_name',
+                        'middle_name',
+                        'last_name',
+                        'email',
+                        'user_fullname',
+                    ],
+                    'quote_number',
+                    'submitted_at',
+                ]
             ]);
     }
 
@@ -2411,6 +2467,7 @@ class OpportunityTest extends TestCase
         foreach ($pipelineStagesResp->json('pipeline_stages') as $stage) {
             Opportunity::factory()
                 ->has(OpportunityValidationResult::factory(), relationship: 'validationResult')
+                ->has(WorldwideQuote::factory())
                 ->count(2)->create([
                     'pipeline_id' => $pipelineStagesResp->json('id'),
                     'pipeline_stage_id' => $stage['id'],
@@ -2460,6 +2517,7 @@ class OpportunityTest extends TestCase
                             'opportunity_amount',
                             'base_opportunity_amount',
                             'opportunity_amount_currency_code',
+                            'opportunity_type',
 
                             'account_manager' => [
                                 'id', 'email', 'user_fullname',
@@ -2493,6 +2551,8 @@ class OpportunityTest extends TestCase
                                 'update',
                                 'delete',
                             ],
+
+                            'quotes_exist',
                         ],
                     ],
                 ],
@@ -2500,6 +2560,23 @@ class OpportunityTest extends TestCase
 
         foreach ($response->json() as $stage) {
             $this->assertNotEmpty($stage['opportunities']);
+
+            foreach ($stage['opportunities'] as $opp) {
+                if ($opp['quotes_exist']) {
+                    $this->assertIsArray($opp['quote']);
+                    $this->assertArrayHasKey('id', $opp['quote']);
+                    $this->assertArrayHasKey('quote_number', $opp['quote']);
+                    $this->assertArrayHasKey('user', $opp['quote']);
+                    $this->assertIsArray($opp['quote']['user']);
+                    $this->assertArrayHasKey('first_name', $opp['quote']['user']);
+                    $this->assertArrayHasKey('last_name', $opp['quote']['user']);
+                    $this->assertArrayHasKey('email', $opp['quote']['user']);
+                    $this->assertArrayHasKey('permissions', $opp['quote']);
+                    $this->assertArrayHasKey('submitted_at', $opp['quote']);
+                } else {
+                    $this->assertNull($opp['quote']);
+                }
+            }
         }
 
 

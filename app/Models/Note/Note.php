@@ -45,6 +45,7 @@ class Note extends Model implements HasOwner
     const FROM_ENTITY_WIZARD = 1 << 0;
     const FROM_ENTITY_WIZARD_DRAFT = 1 << 1;
     const FROM_ENTITY_WIZARD_SUBMIT = 1 << 2;
+    const SYSTEM = 1 << 3;
 
     protected $guarded = [];
 

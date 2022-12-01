@@ -7,4 +7,6 @@ use Spatie\DataTransferObject\DataTransferObject;
 final class CreateNoteData extends DataTransferObject
 {
     public string $note;
+
+    public ?int $flags = null;
 }

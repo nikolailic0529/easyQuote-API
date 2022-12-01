@@ -3,6 +3,7 @@
 namespace App\Services\Activity;
 
 use App\Jobs\CreateActivity;
+use App\Models\System\Activity;
 use App\Services\User\ApplicationUserResolver;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
@@ -10,7 +11,6 @@ use Illuminate\Contracts\Config\Repository;
 use Spatie\Activitylog\ActivityLogger as SpatieLogger;
 use Spatie\Activitylog\ActivitylogServiceProvider;
 use Spatie\Activitylog\ActivityLogStatus;
-use Spatie\Activitylog\Contracts\Activity;
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 
 class ActivityLogger extends SpatieLogger
@@ -19,23 +19,41 @@ class ActivityLogger extends SpatieLogger
         AuthManager $auth,
         Repository $config,
         ActivityLogStatus $logStatus,
+        protected readonly ChangesDetector $changesDetector,
         protected readonly BusDispatcher $busDispatcher,
         protected readonly ApplicationUserResolver $applicationUserResolver,
     ) {
         parent::__construct($auth, $config, $logStatus);
     }
 
-    public function causedByService(string $causer): self
+    public function causedByService(string $causer): static
     {
-        $this->getActivity()->causer_id = null;
-        $this->getActivity()->causer_type = null;
-        $this->getActivity()->causer_service = $causer;
+        tap($this->getActivity(), static function (Activity $activity) use ($causer): void {
+            $activity->causer()->dissociate();
+            $activity->causer_service = $causer;
+        });
 
         return $this;
     }
 
+    public function log(string $description): ?Activity
+    {
+        if (false === $this->getActivity()->submitEmptyLogs
+            && $this->changesDetector->isLogEmpty($this->getActivity()->properties)) {
+            return null;
+        }
+
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return parent::log($description);
+    }
+
     public function queue(string $description): ?Activity
     {
+        if (false === $this->getActivity()->submitEmptyLogs
+            && $this->changesDetector->isLogEmpty($this->getActivity()->properties)) {
+            return null;
+        }
+
         if ($this->logStatus->disabled()) {
             return null;
         }
@@ -56,7 +74,16 @@ class ActivityLogger extends SpatieLogger
         });
     }
 
-    protected function getActivity(): Activity
+    public function submitEmptyLogs(bool $value = true): static
+    {
+        tap($this->getActivity(), static function (Activity $activity) use ($value): void {
+            $activity->submitEmptyLogs = $value;
+        });
+
+        return $this;
+    }
+
+    protected function getActivity(): ActivityContract|Activity
     {
         if (!$this->activity instanceof ActivityContract) {
             $this->activity = ActivitylogServiceProvider::getActivityModelInstance();

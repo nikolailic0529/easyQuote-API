@@ -48,6 +48,7 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
             $request
                 ->withBasicAuth(username: $this->getUsername(), password: $this->getPassword())
                 ->withHeaders([
+                    'Connection' => 'close',
                     'Webhook-Skip-Key' => head($this->config->get('pipeliner.webhook.options.skip_keys', [])),
                 ])
                 ->asJson()
@@ -58,7 +59,10 @@ class PipelinerGraphQlClient extends Factory implements LoggerAware
             $this->setupRateLimiterMiddleware($request);
             $this->setupLoggingHandler($request);
 
-            $request->setHandler(new CurlMultiHandler());
+            $request->setHandler(new CurlMultiHandler([
+                CURLOPT_FORBID_REUSE => true,
+                CURLOPT_FRESH_CONNECT => true,
+            ]));
         });
     }
 

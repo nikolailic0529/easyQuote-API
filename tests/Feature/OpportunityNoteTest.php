@@ -40,6 +40,11 @@ class OpportunityNoteTest extends TestCase
                         'user_id',
                         'text',
                         'created_at',
+                        'is_system',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
                         'owner' => [
                             'id',
                             'user_fullname',

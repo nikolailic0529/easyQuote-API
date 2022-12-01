@@ -40,7 +40,49 @@ class OpportunityQueries
     {
         return $this->baseOpportunitiesQuery($request)
             ->withExists('worldwideQuotes as quotes_exist')
-            ->with(['salesUnit:id,unit_name'])
+            ->with([
+                'salesUnit' => static function (Relation $builder): void {
+                    $salesUnit = new SalesUnit();
+
+                    $builder->select([
+                        $salesUnit->getQualifiedKeyName(),
+                        $salesUnit->qualifyColumn('unit_name'),
+                    ]);
+                },
+                'worldwideQuotes' => static function (Relation $builder): void {
+                    $worldwideQuote = new WorldwideQuote();
+
+                    $builder->select([
+                        $worldwideQuote->getQualifiedKeyName(),
+                        $worldwideQuote->user()->getQualifiedForeignKeyName(),
+                        $worldwideQuote->opportunity()->getQualifiedForeignKeyName(),
+                        $worldwideQuote->qualifyColumn('quote_number'),
+                        $worldwideQuote->qualifyColumn('submitted_at'),
+                    ]);
+                },
+                'worldwideQuotes.salesUnit' => static function (Relation $builder): void {
+                    $salesUnit = new SalesUnit();
+
+                    $builder->select([
+                        $salesUnit->getQualifiedKeyName(),
+                        $salesUnit->qualifyColumn('unit_name'),
+                    ]);
+                },
+                'worldwideQuotes.user' => static function (Relation $builder): void {
+                    $user = new User();
+
+                    $builder->select([
+                       $user->getQualifiedKeyName(),
+                        ...$user->qualifyColumns([
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'email',
+                            'user_fullname',
+                        ])
+                    ]);
+                }
+            ])
             ->where('opportunities.status', OpportunityStatus::LOST);
     }
 
@@ -48,7 +90,49 @@ class OpportunityQueries
     {
         return $this->baseOpportunitiesQuery($request)
             ->withExists('worldwideQuotes as quotes_exist')
-            ->with(['salesUnit:id,unit_name'])
+            ->with([
+                'salesUnit' => static function (Relation $builder): void {
+                    $salesUnit = new SalesUnit();
+
+                    $builder->select([
+                        $salesUnit->getQualifiedKeyName(),
+                        $salesUnit->qualifyColumn('unit_name'),
+                    ]);
+                },
+                'worldwideQuotes' => static function (Relation $builder): void {
+                    $worldwideQuote = new WorldwideQuote();
+
+                    $builder->select([
+                        $worldwideQuote->getQualifiedKeyName(),
+                        $worldwideQuote->user()->getQualifiedForeignKeyName(),
+                        $worldwideQuote->opportunity()->getQualifiedForeignKeyName(),
+                        $worldwideQuote->qualifyColumn('quote_number'),
+                        $worldwideQuote->qualifyColumn('submitted_at'),
+                    ]);
+                },
+                'worldwideQuotes.salesUnit' => static function (Relation $builder): void {
+                    $salesUnit = new SalesUnit();
+
+                    $builder->select([
+                        $salesUnit->getQualifiedKeyName(),
+                        $salesUnit->qualifyColumn('unit_name'),
+                    ]);
+                },
+                'worldwideQuotes.user' => static function (Relation $builder): void {
+                    $user = new User();
+
+                    $builder->select([
+                        $user->getQualifiedKeyName(),
+                        ...$user->qualifyColumns([
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'email',
+                            'user_fullname',
+                        ])
+                    ]);
+                }
+            ])
             ->where('opportunities.status', OpportunityStatus::NOT_LOST);
     }
 
@@ -75,6 +159,7 @@ class OpportunityQueries
                             $relation->getRelated()->getQualifiedCreatedAtColumn(),
                             $relation->getRelated()->getQualifiedUpdatedAtColumn(),
                         ])
+                            ->with('user')
                             ->with('contractType')
                             ->with('salesUnit')
                             ->withExists('salesOrder');
@@ -255,6 +340,7 @@ class OpportunityQueries
     public function paginateOpportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage, Request $request): Builder
     {
         $opportunityModel = new Opportunity();
+        $contractTypeModel = new ContractType();
 
         return $this->opportunitiesOfPipelineStageQuery($pipelineStage, $request)
             ->select([
@@ -272,6 +358,7 @@ class OpportunityQueries
                 $opportunityModel->qualifyColumn('base_opportunity_amount'),
                 $opportunityModel->qualifyColumn('opportunity_amount'),
                 $opportunityModel->qualifyColumn('opportunity_amount_currency_code'),
+                "{$contractTypeModel->qualifyColumn('type_short_name')} as opportunity_type",
 
                 'primary_account.name as primary_account_name',
                 'primary_account.phone as primary_account_phone',
@@ -304,8 +391,48 @@ class OpportunityQueries
                 'endUser:id,name,phone,email',
                 'endUser.image',
                 'primaryAccountContact:id,first_name,last_name,phone,email',
-                'salesUnit:id,unit_name',
                 'validationResult:id,opportunity_id,messages,is_passed',
+                'salesUnit' => static function (Relation $builder): void {
+                    $salesUnit = new SalesUnit();
+
+                    $builder->select([
+                        $salesUnit->getQualifiedKeyName(),
+                        $salesUnit->qualifyColumn('unit_name'),
+                    ]);
+                },
+                'worldwideQuotes' => static function (Relation $builder): void {
+                    $worldwideQuote = new WorldwideQuote();
+
+                    $builder->select([
+                        $worldwideQuote->getQualifiedKeyName(),
+                        $worldwideQuote->user()->getQualifiedForeignKeyName(),
+                        $worldwideQuote->opportunity()->getQualifiedForeignKeyName(),
+                        $worldwideQuote->qualifyColumn('quote_number'),
+                        $worldwideQuote->qualifyColumn('submitted_at'),
+                    ]);
+                },
+                'worldwideQuotes.salesUnit' => static function (Relation $builder): void {
+                    $salesUnit = new SalesUnit();
+
+                    $builder->select([
+                        $salesUnit->getQualifiedKeyName(),
+                        $salesUnit->qualifyColumn('unit_name'),
+                    ]);
+                },
+                'worldwideQuotes.user' => static function (Relation $builder): void {
+                    $user = new User();
+
+                    $builder->select([
+                        $user->getQualifiedKeyName(),
+                        ...$user->qualifyColumns([
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'email',
+                            'user_fullname',
+                        ])
+                    ]);
+                }
             ])
             ->withExists('worldwideQuotes as quotes_exist')
             ->leftJoin('contacts as primary_account_contact', function (JoinClause $join) {

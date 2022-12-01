@@ -19,6 +19,7 @@ use App\Services\Pipeliner\SyncPipelinerDataStatus;
 use App\Services\Pipeliner\Webhook\EventHandlers\EventHandler;
 use App\Services\Pipeliner\Webhook\EventHandlers\EventHandlerCollection;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Log\LogManager;
@@ -84,25 +85,31 @@ class PipelinerServiceProvider extends ServiceProvider
                 return;
             }
 
+            $dispatcher = $container[Dispatcher::class];
+
             $frequency = filter_var(setting('pipeliner_sync_schedule') ?? 1, FILTER_SANITIZE_NUMBER_INT);
 
-            $event = $schedule->job(new QueuedPipelinerDataSync($aggregateId = Str::uuid()->toString()))
-                ->when(static function (Repository $config, SyncPipelinerDataStatus $status): bool {
+            $job = new QueuedPipelinerDataSync($aggregateId = Str::uuid()->toString(), owner: $owner = Str::random());
+
+            $event = $schedule->call(function () use ($dispatcher, $job): void {
+                $dispatcher->dispatch($job);
+            })
+                ->when(static function (Repository $config, SyncPipelinerDataStatus $status) use ($owner): bool {
                     return $config->get('pipeliner.sync.schedule.enabled')
-                        && $status->acquire();
+                        && $status->setOwner($owner)->acquire();
                 })
                 ->before(static function (LogManager $logManager) use ($aggregateId): void {
                     $logManager
                         ->channel('pipeliner')
                         ->info('Scheduled pipeliner sync: starting', [
-                            'aggregate_id' => $aggregateId
+                            'aggregate_id' => $aggregateId,
                         ]);
                 })
                 ->after(static function (LogManager $logManager) use ($aggregateId): void {
                     $logManager
                         ->channel('pipeliner')
                         ->info('Scheduled pipeliner sync: finished', [
-                            'aggregate_id' => $aggregateId
+                            'aggregate_id' => $aggregateId,
                         ]);
                 })
                 ->description("Pipeliner sync")

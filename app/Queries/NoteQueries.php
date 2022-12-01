@@ -27,6 +27,7 @@ class NoteQueries
                 ...$noteModel->qualifyColumns([
                     $noteModel->owner()->getQualifiedForeignKeyName(),
                     'note',
+                    'flags',
                     'created_at',
                     'updated_at',
                 ]),

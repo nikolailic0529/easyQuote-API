@@ -36,7 +36,16 @@ class QuoteNoteTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'user_id', 'text', 'created_at', 'updated_at',
+                        'id',
+                        'user_id',
+                        'text',
+                        'is_system',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
+                        'created_at',
+                        'updated_at',
                     ],
                 ],
                 'first_page_url',

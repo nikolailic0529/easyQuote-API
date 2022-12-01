@@ -36,6 +36,7 @@ class CompanyNoteTest extends TestCase
                         'text',
                         'owner_user_id',
                         'owner_fullname',
+                        'is_system',
                         'permissions' => [
                             'update',
                             'delete'

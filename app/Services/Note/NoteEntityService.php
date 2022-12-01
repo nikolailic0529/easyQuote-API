@@ -31,6 +31,10 @@ class NoteEntityService implements CauserAware
             $note->owner()->associate($this->causer);
             $note->note = $data->note;
 
+            if ($data->flags !== null) {
+                $note->flags = $data->flags;
+            }
+
             $this->connection->transaction(function () use ($note, $model): void {
                 $note->save();
                 $model->notes()->attach($note);

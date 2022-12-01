@@ -2,10 +2,7 @@
 
 namespace App\Http\Resources\V1\Note;
 
-use App\Models\Company;
-use App\Models\Opportunity;
-use App\Models\Quote\Quote;
-use App\Models\Quote\WorldwideQuote;
+use App\Models\Note\Note;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -16,7 +13,7 @@ class UnifiedNoteOfCompany extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param \Illuminate\Http\Request $request
+     * @param  \Illuminate\Http\Request  $request
      * @return array
      */
     public function toArray($request)
@@ -42,6 +39,7 @@ class UnifiedNoteOfCompany extends JsonResource
             'text' => $this->note,
             'owner_user_id' => $this->user_id,
             'owner_fullname' => $this->user_fullname,
+            'is_system' => (bool) $this->getFlag(Note::SYSTEM),
             'permissions' => [
                 'update' => $user->can('update', $this->resource),
                 'delete' => $user->can('delete', $this->resource),

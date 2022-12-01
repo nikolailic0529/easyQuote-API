@@ -210,17 +210,21 @@ class UpdateCompanyRequest extends FormRequest
 
         $addresses = $this->collect('addresses')
             ->map(static fn(array $item): array => ['is_default' => filter_var($item['is_default'] ?? false, FILTER_VALIDATE_BOOL)] +
-                $item)
-            ->all();
+                $item);
 
         $contacts = $this->collect('contacts')
             ->map(static fn(array $item): array => ['is_default' => filter_var($item['is_default'] ?? false, FILTER_VALIDATE_BOOL)] +
-                $item)
-            ->all();
+                $item);
+
+        if ($addresses->isNotEmpty()) {
+            $this->merge(['addresses' => $addresses->all()]);
+        }
+
+        if ($contacts->isNotEmpty()) {
+            $this->merge(['contacts' => $contacts->all()]);
+        }
 
         $this->merge([
-            'addresses' => $addresses,
-            'contacts' => $contacts,
             'delete_logo' => $this->boolean('delete_logo'),
         ]);
     }

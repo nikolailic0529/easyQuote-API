@@ -100,6 +100,7 @@ class CompanyEventAuditor
                     newAttributeValues: $newAttributes,
                 )
             )
+            ->submitEmptyLogs(false)
             ->log('updated');
 
         $this->busDispatcher->dispatch(new ValidateOpportunitiesOfCompany($company));

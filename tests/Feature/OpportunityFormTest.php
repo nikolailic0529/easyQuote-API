@@ -10,6 +10,7 @@ use Webpatser\Uuid\Uuid;
 
 /**
  * @group opportunity
+ * @group build
  */
 class OpportunityFormTest extends TestCase
 {
@@ -17,10 +18,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to view paginated opportunity form entities.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedOpportunityForms()
+    public function testCanViewPaginatedOpportunityForms(): void
     {
         $this->authenticateApi();
 
@@ -67,10 +66,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to view an existing opportunity form.
-     *
-     * @return void
      */
-    public function testCanViewExistingOpportunityForm()
+    public function testCanViewExistingOpportunityForm(): void
     {
         $this->authenticateApi();
 
@@ -92,6 +89,7 @@ class OpportunityFormTest extends TestCase
                     'updated_at'
                 ],
                 'form_data',
+                'is_system',
                 'created_at',
                 'updated_at'
             ]);
@@ -99,10 +97,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to create a new opportunity form entity.
-     *
-     * @return void
      */
-    public function testCanCreateNewOpportunityForm()
+    public function testCanCreateNewOpportunityForm(): void
     {
         $this->authenticateApi();
 
@@ -133,10 +129,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to update an existing opportunity form entity.
-     *
-     * @return void
      */
-    public function testCanUpdateExistingOpportunityForm()
+    public function testCanUpdateExistingOpportunityForm(): void
     {
         $this->authenticateApi();
 
@@ -191,10 +185,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to update an existing system defined opportunity form.
-     *
-     * @return void
      */
-    public function testCanNotUpdateExistingSystemDefinedOpportunityForm()
+    public function testCanNotUpdateExistingSystemDefinedOpportunityForm(): void
     {
         $pipeline = factory(Pipeline::class)->create();
 
@@ -210,10 +202,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to update a schema of an existing opportunity form entity.
-     *
-     * @return void
      */
-    public function testCanUpdateSchemaOfExistingOpportunityForm()
+    public function testCanUpdateSchemaOfExistingOpportunityForm(): void
     {
         $opportunityForm = factory(OpportunityForm::class)->create();
 
@@ -253,10 +243,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to delete an existing opportunity form entity.
-     *
-     * @return void
      */
-    public function testCanDeleteExistingOpportunityForm()
+    public function testCanDeleteExistingOpportunityForm(): void
     {
         $opportunityForm = factory(OpportunityForm::class)->create();
 
@@ -271,10 +259,8 @@ class OpportunityFormTest extends TestCase
 
     /**
      * Test an ability to delete an existing system defined opportunity form.
-     *
-     * @return void
      */
-    public function testCanNotDeleteExistingSystemDefinedOpportunityForm()
+    public function testCanNotDeleteExistingSystemDefinedOpportunityForm(): void
     {
         $pipeline = factory(Pipeline::class)->create();
 

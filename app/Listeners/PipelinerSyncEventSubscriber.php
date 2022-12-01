@@ -9,6 +9,7 @@ use App\Events\Pipeliner\AggregateSyncEntityProcessed;
 use App\Events\Pipeliner\AggregateSyncEntitySkipped;
 use App\Events\Pipeliner\AggregateSyncFailed;
 use App\Events\Pipeliner\ModelSyncCompleted;
+use App\Events\Pipeliner\ModelSyncFailed;
 use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Models\AccountEntity;
@@ -58,6 +59,9 @@ class PipelinerSyncEventSubscriber
             ],
             ModelSyncCompleted::class => [
                 [static::class, 'notifyCauserAboutModelSyncCompleted'],
+            ],
+            ModelSyncFailed::class => [
+                [static::class, 'notifyCauserAboutModelSyncFailed'],
             ],
             AggregateSyncFailed::class => [
                 [static::class, 'storeAggregateSyncFailedEvent'],
@@ -178,6 +182,24 @@ class PipelinerSyncEventSubscriber
                     $n->url($url);
                 })
                 ->message("Data sync of $modelName [$modelIdForHumans] has been completed.")
+                ->push();
+        }
+    }
+
+    public function notifyCauserAboutModelSyncFailed(ModelSyncFailed $event): void
+    {
+        if ($event->causer instanceof User) {
+            $modelName = Str::headline(class_basename($event->model));
+            $modelIdForHumans = $this->modelIdForHumans($event->model);
+            $url = $this->resolveUrlToModel($event->model);
+
+            notification()
+                ->for($event->causer)
+                ->priority(Priority::Medium)
+                ->unless(null === $url, static function (PendingNotification $n) use ($url): void {
+                    $n->url($url);
+                })
+                ->message("Data sync of $modelName [$modelIdForHumans] has been failed.")
                 ->push();
         }
     }

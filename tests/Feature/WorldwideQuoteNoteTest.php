@@ -43,6 +43,11 @@ class WorldwideQuoteNoteTest extends TestCase
                     '*' => [
                         'id',
                         'user_id',
+                        'is_system',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
                         'created_at',
                         'updated_at',
                         'user' => [

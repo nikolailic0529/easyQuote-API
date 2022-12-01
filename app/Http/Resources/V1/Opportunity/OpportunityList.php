@@ -7,6 +7,9 @@ use App\Models\Opportunity;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\Intl\Currencies;
 
+/**
+ * @mixin Opportunity
+ */
 class OpportunityList extends JsonResource
 {
     /**
@@ -17,8 +20,6 @@ class OpportunityList extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var Opportunity|OpportunityList $this */
-
         static $baseCurrencySymbol;
 
         if (!isset($baseCurrencySymbol)) {
@@ -60,6 +61,13 @@ class OpportunityList extends JsonResource
             'status' => $this->status,
             'status_reason' => $this->status_reason,
             'quotes_exist' => (bool)$this->quotes_exist,
+            'quote' => (function (): ?QuoteOfOpportunityResource {
+                if ($this->worldwideQuotes->isEmpty()) {
+                    return null;
+                }
+
+                return QuoteOfOpportunityResource::make($this->worldwideQuotes->first());
+            })(),
             'permissions' => [
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),

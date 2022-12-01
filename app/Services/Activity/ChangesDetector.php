@@ -2,6 +2,7 @@
 
 namespace App\Services\Activity;
 
+use ArrayAccess;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -16,12 +17,18 @@ class ChangesDetector
     /**
      * Get attribute values of the model to be logged.
      *
-     * @param Model $model
-     * @param string[] $logAttributes
-     * @param array $oldAttributeValues
+     * @param  Model  $model
+     * @param  string[]  $logAttributes
+     * @param  array  $oldAttributeValues
+     * @param  bool  $diff
      * @return array
      */
-    public function getAttributeValuesToBeLogged(Model $model, array $logAttributes, array $oldAttributeValues = []): array
+    public function getAttributeValuesToBeLogged(
+        Model $model,
+        array $logAttributes,
+        array $oldAttributeValues = [],
+        bool $diff = false,
+    ): array
     {
         if (empty($logAttributes)) {
             return [];
@@ -53,6 +60,14 @@ class ChangesDetector
             );
 
             $properties[self::OLD_ATTRS_KEY] = Arr::only($properties[self::OLD_ATTRS_KEY], $logAttributes);
+        }
+
+        if ($diff) {
+            return $this->diffAttributeValues(
+                oldAttributeValues: $properties[self::OLD_ATTRS_KEY] ?? [],
+                newAttributeValues: $properties[self::NEW_ATTRS_KEY] ?? [],
+                logAttributes: $logAttributes,
+            );
         }
 
         return $properties;
@@ -136,6 +151,11 @@ class ChangesDetector
         }
 
         return $changes;
+    }
+
+    public function isLogEmpty(array|ArrayAccess $attrs): bool
+    {
+        return empty($attrs[self::NEW_ATTRS_KEY] ?? []) && empty($attrs[self::OLD_ATTRS_KEY] ?? []);
     }
 
     /**

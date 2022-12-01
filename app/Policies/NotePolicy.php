@@ -4,7 +4,9 @@ namespace App\Policies;
 
 use App\Models\Note\Note;
 use App\Models\User;
+use App\Policies\Access\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 class NotePolicy
 {
@@ -14,11 +16,11 @@ class NotePolicy
      * Determine whether the user can view any models.
      *
      * @param  \App\Models\User  $user
-     * @return mixed
+     * @return Response
      */
-    public function viewAny(User $user)
+    public function viewAny(User $user): Response
     {
-        return true;
+        return $this->allow();
     }
 
     /**
@@ -26,22 +28,22 @@ class NotePolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Note\Note  $note
-     * @return mixed
+     * @return Response
      */
-    public function view(User $user, Note $note)
+    public function view(User $user, Note $note): Response
     {
-        return true;
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can create models.
      *
      * @param  \App\Models\User  $user
-     * @return mixed
+     * @return Response
      */
-    public function create(User $user)
+    public function create(User $user): Response
     {
-        return true;
+        return $this->allow();
     }
 
     /**
@@ -49,19 +51,30 @@ class NotePolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Note\Note  $note
-     * @return mixed
+     * @return Response
      */
-    public function update(User $user, Note $note)
+    public function update(User $user, Note $note): Response
     {
+        if ($note->getFlag(Note::SYSTEM)) {
+            return ResponseBuilder::deny()
+                ->item('note')
+                ->action('update')
+                ->reason("You can't update system generated note")
+                ->toResponse();
+        }
+
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($note->owner()->is($user)) {
-            return true;
+            return $this->allow();
         }
 
-        return $this->deny("You don't have rights to update this note.");
+        return ResponseBuilder::deny()
+            ->item('note')
+            ->action('update')
+            ->toResponse();
     }
 
     /**
@@ -69,19 +82,30 @@ class NotePolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Note\Note  $note
-     * @return mixed
+     * @return Response
      */
-    public function delete(User $user, Note $note)
+    public function delete(User $user, Note $note): Response
     {
+        if ($note->getFlag(Note::SYSTEM)) {
+            return ResponseBuilder::deny()
+                ->item('note')
+                ->action('delete')
+                ->reason("You can't delete system generated note")
+                ->toResponse();
+        }
+
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($note->owner()->is($user)) {
-            return true;
+            return $this->allow();
         }
 
-        return $this->deny("You don't have rights to delete this note.");
+        return ResponseBuilder::deny()
+            ->item('note')
+            ->action('delete')
+            ->toResponse();
     }
 
     /**

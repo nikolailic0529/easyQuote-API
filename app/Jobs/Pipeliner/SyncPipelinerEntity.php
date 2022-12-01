@@ -9,6 +9,8 @@ use App\Events\Pipeliner\SyncStrategyPerformed;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
 use App\Services\Pipeliner\PipelinerSyncAggregate;
+use App\Services\Pipeliner\PipelinerSyncChainStatus;
+use App\Services\Pipeliner\PipelinerSyncChainStatusFactory;
 use App\Services\Pipeliner\Strategies\Contracts\ImpliesSyncOfHigherHierarchyEntities;
 use App\Services\Pipeliner\Strategies\Contracts\PullStrategy;
 use App\Services\Pipeliner\Strategies\Contracts\PushStrategy;
@@ -45,6 +47,7 @@ class SyncPipelinerEntity implements ShouldQueue
     private ?LockProvider $lockProvider = null;
     private ?LoggerInterface $logger = null;
     private ?EventDispatcher $eventDispatcher = null;
+    private ?PipelinerSyncChainStatus $chainStatus = null;
 
     public function __construct(
         SyncStrategy $strategy,
@@ -81,6 +84,7 @@ class SyncPipelinerEntity implements ShouldQueue
         LockProvider $lockProvider,
         AuthManager $authManager,
         ApplicationUserResolver $defaultUserResolver,
+        PipelinerSyncChainStatusFactory $chainStatusFactory,
     ): void {
         if ($this->batch()->canceled()) {
             return;
@@ -91,6 +95,7 @@ class SyncPipelinerEntity implements ShouldQueue
         $this->cache = $cache;
         $this->lockProvider = $lockProvider;
         $this->strategies = $strategies;
+        $this->chainStatus = $chainStatusFactory->fromId($this->chainId);
 
         $aggregate->withId($this->aggregateId);
 
@@ -102,8 +107,8 @@ class SyncPipelinerEntity implements ShouldQueue
 
         $strategy = $strategies[$this->strategyClass];
 
-        if ($this->cache->get($this->chainReleaseKey())) {
-            $this->logger->warning('Syncing: skipped because chain was released.', [
+        if ($this->chainStatus->isTerminated()) {
+            $this->logger->warning('Syncing: skipped because chain was terminated.', [
                 'id' => $this->entityReference,
                 'strategy' => class_basename($this->strategyClass),
             ]);
@@ -129,11 +134,6 @@ class SyncPipelinerEntity implements ShouldQueue
                 : [$entity];
 
             $result = $strategy->sync(...$arguments);
-
-            if ($strategy instanceof ImpliesSyncOfHigherHierarchyEntities) {
-                /** @var SyncStrategy&ImpliesSyncOfHigherHierarchyEntities $strategy */
-                $this->syncHigherHierarchyEntities($strategy, $entity);
-            }
 
             $logger->info('Syncing: success', [
                 'id' => $entity->id,
@@ -168,9 +168,9 @@ class SyncPipelinerEntity implements ShouldQueue
                 )
             );
 
-            $cache->add($this->chainReleaseKey(), true);
+            $this->chainStatus->terminate();
 
-            $logger->warning('Syncing: chain released.', [
+            $logger->warning('Syncing: chain terminated.', [
                 'chained' => count($this->chained),
             ]);
         } finally {
@@ -206,11 +206,6 @@ class SyncPipelinerEntity implements ShouldQueue
     public function uniqueId(): string
     {
         return 'pipeliner-sync:'.static::class.$this->batchId.$this->entityReference.$this->strategyClass;
-    }
-
-    public function chainReleaseKey(): string
-    {
-        return 'pipeliner-sync-chain-release:'.static::class.$this->chainId;
     }
 
     private function strategyHasOptions(): bool

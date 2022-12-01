@@ -63,11 +63,8 @@ class OpportunityAsRelationResource extends JsonResource
             'status' => $this->status,
             'status_reason' => $this->status_reason,
 
-            'quotes' => WorldwideQuoteAsOpportunityRelationResource::collection(
-                $this->worldwideQuotes
-                    ->sortByDesc((new WorldwideQuote())->getCreatedAtColumn())
-                    ->values()
-            ),
+            'quotes_exist' => $this->worldwideQuotes->isNotEmpty(),
+            'quote' => QuoteOfOpportunityResource::make($this->worldwideQuotes->first()),
 
             'permissions' => [
                 'view' => $user->can('view', $this->resource),

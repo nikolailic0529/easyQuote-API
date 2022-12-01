@@ -164,11 +164,13 @@ class OpportunityEventAuditor
                 ->by($event->getCauser() ?? $this->guard->user())
                 ->withProperties(
                     $this->changesDetector->getAttributeValuesToBeLogged(
-                        $opportunity,
-                        static::$logModelAttributes,
-                        $this->changesDetector->getModelChanges($oldOpportunity, static::$logModelAttributes)
+                        model: $opportunity,
+                        logAttributes: static::$logModelAttributes,
+                        oldAttributeValues: $this->changesDetector->getModelChanges($oldOpportunity, static::$logModelAttributes),
+                        diff: true,
                     )
                 )
+                ->submitEmptyLogs(false)
                 ->log('updated');
 
             $this->validateOpportunityService->performValidation($opportunity);

@@ -1345,16 +1345,12 @@ class CompanyTest extends TestCase
                         'sale_action_name',
                         'status',
                         'status_reason',
-                        'quotes' => [
-                            '*' => [
-                                'id',
-                                'opportunity_id',
-                                'quote_number',
-                                'contract_type_name',
-                                'submitted_at',
-                                'created_at',
-                                'updated_at',
-                            ],
+                        'quotes_exist',
+                        'quote' => [
+                            'id',
+                            'quote_number',
+                            'user',
+                            'submitted_at',
                         ],
                         'created_at',
                     ],

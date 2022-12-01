@@ -10,11 +10,11 @@ use App\Events\Pipeliner\AggregateSyncCompleted;
 use App\Events\Pipeliner\AggregateSyncFailed;
 use App\Events\Pipeliner\AggregateSyncStarting;
 use App\Events\Pipeliner\ModelSyncCompleted;
+use App\Events\Pipeliner\ModelSyncFailed;
 use App\Integrations\Pipeliner\Exceptions\GraphQlRequestException;
 use App\Integrations\Pipeliner\Exceptions\PipelinerIntegrationException;
 use App\Jobs\Pipeliner\QueuedPipelinerDataSync;
 use App\Jobs\Pipeliner\SyncPipelinerEntity;
-use App\Models\Opportunity;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Services\Pipeliner\Exceptions\PipelinerSyncException;
@@ -126,7 +126,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
         $pendingCountByStrategy = $pendingChains->collapse()
             ->groupBy('strategy')
             ->mapWithKeys(static function (iterable $items, string $strategy): array {
-                return [(string)StrategyNameResolver::from($strategy) => collect($items)->count()];
+                return [(string) StrategyNameResolver::from($strategy) => collect($items)->count()];
             })
             ->all();
 
@@ -220,7 +220,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
 
                                         return [
                                             'strategy' => $strategy,
-                                            'item' => $item
+                                            'item' => $item,
                                         ];
                                     })
                                     ->all();
@@ -233,7 +233,7 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                         }
 
                         return $chain;
-                });
+                    });
             }
 
             $currentStrategyChains = $currentStrategyChains->collect();
@@ -450,8 +450,13 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                     'causer_email' => $causer?->email,
                     'batch_id' => $batch->id,
                 ]);
+
+                event(new ModelSyncFailed(
+                    model: $model,
+                    causer: $causer,
+                ));
             })
-            ->finally(static function (Batch $batch): void {
+            ->finally(static function (Batch $batch) use ($chainId): void {
                 /** @var $model Model */
                 /** @var $causer User|null */
                 [$model, $causer] = [$batch->options['__model'], $batch->options['__causer']];
@@ -460,18 +465,33 @@ class PipelinerDataSyncService implements LoggerAware, CauserAware, FlagsAware, 
                     ->lock($batch->options['__lock_key'])
                     ->forceRelease();
 
-                logger()->channel('pipeliner')->info('Model sync: completed.', [
+                $chainStatus = app(PipelinerSyncChainStatusFactory::class)->fromId($chainId);
+
+                $ctx = [
                     'model_id' => $model->getKey(),
                     'model_type' => class_basename($model),
                     'causer_id' => $causer?->getKey(),
                     'causer_email' => $causer?->email,
                     'batch_id' => $batch->id,
-                ]);
+                ];
 
-                event(new ModelSyncCompleted(
-                    model: $model,
-                    causer: $causer,
-                ));
+                if ($chainStatus->isNotTerminated()) {
+                    logger()->channel('pipeliner')->info('Model sync: completed.', $ctx);
+                } else {
+                    logger()->channel('pipeliner')->info('Model sync: failed.', $ctx);
+                }
+
+                if ($chainStatus->isNotTerminated()) {
+                    event(new ModelSyncCompleted(
+                        model: $model,
+                        causer: $causer,
+                    ));
+                } else {
+                    event(new ModelSyncFailed(
+                        model: $model,
+                        causer: $causer,
+                    ));
+                }
             })
             ->dispatch();
 

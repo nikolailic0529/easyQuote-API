@@ -12,6 +12,10 @@ final class CompanyRequestAuthResolver
 {
     public function __invoke(FormRequest $request): Response
     {
+        if ($request->missing('addresses')) {
+            return Response::allow();
+        }
+
         $addressModelKeys = $request->input('addresses.*.id');
 
         $detachedAddressModelKeys = collect($request->company->addresses()->get()->modelKeys())
