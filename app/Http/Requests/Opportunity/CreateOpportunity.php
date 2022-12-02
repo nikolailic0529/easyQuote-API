@@ -79,7 +79,7 @@ class CreateOpportunity extends FormRequest
                 Rule::exists(Contact::class, 'id')->withoutTrashed(),
             ],
             'account_manager_id' => [
-                'bail', 'uuid',
+                'bail', 'required', 'uuid',
                 Rule::exists(User::class, 'id')->withoutTrashed(),
             ],
             'project_name' => [
@@ -261,7 +261,8 @@ class CreateOpportunity extends FormRequest
     public function messages(): array
     {
         return [
-            'project_name.unique' => 'The opportunity name [:input] already taken.'
+            'project_name.unique' => 'The opportunity name [:input] already taken.',
+            'account_manager_id.required' => 'Account manager must be selected.',
         ];
     }
 

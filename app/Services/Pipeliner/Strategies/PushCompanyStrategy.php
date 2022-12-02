@@ -266,7 +266,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
 
     private function syncTasksFromAccount(Company $model): void
     {
-        $queue = Queue::all(concurrency: 10, jobs: $model->tasks->all(), handler: async(function (Task $model): void {
+        $queue = Queue::all(concurrency: 5, jobs: $model->tasks->all(), handler: async(function (Task $model): void {
             $this->pushTaskStrategy->sync($model);
         }));
 

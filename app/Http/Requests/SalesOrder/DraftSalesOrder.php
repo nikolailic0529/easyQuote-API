@@ -19,7 +19,7 @@ class DraftSalesOrder extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'worldwide_quote_id' => [
@@ -44,15 +44,16 @@ class DraftSalesOrder extends FormRequest
                 'bail', 'required', 'string', 'filled', 'max:191',
             ],
             'contract_number' => [
-                'bail', 'nullable', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:50',
             ],
         ];
     }
 
-    public function messages()
+    public function messages(): array
     {
         return [
-            'worldwide_quote_id.unique' => 'A Sales Order already exists for the given Quote',
+            'worldwide_quote_id.unique' => 'Sales Order already exists for the given Quote',
+            'contract_number.max' => 'Contract number/SAID cannot be greater than :max characters.',
         ];
     }
 

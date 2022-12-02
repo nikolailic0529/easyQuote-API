@@ -479,9 +479,21 @@ class SalesOrderTest extends TestCase
         $this->postJson('api/sales-orders', [
             'worldwide_quote_id' => $worldwideQuoteKey,
             'sales_order_template_id' => $contractTemplateKey,
+            'vat_number' => Str::random(191),
+            'vat_type' => 'VAT Number',
+            'customer_po' => Str::random(191),
+            'contract_number' => Str::random(100),
+        ])
+//            ->dump()
+            ->assertInvalid(['contract_number'], responseKey: 'Error.original');
+
+        $this->postJson('api/sales-orders', [
+            'worldwide_quote_id' => $worldwideQuoteKey,
+            'sales_order_template_id' => $contractTemplateKey,
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
             'customer_po' => $customerPo = Str::random(191),
+            'contract_number' => $contractNumber = Str::random(50),
         ])
 //            ->dump()
             ->assertCreated()
@@ -491,10 +503,12 @@ class SalesOrderTest extends TestCase
                 'sales_order_template_id',
                 'vat_number',
                 'customer_po',
+                'contract_number',
             ])
             ->assertJson([
                 'vat_number' => $vatNumber,
                 'customer_po' => $customerPo,
+                'contract_number' => $contractNumber,
             ]);
     }
 
@@ -667,6 +681,18 @@ class SalesOrderTest extends TestCase
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
             'customer_po' => $customerPo = Str::random(191),
+            'contract_number' => Str::random(51),
+        ])
+//            ->dump()
+            ->assertInvalid('contract_number', responseKey: 'Error.original');
+
+        $this->patchJson('api/sales-orders/'.$salesOrder->getKey(), [
+
+            'sales_order_template_id' => $salesOrderTemplate->getKey(),
+            'vat_number' => $vatNumber = Str::random(191),
+            'vat_type' => 'VAT Number',
+            'customer_po' => $customerPo = Str::random(191),
+            'contract_number' => Str::random(50),
         ])
 //            ->dump()
             ->assertOk();
@@ -744,6 +770,9 @@ class SalesOrderTest extends TestCase
             'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
         ]);
 
+        $quote->activeVersion->company()->associate(
+            Company::query()->whereNotNull('vs_company_code')->firstOrFail()
+        )->save();
 
         factory(WorldwideQuoteAsset::class)->create([
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
@@ -782,7 +811,8 @@ class SalesOrderTest extends TestCase
             ->give(fn() => $httpFactory);
 
 
-        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')//            ->dump()
+        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')
+//                        ->dump()
         ;
 
         $this->assertContainsEquals($response->status(),

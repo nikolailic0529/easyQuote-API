@@ -889,6 +889,39 @@ class OpportunityTest extends TestCase
     }
 
     /**
+     * Test an ability to create a new opportunity without account manager.
+     */
+    public function testCanCanNotCreateOpportunityWithoutAccountManager(): void
+    {
+        $data = Opportunity::factory()->raw();
+        unset($data['account_manager_id']);
+
+        $this->authenticateApi();
+
+        $this->postJson('api/opportunities', $data)
+//            ->dump()
+            ->assertInvalid('account_manager_id', responseKey: 'Error.original');
+    }
+
+    /**
+     * Test an ability to update an existing opportunity without account manager.
+     */
+    public function testCanCanNotUpdateOpportunityWithoutAccountManager(): void
+    {
+        $data = [
+            'project_name' => Str::random(100)
+        ];
+
+        $this->authenticateApi();
+
+        $op = Opportunity::factory()->create();
+
+        $this->patchJson('api/opportunities/'.$op->getKey(), $data)
+//            ->dump()
+            ->assertInvalid('account_manager_id', responseKey: 'Error.original');
+    }
+
+    /**
      * Test an ability to create a new opportunity with contract duration.
      */
     public function testCanCreateOpportunityWithContractDuration(): void

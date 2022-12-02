@@ -1662,7 +1662,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "c89dada4-5ea8-4620-afba-c6cfb0efe73f",
               "attached_element_id": "5f435737-d853-43c3-87e7-2fe4ed8d7ad7"

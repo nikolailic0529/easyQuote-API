@@ -79,7 +79,9 @@ class UpdateOpportunity extends FormRequest
                 Rule::exists(Contact::class, 'id')->withoutTrashed(),
             ],
             'account_manager_id' => [
-                'bail', 'uuid',
+                // The rule [required_with:project_name] is required to determine
+                // if the update request was sent from the opportunity form.
+                'bail', 'required_with:project_name', 'uuid',
                 Rule::exists(User::class, 'id')->withoutTrashed(),
             ],
             'project_name' => [
@@ -263,7 +265,8 @@ class UpdateOpportunity extends FormRequest
     public function messages(): array
     {
         return [
-            'project_name.unique' => 'The opportunity name [:input] already taken.'
+            'project_name.unique' => 'The opportunity name [:input] already taken.',
+            'account_manager_id.required_with' => 'Account manager must be selected.',
         ];
     }
 
