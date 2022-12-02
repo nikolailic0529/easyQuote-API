@@ -21,13 +21,15 @@ class OpportunityFormController extends Controller
     /**
      * Paginate the existing opportunity form entities.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \App\Queries\OpportunityFormQueries $queries
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Queries\OpportunityFormQueries  $queries
      * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function paginateOpportunityForms(Request $request, OpportunityFormQueries $queries): AnonymousResourceCollection
-    {
+    public function paginateOpportunityForms(
+        Request $request,
+        OpportunityFormQueries $queries
+    ): AnonymousResourceCollection {
         $this->authorize('viewAny', OpportunityForm::class);
 
         $pagination = $queries->paginateOpportunityFormsQuery($request)->apiPaginate();
@@ -39,7 +41,7 @@ class OpportunityFormController extends Controller
     /**
      * Show the specified opportunity form entity.
      *
-     * @param \App\Models\OpportunityForm\OpportunityForm $opportunityForm
+     * @param  \App\Models\OpportunityForm\OpportunityForm  $opportunityForm
      * @return JsonResponse
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
@@ -56,14 +58,15 @@ class OpportunityFormController extends Controller
     /**
      * Store a new opportunity form entity.
      *
-     * @param \App\Http\Requests\OpportunityForm\StoreOpportunityForm $request
-     * @param \App\Services\OpportunityForm\OpportunityFormEntityService $entityService
+     * @param  \App\Http\Requests\OpportunityForm\StoreOpportunityForm  $request
+     * @param  \App\Services\OpportunityForm\OpportunityFormEntityService  $entityService
      * @return \Illuminate\Http\JsonResponse
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function storeOpportunityForm(StoreOpportunityForm $request,
-                                         OpportunityFormEntityService $entityService): JsonResponse
-    {
+    public function storeOpportunityForm(
+        StoreOpportunityForm $request,
+        OpportunityFormEntityService $entityService
+    ): JsonResponse {
         $this->authorize('create', OpportunityForm::class);
 
         $resource = $entityService->createOpportunityForm($request->getCreateOpportunityFormData());
@@ -75,18 +78,44 @@ class OpportunityFormController extends Controller
     }
 
     /**
+     * Copy the opportunity form.
+     *
+     * @param  StoreOpportunityForm  $request
+     * @param  OpportunityFormEntityService  $entityService
+     * @param  OpportunityForm  $opportunityForm
+     * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function copyOpportunityForm(
+        StoreOpportunityForm $request,
+        OpportunityFormEntityService $entityService,
+        OpportunityForm $opportunityForm,
+    ): JsonResponse {
+        $this->authorize('create', OpportunityForm::class);
+
+        $resource = $entityService->replicateOpportunityForm($request->getCreateOpportunityFormData(),
+            $opportunityForm);
+
+        return response()->json(
+            OpportunityFormWithIncludes::make($resource),
+            Response::HTTP_CREATED
+        );
+    }
+
+    /**
      * Update opportunity form entity.
      *
-     * @param \App\Http\Requests\OpportunityForm\UpdateOpportunityForm $request
-     * @param \App\Services\OpportunityForm\OpportunityFormEntityService $entityService
-     * @param \App\Models\OpportunityForm\OpportunityForm $opportunityForm
+     * @param  \App\Http\Requests\OpportunityForm\UpdateOpportunityForm  $request
+     * @param  \App\Services\OpportunityForm\OpportunityFormEntityService  $entityService
+     * @param  \App\Models\OpportunityForm\OpportunityForm  $opportunityForm
      * @return \Illuminate\Http\JsonResponse
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function updateOpportunityForm(UpdateOpportunityForm $request,
-                                          OpportunityFormEntityService $entityService,
-                                          OpportunityForm $opportunityForm): JsonResponse
-    {
+    public function updateOpportunityForm(
+        UpdateOpportunityForm $request,
+        OpportunityFormEntityService $entityService,
+        OpportunityForm $opportunityForm
+    ): JsonResponse {
         $this->authorize('update', $opportunityForm);
 
         $resource = $entityService->updateOpportunityForm($opportunityForm, $request->getUpdateOpportunityFormData());
@@ -100,16 +129,17 @@ class OpportunityFormController extends Controller
     /**
      * Update schema of the specified opportunity form entity.
      *
-     * @param \App\Http\Requests\OpportunityForm\UpdateSchemaOfOpportunityForm $request
-     * @param \App\Services\OpportunityForm\OpportunityFormEntityService $entityService
-     * @param \App\Models\OpportunityForm\OpportunityForm $opportunityForm
+     * @param  \App\Http\Requests\OpportunityForm\UpdateSchemaOfOpportunityForm  $request
+     * @param  \App\Services\OpportunityForm\OpportunityFormEntityService  $entityService
+     * @param  \App\Models\OpportunityForm\OpportunityForm  $opportunityForm
      * @return \Illuminate\Http\Response
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function updateSchemaOfOpportunityForm(UpdateSchemaOfOpportunityForm $request,
-                                                  OpportunityFormEntityService $entityService,
-                                                  OpportunityForm $opportunityForm): Response
-    {
+    public function updateSchemaOfOpportunityForm(
+        UpdateSchemaOfOpportunityForm $request,
+        OpportunityFormEntityService $entityService,
+        OpportunityForm $opportunityForm
+    ): Response {
         $this->authorize('update', $opportunityForm);
 
         $entityService->updateSchemaOfOpportunityForm($opportunityForm, $request->getFormSchema());

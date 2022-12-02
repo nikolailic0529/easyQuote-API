@@ -1042,7 +1042,9 @@ class OpportunityDataMapper implements CauserAware
             'estimated_upsell_amount_currency_code' => OpportunityDataMapper::coalesceMap($row,
                 PipelinerOppMap::ESTIMATED_UPSELL_AMOUNT_CURRENCY_CODE),
 
-            'personal_rating' => OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::PERSONAL_RATING),
+            'personal_rating' => $this->resolvePersonalRatingValueFromImported(
+                OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::PERSONAL_RATING)
+            ),
 
             'margin_value' => transform(OpportunityDataMapper::coalesceMap($row, PipelinerOppMap::MARGIN_VALUE),
                 static fn(string $value) => (float) $value),
@@ -1070,6 +1072,17 @@ class OpportunityDataMapper implements CauserAware
 
             'create_suppliers' => $suppliers,
         ]);
+    }
+
+    public function resolvePersonalRatingValueFromImported(?string $value): ?string
+    {
+        if (null === $value) {
+            return null;
+        }
+
+        preg_match('#^\d+#', trim($value), $m);
+
+        return $m[0] ?? null;
     }
 
     /**

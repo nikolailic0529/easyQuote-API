@@ -504,7 +504,6 @@ class AppointmentDataMapper implements CauserAware
                 'salesUnit',
                 'inviteesUsers',
                 'inviteesContacts',
-                'reminder',
                 'companies',
                 'opportunities',
                 'contacts',
@@ -512,6 +511,10 @@ class AppointmentDataMapper implements CauserAware
             ])->each(static function (string $relation) use ($old, $appointment): void {
                 $old->setRelation($relation, $appointment->$relation);
             });
+
+            if ($appointment->reminder !== null) {
+                $old->setRelation('reminder', (new AppointmentReminder())->setRawAttributes($appointment->reminder->getRawOriginal()));
+            }
         });
     }
 

@@ -25,6 +25,7 @@ use App\Models\System\CustomFieldValue;
 use App\Models\Team;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\Opportunity\ImportedOpportunityDataValidator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -36,30 +37,21 @@ use Tests\TestCase;
  * Class OpportunityTest
  * @group worldwide
  * @group opportunity
+ * @group build
  */
 class OpportunityTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        while (true) {
-            $deleted = $this->getConnection()->table('opportunities')->take(100)->delete();
+        $this->pruneUsing(Opportunity::query()->withoutGlobalScopes()->toBase());
+        $this->pruneUsing(Company::query()->withoutGlobalScopes()->whereNonSystem()->toBase());
 
-            if (!$deleted) {
-                break;
-            }
-        }
-
-        while (true) {
-            $deleted = $this->getConnection()->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM)->take(100)->delete();
-
-            if (!$deleted) {
-                break;
-            }
-        }
+        ImportedOpportunityDataValidator::resetFlags();
     }
 
     /**
@@ -96,15 +88,7 @@ class OpportunityTest extends TestCase
                         'status_reason',
                         'created_at',
                         'quotes_exist',
-                        'quote' => [
-//                            'id',
-//                            'quote_number',
-//                            'permissions' => [
-//                                'update',
-//                                'delete',
-//                            ],
-//                            'submitted_at',
-                        ]
+                        'quote',
                     ],
                 ],
             ]);
@@ -139,6 +123,9 @@ class OpportunityTest extends TestCase
         $this->getJson('api/opportunities?order_by_unit_name=asc')->assertOk();
     }
 
+    /**
+     * Test an ability to view opportunity filters.
+     */
     public function testCanViewOpportunityFilters(): void
     {
         $this->authenticateApi();
@@ -163,6 +150,9 @@ class OpportunityTest extends TestCase
             ]);
     }
 
+    /**
+     * Test an ability to filter paginated opportunities using customer name.
+     */
     public function testCanFilterPaginatedOpportunitiesUsingCustomerName(): void
     {
         $this->authenticateApi();
@@ -238,6 +228,9 @@ class OpportunityTest extends TestCase
             ->assertJsonPath('data.0.id', $op->getKey());
     }
 
+    /**
+     * Test an ability to filter paginated opportunities using sales unit.
+     */
     public function testCanFilterPaginatedOpportunitiesUsingSalesUnit(): void
     {
         $this->authenticateApi();
@@ -282,7 +275,10 @@ class OpportunityTest extends TestCase
             ->assertJsonPath('data.0.id', $op->getKey());
     }
 
-    public function testCanFilterPaginatedOpportunitiesAccountManager(): void
+    /**
+     * Test an ability to filter paginates opportunities using account manager.
+     */
+    public function testCanFilterPaginatedOpportunitiesUsingAccountManager(): void
     {
         $this->authenticateApi();
 
@@ -416,7 +412,7 @@ class OpportunityTest extends TestCase
 
         $user->syncRoles($role);
 
-        $opportunity = Opportunity::factory()
+        Opportunity::factory()
             ->for($user->salesUnits->first())
             ->for($user)
             ->create();
@@ -443,7 +439,6 @@ class OpportunityTest extends TestCase
 
         foreach ($response->json('data') as $item) {
             $this->assertTrue($item['permissions']['view']);
-//            $this->assertSame($user->getKey(), $item['user_id']);
         }
     }
 
@@ -464,7 +459,7 @@ class OpportunityTest extends TestCase
 
         $user->syncRoles($role);
 
-        $opportunity = Opportunity::factory()
+        Opportunity::factory()
             ->for($user)
             ->for($user->salesUnits->first())
             ->create([
@@ -668,7 +663,7 @@ class OpportunityTest extends TestCase
                     ],
                     'quote_number',
                     'submitted_at',
-                ]
+                ],
             ]);
     }
 
@@ -681,7 +676,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $account = tap(new Company(), function (Company $company) {
+        tap(new Company(), function (Company $company) {
             $company->name = $this->faker->company;
             $company->vat = Str::random(40);
             $company->type = 'External';
@@ -701,7 +696,6 @@ class OpportunityTest extends TestCase
         });
 
         $endUser = Company::factory()->create();
-//        $endUser->forceFill(['activated_at' => null])->save();
 
         $response = $this->getJson('api/external-companies')
 //            ->dump()
@@ -747,11 +741,11 @@ class OpportunityTest extends TestCase
             'is_contract_duration_checked' => false,
             'are_end_user_addresses_available' => true,
             'are_end_user_contacts_available' => true,
-            'sale_action_name' => Pipeline::query()->where('is_default',
-                1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where(
+                'is_default',
+                1
+            )->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
-
-//        unset($data['pipeline_stage_id']);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
             /** @var CustomField $field */
@@ -772,109 +766,109 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
-                "id",
-                "user_id",
-                "pipeline_id",
-                "pipeline",
-                "pipeline_stage_id",
-                "pipeline_stage",
-                "contract_type_id",
-                "contract_type",
-                "primary_account_id",
-                "end_user_id",
-                "end_user" => [
-                    "id",
-                    "addresses" => [
-                        "*" => [
-                            "id",
-                            "is_default",
+                'id',
+                'user_id',
+                'pipeline_id',
+                'pipeline',
+                'pipeline_stage_id',
+                'pipeline_stage',
+                'contract_type_id',
+                'contract_type',
+                'primary_account_id',
+                'end_user_id',
+                'end_user' => [
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                            'is_default',
                         ],
                     ],
-                    "contacts" => [
-                        "*" => [
-                            "id",
-                            "is_default",
-                        ],
-                    ],
-                ],
-                "are_end_user_addresses_available",
-                "are_end_user_contacts_available",
-                "primary_account" => [
-                    "id",
-                    "addresses" => [
-                        "*" => [
-                            "id",
-                            "is_default",
-                        ],
-                    ],
-                    "contacts" => [
-                        "*" => [
-                            "id",
-                            "is_default",
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                            'is_default',
                         ],
                     ],
                 ],
-                "primary_account_contact_id",
-                "primary_account_contact",
-                "account_manager_id",
-                "account_manager",
-                "project_name",
-                "nature_of_service",
-                "renewal_month",
-                "renewal_year",
-                "customer_status",
-                "end_user_name",
-                "hardware_status",
-                "region_name",
-                "opportunity_start_date",
-                "opportunity_end_date",
-                "opportunity_closing_date",
-                "is_contract_duration_checked",
-                "contract_duration_months",
-                "expected_order_date",
-                "customer_order_date",
-                "purchase_order_date",
-                "supplier_order_date",
-                "supplier_order_transaction_date",
-                "supplier_order_confirmation_date",
-                "opportunity_amount",
-                "opportunity_amount_currency_code",
-                "purchase_price",
-                "purchase_price_currency_code",
-                "list_price",
-                "list_price_currency_code",
-                "estimated_upsell_amount",
-                "estimated_upsell_amount_currency_code",
-                "margin_value",
-                "personal_rating",
-                "ranking",
-                "account_manager_name",
-                "service_level_agreement_id",
-                "sale_unit_name",
-                "drop_in",
-                "lead_source_name",
-                "has_higher_sla",
-                "is_multi_year",
-                "has_additional_hardware",
-                "has_service_credits",
-                "remarks",
-                "sale_action_name",
-                "updated_at",
-                "created_at",
+                'are_end_user_addresses_available',
+                'are_end_user_contacts_available',
+                'primary_account' => [
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                            'is_default',
+                        ],
+                    ],
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                            'is_default',
+                        ],
+                    ],
+                ],
+                'primary_account_contact_id',
+                'primary_account_contact',
+                'account_manager_id',
+                'account_manager',
+                'project_name',
+                'nature_of_service',
+                'renewal_month',
+                'renewal_year',
+                'customer_status',
+                'end_user_name',
+                'hardware_status',
+                'region_name',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'is_contract_duration_checked',
+                'contract_duration_months',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+                'opportunity_amount',
+                'opportunity_amount_currency_code',
+                'purchase_price',
+                'purchase_price_currency_code',
+                'list_price',
+                'list_price_currency_code',
+                'estimated_upsell_amount',
+                'estimated_upsell_amount_currency_code',
+                'margin_value',
+                'personal_rating',
+                'ranking',
+                'account_manager_name',
+                'service_level_agreement_id',
+                'sale_unit_name',
+                'drop_in',
+                'lead_source_name',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+                'remarks',
+                'sale_action_name',
+                'updated_at',
+                'created_at',
 
-                "status",
-                "status_reason",
+                'status',
+                'status_reason',
 
-                "base_list_price",
-                "base_purchase_price",
-                "base_opportunity_amount",
+                'base_list_price',
+                'base_purchase_price',
+                'base_opportunity_amount',
 
-                "is_opportunity_start_date_assumed",
-                "is_opportunity_end_date_assumed",
+                'is_opportunity_start_date_assumed',
+                'is_opportunity_end_date_assumed',
 
-                "suppliers_grid" => [
-                    "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                'suppliers_grid' => [
+                    '*' => [
+                        'id', 'supplier_name', 'country_name', 'contact_name', 'contact_email',
                     ],
                 ],
             ]);
@@ -962,8 +956,10 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 2,
-            'sale_action_name' => Pipeline::query()->where('is_default',
-                1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where(
+                'is_default',
+                1
+            )->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
@@ -985,89 +981,89 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
-                "id",
-                "user_id",
-                "pipeline_id",
-                "pipeline",
-                "contract_type_id",
-                "contract_type",
-                "primary_account_id",
-                "primary_account" => [
-                    "id",
-                    "addresses" => [
-                        "*" => [
-                            "id",
-                            "is_default",
+                'id',
+                'user_id',
+                'pipeline_id',
+                'pipeline',
+                'contract_type_id',
+                'contract_type',
+                'primary_account_id',
+                'primary_account' => [
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                            'is_default',
                         ],
                     ],
-                    "contacts" => [
-                        "*" => [
-                            "id",
-                            "is_default",
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                            'is_default',
                         ],
                     ],
                 ],
-                "primary_account_contact_id",
-                "primary_account_contact",
-                "account_manager_id",
-                "account_manager",
-                "project_name",
-                "nature_of_service",
-                "renewal_month",
-                "renewal_year",
-                "customer_status",
-                "end_user_name",
-                "hardware_status",
-                "region_name",
-                "opportunity_start_date",
-                "opportunity_end_date",
-                "opportunity_closing_date",
-                "is_contract_duration_checked",
-                "contract_duration_months",
-                "expected_order_date",
-                "customer_order_date",
-                "purchase_order_date",
-                "supplier_order_date",
-                "supplier_order_transaction_date",
-                "supplier_order_confirmation_date",
-                "opportunity_amount",
-                "opportunity_amount_currency_code",
-                "purchase_price",
-                "purchase_price_currency_code",
-                "list_price",
-                "list_price_currency_code",
-                "estimated_upsell_amount",
-                "estimated_upsell_amount_currency_code",
-                "margin_value",
-                "personal_rating",
-                "ranking",
-                "account_manager_name",
-                "service_level_agreement_id",
-                "sale_unit_name",
-                "drop_in",
-                "lead_source_name",
-                "has_higher_sla",
-                "is_multi_year",
-                "has_additional_hardware",
-                "has_service_credits",
-                "remarks",
-                "sale_action_name",
-                "updated_at",
-                "created_at",
+                'primary_account_contact_id',
+                'primary_account_contact',
+                'account_manager_id',
+                'account_manager',
+                'project_name',
+                'nature_of_service',
+                'renewal_month',
+                'renewal_year',
+                'customer_status',
+                'end_user_name',
+                'hardware_status',
+                'region_name',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'is_contract_duration_checked',
+                'contract_duration_months',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+                'opportunity_amount',
+                'opportunity_amount_currency_code',
+                'purchase_price',
+                'purchase_price_currency_code',
+                'list_price',
+                'list_price_currency_code',
+                'estimated_upsell_amount',
+                'estimated_upsell_amount_currency_code',
+                'margin_value',
+                'personal_rating',
+                'ranking',
+                'account_manager_name',
+                'service_level_agreement_id',
+                'sale_unit_name',
+                'drop_in',
+                'lead_source_name',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+                'remarks',
+                'sale_action_name',
+                'updated_at',
+                'created_at',
 
-                "status",
-                "status_reason",
+                'status',
+                'status_reason',
 
-                "base_list_price",
-                "base_purchase_price",
-                "base_opportunity_amount",
+                'base_list_price',
+                'base_purchase_price',
+                'base_opportunity_amount',
 
-                "is_opportunity_start_date_assumed",
-                "is_opportunity_end_date_assumed",
+                'is_opportunity_start_date_assumed',
+                'is_opportunity_end_date_assumed',
 
-                "suppliers_grid" => [
-                    "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                'suppliers_grid' => [
+                    '*' => [
+                        'id', 'supplier_name', 'country_name', 'contact_name', 'contact_email',
                     ],
                 ],
             ]);
@@ -1085,11 +1081,14 @@ class OpportunityTest extends TestCase
             ]);
     }
 
+    /**
+     * Test an ability to create a new opportunity with recurrence.
+     */
     public function testCanCreateOpportunityWithRecurrence(): void
     {
         $this->authenticateApi();
 
-        $account = tap(new Company(), function (Company $company) {
+        tap(new Company(), function (Company $company) {
             $company->name = $this->faker->company;
             $company->vat = Str::random(40);
             $company->type = 'External';
@@ -1150,8 +1149,10 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 2,
-            'sale_action_name' => Pipeline::query()->where('is_default',
-                1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where(
+                'is_default',
+                1
+            )->sole()->pipelineStages->random()->qualifiedStageName,
             'recurrence' => [
                 'stage_id' => Pipeline::query()->where('is_default', 1)->sole()->pipelineStages->random()->getKey(),
                 'condition' => OpportunityRecurrenceConditionEnum::Lost->value | OpportunityRecurrenceConditionEnum::Won->value,
@@ -1194,89 +1195,89 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
-                "id",
-                "user_id",
-                "pipeline_id",
-                "pipeline",
-                "contract_type_id",
-                "contract_type",
-                "primary_account_id",
-                "primary_account" => [
-                    "id",
-                    "addresses" => [
-                        "*" => [
-                            "id",
-                            "is_default",
+                'id',
+                'user_id',
+                'pipeline_id',
+                'pipeline',
+                'contract_type_id',
+                'contract_type',
+                'primary_account_id',
+                'primary_account' => [
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                            'is_default',
                         ],
                     ],
-                    "contacts" => [
-                        "*" => [
-                            "id",
-                            "is_default",
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                            'is_default',
                         ],
                     ],
                 ],
-                "primary_account_contact_id",
-                "primary_account_contact",
-                "account_manager_id",
-                "account_manager",
-                "project_name",
-                "nature_of_service",
-                "renewal_month",
-                "renewal_year",
-                "customer_status",
-                "end_user_name",
-                "hardware_status",
-                "region_name",
-                "opportunity_start_date",
-                "opportunity_end_date",
-                "opportunity_closing_date",
-                "is_contract_duration_checked",
-                "contract_duration_months",
-                "expected_order_date",
-                "customer_order_date",
-                "purchase_order_date",
-                "supplier_order_date",
-                "supplier_order_transaction_date",
-                "supplier_order_confirmation_date",
-                "opportunity_amount",
-                "opportunity_amount_currency_code",
-                "purchase_price",
-                "purchase_price_currency_code",
-                "list_price",
-                "list_price_currency_code",
-                "estimated_upsell_amount",
-                "estimated_upsell_amount_currency_code",
-                "margin_value",
-                "personal_rating",
-                "ranking",
-                "account_manager_name",
-                "service_level_agreement_id",
-                "sale_unit_name",
-                "drop_in",
-                "lead_source_name",
-                "has_higher_sla",
-                "is_multi_year",
-                "has_additional_hardware",
-                "has_service_credits",
-                "remarks",
-                "sale_action_name",
-                "updated_at",
-                "created_at",
+                'primary_account_contact_id',
+                'primary_account_contact',
+                'account_manager_id',
+                'account_manager',
+                'project_name',
+                'nature_of_service',
+                'renewal_month',
+                'renewal_year',
+                'customer_status',
+                'end_user_name',
+                'hardware_status',
+                'region_name',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'is_contract_duration_checked',
+                'contract_duration_months',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+                'opportunity_amount',
+                'opportunity_amount_currency_code',
+                'purchase_price',
+                'purchase_price_currency_code',
+                'list_price',
+                'list_price_currency_code',
+                'estimated_upsell_amount',
+                'estimated_upsell_amount_currency_code',
+                'margin_value',
+                'personal_rating',
+                'ranking',
+                'account_manager_name',
+                'service_level_agreement_id',
+                'sale_unit_name',
+                'drop_in',
+                'lead_source_name',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+                'remarks',
+                'sale_action_name',
+                'updated_at',
+                'created_at',
 
-                "status",
-                "status_reason",
+                'status',
+                'status_reason',
 
-                "base_list_price",
-                "base_purchase_price",
-                "base_opportunity_amount",
+                'base_list_price',
+                'base_purchase_price',
+                'base_opportunity_amount',
 
-                "is_opportunity_start_date_assumed",
-                "is_opportunity_end_date_assumed",
+                'is_opportunity_start_date_assumed',
+                'is_opportunity_end_date_assumed',
 
-                "suppliers_grid" => [
-                    "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                'suppliers_grid' => [
+                    '*' => [
+                        'id', 'supplier_name', 'country_name', 'contact_name', 'contact_email',
                     ],
                 ],
                 'recurrence' => [
@@ -1394,11 +1395,11 @@ class OpportunityTest extends TestCase
             'is_contract_duration_checked' => false,
             'are_end_user_addresses_available' => true,
             'are_end_user_contacts_available' => true,
-            'sale_action_name' => Pipeline::query()->where('is_default',
-                1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where(
+                'is_default',
+                1
+            )->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
-
-//        unset($data['pipeline_stage_id']);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
             /** @var CustomField $field */
@@ -1419,81 +1420,81 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                "id",
-                "user_id",
-                "pipeline_id",
-                "pipeline",
-                "pipeline_stage_id",
-                "pipeline_stage",
-                "contract_type_id",
-                "contract_type",
-                "primary_account_id",
-                "primary_account",
-                "end_user_id",
-                "end_user",
-                "are_end_user_addresses_available",
-                "are_end_user_contacts_available",
-                "primary_account_contact_id",
-                "primary_account_contact",
-                "account_manager_id",
-                "account_manager",
-                "project_name",
-                "nature_of_service",
-                "renewal_month",
-                "renewal_year",
-                "customer_status",
-                "end_user_name",
-                "hardware_status",
-                "region_name",
-                "opportunity_start_date",
-                "opportunity_end_date",
-                "opportunity_closing_date",
-                "is_contract_duration_checked",
-                "contract_duration_months",
-                "expected_order_date",
-                "customer_order_date",
-                "purchase_order_date",
-                "supplier_order_date",
-                "supplier_order_transaction_date",
-                "supplier_order_confirmation_date",
-                "opportunity_amount",
-                "opportunity_amount_currency_code",
-                "purchase_price",
-                "purchase_price_currency_code",
-                "list_price",
-                "list_price_currency_code",
-                "estimated_upsell_amount",
-                "estimated_upsell_amount_currency_code",
-                "margin_value",
-                "personal_rating",
-                "ranking",
-                "account_manager_name",
-                "service_level_agreement_id",
-                "sale_unit_name",
-                "drop_in",
-                "lead_source_name",
-                "has_higher_sla",
-                "is_multi_year",
-                "has_additional_hardware",
-                "has_service_credits",
-                "remarks",
-                "sale_action_name",
-                "updated_at",
-                "created_at",
+                'id',
+                'user_id',
+                'pipeline_id',
+                'pipeline',
+                'pipeline_stage_id',
+                'pipeline_stage',
+                'contract_type_id',
+                'contract_type',
+                'primary_account_id',
+                'primary_account',
+                'end_user_id',
+                'end_user',
+                'are_end_user_addresses_available',
+                'are_end_user_contacts_available',
+                'primary_account_contact_id',
+                'primary_account_contact',
+                'account_manager_id',
+                'account_manager',
+                'project_name',
+                'nature_of_service',
+                'renewal_month',
+                'renewal_year',
+                'customer_status',
+                'end_user_name',
+                'hardware_status',
+                'region_name',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'is_contract_duration_checked',
+                'contract_duration_months',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+                'opportunity_amount',
+                'opportunity_amount_currency_code',
+                'purchase_price',
+                'purchase_price_currency_code',
+                'list_price',
+                'list_price_currency_code',
+                'estimated_upsell_amount',
+                'estimated_upsell_amount_currency_code',
+                'margin_value',
+                'personal_rating',
+                'ranking',
+                'account_manager_name',
+                'service_level_agreement_id',
+                'sale_unit_name',
+                'drop_in',
+                'lead_source_name',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+                'remarks',
+                'sale_action_name',
+                'updated_at',
+                'created_at',
 
-                "status",
-                "status_reason",
+                'status',
+                'status_reason',
 
-                "base_list_price",
-                "base_purchase_price",
-                "base_opportunity_amount",
+                'base_list_price',
+                'base_purchase_price',
+                'base_opportunity_amount',
 
-                "is_opportunity_start_date_assumed",
-                "is_opportunity_end_date_assumed",
+                'is_opportunity_start_date_assumed',
+                'is_opportunity_end_date_assumed',
 
-                "suppliers_grid" => [
-                    "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                'suppliers_grid' => [
+                    '*' => [
+                        'id', 'supplier_name', 'country_name', 'contact_name', 'contact_email',
                     ],
                 ],
             ]);
@@ -1535,7 +1536,7 @@ class OpportunityTest extends TestCase
 
             ]);
 
-        $this->assertEmpty($response->json('primary_account_contact_id'));
+        $this->assertNotEmpty($response->json('primary_account_contact_id'));
     }
 
     /**
@@ -1549,53 +1550,53 @@ class OpportunityTest extends TestCase
             ->hasAttached(Role::factory()->hasAttached(
                 Permission::query()
                     ->whereIn('name', [
-                        "update_assets",
-                        "update_own_opportunities",
-                        "view_own_ww_quotes",
-                        "view_companies",
-                        "create_contacts",
-                        "download_ww_quote_payment_schedule",
-                        "view_own_sales_orders",
-                        "download_ww_quote_pdf",
-                        "download_quote_schedule",
-                        "view_addresses",
-                        "view_countries",
-                        "create_assets",
-                        "view_opportunities",
-                        "create_ww_quote_files",
-                        "view_promo_discounts",
-                        "create_opportunities",
-                        "download_quote_price",
-                        "view_own_ww_quote_files",
-                        "create_sales_orders",
-                        "download_contract_pdf",
-                        "view_discounts",
-                        "create_companies",
-                        "download_sales_order_pdf",
-                        "download_hpe_contract_pdf",
-                        "view_contacts",
-                        "update_own_ww_quotes",
-                        "view_prepay_discounts",
-                        "view_assets",
-                        "create_ww_quotes",
-                        "update_addresses",
-                        "view_vendors",
-                        "download_quote_pdf",
-                        "download_ww_quote_distributor_file",
-                        "create_countries",
-                        "create_addresses",
-                        "create_vendors",
-                        "update_companies",
-                        "update_own_ww_quote_files",
-                        "update_countries",
-                        "view_activities",
-                        "view_multiyear_discounts",
-                        "view_margins",
-                        "handle_own_ww_quote_files",
-                        "update_contacts",
-                        "view_sn_discounts",
-                        "update_vendors",
-                        "update_own_sales_orders",
+                        'update_assets',
+                        'update_own_opportunities',
+                        'view_own_ww_quotes',
+                        'view_companies',
+                        'create_contacts',
+                        'download_ww_quote_payment_schedule',
+                        'view_own_sales_orders',
+                        'download_ww_quote_pdf',
+                        'download_quote_schedule',
+                        'view_addresses',
+                        'view_countries',
+                        'create_assets',
+                        'view_opportunities',
+                        'create_ww_quote_files',
+                        'view_promo_discounts',
+                        'create_opportunities',
+                        'download_quote_price',
+                        'view_own_ww_quote_files',
+                        'create_sales_orders',
+                        'download_contract_pdf',
+                        'view_discounts',
+                        'create_companies',
+                        'download_sales_order_pdf',
+                        'download_hpe_contract_pdf',
+                        'view_contacts',
+                        'update_own_ww_quotes',
+                        'view_prepay_discounts',
+                        'view_assets',
+                        'create_ww_quotes',
+                        'update_addresses',
+                        'view_vendors',
+                        'download_quote_pdf',
+                        'download_ww_quote_distributor_file',
+                        'create_countries',
+                        'create_addresses',
+                        'create_vendors',
+                        'update_companies',
+                        'update_own_ww_quote_files',
+                        'update_countries',
+                        'view_activities',
+                        'view_multiyear_discounts',
+                        'view_margins',
+                        'handle_own_ww_quote_files',
+                        'update_contacts',
+                        'view_sn_discounts',
+                        'update_vendors',
+                        'update_own_sales_orders',
                     ])
                     ->get()
             )->state(['name' => 'WW Account Managers']))
@@ -1608,11 +1609,11 @@ class OpportunityTest extends TestCase
         /** @var WorldwideQuote $quote */
         $quote = WorldwideQuote::factory()
             ->for(
-                $quoteOwner = User::factory()
+                User::factory()
                     ->hasAttached($user->roles->first())
                     ->for($user->ledTeams->first(), 'team')
-                    ->create()
-                , 'user'
+                    ->create(),
+                'user'
             )
             ->for(
                 Opportunity::factory()
@@ -1635,10 +1636,12 @@ class OpportunityTest extends TestCase
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
-        $this->patchJson('api/opportunities/'.$opportunity->getKey(),
+        $this->patchJson(
+            'api/opportunities/'.$opportunity->getKey(),
             $data = [
                 'customer_order_date' => $this->faker->dateTimeBetween('+1day', '+3day')->format('Y-m-d'),
-            ])
+            ]
+        )
 //            ->dump()
             ->assertOk();
 
@@ -1723,8 +1726,10 @@ class OpportunityTest extends TestCase
             'primary_account_contact_id' => $primaryAccountContactID,
             'is_contract_duration_checked' => true,
             'contract_duration_months' => 60,
-            'sale_action_name' => Pipeline::query()->where('is_default',
-                1)->sole()->pipelineStages->random()->qualifiedStageName,
+            'sale_action_name' => Pipeline::query()->where(
+                'is_default',
+                1
+            )->sole()->pipelineStages->random()->qualifiedStageName,
         ]);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
@@ -1746,75 +1751,75 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                "id",
-                "user_id",
-                "pipeline_id",
-                "pipeline",
-                "contract_type_id",
-                "contract_type",
-                "primary_account_id",
-                "primary_account",
-                "primary_account_contact_id",
-                "primary_account_contact",
-                "account_manager_id",
-                "account_manager",
-                "project_name",
-                "nature_of_service",
-                "renewal_month",
-                "renewal_year",
-                "customer_status",
-                "end_user_name",
-                "hardware_status",
-                "region_name",
-                "opportunity_start_date",
-                "opportunity_end_date",
-                "opportunity_closing_date",
-                "is_contract_duration_checked",
-                "contract_duration_months",
-                "expected_order_date",
-                "customer_order_date",
-                "purchase_order_date",
-                "supplier_order_date",
-                "supplier_order_transaction_date",
-                "supplier_order_confirmation_date",
-                "opportunity_amount",
-                "opportunity_amount_currency_code",
-                "purchase_price",
-                "purchase_price_currency_code",
-                "list_price",
-                "list_price_currency_code",
-                "estimated_upsell_amount",
-                "estimated_upsell_amount_currency_code",
-                "margin_value",
-                "personal_rating",
-                "ranking",
-                "account_manager_name",
-                "service_level_agreement_id",
-                "sale_unit_name",
-                "drop_in",
-                "lead_source_name",
-                "has_higher_sla",
-                "is_multi_year",
-                "has_additional_hardware",
-                "has_service_credits",
-                "remarks",
-                "sale_action_name",
-                "updated_at",
-                "created_at",
+                'id',
+                'user_id',
+                'pipeline_id',
+                'pipeline',
+                'contract_type_id',
+                'contract_type',
+                'primary_account_id',
+                'primary_account',
+                'primary_account_contact_id',
+                'primary_account_contact',
+                'account_manager_id',
+                'account_manager',
+                'project_name',
+                'nature_of_service',
+                'renewal_month',
+                'renewal_year',
+                'customer_status',
+                'end_user_name',
+                'hardware_status',
+                'region_name',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'is_contract_duration_checked',
+                'contract_duration_months',
+                'expected_order_date',
+                'customer_order_date',
+                'purchase_order_date',
+                'supplier_order_date',
+                'supplier_order_transaction_date',
+                'supplier_order_confirmation_date',
+                'opportunity_amount',
+                'opportunity_amount_currency_code',
+                'purchase_price',
+                'purchase_price_currency_code',
+                'list_price',
+                'list_price_currency_code',
+                'estimated_upsell_amount',
+                'estimated_upsell_amount_currency_code',
+                'margin_value',
+                'personal_rating',
+                'ranking',
+                'account_manager_name',
+                'service_level_agreement_id',
+                'sale_unit_name',
+                'drop_in',
+                'lead_source_name',
+                'has_higher_sla',
+                'is_multi_year',
+                'has_additional_hardware',
+                'has_service_credits',
+                'remarks',
+                'sale_action_name',
+                'updated_at',
+                'created_at',
 
-                "status",
-                "status_reason",
+                'status',
+                'status_reason',
 
-                "base_list_price",
-                "base_purchase_price",
-                "base_opportunity_amount",
+                'base_list_price',
+                'base_purchase_price',
+                'base_opportunity_amount',
 
-                "is_opportunity_start_date_assumed",
-                "is_opportunity_end_date_assumed",
+                'is_opportunity_start_date_assumed',
+                'is_opportunity_end_date_assumed',
 
-                "suppliers_grid" => [
-                    "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                'suppliers_grid' => [
+                    '*' => [
+                        'id', 'supplier_name', 'country_name', 'contact_name', 'contact_email',
                     ],
                 ],
             ]);
@@ -1843,9 +1848,9 @@ class OpportunityTest extends TestCase
 //            ->dump()
             ->assertOk();
 
-        $this->assertEmpty($response->json('primary_account_contact_id'));
+        $this->assertNotEmpty($response->json('primary_account_contact_id'));
 
-        $response = $this->getJson('api/opportunities/'.$opportunity->getKey())
+        $this->getJson('api/opportunities/'.$opportunity->getKey())
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'contract_duration_months', 'is_contract_duration_checked',
@@ -1858,8 +1863,6 @@ class OpportunityTest extends TestCase
 
     /**
      * Test an ability to delete an existing opportunity.
-     *
-     * @return void
      */
     public function testCanDeleteOpportunity(): void
     {
@@ -1880,17 +1883,25 @@ class OpportunityTest extends TestCase
     /**
      * Test an ability to batch upload the opportunities from a file.
      * The new fields added: Reseller(yes/no), End User(yes/no), Vendor(Lenovo, IBM).
+     *
+     * @group opportunity-import
      */
     public function testCanUploadOpportunitiesBy20220121(): void
     {
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-21012022.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent(
+            'accounts-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-21012022.xlsx'))
+        );
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-21012022.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent(
+            'contacts-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-21012022.xlsx'))
+        );
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'opps-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx'))
+        );
 
         $this->authenticateApi();
 
@@ -1980,22 +1991,22 @@ class OpportunityTest extends TestCase
 
         $expectedAddresses = [
             [
-                "address_type" => "Invoice",
-                "address_1" => "Verseci u. 1-15",
-                "address_2" => null,
-                "city" => "Székesfehérvár,",
-                "state" => null,
-                "post_code" => "8000",
-                "country_code" => "HU",
+                'address_type' => 'Invoice',
+                'address_1' => 'Verseci u. 1-15',
+                'address_2' => null,
+                'city' => 'Székesfehérvár,',
+                'state' => null,
+                'post_code' => '8000',
+                'country_code' => 'HU',
             ],
             [
-                "address_type" => "Invoice",
-                "address_1" => "Riverside One, 22 Hester Road",
-                "address_2" => null,
-                "city" => "London",
-                "state" => "London",
-                "post_code" => "SW11 4AN",
-                "country_code" => "GB",
+                'address_type' => 'Invoice',
+                'address_1' => 'Riverside One, 22 Hester Road',
+                'address_2' => null,
+                'city' => 'London',
+                'state' => 'London',
+                'post_code' => 'SW11 4AN',
+                'country_code' => 'GB',
             ],
         ];
 
@@ -2008,17 +2019,25 @@ class OpportunityTest extends TestCase
      * Test an ability to batch upload the opportunities from a file.
      * The new fields added to the accounts file: Address 2, Hardware Country Code, Hardware Country Code, VAT, VAT Type, State Code
      * The new fields added to the contacts file: Type(Hardware, Software)
+     *
+     * @group opportunity-import
      */
     public function testCanUploadOpportunitiesBy20220323(): void
     {
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-23032022.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent(
+            'accounts.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-23032022.xlsx'))
+        );
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-23032022.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent(
+            'contacts.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-23032022.xlsx'))
+        );
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-23032022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'opps.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-23032022.xlsx'))
+        );
 
         $this->authenticateApi();
 
@@ -2125,11 +2144,15 @@ class OpportunityTest extends TestCase
     /**
      * Test an ability to batch upload the opportunities from a file without accounts & contacts file.
      * The new fields added: Reseller(yes/no), End User(yes/no), Vendor(Lenovo, IBM).
+     *
+     * @group opportunity-import
      */
     public function testCanUploadOpportunitiesBy20220121WithoutAccountsAndContactsFile(): void
     {
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'opps-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-21012022.xlsx'))
+        );
 
         $this->authenticateApi();
 
@@ -2152,16 +2175,20 @@ class OpportunityTest extends TestCase
 
     /**
      * Test an ability to batch upload the opportunities from a file.
+     *
+     * @group opportunity-import
      */
     public function testCanUploadOpportunitiesBy20220125(): void
     {
-        $existingCompany = Company::factory()->create([
+        Company::factory()->create([
             'name' => 'AT Company 5',
             'type' => 'External',
         ]);
 
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-25012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'opps-0211.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-25012022.xlsx'))
+        );
 
         $this->authenticateApi();
 
@@ -2232,12 +2259,14 @@ class OpportunityTest extends TestCase
     /**
      * Test an ability to batch upload the opportunities from a file without accounts data file.
      *
-     * @return void
+     * @group opportunity-import
      */
     public function testCanBatchUploadOpportunitiesWithoutAccountsDataFiles(): void
     {
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'Opportunities-04042021.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx'))
+        );
 
         $this->authenticateApi();
 
@@ -2265,20 +2294,25 @@ class OpportunityTest extends TestCase
     /**
      * Test an ability to see matched own primary account in imported opportunity,
      * when multiple companies are present with the same name owned by different users.
-     *
      */
     public function testCanSeeMatchedOwnPrimaryAccountInImportedOpportunity(): void
     {
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-17012022.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/ops-17012022.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'ops-17012022.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/ops-17012022.xlsx'))
+        );
 
-        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-17012022.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-17012022.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent(
+            'accounts-17012022.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-17012022.xlsx'))
+        );
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-17012022.xlsx',
-            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-17012022.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent(
+            'contacts-17012022.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-17012022.xlsx'))
+        );
 
-        $otherUserCompany = Company::factory()->create([
+        Company::factory()->create([
             'user_id' => User::factory()->create()->getKey(),
             'name' => 'ASA Computer',
             'type' => 'External',
@@ -2346,8 +2380,6 @@ class OpportunityTest extends TestCase
 
     /**
      * Test an ability to mark an existing opportunity as lost.
-     *
-     * @return void
      */
     public function testCanMarkOpportunityAsLost(): void
     {
@@ -2375,8 +2407,6 @@ class OpportunityTest extends TestCase
     /**
      * Test an ability to restore an existing opportunity,
      * i.e. mark an opportunity as not lost.
-     *
-     * @return void
      */
     public function testCanRestoreOpportunity(): void
     {
@@ -2415,16 +2445,12 @@ class OpportunityTest extends TestCase
 
     /**
      * Test an ability to delete opportunity with attached quote.
-     *
-     * @return void
      */
     public function testCanNotDeleteOpportunityWithAttachedQuote(): void
     {
         $opportunity = Opportunity::factory()->create();
 
-        $quote = factory(WorldwideQuote::class)->create([
-            'opportunity_id' => $opportunity->getKey(),
-        ]);
+        WorldwideQuote::factory()->for($opportunity)->create();
 
         $this->authenticateApi();
 
@@ -2435,7 +2461,6 @@ class OpportunityTest extends TestCase
 
     /**
      * Test an ability to view opportunity entities grouped by pipeline stages.
-     *
      */
     public function testCanViewOpportunitiesGroupedByPipelineStages(): void
     {
@@ -2590,7 +2615,6 @@ class OpportunityTest extends TestCase
 
     /**
      * Test an ability to view own opportunity entities grouped by pipeline stages.
-     *
      */
     public function testCanViewOwnOpportunitiesGroupedByPipelineStages(): void
     {
@@ -2769,7 +2793,7 @@ class OpportunityTest extends TestCase
         ]);
 
         $opp2 = Opportunity::factory()->create([
-            'order_in_pipeline_stage' => 0,
+            'order_in_pipeline_stage' => 1,
             'pipeline_id' => $pipelineStagesResp->json('id'),
             'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
             'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),

@@ -28,6 +28,7 @@ class PipelinerSyncErrorQueries
                 $model->qualifyColumn('archived_at'),
                 $model->qualifyColumn('resolved_at'),
             ])
+            ->has('entity')
             ->with('entity');
 
         return RequestQueryBuilder::for($query, $request)

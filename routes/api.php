@@ -568,6 +568,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('opportunity-forms', [OpportunityFormController::class, 'paginateOpportunityForms']);
     Route::get('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'showOpportunityForm']);
     Route::post('opportunity-forms', [OpportunityFormController::class, 'storeOpportunityForm']);
+    Route::post('opportunity-forms/{opportunity_form}/copy', [OpportunityFormController::class, 'copyOpportunityForm']);
     Route::patch('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'updateOpportunityForm']);
     Route::patch('opportunity-forms/{opportunity_form}/schema', [OpportunityFormController::class, 'updateSchemaOfOpportunityForm']);
     Route::delete('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'deleteOpportunityForm']);

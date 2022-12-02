@@ -5,6 +5,7 @@ namespace Tests;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
@@ -70,6 +71,13 @@ abstract class TestCase extends BaseTestCase
         });
     }
 
+    protected function pruneUsing(Builder $query, int $chunkSize = 100): void
+    {
+        do {
+            $count = $query->clone()->take($chunkSize)->delete();
+        } while ($count > 0);
+    }
+
     /**
      * Assert that the given associative array has equal values from the second one.
      *
@@ -77,10 +85,10 @@ abstract class TestCase extends BaseTestCase
      * @param array $assocValues
      * @return void
      */
-    protected function assertArrayHasEqualValues(array $assocArray, array $assocValues)
+    protected function assertArrayHasEqualValues(array $assocArray, array $assocValues): void
     {
         foreach ($assocValues as $key => $value) {
-            $this->assertEquals($assocValues[$key] ?? null, $assocArray[$key] ?? null);
+            $this->assertEquals($value, $assocArray[$key] ?? null);
         }
     }
 }

@@ -120,6 +120,11 @@ class AppointmentEntityService implements CauserAware
     public function updateAppointment(Appointment $appointment, UpdateAppointmentData $data): Appointment
     {
         return tap($appointment, function (Appointment $appointment) use ($data): void {
+            $existingReminder = $this->causer instanceof User
+                ? $appointment->activeReminders()->whereBelongsTo($this->causer, 'owner')->first()
+                : null;
+
+            $appointment->setRelation('reminder', $existingReminder);
             $oldAppointment = $this->dataMapper->cloneAppointment($appointment);
 
             $appointment->salesUnit()->associate($data->sales_unit_id);
@@ -131,14 +136,11 @@ class AppointmentEntityService implements CauserAware
             $appointment->start_date = Carbon::instance($data->start_date);
             $appointment->end_date = Carbon::instance($data->end_date);
 
-            $existingReminder = $this->causer instanceof User
-                ? $appointment->activeReminders()->whereBelongsTo($this->causer, 'owner')->first()
-                : null;
-
             $reminder = isset($data->reminder)
                 ? tap($existingReminder ?? new AppointmentReminder(),
                     function (AppointmentReminder $reminder) use ($appointment, $data): void {
                         $reminder->appointment()->associate($appointment);
+                        $appointment->setRelation('reminder', $reminder);
                         if (false === $reminder->exists) {
                             $reminder->owner()->associate($this->causer);
                         }

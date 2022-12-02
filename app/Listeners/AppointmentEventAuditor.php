@@ -73,6 +73,7 @@ class AppointmentEventAuditor implements ShouldQueue
                     newAttributeValues: $this->attributesToBeLogged($event->appointment)
                 )
             )
+            ->submitEmptyLogs(false)
             ->log('updated');
     }
 

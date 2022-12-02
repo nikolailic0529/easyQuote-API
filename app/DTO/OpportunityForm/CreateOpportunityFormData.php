@@ -10,13 +10,6 @@ final class CreateOpportunityFormData extends DataTransferObject
     /**
      * @Constraints\Uuid
      *
-     * @var string|null
-     */
-    public ?string $user_id;
-
-    /**
-     * @Constraints\Uuid
-     *
      * @var string
      */
     public string $pipeline_id;

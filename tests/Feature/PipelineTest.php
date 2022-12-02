@@ -8,16 +8,17 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class PipelineTest extends TestCase
 {
     use DatabaseTransactions;
 
     /**
      * Test an ability to view paginated pipeline entities.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedPipelines()
+    public function testCanViewPaginatedPipelines(): void
     {
         $this->authenticateApi();
 
@@ -63,10 +64,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view list of pipeline entities.
-     *
-     * @return void
      */
-    public function testCanViewListOfPipelines()
+    public function testCanViewListOfPipelines(): void
     {
         $this->authenticateApi();
 
@@ -78,7 +77,8 @@ class PipelineTest extends TestCase
                     'id',
                     'space_id',
                     'pipeline_name',
-                    'is_default'
+                    'is_default',
+                    'opportunity_form_exists',
                 ]
             ]);
 
@@ -123,10 +123,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view list of pipeline entities with opportunity form.
-     *
-     * @return void
      */
-    public function testCanViewListOfPipelinesWithoutOpportunityForm()
+    public function testCanViewListOfPipelinesWithoutOpportunityForm(): void
     {
         factory(Pipeline::class, 10)->create();
 
@@ -145,10 +143,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to create a new pipeline entity.
-     *
-     * @return void
      */
-    public function testCanCreateNewPipeline()
+    public function testCanCreateNewPipeline(): void
     {
         $this->authenticateApi();
 
@@ -184,10 +180,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to create an existing pipeline entity.
-     *
-     * @return void
      */
-    public function testCanUpdateExistingPipeline()
+    public function testCanUpdateExistingPipeline(): void
     {
         $this->authenticateApi();
 
@@ -276,10 +270,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to batch put pipeline entities.
-     *
-     * @return void
      */
-    public function testCanBatchPutPipelines()
+    public function testCanBatchPutPipelines(): void
     {
         $this->authenticateApi();
 
@@ -294,7 +286,8 @@ class PipelineTest extends TestCase
                 'pipeline_stages' => [
                     [
                         'id' => null,
-                        'stage_name' => Str::random(40)
+                        'stage_name' => Str::random(40),
+                        'stage_percentage' => 1,
                     ]
                 ],
                 'is_default' => false,
@@ -306,7 +299,8 @@ class PipelineTest extends TestCase
                 'pipeline_stages' => [
                     [
                         'id' => null,
-                        'stage_name' => Str::random(40)
+                        'stage_name' => Str::random(40),
+                        'stage_percentage' => 1,
                     ]
                 ],
                 'is_default' => true,
@@ -343,10 +337,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to mark pipeline entity as default.
-     *
-     * @return void
      */
-    public function testCanMarkPipelineAsDefault()
+    public function testCanMarkPipelineAsDefault(): void
     {
         $pipelines = factory(Pipeline::class, 2)->create();
 
@@ -401,10 +393,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to delete an existing pipeline entity.
-     *
-     * @return void
      */
-    public function testCanDeleteExistingPipeline()
+    public function testCanDeleteExistingPipeline(): void
     {
         $pipeline = factory(Pipeline::class)->create();
 
@@ -424,10 +414,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view opportunity form schema of an existing pipeline entity.
-     *
-     * @return void
      */
-    public function testCanViewOpportunityFormSchemaOfExistingPipeline()
+    public function testCanViewOpportunityFormSchemaOfExistingPipeline(): void
     {
         $this->authenticateApi();
 
@@ -455,10 +443,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view opportunity form schema of the default pipeline entity.
-     *
-     * @return void
      */
-    public function testCanViewOpportunityFormSchemaOfDefaultPipeline()
+    public function testCanViewOpportunityFormSchemaOfDefaultPipeline(): void
     {
         $this->authenticateApi();
 
@@ -474,10 +460,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view the default pipeline entity.
-     *
-     * @return void
      */
-    public function testCanViewDefaultPipeline()
+    public function testCanViewDefaultPipeline(): void
     {
         $this->authenticateApi();
 
@@ -504,7 +488,7 @@ class PipelineTest extends TestCase
     /**
      * Test an ability to view the specified pipeline entity.
      */
-    public function testCanViewSpecifiedPipeline()
+    public function testCanViewSpecifiedPipeline(): void
     {
         $pipeline = factory(Pipeline::class)->create();
 

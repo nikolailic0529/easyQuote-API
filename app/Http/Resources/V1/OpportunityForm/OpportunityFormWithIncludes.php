@@ -23,6 +23,7 @@ class OpportunityFormWithIncludes extends JsonResource
             'space_id' => $this->pipeline->space_id,
             'pipeline_id' => $this->pipeline_id,
             'pipeline' => $this->pipeline,
+            'form_schema_id' => $this->formSchema()->getParentKey(),
             'form_data' => $this->formSchema->form_data ?? [],
             'is_system' => (bool)$this->is_system,
             'created_at' => $this->{$this->getCreatedAtColumn()},

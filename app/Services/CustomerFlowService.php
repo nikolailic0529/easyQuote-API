@@ -76,9 +76,7 @@ class CustomerFlowService implements MigratesCustomerEntity, WithOutput
         /** @var Company $company */
         $company = Company::query()
             ->where('name', $customer->name)
-            ->where('user_id', $customer->user_id)
             ->where('type', self::COMPANY_TYPE)
-            ->whereRelation('categories', 'name', '=', self::COMPANY_CATEGORY)
             ->firstOrNew();
 
         return tap($company, function () use ($customer, $company) {
@@ -91,7 +89,9 @@ class CustomerFlowService implements MigratesCustomerEntity, WithOutput
                 ->value('contact_number');
 
             $company->name = $customer->name;
-            $company->user_id = $customer->user_id;
+            if ($company->owner === null) {
+                $company->owner()->associate($customer->user_id);
+            }
             $company->type = self::COMPANY_TYPE;
             $company->email ??= $customer->email ?? $emailFromCustomerAddresses;
             $company->vat ??= $customer->vat;

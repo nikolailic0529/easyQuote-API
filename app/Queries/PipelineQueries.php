@@ -82,15 +82,14 @@ class PipelineQueries
                 'is_default',
                 'pipeline_name',
             ])
+            ->withExists('opportunityForm')
             ->orderBy('is_default', 'desc')
             ->orderBy('pipeline_order');
 
-        return tap($query, function (Builder $query) use ($request) {
-
+        return tap($query, function (Builder $query) use ($request): void {
             if ($request->has('filter.space_id')) {
                 $query->whereIn('space_id', Arr::wrap($request->input('filter.space_id')));
             }
-
         });
     }
 

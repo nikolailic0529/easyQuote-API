@@ -40,12 +40,12 @@ class OpportunityFormTest extends TestCase
                         'permissions' => [
                             'view',
                             'update',
-                            'delete'
+                            'delete',
                         ],
-                    ]
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -54,8 +54,8 @@ class OpportunityFormTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->getJson('api/opportunity-forms?order_by_space_name=desc')->assertOk();
@@ -86,13 +86,49 @@ class OpportunityFormTest extends TestCase
                     'is_default',
                     'pipeline_name',
                     'created_at',
-                    'updated_at'
+                    'updated_at',
                 ],
                 'form_data',
                 'is_system',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
+    }
+
+    /**
+     * Test an ability to copy an existing opportunity form.
+     */
+    public function testCanCopyOpportunityForm(): void
+    {
+        $this->authenticateApi();
+
+        $form = factory(OpportunityForm::class)->create([
+            'is_system' => true,
+        ]);
+
+        $pipeline = factory(Pipeline::class)->create();
+
+        $r = $this->postJson('api/opportunity-forms/'.$form->getKey().'/copy', [
+            'pipeline_id' => $pipeline->getKey(),
+        ])
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'space_id',
+                'pipeline_id',
+                'pipeline' => [
+                    'id',
+                    'pipeline_name',
+                ],
+                'form_schema_id',
+                'form_data',
+                'is_system',
+                'created_at',
+                'updated_at',
+            ]);
+
+        $this->assertNotSame($r->json('id'), $form->getKey());
+        $this->assertNotSame($r->json('form_schema_id'), $form->formSchema()->getParentKey());
     }
 
     /**
@@ -119,11 +155,11 @@ class OpportunityFormTest extends TestCase
                     'is_default',
                     'pipeline_name',
                     'created_at',
-                    'updated_at'
+                    'updated_at',
                 ],
                 'form_data',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
     }
 
@@ -153,11 +189,11 @@ class OpportunityFormTest extends TestCase
                     'is_default',
                     'pipeline_name',
                     'created_at',
-                    'updated_at'
+                    'updated_at',
                 ],
                 'form_data',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
 
         $this->getJson('api/opportunity-forms/'.$opportunityForm->getKey())
@@ -172,14 +208,14 @@ class OpportunityFormTest extends TestCase
                     'is_default',
                     'pipeline_name',
                     'created_at',
-                    'updated_at'
+                    'updated_at',
                 ],
                 'form_data',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ])
             ->assertJsonFragment([
-                'pipeline_id' => $pipeline->getKey()
+                'pipeline_id' => $pipeline->getKey(),
             ]);
     }
 
@@ -195,7 +231,7 @@ class OpportunityFormTest extends TestCase
         $this->authenticateApi();
 
         $this->patchJson('api/opportunity-forms/'.$opportunityForm->getKey(), [
-            'pipeline_id' => $pipeline->getKey()
+            'pipeline_id' => $pipeline->getKey(),
         ])
             ->assertForbidden();
     }
@@ -212,9 +248,9 @@ class OpportunityFormTest extends TestCase
         $this->patchJson('api/opportunity-forms/'.$opportunityForm->getKey().'/schema', [
             'form_data' => $formData = [
                 [
-                    'id' => (string)Uuid::generate(4)
-                ]
-            ]
+                    'id' => (string) Uuid::generate(4),
+                ],
+            ],
         ])
             ->assertNoContent();
 
@@ -230,14 +266,14 @@ class OpportunityFormTest extends TestCase
                     'is_default',
                     'pipeline_name',
                     'created_at',
-                    'updated_at'
+                    'updated_at',
                 ],
                 'form_data',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ])
             ->assertJsonFragment([
-                'form_data' => $formData
+                'form_data' => $formData,
             ]);
     }
 
@@ -269,7 +305,7 @@ class OpportunityFormTest extends TestCase
         $this->authenticateApi();
 
         $this->deleteJson('api/opportunity-forms/'.$opportunityForm->getKey(), [
-            'pipeline_id' => $pipeline->getKey()
+            'pipeline_id' => $pipeline->getKey(),
         ])
             ->assertForbidden();
     }
