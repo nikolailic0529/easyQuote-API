@@ -67,21 +67,18 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
     {
         activity()->disableLogging();
 
-        /** @var HpeContractTemplate */
+        /** @var $replicatableTemplate HpeContractTemplate */
         $replicatableTemplate = $this->resolveModel($id);
 
         /** @var HpeContractTemplate */
         $template = DB::transaction(function () use ($replicatableTemplate) {
-            $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields']);
+            $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields', 'is_active', 'is_system']);
 
             $countries = $replicatableTemplate->countries()->pluck('id')->toArray();
 
-            $templateFields = $replicatableTemplate->templateFields()->pluck('id')->toArray();
-
-            return tap($template, function (HpeContractTemplate $template) use ($countries, $templateFields) {
+            return tap($template, function (HpeContractTemplate $template) use ($countries) {
                 $template->save();
                 $template->syncCountries($countries);
-                $template->syncTemplateFields($templateFields);
             });
         }, DB_TA);
 

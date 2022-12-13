@@ -24,7 +24,7 @@ use App\Models\WorldwideQuoteAsset;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\{Arr, Str};
+use Illuminate\Support\{Arr, Facades\DB, Str};
 use Tests\TestCase;
 use Tests\Unit\Traits\{AssertsListing};
 
@@ -871,8 +871,8 @@ class CompanyTest extends TestCase
                 'addresses' => [
                     '*' => [
                         'id',
-                    ]
-                ]
+                    ],
+                ],
             ])
             ->assertJsonCount(0, 'addresses');
 
@@ -889,8 +889,8 @@ class CompanyTest extends TestCase
                 'addresses' => [
                     '*' => [
                         'id',
-                    ]
-                ]
+                    ],
+                ],
             ])
             ->assertJsonCount(1, 'addresses');
 
@@ -962,8 +962,8 @@ class CompanyTest extends TestCase
                 'contacts' => [
                     '*' => [
                         'id',
-                    ]
-                ]
+                    ],
+                ],
             ])
             ->assertJsonCount(0, 'contacts');
 
@@ -980,8 +980,8 @@ class CompanyTest extends TestCase
                 'contacts' => [
                     '*' => [
                         'id',
-                    ]
-                ]
+                    ],
+                ],
             ])
             ->assertJsonCount(1, 'contacts');
 
@@ -1321,7 +1321,7 @@ class CompanyTest extends TestCase
 
         Opportunity::factory()->count(10)
             ->for($company, relationship: 'primaryAccount')
-            ->has(WorldwideQuote::factory())
+            ->has(WorldwideQuote::factory()->has(SalesOrder::factory()))
             ->create();
 
         $response = $this->getJson('api/companies/'.$company->getKey().'/opportunities')
@@ -1351,8 +1351,26 @@ class CompanyTest extends TestCase
                             'quote_number',
                             'user',
                             'submitted_at',
+                            'permissions' => [
+                                'view',
+                                'update',
+                                'delete',
+                            ],
+                            'sales_order_exists',
+                            'sales_order' => [
+                                'id',
+                                'order_number',
+                                'order_date',
+                                'permissions' => [
+                                    'view',
+                                    'update',
+                                    'delete',
+                                ],
+                                'submitted_at',
+                            ],
                         ],
                         'created_at',
+                        'archived_at',
                     ],
                 ],
             ]);

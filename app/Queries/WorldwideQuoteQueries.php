@@ -132,7 +132,9 @@ class WorldwideQuoteQueries
             ->addSelect([
                 'user_fullname' => User::query()->select('user_fullname')->whereColumn('users.id', 'worldwide_quotes.user_id')->limit(1),
                 'company_name' => Company::query()->select('name')->whereColumn('companies.id', 'active_version.company_id')->limit(1),
+                'companies.id as primary_account_id',
                 'companies.name as customer_name',
+                'end_user.id as end_user_id',
                 'end_user.name as end_user_name',
                 'opportunities.opportunity_closing_date as valid_until_date',
                 'opportunities.opportunity_start_date as customer_support_start_date',

@@ -95,6 +95,7 @@ class CompanyWithIncludes extends JsonResource
             ],
 
             'created_at' => $this->{$this->getCreatedAtColumn()}?->format(config('date.format_time')),
+            'updated_at' => $this->{$this->getUpdatedAtColumn()}?->format(config('date.format_time')),
             'activated_at' => $this->activated_at,
         ];
     }

@@ -8,6 +8,7 @@ use App\Models\ContractType;
 use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesOrder;
 use App\Models\SalesUnit;
 use App\Models\User;
 use App\Queries\Enums\OperatorEnum;
@@ -162,7 +163,21 @@ class OpportunityQueries
                             ->with('user')
                             ->with('contractType')
                             ->with('salesUnit')
-                            ->withExists('salesOrder');
+                            ->with(['salesOrder' => static function (Relation $relation): void {
+                                $salesOrder = new SalesOrder();
+
+                                $relation->select([
+                                    $salesOrder->getQualifiedKeyName(),
+                                    $salesOrder->user()->getQualifiedForeignKeyName(),
+                                    $salesOrder->worldwideQuote()->getQualifiedForeignKeyName(),
+                                    ...$salesOrder->qualifyColumns([
+                                        'order_number',
+                                        'order_date',
+                                        'submitted_at',
+                                    ]),
+                                ])
+                                    ->with('salesUnit');
+                            }]);
                     },
                 ])
                 ->withExists('worldwideQuotes')
@@ -197,6 +212,7 @@ class OpportunityQueries
                     'opportunity_end_date',
                     'status',
                     'status_reason',
+                    'archived_at',
                 ]),
 
                 "{$pipelineStageModel->qualifyColumn('stage_name')} as sale_action_name",

@@ -10,6 +10,8 @@ use Elasticsearch\Client;
 
 class PerformElasticsearchSearch implements RequestQueryBuilderPipe
 {
+    const SIZE = 1_000;
+
     public function __construct(protected Client $client,
                                 protected string $searchParameterName = 'search')
     {
@@ -33,6 +35,7 @@ class PerformElasticsearchSearch implements RequestQueryBuilderPipe
                     ->modelIndex($builder->getModel())
                     ->queryString($searchQuery)
                     ->escapeQueryString()
+                    ->size(self::SIZE)
                     ->toArray()
             );
         });

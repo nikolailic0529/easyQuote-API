@@ -53,8 +53,7 @@ class OpportunityAsRelationResource extends JsonResource
             }),
             'account_name' => $this->account_name,
             'account_manager_name' => $this->account_manager_name,
-            'opportunity_amount' => sprintf('%s %s', $baseCurrencySymbol,
-                number_format((float) $this->opportunity_amount, 2)),
+            'opportunity_amount' => sprintf('%s %s', $baseCurrencySymbol, number_format((float)$this->opportunity_amount, 2)),
             'opportunity_start_date' => $this->opportunity_start_date,
             'opportunity_end_date' => $this->opportunity_end_date,
             'opportunity_closing_date' => $this->opportunity_closing_date,
@@ -72,6 +71,7 @@ class OpportunityAsRelationResource extends JsonResource
                 'delete' => $user->can('delete', $this->resource),
             ],
             'created_at' => $this->created_at,
+            'archived_at' => $this->archived_at,
         ];
     }
 }

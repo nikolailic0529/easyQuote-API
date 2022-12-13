@@ -25,6 +25,8 @@ class ElasticsearchQuery implements Arrayable
 
     protected ?string $queryString = null;
 
+    protected ?int $size = null;
+
     protected string $queryStringType = self::QST_CROSS_FIELDS;
 
     protected array $body = [];
@@ -66,6 +68,13 @@ class ElasticsearchQuery implements Arrayable
         return $this;
     }
 
+    public function size(int $value): ElasticsearchQuery
+    {
+        $this->size = $value;
+
+        return $this;
+    }
+
     public function wrapQueryString(string $char = self::QS_WILDCARD): ElasticsearchQuery
     {
         $this->queryString = $char.$this->queryString.$char;
@@ -88,7 +97,7 @@ class ElasticsearchQuery implements Arrayable
             return [];
         }
 
-        return [
+        $body = [
             'query' => [
                 'query_string' => [
                     'query' => $this->queryString,
@@ -97,6 +106,11 @@ class ElasticsearchQuery implements Arrayable
             ],
         ];
 
+        if ($this->size) {
+            $body['size'] = $this->size;
+        }
+
+        return $body;
     }
 
     public static function escapeReservedChars(string $string): string

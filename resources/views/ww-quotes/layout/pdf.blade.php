@@ -23,7 +23,7 @@
         }
 
         html, body {
-            font-size: 14px;
+            font-size: 13px;
         }
     </style>
 </head>

@@ -304,6 +304,8 @@ class WorldwideQuotePolicy
         // This is done for optimization of listing queries.
         if (isset($worldwideQuote->sales_order_exists)) {
             return (bool) $worldwideQuote->sales_order_exists;
+        } elseif ($worldwideQuote->relationLoaded('salesOrder')) {
+            return $worldwideQuote->salesOrder !== null;
         } else {
             return $worldwideQuote->salesOrder()->exists();
         }

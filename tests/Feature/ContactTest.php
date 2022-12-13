@@ -296,6 +296,19 @@ class ContactTest extends TestCase
 
         $image = UploadedFile::fake()->image('contact.jpg');
 
+        $this->travelTo(now()->subMinute());
+        $company = Company::factory()->create();
+        $this->travelBack();
+
+        $companyUpdatedAt = $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at'
+            ])
+            ->json('updated_at');
+
         $response = $this->postJson('api/contacts', $data = [
             'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'contact_type' => $this->faker->randomElement(['Invoice', 'Hardware', 'Software']),
@@ -303,7 +316,7 @@ class ContactTest extends TestCase
             'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
             'picture' => $image,
-            'company_relations' => Company::factory()->count(2)->create()->map->only('id')->all(),
+            'company_relations' => [['id' => $company->getKey()]],
         ])
 //                ->dump()
             ->assertOk()
@@ -369,6 +382,16 @@ class ContactTest extends TestCase
 
             $this->assertContains($contactModelKey, $r->json('contacts.*.id'));
         }
+
+        $r = $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at'
+            ]);
+
+        $this->assertNotSame($companyUpdatedAt, $r->json('updated_at'));
 
         return $contactModelKey;
     }

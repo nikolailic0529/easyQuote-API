@@ -10,9 +10,11 @@ use App\Events\Address\AddressCreated;
 use App\Events\Address\AddressDeleted;
 use App\Events\Address\AddressUpdated;
 use App\Models\Address;
+use App\Models\Company;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as BaseCollection;
 use Spatie\LaravelData\DataCollection;
 use Webpatser\Uuid\Uuid;
@@ -44,6 +46,12 @@ class AddressEntityService implements CauserAware
             $this->connection->transaction(static function () use ($companyRelations, $address): void {
                 $address->save();
                 $address->companies()->syncWithoutDetaching($companyRelations->all());
+
+                $address->companies()
+                    ->where('updated_at', '<', $address->{$address->getUpdatedAtColumn()})
+                    ->get()
+                    ->each
+                    ->touch();
             });
 
             $this->eventDispatcher->dispatch(
@@ -68,6 +76,12 @@ class AddressEntityService implements CauserAware
             $this->connection->transaction(static function () use ($companyRelations, $address): void {
                 $address->save();
                 $address->companies()->syncWithoutDetaching($companyRelations->all());
+
+                $address->companies()
+                    ->where('updated_at', '<', $address->{$address->getUpdatedAtColumn()})
+                    ->get()
+                    ->each
+                    ->touch();
             });
 
             $this->eventDispatcher->dispatch(

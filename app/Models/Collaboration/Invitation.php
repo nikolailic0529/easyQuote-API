@@ -138,11 +138,6 @@ class Invitation extends Model implements SearchableEntity
         return $this->role->name ?? null;
     }
 
-    public function getRouteKeyName()
-    {
-        return 'invitation_token';
-    }
-
     public function resend()
     {
         $this->fireModelEvent('resended', false);

@@ -199,7 +199,7 @@ class OpportunityPolicy
         })();
 
         if ($response->allowed()) {
-            if ($opportunity->quotes_exist ?? $opportunity->worldwideQuotes()->exists()) {
+            if ($this->quotesExist($opportunity)) {
                 return ResponseBuilder::deny()
                     ->action('delete')
                     ->item('opportunity')
@@ -209,5 +209,19 @@ class OpportunityPolicy
         }
 
         return $response;
+    }
+
+    protected function quotesExist(Opportunity $opportunity): bool
+    {
+        // When explicitly defined quotes_exist field is present on the model entity,
+        // We will use it to check an existence of sales order.
+        // This is done for optimization of listing queries.
+        if (isset($opportunity->quotes_exist)) {
+            return (bool) $opportunity->quotes_exist;
+        } elseif ($opportunity->relationLoaded('worldwideQuotes')) {
+            return $opportunity->worldwideQuotes->isNotEmpty();
+        } else {
+            return $opportunity->worldwideQuotes()->exists();
+        }
     }
 }

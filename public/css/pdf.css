@@ -1,5 +1,5 @@
 html, body {
-    font-size: 18px;
+    font-size: 13px;
 }
 
 h5, .h5 {
@@ -7,7 +7,7 @@ h5, .h5 {
 }
 
 b {
-    font-weight: 600
+    font-weight: 400
 }
 
 .blue-text {
@@ -29,7 +29,7 @@ b {
 }
 
 .table {
-    font-size: 14px;
+    font-size: 12px;
     margin-bottom: 0;
     border-color: #1c6ea4;
     border-width: 2px;
@@ -86,19 +86,19 @@ hr.blue {
 }
 
 .text-size-12 {
-    font-size: 12px!important;
+    font-size: 11px!important;
 }
 
 .text-size-14 {
-    font-size: 14px!important;
+    font-size: 12px!important;
 }
 
 .text-size-16 {
-    font-size: 16px!important;
+    font-size: 13px!important;
 }
 
 .text-size-17 {
-    font-size: 17px!important;
+    font-size: 13px!important;
 }
 
 .br-0 {
@@ -138,4 +138,10 @@ hr.blue {
 
 .preline {
     white-space: pre-line;
+}
+
+
+.row, .form-group {
+    margin-top: 0px;
+    margin-bottom: .75rem;
 }

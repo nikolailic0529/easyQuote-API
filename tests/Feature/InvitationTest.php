@@ -169,7 +169,7 @@ class InvitationTest extends TestCase
             'role_id' => factory(Role::class)->create()->getKey(),
         ]);
 
-        $this->putJson("api/invitations/cancel/$invitation->invitation_token")
+        $this->putJson("api/invitations/cancel/{$invitation->getKey()}")
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -199,7 +199,7 @@ class InvitationTest extends TestCase
             'role_id' => factory(Role::class)->create()->getKey(),
         ]);
 
-        $this->deleteJson("api/invitations/$invitation->invitation_token")
+        $this->deleteJson("api/invitations/{$invitation->getKey()}")
             ->assertOk()
             ->assertExactJson([true]);
 

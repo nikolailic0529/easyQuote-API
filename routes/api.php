@@ -91,8 +91,8 @@ Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function ()
     Route::post('signin', [AuthController::class, 'signin'])->name('signin');
     Route::post('logout-user', [AuthController::class, 'authenticateAndLogout']);
 
-    Route::get('signup/{invitation}', [AuthController::class, 'showInvitation']);
-    Route::post('signup/{invitation}', [UserController::class, 'registerUser']);
+    Route::get('signup/{invitation:invitation_token}', [AuthController::class, 'showInvitation']);
+    Route::post('signup/{invitation:invitation_token}', [UserController::class, 'registerUser']);
 
     Route::get('reset-password/{reset}', [AuthController::class, 'verifyPasswordReset']);
     Route::post('reset-password/{reset}', [AuthController::class, 'resetPassword']);
@@ -236,6 +236,9 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::put('users/reset-account/{user}', [UserController::class, 'resetAccount']);
 
         Route::apiResource('invitations', InvitationController::class, ['only' => ROUTE_RD]);
+        Route::get('invitations', [InvitationController::class, 'index']);
+        Route::get('invitations/{invitation}', [InvitationController::class, 'show']);
+        Route::delete('invitations/{invitation}', [InvitationController::class, 'destroy']);
         Route::put('invitations/resend/{invitation}', [InvitationController::class, 'resend']);
         Route::put('invitations/cancel/{invitation}', [InvitationController::class, 'cancel']);
 

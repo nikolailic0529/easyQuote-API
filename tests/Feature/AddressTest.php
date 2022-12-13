@@ -341,6 +341,19 @@ class AddressTest extends TestCase
 
         $this->authenticateApi();
 
+        $this->travelTo(now()->subMinute());
+        $company = Company::factory()->create();
+        $this->travelBack();
+
+        $companyUpdatedAt = $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at'
+            ])
+            ->json('updated_at');
+
         $data = [
             'address_type' => 'Software',
             'address_1' => Str::random(40),
@@ -351,7 +364,7 @@ class AddressTest extends TestCase
             'state_code' => Str::random(10),
             'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
             'contact_id' => Contact::factory()->create()->getKey(),
-            'company_relations' => Company::factory()->count(2)->create()->map->only('id')->all(),
+            'company_relations' => [['id' => $company->getKey()]],
         ];
 
         $this->patchJson('api/addresses/'.$addressID, $data)
@@ -381,6 +394,16 @@ class AddressTest extends TestCase
         }
 
         $this->assertSame($response->json('country.id'), $data['country_id']);
+
+        $r = $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at'
+            ]);
+
+        $this->assertNotSame($companyUpdatedAt, $r->json('updated_at'));
     }
 
     /**

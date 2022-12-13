@@ -59,6 +59,8 @@ class RebuildSearchQueueService implements CauserAware, LoggerAware
             }
         ]);
 
+        $job->onQueue('search-index');
+
         $this->busDispatcher->dispatch($job);
 
         $this->logger->info('Search rebuild: queued.');

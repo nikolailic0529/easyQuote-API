@@ -177,6 +177,18 @@ return [
             'timeout' => 60,
             'nice' => 0,
         ],
+        'search-index' => [
+            'connection' => 'redis',
+            'queue' => ['search-index'],
+            'balance' => 'auto',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 10,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 60 * 10,
+            'nice' => 0,
+        ],
         'long' => [
             'connection' => 'redis_long',
             'queue' => ['long'],
