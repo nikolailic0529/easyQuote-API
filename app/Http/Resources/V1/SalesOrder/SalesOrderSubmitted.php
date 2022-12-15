@@ -27,6 +27,8 @@ class SalesOrderSubmitted extends JsonResource
             'worldwide_quote_id' => $this->worldwide_quote_id,
             'opportunity_id' => $this->opportunity_id,
             'sales_unit_id' => $this->sales_unit_id,
+            'primary_account_id' => $this->primary_account_id,
+            'end_user_id' => $this->end_user_id,
             'order_number' => $this->order_number,
             'order_date' => $this->order_date,
             'status' => $this->status,

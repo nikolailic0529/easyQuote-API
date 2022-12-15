@@ -112,6 +112,13 @@ return [
 
     'custom_fields' => [
 
+        /**
+         * Used for country name normalization.
+         */
+        'country_field_aliases' => [
+            'UK' => 'United Kingdom',
+        ],
+
         'vendor_code_option_name' => [
             'ARU' => 'Aruba',
             'CIS' => 'Cisco',

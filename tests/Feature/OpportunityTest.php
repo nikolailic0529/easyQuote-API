@@ -74,6 +74,8 @@ class OpportunityTest extends TestCase
                     '*' => [
                         'id',
                         'company_id',
+                        'primary_account_id',
+                        'end_user_id',
                         'opportunity_type',
                         'unit_name',
                         'account_name',
@@ -2819,14 +2821,14 @@ class OpportunityTest extends TestCase
         $this->assertTrue(count($pipelineStagesResp->json('pipeline_stages')) > 1);
 
         $opp = Opportunity::factory()->create([
-            'order_in_pipeline_stage' => 0,
+            'order_in_pipeline_stage' => 1,
             'pipeline_id' => $pipelineStagesResp->json('id'),
             'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.0.id'),
             'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.0.qualified_stage_name'),
         ]);
 
         $opp2 = Opportunity::factory()->create([
-            'order_in_pipeline_stage' => 1,
+            'order_in_pipeline_stage' => 2,
             'pipeline_id' => $pipelineStagesResp->json('id'),
             'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
             'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),
@@ -2840,7 +2842,7 @@ class OpportunityTest extends TestCase
         ]);
 
         $opp4 = Opportunity::factory()->create([
-            'order_in_pipeline_stage' => 6,
+            'order_in_pipeline_stage' => 4,
             'pipeline_id' => $pipelineStagesResp->json('id'),
             'pipeline_stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
             'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),
@@ -2878,7 +2880,7 @@ class OpportunityTest extends TestCase
         $this->assertSame($opp->getKey(), $pipelineResp->json('0.opportunities.0.id'));
 
         $this->patchJson("api/opportunities/{$opp->getKey()}/stage", [
-            'order_in_stage' => 1,
+            'order_in_stage' => 2,
             'stage_id' => $pipelineStagesResp->json('pipeline_stages.1.id'),
         ])
 //            ->dump()
@@ -2904,7 +2906,7 @@ class OpportunityTest extends TestCase
                 'order_in_pipeline_stage',
             ])
             ->assertJson([
-                'order_in_pipeline_stage' => 1,
+                'order_in_pipeline_stage' => 2,
                 'sale_action_name' => $pipelineStagesResp->json('pipeline_stages.1.qualified_stage_name'),
             ]);
 
@@ -2937,6 +2939,6 @@ class OpportunityTest extends TestCase
             ]);
 
         $this->assertNotEmpty($pipelineResp->json('1.opportunities'));
-        $this->assertSame($opp->getKey(), $pipelineResp->json('1.opportunities.1.id'));
+        $this->assertSame($opp->getKey(), $pipelineResp->json('1.opportunities.2.id'));
     }
 }

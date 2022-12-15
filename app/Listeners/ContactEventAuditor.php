@@ -53,11 +53,12 @@ class ContactEventAuditor
             ->by($event->getCauser())
             ->withProperties(
                 $this->changesDetector->getAttributeValuesToBeLogged(
-                    $event->getNewContact(), self::$logAttributes,
-                    $this->changesDetector->getModelChanges($event->getContact(), self::$logAttributes),
-
+                    model: $event->getNewContact(), logAttributes: self::$logAttributes,
+                    oldAttributeValues: $this->changesDetector->getModelChanges($event->getContact(), self::$logAttributes),
+                    diff: true
                 )
             )
+            ->submitEmptyLogs(false)
             ->log('updated');
     }
 

@@ -23,14 +23,14 @@ use Database\Seeders\{AssetCategorySeeder,
     RecurrenceTypeSeeder,
     SalesUnitSeeder,
     SpaceSeeder,
+    StateSeeder,
     SystemSettingSeeder,
     TeamSeeder,
     TemplateFieldTypeSeeder,
     TimezoneSeeder,
     VendorSeeder,
     WorldwideQuoteTemplateSeeder,
-    WorldwideSalesOrderTemplateSeeder
-};
+    WorldwideSalesOrderTemplateSeeder};
 use Illuminate\Console\Command;
 use Illuminate\Database\Console\Seeds\SeedCommand;
 use Illuminate\Foundation\Console\{OptimizeClearCommand, OptimizeCommand};
@@ -125,6 +125,11 @@ class UpdateApplicationCommand extends Command
 
         $this->call(SeedCommand::class, [
             '--class' => CountrySeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => StateSeeder::class,
             '--force' => true
         ]);
 

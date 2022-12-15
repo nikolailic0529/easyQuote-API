@@ -160,6 +160,22 @@ return [
             'permission' => 0777,
         ],
 
+        'addresses' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/addresses.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'google-requests' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/google-requests.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
         'search' => [
             'driver' => 'daily',
             'path' => storage_path('/logs/search.log'),
@@ -206,6 +222,7 @@ return [
             'with' => [
                 'stream' => 'php://stdout',
             ],
+            'level' => 'debug',
         ],
 
         'syslog' => [

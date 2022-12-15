@@ -46,6 +46,9 @@ class DatabaseSeeder extends Seeder
         $this->call(CountrySeeder::class);
         $this->command->info('Seeded the countries');
 
+        $this->call(StateSeeder::class);
+        $this->command->info('Seeded the states');
+
         $this->call(TimezoneSeeder::class);
         $this->command->info('Seeded the timezones');
 

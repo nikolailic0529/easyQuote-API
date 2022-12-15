@@ -9,75 +9,58 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 
 class CachedSettingRepository implements SettingRepository
 {
-    protected Cache $cache;
-
     protected static string $getValueCacheKeyPrefix = 'get-system-setting';
     protected static string $hasValueCacheKeyPrefix = 'has-system-setting';
 
-    /**
-     * CachedSettingRepository constructor.
-     */
-    public function __construct(Cache $cache)
-    {
-        $this->cache = $cache;
+    public function __construct(
+        protected Cache $cache
+    ) {
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         return $this->has($offset);
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function offsetGet($offset)
+    public function offsetGet($offset): mixed
     {
         return $this->get($offset);
     }
 
     /**
-     * @inheritDoc
-     * @throws \App\Repositories\System\Exceptions\SettingException
+     * @throws SettingException
      */
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
-        return $this->set($offset, $value);
+        $this->set($offset, $value);
     }
 
     /**
-     * @inheritDoc
-     * @throws \App\Repositories\System\Exceptions\SettingException
+     * @throws SettingException
      */
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
-        return $this->set($offset, null);
+        $this->set($offset, null);
     }
 
-    public function get(string $key, $default = null)
+    public function get(string $key, $default = null): mixed
     {
         if (false === $this->has($key)) {
             return value($default);
         }
 
-        return $this->cache->rememberForever(static::$getValueCacheKeyPrefix.":$key", function () use ($key) {
-
+        return $this->cache->rememberForever(static::$getValueCacheKeyPrefix.":$key", function () use ($key): mixed {
             return SystemSetting::query()->where('key', $key)->value('value');
-
         });
     }
 
     /**
-     * @throws \App\Repositories\System\Exceptions\SettingException
+     * @throws SettingException
      */
     public function set(string $key, $value): bool
     {
         if (false === $this->has($key)) {
-
             throw SettingException::undefinedSettingKey($key);
-
         }
 
         SystemSetting::query()
@@ -89,11 +72,10 @@ class CachedSettingRepository implements SettingRepository
 
     public function has(string $key): bool
     {
-        return (bool)$this->cache->rememberForever(static::$hasValueCacheKeyPrefix.":$key", function () use ($key) {
-
-            return SystemSetting::query()->where('key', $key)->exists();
-
-        });
+        return (bool) $this->cache->rememberForever(static::$hasValueCacheKeyPrefix.":$key",
+            function () use ($key): bool {
+                return SystemSetting::query()->where('key', $key)->exists();
+            });
     }
 
     protected function rememberValueOfKey(string $key, $value): bool

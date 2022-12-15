@@ -85,7 +85,7 @@ class UpdateOpportunity extends FormRequest
                 Rule::exists(User::class, 'id')->withoutTrashed(),
             ],
             'project_name' => [
-                'bail', 'string', 'max:191',
+                'bail', 'string', 'max:100',
                 Rule::unique(Opportunity::class)
                     ->ignore($this->route('opportunity'))
                     ->withoutTrashed()

@@ -203,6 +203,8 @@ class OpportunityQueries
                 $opportunityModel->salesUnit()->getQualifiedForeignKeyName(),
                 $opportunityModel->owner()->getQualifiedForeignKeyName(),
                 $opportunityModel->accountManager()->getQualifiedForeignKeyName(),
+                $opportunityModel->primaryAccount()->getQualifiedForeignKeyName(),
+                $opportunityModel->endUser()->getQualifiedForeignKeyName(),
                 "{$opportunityModel->qualifyColumn('base_opportunity_amount')} as opportunity_amount",
                 $opportunityModel->getQualifiedCreatedAtColumn(),
                 ...$opportunityModel->qualifyColumns([

@@ -123,10 +123,7 @@ class OpportunityDataMapper implements CauserAware
             return $this->countryNameOfSupplierCache[$countryName];
         }
 
-        $normalizedCountryName = match ($countryName) {
-            'UK' => 'GB',
-            default => $countryName,
-        };
+        $normalizedCountryName = config('pipeliner.custom_fields.country_field_aliases', [])[$countryName] ?? $countryName;
 
         return $this->countryNameOfSupplierCache[$countryName] = Country::query()
             ->where('iso_3166_2', $normalizedCountryName)

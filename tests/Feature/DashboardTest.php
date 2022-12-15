@@ -7,7 +7,9 @@ use App\Models\Data\Country;
 use App\Models\Quote\Quote;
 use App\Models\Quote\QuoteTotal;
 use App\Models\Role;
+use App\Models\System\SystemSetting;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -195,6 +197,8 @@ class DashboardTest extends TestCase
 
     public function testCanViewStatsOfUserOwnEntities()
     {
+        DB::table('system_settings')->where('key', 'base_currency')->update(['value' => 'GBP']);
+
         /** @var Role $role */
         $role = factory(Role::class)->create();
 

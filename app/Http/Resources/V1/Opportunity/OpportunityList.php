@@ -50,6 +50,8 @@ class OpportunityList extends JsonResource
                 return 'Open';
 
             }),
+            'primary_account_id' => $this->primaryAccount()->getParentKey(),
+            'end_user_id' => $this->endUser()->getParentKey(),
             'account_name' => $this->account_name,
             'account_manager_name' => $this->account_manager_name,
             'opportunity_amount' => sprintf('%s %s', $baseCurrencySymbol, number_format((float)$this->opportunity_amount, 2)),

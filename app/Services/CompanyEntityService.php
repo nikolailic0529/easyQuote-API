@@ -272,10 +272,7 @@ class CompanyEntityService implements CauserAware
     public function partiallyUpdateCompany(Company $company, PartialUpdateCompanyData $data): Company
     {
         return tap($company, function (Company $company) use ($data) {
-            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
-                $oldCompany->setRawAttributes($company->getRawOriginal());
-                $oldCompany->load(['addresses', 'contacts', 'vendors']);
-            });
+            $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $company->forceFill((clone $data)->except('logo', 'delete_logo', 'addresses', 'contacts')->toArray());
 
@@ -328,10 +325,7 @@ class CompanyEntityService implements CauserAware
     public function attachAddressToCompany(Company $company, Address $address): Company
     {
         return tap($company, function (Company $company) use ($address): void {
-            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
-                $oldCompany->setRawAttributes($company->getRawOriginal());
-                $oldCompany->load(['addresses', 'contacts', 'vendors']);
-            });
+            $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $this->connection->transaction(static function () use ($company, $address) {
                 $company->addresses()->syncWithoutDetaching($address);
@@ -346,10 +340,7 @@ class CompanyEntityService implements CauserAware
     public function detachAddressFromCompany(Company $company, Address $address): Company
     {
         return tap($company, function (Company $company) use ($address): void {
-            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
-                $oldCompany->setRawAttributes($company->getRawOriginal());
-                $oldCompany->load(['addresses', 'contacts', 'vendors']);
-            });
+            $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $this->connection->transaction(static function () use ($company, $address) {
                 $company->addresses()->detach($address);
@@ -364,10 +355,7 @@ class CompanyEntityService implements CauserAware
     public function attachContactToCompany(Company $company, Contact $contact): Company
     {
         return tap($company, function (Company $company) use ($contact): void {
-            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
-                $oldCompany->setRawAttributes($company->getRawOriginal());
-                $oldCompany->load(['addresses', 'contacts', 'vendors']);
-            });
+            $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $this->connection->transaction(static function () use ($company, $contact) {
                 $company->contacts()->syncWithoutDetaching($contact);
@@ -382,10 +370,7 @@ class CompanyEntityService implements CauserAware
     public function detachContactFromCompany(Company $company, Contact $contact): Company
     {
         return tap($company, function (Company $company) use ($contact): void {
-            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
-                $oldCompany->setRawAttributes($company->getRawOriginal());
-                $oldCompany->load(['addresses', 'contacts', 'vendors']);
-            });
+            $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $this->connection->transaction(static function () use ($company, $contact) {
                 $company->contacts()->detach($contact);

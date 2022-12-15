@@ -6,6 +6,7 @@ use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
 use Illuminate\Contracts\Support\MessageBag as MessageBagContract;
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 
@@ -55,12 +56,24 @@ class ValidSupplierData implements Rule
             return false;
         }
 
-        if ($fieldValue->allowedBy()->where('field_value', $value[$this->countryFieldKey])->doesntExist()) {
+        if ($fieldValue->allowedBy()->whereIn('field_value', $this->resolveCountryFieldAliases($value[$this->countryFieldKey]))->doesntExist()) {
             $this->messageBag->add($this->countryFieldKey, sprintf("The supplier is not allowed for the country `%s`", $value[$this->countryFieldKey]));
             return false;
         }
 
         return true;
+    }
+
+    protected function resolveCountryFieldAliases(string $country): array
+    {
+        return collect(config('pipeliner.custom_fields.country_field_aliases', []))
+            ->filter(static function (string $name) use ($country): bool {
+                return $country === $name;
+            })
+            ->values()
+            ->keys()
+            ->merge([$country])
+            ->all();
     }
 
     /**

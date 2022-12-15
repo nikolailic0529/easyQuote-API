@@ -394,6 +394,8 @@ class SalesOrderTest extends TestCase
                         'id',
                         'contract_type_id',
                         'worldwide_quote_id',
+                        'primary_account_id',
+                        'end_user_id',
                         'order_number',
                         'status',
                         'failure_reason',

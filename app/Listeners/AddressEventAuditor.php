@@ -24,20 +24,21 @@ class AddressEventAuditor
         'contact_email',
     ];
 
-    public function __construct(protected ActivityLogger  $activityLogger,
-                                protected ChangesDetector $changesDetector)
-    {
+    public function __construct(
+        protected ActivityLogger $activityLogger,
+        protected ChangesDetector $changesDetector
+    ) {
     }
 
 
-    public function subscribe(Dispatcher $events)
+    public function subscribe(Dispatcher $events): void
     {
         $events->listen(AddressCreated::class, [self::class, 'handleCreatedEvent']);
         $events->listen(AddressUpdated::class, [self::class, 'handleUpdatedEvent']);
         $events->listen(AddressDeleted::class, [self::class, 'handleDeletedEvent']);
     }
 
-    public function handleCreatedEvent(AddressCreated $event)
+    public function handleCreatedEvent(AddressCreated $event): void
     {
         $this->activityLogger
             ->on($event->getAddress())
@@ -48,22 +49,25 @@ class AddressEventAuditor
             ->log('created');
     }
 
-    public function handleUpdatedEvent(AddressUpdated $event)
+    public function handleUpdatedEvent(AddressUpdated $event): void
     {
         $this->activityLogger
             ->on($event->getAddress())
             ->by($event->getCauser())
             ->withProperties(
                 $this->changesDetector->getAttributeValuesToBeLogged(
-                    $event->getNewAddress(), self::$logAttributes,
-                    $this->changesDetector->getModelChanges($event->getAddress(), self::$logAttributes),
-
+                    model: $event->getNewAddress(),
+                    logAttributes: self::$logAttributes,
+                    oldAttributeValues: $this->changesDetector->getModelChanges($event->getAddress(),
+                        self::$logAttributes),
+                    diff: true,
                 )
             )
+            ->submitEmptyLogs(false)
             ->log('updated');
     }
 
-    public function handleDeletedEvent(AddressDeleted $event)
+    public function handleDeletedEvent(AddressDeleted $event): void
     {
         $this->activityLogger
             ->on($event->getAddress())

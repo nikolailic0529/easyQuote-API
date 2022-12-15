@@ -4,8 +4,10 @@ namespace App\Services\Opportunity;
 
 use App\Enum\CompanyType;
 use App\Models\Company;
+use App\Models\Opportunity;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Factory;
+use Illuminate\Validation\Rule;
 
 class ImportedOpportunityDataValidator
 {
@@ -45,7 +47,7 @@ class ImportedOpportunityDataValidator
     ): MessageBag {
         return tap(new MessageBag(),
             function (MessageBag $errors) use ($row, $accountsDataDictionary, $accountContactsDataDictionary) {
-                $validator = $this->validatorFactory->make(data: $row, rules: $this->getRules());
+                $validator = $this->validatorFactory->make(data: $row, rules: $this->getRules(), messages: $this->getMessages());
 
                 $errors->merge($validator->errors());
 
@@ -79,6 +81,11 @@ class ImportedOpportunityDataValidator
     protected function getRules(): array
     {
         return [
+            'project_name' => [
+                'bail', 'required', 'string', 'max:100',
+                Rule::unique(Opportunity::class)
+                    ->withoutTrashed(),
+            ],
             'primary_account_name' => [
                 'bail', 'nullable', 'string', 'max:191',
             ],
@@ -232,6 +239,15 @@ class ImportedOpportunityDataValidator
             'pipeline' => [
                 'bail', 'required', 'string', 'max:191',
             ],
+        ];
+    }
+
+    protected function getMessages(): array
+    {
+        return [
+            'project_name.required' => 'The opportunity name is required.',
+            'project_name.unique' => 'The opportunity name [:input] already taken.',
+            'project_name.max' => 'The opportunity name can not be greater than :max characters.',
         ];
     }
 }
