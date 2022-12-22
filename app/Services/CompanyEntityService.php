@@ -10,6 +10,7 @@ use App\DTO\Company\PartialUpdateCompanyData;
 use App\DTO\Company\UpdateCompanyContactData;
 use App\DTO\Company\UpdateCompanyData;
 use App\DTO\MissingValue;
+use App\Enum\CompanyStatusEnum;
 use App\Events\Company\CompanyCreated;
 use App\Events\Company\CompanyDeleted;
 use App\Events\Company\CompanyUpdated;
@@ -90,6 +91,7 @@ class CompanyEntityService implements CauserAware
             $company->email = $data->email;
             $company->phone = $data->phone;
             $company->website = $data->website;
+            $company->status = CompanyStatusEnum::Active;
             $company->salesUnit()->associate($data->sales_unit_id);
             $company->defaultVendor()->associate($data->default_vendor_id);
             $company->defaultTemplate()->associate($data->default_template_id);

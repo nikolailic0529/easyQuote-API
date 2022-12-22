@@ -8,7 +8,7 @@ use Symfony\Component\Validator\Constraints;
 final class SubmitOrderAddressData extends DataTransferObject
 {
     /**
-     * @Constraints\Choice({"Machine","Invoice"})
+     * @Constraints\Choice({"Machine","Hardware","Invoice"})
      *
      * @var string
      */

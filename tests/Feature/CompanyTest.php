@@ -11,6 +11,7 @@ use App\Models\Company;
 use App\Models\CompanyCategory;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
+use App\Models\Industry;
 use App\Models\Note\Note;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
@@ -39,7 +40,7 @@ class CompanyTest extends TestCase
     {
         parent::setUp();
 
-        $this->getConnection()->table('companies')->whereRaw('NOT flags & '.Company::SYSTEM);
+        $this->pruneUsing(Company::query()->whereNonSystem()->withoutGlobalScopes()->toBase());
     }
 
     /**
@@ -338,6 +339,83 @@ class CompanyTest extends TestCase
             ]);
 
         $this->assertNotContains('End User', $response->json('categories'));
+    }
+
+    /**
+     * Test an ability to view an existing company.
+     */
+    public function testCanViewCompany(): void
+    {
+        $this->authenticateApi();
+
+        $company = Company::factory()
+            ->for(User::factory(), relationship: 'owner')
+            ->hasAttached(Industry::query()->take(2)->get())
+            ->create();
+
+        $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'is_system',
+                'is_source_frozen',
+                'status',
+                'status_name',
+                'registered_number',
+                'name',
+                'short_code',
+                'type',
+                'customer_type',
+                'source',
+                'source_long',
+                'vat',
+                'vat_type',
+                'email',
+                'phone',
+                'website',
+                'employees_number',
+                'logo',
+                'user' => [
+                    'id',
+                    'email',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'user_fullname',
+                ],
+                'customer_type',
+                'addresses' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+                'categories',
+                'industries' => [
+                    '*' => [
+                        'id',
+                        'sic_code',
+                        'description',
+                    ],
+                ],
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                ],
+                'creation_date',
+                'created_at',
+                'updated_at',
+                'activated_at',
+            ])
+            ->assertJsonCount(2, 'industries');
     }
 
     /**

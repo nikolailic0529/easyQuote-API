@@ -109,6 +109,10 @@ class CompanyQueries
                     operator: OperatorEnum::Like,
                     valueProcessor: LikeValueProcessor::new()
                 ),
+                new FilterFieldPipe(
+                    field: 'source',
+                    column: $companyModel->qualifyColumn('source'),
+                ),
                 new PerformElasticsearchSearch($this->elasticsearch)
             )
             ->allowOrderFields(

@@ -388,6 +388,8 @@ class ContractTest extends TestCase
      */
     public function testCanExportContract()
     {
+//        $this->markTestSkipped('wkhtmltopdf-amd64: error while loading shared libraries: libpng15.so.15');
+
         $this->authenticateApi();
 
         /** @var QuoteFile $priceList */

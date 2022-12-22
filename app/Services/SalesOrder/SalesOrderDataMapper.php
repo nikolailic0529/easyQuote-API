@@ -17,6 +17,7 @@ use App\DTO\WorldwideQuote\Export\QuotePriceData;
 use App\DTO\WorldwideQuote\Export\TemplateAssets;
 use App\DTO\WorldwideQuote\Export\TemplateData;
 use App\DTO\WorldwideQuote\Export\WorldwideQuotePreviewData;
+use App\Enum\AddressType;
 use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
@@ -191,19 +192,17 @@ class SalesOrderDataMapper
 
         $addresses = [];
 
-        foreach ($activeQuoteVersion->worldwideDistributions as $distributorQuote) {
-            $addresses[] = $distributorQuote->addresses
-                ->sortByDesc('pivot.is_default')
-                ->first(function (Address $address) {
-                    return $address->address_type === 'Machine';
-                });
+        $addresses[] = $activeQuoteVersion->worldwideQuote->opportunity->primaryAccount->addresses
+            ->sortByDesc('pivot.is_default')
+            ->first(function (Address $address) {
+                return in_array($address->address_type, [AddressType::HARDWARE, AddressType::MACHINE]);
+            });
 
-            $addresses[] = $distributorQuote->addresses
-                ->sortByDesc('pivot.is_default')
-                ->first(function (Address $address) {
-                    return $address->address_type === 'Invoice';
-                });
-        }
+        $addresses[] = $activeQuoteVersion->worldwideQuote->opportunity->primaryAccount->addresses
+            ->sortByDesc('pivot.is_default')
+            ->first(function (Address $address) {
+                return $address->address_type === AddressType::INVOICE;
+            });
 
         $submitAddressDataMapper = function (Address $address): SubmitOrderAddressData {
             return new SubmitOrderAddressData([
@@ -398,13 +397,13 @@ class SalesOrderDataMapper
         $addresses[] = $quoteActiveVersion->worldwideQuote->opportunity->primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
             ->first(function (Address $address) {
-                return $address->address_type === 'Machine';
+                return in_array($address->address_type, [AddressType::HARDWARE, AddressType::MACHINE]);
             });
 
         $addresses[] = $quoteActiveVersion->worldwideQuote->opportunity->primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
             ->first(function (Address $address) {
-                return $address->address_type === 'Invoice';
+                return $address->address_type === AddressType::INVOICE;
             });
 
         $submitAddressDataMapper = function (Address $address): SubmitOrderAddressData {

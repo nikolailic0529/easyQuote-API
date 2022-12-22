@@ -242,6 +242,7 @@ return [
         App\Providers\VendorServicesServiceProvider::class,
         App\Providers\LogKeeperServiceProvider::class,
         App\Providers\ImageServiceProvider::class,
+        App\Providers\DataAllocationServiceProvider::class,
     ],
 
     /*

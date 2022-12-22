@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Builders\OpportunityBuilder;
+use App\Contracts\AssignableToUsers;
 use App\Contracts\HasOwnAppointments;
 use App\Contracts\HasOwner;
 use App\Contracts\HasOwnNotes;
@@ -144,7 +145,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read OpportunityValidationResult|null $validationResult
  * @property-read Collection<int, Appointment> $ownAppointments
  */
-class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes, ProvidesIdForHumans, HasSalesUnit
+class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToAppointments, HasOwnAppointments, LinkedToTasks, HasOwnNotes, AssignableToUsers, ProvidesIdForHumans, HasSalesUnit
 {
     use Uuid, SoftDeletes, HasRelationships, HasFactory, HasTimestamps;
 
@@ -187,6 +188,11 @@ class Opportunity extends Model implements SearchableEntity, HasOwner, LinkedToA
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function assignedToUsers(): MorphToMany
+    {
+        return $this->morphToMany(User::class, 'model', 'user_assigned_to_model');
     }
 
     public function salesUnit(): BelongsTo

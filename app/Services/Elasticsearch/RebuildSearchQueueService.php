@@ -4,11 +4,13 @@ namespace App\Services\Elasticsearch;
 
 use App\Contracts\CauserAware;
 use App\Contracts\LoggerAware;
+use App\Events\Search\SearchRebuildCompleted;
 use App\Jobs\Search\RebuildSearch;
 use App\Services\Elasticsearch\Exceptions\QueueRebuildSearchException;
 use Illuminate\Contracts\Bus\QueueingDispatcher as BusDispatcher;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\Eloquent\Model;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -53,10 +55,14 @@ class RebuildSearchQueueService implements CauserAware, LoggerAware
             causer: $this->causer,
         );
 
+        $causer = $this->causer;
+
         $job->chain([
-            static function (LockProvider $lockProvider) use ($lockName): void {
+            static function (LockProvider $lockProvider, EventDispatcher $events) use ($lockName, $causer): void {
                 $lockProvider->lock($lockName)->forceRelease();
-            }
+
+                $events->dispatch(new SearchRebuildCompleted($causer));
+            },
         ]);
 
         $job->onQueue('search-index');

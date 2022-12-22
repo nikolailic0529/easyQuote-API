@@ -2,24 +2,25 @@
 
 namespace App\Providers;
 
-use Illuminate\Contracts\Support\DeferrableProvider;
+use App\Services\Company\DataEnrichment\SourceCollection;
+use App\Services\Company\DataEnrichment\Sources\CompaniesHouseSource;
+use App\Services\Company\DataEnrichment\Sources\Source;
 use Illuminate\Support\ServiceProvider;
 
-class CompanyServiceProvider extends ServiceProvider implements DeferrableProvider
+class CompanyServiceProvider extends ServiceProvider
 {
-    /**
-     * Register services.
-     *
-     * @return void
-     */
-    public function register()
+    public function register(): void
     {
-        //
-    }
+        $this->app->when(CompaniesHouseSource::class)
+            ->needs('$config')
+            ->giveConfig('services.companies_house');
 
-    public function provides()
-    {
-        return [
-        ];
+        $this->app->tag([
+            CompaniesHouseSource::class,
+        ], Source::class);
+
+        $this->app->when(SourceCollection::class)
+            ->needs(Source::class)
+            ->giveTagged(Source::class);
     }
 }

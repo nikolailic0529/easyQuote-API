@@ -18,7 +18,7 @@ class StateSeeder extends Seeder
     {
         $seeds = collect(yaml_parse_file(__DIR__.'/models/countries+states+cities.yml'));
 
-        $seeds = $seeds->map(static function (array $seed) {
+        $seeds = $seeds->lazy()->map(static function (array $seed) {
             try {
                 $country = DB::table('countries')
                     ->where('iso_3166_2', $seed['iso2'])

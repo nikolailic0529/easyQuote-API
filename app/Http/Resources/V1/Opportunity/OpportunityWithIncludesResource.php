@@ -3,6 +3,7 @@
 namespace App\Http\Resources\V1\Opportunity;
 
 
+use App\Http\Resources\V1\User\UserRelationResource;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -25,6 +26,7 @@ class OpportunityWithIncludesResource extends JsonResource
         return [
             'id' => $this->getKey(),
             'user_id' => $this->owner()->getParentKey(),
+            'user' => UserRelationResource::make($this->owner),
 
             'sales_unit_id' => $this->salesUnit()->getParentKey(),
             'sales_unit' => $this->salesUnit,

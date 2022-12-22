@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\V1\Company;
 
+use App\Http\Resources\V1\User\UserRelationResource;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -24,6 +25,7 @@ class CompanyWithIncludes extends JsonResource
         return [
             'id' => $this->getKey(),
             'user_id' => $this->owner()->getParentKey(),
+            'user' => UserRelationResource::make($this->owner),
             'sales_unit_id' => $this->salesUnit()->getParentKey(),
 
             'default_vendor_id' => $this->defaultVendor()->getParentKey(),
@@ -33,6 +35,10 @@ class CompanyWithIncludes extends JsonResource
             'is_system' => $this->getFlag(Company::SYSTEM),
             'is_source_frozen' => $this->getFlag(Company::FROZEN_SOURCE),
 
+            'status' => $this->status,
+            'status_name' => $this->status->name,
+
+            'registered_number' => $this->registered_number,
             'name' => $this->name,
             'short_code' => $this->short_code,
             'type' => $this->type,
@@ -47,9 +53,11 @@ class CompanyWithIncludes extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'website' => $this->website,
+            'employees_number' => $this->employees_number,
             'logo' => filled($this->logo) ? $this->logo : null,
 
             'categories' => $this->categories->pluck('name'),
+            'industries' => $this->industries,
 
             'vendors' => value(function () {
                 /** @var CompanyWithIncludes|\App\Models\Company $this */
@@ -94,6 +102,7 @@ class CompanyWithIncludes extends JsonResource
                 'delete' => $request->user()->can('delete', $this->resource),
             ],
 
+            'creation_date' => isset($this->creation_date) ? format('date', $this->creation_date) : null,
             'created_at' => $this->{$this->getCreatedAtColumn()}?->format(config('date.format_time')),
             'updated_at' => $this->{$this->getUpdatedAtColumn()}?->format(config('date.format_time')),
             'activated_at' => $this->activated_at,

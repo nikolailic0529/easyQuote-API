@@ -445,6 +445,58 @@ class OpportunityTest extends TestCase
     }
 
     /**
+     * Test an ability to view assigned opportunity entities.
+     */
+    public function testCanViewAssignedPaginatedOpportunities(): void
+    {
+        $this->markTestSkipped('Data allocation ignored for now');
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_opportunities', 'update_own_opportunities', 'delete_own_opportunities');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->syncRoles($role);
+
+        $opportunity = Opportunity::factory()
+            ->for($user->salesUnits->first())
+            ->hasAttached($user, pivot: [
+                'assignment_start_date' => today(), 'assignment_end_date' => today()->addDay(),
+            ], relationship: 'assignedToUsers')
+            ->create();
+
+        Opportunity::factory()->create();
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/opportunities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'permissions',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $opportunity->getKey());
+
+        foreach ($response->json('data') as $item) {
+            $this->assertTrue($item['permissions']['view']);
+            $this->assertTrue($item['permissions']['update']);
+            $this->assertTrue($item['permissions']['delete']);
+        }
+    }
+
+    /**
      * Test an ability to view own lost opportunity entities.
      */
     public function testCanViewOwnPaginatedLostOpportunities(): void
@@ -555,6 +607,7 @@ class OpportunityTest extends TestCase
 
         /** @var Opportunity $opportunity */
         $opportunity = Opportunity::factory()
+            ->for(User::factory(), relationship: 'owner')
             ->for($primaryAccount, relationship: 'primaryAccount')
             ->has(OpportunityValidationResult::factory(), relationship: 'validationResult')
             ->has(OpportunitySupplier::factory(2))
@@ -569,6 +622,14 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'user_id',
+                'user' => [
+                    'id',
+                    'email',
+                    'first_name',
+                    'middle_name',
+                    'last_name',
+                    'user_fullname'
+                ],
                 'pipeline_id',
                 'pipeline',
                 'contract_type_id',

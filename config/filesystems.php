@@ -113,7 +113,14 @@ return [
             'root' => storage_path('app/public/ww_quote_files'),
             'url' => env('APP_URL').'/storage/ww_quote_files',
             'visibility' => 'public'
-        ]
+        ],
+
+        'data_allocation_files' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/data_allocation_files'),
+            'url' => env('APP_URL').'/storage/data_allocation_files',
+            'visibility' => 'public',
+        ],
 
     ],
 

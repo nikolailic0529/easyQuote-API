@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
 use App\Models\Data\Country;
+use App\Models\DataAllocation\DataAllocation;
 use App\Models\HpeContract;
 use App\Models\Note\Note;
 use App\Models\Opportunity;
@@ -50,6 +51,7 @@ use App\Policies\ContractPolicy;
 use App\Policies\ContractTemplatePolicy;
 use App\Policies\CountryPolicy;
 use App\Policies\CustomerPolicy;
+use App\Policies\DataAllocationPolicy;
 use App\Policies\HpeContractPolicy;
 use App\Policies\HpeContractTemplatePolicy;
 use App\Policies\ImportableColumnPolicy;
@@ -130,6 +132,7 @@ class AuthServiceProvider extends ServiceProvider
         Note::class                     => NotePolicy::class,
         Pipeline::class                 => PipelinePolicy::class,
         SalesUnit::class                => SalesUnitPolicy::class,
+        DataAllocation::class           => DataAllocationPolicy::class,
         PipelinerSyncError::class       => PipelinerSyncErrorPolicy::class,
         AppointmentReminder::class      => AppointmentReminderPolicy::class,
         TaskReminder::class             => TaskReminderPolicy::class,

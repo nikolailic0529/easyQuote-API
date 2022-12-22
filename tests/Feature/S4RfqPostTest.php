@@ -97,6 +97,8 @@ class S4RfqPostTest extends TestCase
      */
     public function testCanPostRfqWithoutAddressData(): void
     {
+        $this->authenticateAsClient();
+
         $attributes = Arr::only(factory(Customer::class)->state('request')->raw(), [
             'customer_name',
             'rfq_number',
@@ -108,7 +110,6 @@ class S4RfqPostTest extends TestCase
             'invoicing_terms',
             'addresses',
         ]);
-        $this->authenticateAsClient();
 
         $r = $this->postJson('/api/s4/quotes', $attributes)
             ->assertSuccessful()

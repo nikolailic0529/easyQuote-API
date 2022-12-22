@@ -105,4 +105,10 @@ return [
         'space_endpoint' => env('PIPELINER_SPACE_ENDPOINT', 'https://eu-central.pipelinersales.com/api/v100/app/space/{space_id}/graphql/public'),
     ],
 
+    'companies_house' => [
+        'url' => env('COMPANIES_HOUSE_URL', 'https://api.companieshouse.gov.uk'),
+        'username' => env('COMPANIES_HOUSE_USERNAME', ''),
+        'password' => env('COMPANIES_HOUSE_PASSWORD', ''),
+    ],
+
 ];

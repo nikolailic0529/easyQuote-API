@@ -5,24 +5,14 @@ namespace App\Events\Company;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\SerializesModels;
 
 final class CompanyDeleted
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
 
-    public function __construct(private Company $company,
-                                private ?Model $causer = null)
-    {
-    }
-
-    public function getCompany(): Company
-    {
-        return $this->company;
-    }
-
-    public function getCauser(): ?Model
-    {
-        return $this->causer;
+    public function __construct(
+        public readonly Company $company,
+        public readonly ?Model $causer = null
+    ) {
     }
 }

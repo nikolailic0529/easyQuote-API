@@ -115,5 +115,10 @@ class OpportunityFactory extends Factory
             ]),
         ];
     }
+
+    public function imported(): static
+    {
+        return $this->state(['deleted_at' => now()]);
+    }
 }
 

@@ -38,14 +38,14 @@ return [
             'driver' => 'stack',
             'channels' => ['daily'],
             'ignore_exceptions' => false,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'single' => [
             'driver' => 'single',
             'path' => storage_path('/logs/laravel.log'),
             'level' => 'debug',
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'daily' => [
@@ -53,7 +53,7 @@ return [
             'path' => storage_path('/logs/laravel.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'http-requests' => [
@@ -61,7 +61,7 @@ return [
             'path' => storage_path('/logs/http.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'document-processor' => [
@@ -69,7 +69,7 @@ return [
             'path' => storage_path('/logs/document-processor.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'document-engine-api' => [
@@ -77,7 +77,7 @@ return [
             'path' => storage_path('logs/document-engine-api.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'stats-calculation' => [
@@ -85,7 +85,7 @@ return [
             'path' => storage_path('/logs/stats-calculation.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'geocoding' => [
@@ -93,15 +93,15 @@ return [
             'path' => storage_path('/logs/geocoding.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'vendor-services' => [
-          'driver' => 'daily',
+            'driver' => 'daily',
             'path' => storage_path('/logs/vendor-services.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'vendor-services-requests' => [
@@ -117,7 +117,7 @@ return [
             'path' => storage_path('/logs/sales-orders.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'opportunities' => [
@@ -125,7 +125,7 @@ return [
             'path' => storage_path('/logs/opportunities.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'pipeliner' => [
@@ -133,7 +133,7 @@ return [
             'path' => storage_path('/logs/pipeliner.log'),
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0777
+            'permission' => 0777,
         ],
 
         'pipeliner-requests' => [
@@ -163,6 +163,14 @@ return [
         'addresses' => [
             'driver' => 'daily',
             'path' => storage_path('/logs/addresses.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'companies' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/companies.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777,

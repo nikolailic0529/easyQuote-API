@@ -3,9 +3,15 @@
 namespace App\Services\Activity;
 
 use ArrayAccess;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use JetBrains\PhpStorm\ArrayShape;
 
 class ChangesDetector
@@ -136,8 +142,8 @@ class ChangesDetector
 
             if (in_array($attribute, $model->getDates(), true) ||
                 $model->hasCast($attribute, ['date', 'datetime'])) {
-                $changes[$attribute] = $model->serializeDate(
-                    $model->asDateTime($changes[$attribute])
+                $changes[$attribute] = $this->serializeDate(
+                    $this->asDateTime($model, $changes[$attribute])
                 );
             }
 
@@ -145,7 +151,7 @@ class ChangesDetector
                 $cast = $model->getCasts()[$attribute];
 
                 if ($this->isCustomDateTimeCast($cast)) {
-                    $changes[$attribute] = $model->asDateTime($changes[$attribute])->format(explode(':', $cast, 2)[1]);
+                    $changes[$attribute] = $this->asDateTime($model, $changes[$attribute])->format(explode(':', $cast, 2)[1]);
                 }
             }
         }
@@ -156,18 +162,6 @@ class ChangesDetector
     public function isLogEmpty(array|ArrayAccess $attrs): bool
     {
         return empty($attrs[self::NEW_ATTRS_KEY] ?? []) && empty($attrs[self::OLD_ATTRS_KEY] ?? []);
-    }
-
-    /**
-     * Determine if the cast type is a custom date time cast.
-     *
-     * @param  string  $cast
-     * @return bool
-     */
-    protected function isCustomDateTimeCast(string $cast): bool
-    {
-        return strncmp($cast, 'date:', 5) === 0 ||
-            strncmp($cast, 'datetime:', 9) === 0;
     }
 
     protected static function getRelatedModelAttributeValue(Model $model, string $attribute): array
@@ -212,5 +206,75 @@ class ChangesDetector
         $modelAttribute = collect($model->getAttribute($modelAttribute));
 
         return data_get($modelAttribute, implode('.', $path));
+    }
+
+    protected function asDateTime(Model $model, $value): DateTimeInterface
+    {
+        // If this value is already a Carbon instance, we shall just return it as is.
+        // This prevents us having to re-instantiate a Carbon instance when we know
+        // it already is one, which wouldn't be fulfilled by the DateTime check.
+        if ($value instanceof CarbonInterface) {
+            return Date::instance($value);
+        }
+
+        // If the value is already a DateTime instance, we will just skip the rest of
+        // these checks since they will be a waste of time, and hinder performance
+        // when checking the field. We will just return the DateTime right away.
+        if ($value instanceof DateTimeInterface) {
+            return Date::parse(
+                $value->format('Y-m-d H:i:s.u'), $value->getTimezone()
+            );
+        }
+
+        // If this value is an integer, we will assume it is a UNIX timestamp's value
+        // and format a Carbon object from this timestamp. This allows flexibility
+        // when defining your date fields as they might be UNIX timestamps here.
+        if (is_numeric($value)) {
+            return Date::createFromTimestamp($value);
+        }
+
+        // If the value is in simply year, month, day format, we will instantiate the
+        // Carbon instances from that format. Again, this provides for simple date
+        // fields on the database, while still supporting Carbonized conversion.
+        if ($this->isStandardDateFormat($value)) {
+            return Date::instance(Carbon::createFromFormat('Y-m-d', $value)->startOfDay());
+        }
+
+        $format = $model->getDateFormat();
+
+        // Finally, we will just assume this date is in the format used by default on
+        // the database connection and use that format to create the Carbon object
+        // that is returned back out to the developers after we convert it here.
+        try {
+            $date = Date::createFromFormat($format, $value);
+        } catch (InvalidArgumentException $e) {
+            $date = false;
+        }
+
+        return $date ?: Date::parse($value);
+    }
+
+    protected function isStandardDateFormat(mixed $value): bool
+    {
+        return preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})$/', $value);
+    }
+
+    /**
+     * Determine if the cast type is a custom date time cast.
+     *
+     * @param  string  $cast
+     * @return bool
+     */
+    protected function isCustomDateTimeCast(string $cast): bool
+    {
+        return strncmp($cast, 'date:', 5) === 0 ||
+            strncmp($cast, 'datetime:', 9) === 0;
+    }
+
+    protected function serializeDate(DateTimeInterface $date): string
+    {
+        return $date instanceof \DateTimeImmutable ?
+            CarbonImmutable::instance($date)->toJSON() :
+            Carbon::instance($date)->toJSON();
     }
 }

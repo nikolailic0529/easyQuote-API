@@ -73,6 +73,9 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanyCategorySeeder::class);
         $this->command->info('Seeded the company categories');
 
+        $this->call(IndustrySeeder::class);
+        $this->command->info('Seeded the industries');
+
         $this->call(CompanySeeder::class);
         $this->command->info('Seeded the default companies');
 

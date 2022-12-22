@@ -18,6 +18,7 @@ use Database\Seeders\{AssetCategorySeeder,
     DateWeekSeeder,
     DocumentProcessorDriverSeeder,
     HpeContractTemplatesSeeder,
+    IndustrySeeder,
     MySQLSeeder,
     PipelineSeeder,
     RecurrenceTypeSeeder,
@@ -160,6 +161,11 @@ class UpdateApplicationCommand extends Command
 
         $this->call(SeedCommand::class, [
             '--class' => CompanyCategorySeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => IndustrySeeder::class,
             '--force' => true
         ]);
 

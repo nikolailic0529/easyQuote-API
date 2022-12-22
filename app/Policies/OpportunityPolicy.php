@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Models\Opportunity;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
-use App\Services\Auth\UserTeamGate;
 use App\Policies\Access\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;

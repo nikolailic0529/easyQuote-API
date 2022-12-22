@@ -27,7 +27,7 @@ class TeamWithIncludes extends JsonResource
             'team_leaders' => value(function () {
                 /** @var Team $this */
 
-                $this->loadMissing('teamLeaders:id,first_name,last_name,email,user_fullname');
+                $this->loadMissing(['teamLeaders:id,first_name,last_name,email,user_fullname', 'teamLeaders.image']);
 
                 return $this->teamLeaders->makeHidden('pivot')->map(function (User $user) {
                     return [
@@ -35,7 +35,8 @@ class TeamWithIncludes extends JsonResource
                         'first_name' => $user->first_name,
                         'last_name' => $user->last_name,
                         'email' => $user->email,
-                        'user_fullname' => $user->user_fullname
+                        'user_fullname' => $user->user_fullname,
+                        'picture' => $user->picture,
                     ];
                 });
             }),

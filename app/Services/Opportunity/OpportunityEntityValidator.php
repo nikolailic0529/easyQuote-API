@@ -64,21 +64,43 @@ class OpportunityEntityValidator
             'primary_account.addresses' => [
                 'exclude_without:primary_account', 'bail', 'required',
                 (new Count())
-                    ->where('address_type', AddressType::INVOICE)
                     ->where('pivot.is_default', true)
+                    ->where('address_type', AddressType::INVOICE)
                     ->exactly(1)
                     ->setExactMessage("Primary Account must have exactly :limit default invoice address."),
                 (new Count())
+                    ->where('pivot.is_default', true)
                     ->whereIn('address_type', [AddressType::HARDWARE, AddressType::SOFTWARE])
                     ->min(1)
-                    ->setMinMessage("Primary Account must have at least :limit software/hardware address."),
+                    ->setMinMessage("Primary Account must have default software/hardware address."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('address_type', AddressType::HARDWARE)
+                    ->max(1)
+                    ->setMaxMessage("Primary Account cannot have more than :limit default hardware address."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('address_type', AddressType::SOFTWARE)
+                    ->max(1)
+                    ->setMaxMessage("Primary Account cannot have more than :limit default software address."),
             ],
             'primary_account.contacts' => [
                 'exclude_without:primary_account', 'bail', 'required',
                 (new Count())
+                    ->where('pivot.is_default', true)
                     ->whereIn('contact_type', [ContactType::HARDWARE, ContactType::SOFTWARE])
                     ->min(1)
-                    ->setMinMessage("Primary Account must have at least :limit software/hardware contact."),
+                    ->setMinMessage("Primary Account must have default software/hardware contact."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('contact_type', ContactType::HARDWARE)
+                    ->max(1)
+                    ->setMaxMessage("Primary Account cannot have more than :limit default hardware contact."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('contact_type', ContactType::SOFTWARE)
+                    ->max(1)
+                    ->setMaxMessage("Primary Account cannot have more than :limit default software contact."),
             ],
 
             'primary_account_contact' => ['bail', 'required'],
@@ -93,21 +115,43 @@ class OpportunityEntityValidator
             'end_user.addresses' => [
                 'exclude_without:end_user', 'bail', 'required',
                 (new Count())
-                    ->where('address_type', AddressType::INVOICE)
                     ->where('pivot.is_default', true)
+                    ->where('address_type', AddressType::INVOICE)
                     ->exactly(1)
                     ->setExactMessage("End Customer must have exactly :limit default invoice address."),
                 (new Count())
+                    ->where('pivot.is_default', true)
                     ->whereIn('address_type', [AddressType::HARDWARE, AddressType::SOFTWARE])
                     ->min(1)
-                    ->setExactMessage("End Customer must have at least :limit software/hardware address."),
+                    ->setMinMessage("End Customer must have at least :limit software/hardware address."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('address_type', AddressType::HARDWARE)
+                    ->max(1)
+                    ->setMaxMessage("End Customer cannot have more than :limit default hardware address."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('address_type', AddressType::SOFTWARE)
+                    ->max(1)
+                    ->setMaxMessage("End Customer cannot have more than :limit default software address."),
             ],
             'end_user.contacts' => [
                 'exclude_without:end_user', 'bail', 'required',
                 (new Count())
+                    ->where('pivot.is_default', true)
                     ->whereIn('contact_type', [ContactType::HARDWARE, ContactType::SOFTWARE])
                     ->min(1)
-                    ->setMinMessage("End Customer must have at least :limit software/hardware contact."),
+                    ->setMinMessage("End Customer must have default software/hardware contact."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('contact_type', ContactType::HARDWARE)
+                    ->max(1)
+                    ->setMaxMessage("End Customer cannot have more than :limit default hardware contact."),
+                (new Count())
+                    ->where('pivot.is_default', true)
+                    ->whereStrict('contact_type', ContactType::SOFTWARE)
+                    ->max(1)
+                    ->setMaxMessage("End Customer cannot have more than :limit default software contact."),
             ],
 
             'contract_duration_months' => ['bail', 'required_if:is_contract_duration_checked,true'],

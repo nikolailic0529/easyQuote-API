@@ -15,6 +15,7 @@
     "ext-sockets": "*",
     "ext-yaml": "*",
     "ext-zip": "*",
+    "archtechx/enums": "^0.3.0",
     "awobaz/compoships": "^2.1",
     "barryvdh/laravel-snappy": "^1.0.0",
     "box/spout": "^3.1",
@@ -108,7 +109,8 @@
       "database/factories"
     ],
     "files": [
-      "bootstrap/constants.php"
+      "bootstrap/constants.php",
+      "app/Foundation/String/functions.php"
     ]
   },
   "autoload-dev": {

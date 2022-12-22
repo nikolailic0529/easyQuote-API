@@ -31,7 +31,7 @@ final class SubmitSalesOrderData extends DataTransferObject
     public string $vendor_short_code;
 
     /**
-     * @Constraints\Choice({"Pack", "Contract"})
+     * @Constraints\Choice({"Pack", "Contract"}, message="Contract type must be either [Pack] or [Contract].")
      *
      * @var string
      */

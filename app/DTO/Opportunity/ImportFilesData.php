@@ -14,9 +14,9 @@ final class ImportFilesData extends Data
         #[File, Mimes('xlsx'), Max(10_000)]
         public readonly UploadedFile $opportunities_file,
         #[File, Mimes('xlsx'), Max(10_000)]
-        public readonly ?UploadedFile $accounts_data_file,
+        public readonly ?UploadedFile $accounts_data_file = null,
         #[File, Mimes('xlsx'), Max(10_000)]
-        public readonly ?UploadedFile $account_contacts_file
+        public readonly ?UploadedFile $account_contacts_file = null,
     ) {
     }
 }

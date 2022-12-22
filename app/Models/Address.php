@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\{Builder,
     Relations\BelongsTo,
     Relations\BelongsToMany,
     Relations\HasMany,
-    Relations\MorphMany,
     Relations\MorphToMany,
     SoftDeletes
 };

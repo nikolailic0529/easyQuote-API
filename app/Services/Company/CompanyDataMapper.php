@@ -752,7 +752,7 @@ class CompanyDataMapper
     {
         return tap(new Company(), function (Company $oldCompany) use ($company): void {
             $oldCompany->setRawAttributes($company->getRawOriginal());
-            $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            $oldCompany->load(['addresses', 'contacts', 'vendors', 'aliases']);
         });
     }
 }

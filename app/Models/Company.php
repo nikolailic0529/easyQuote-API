@@ -16,6 +16,7 @@ use App\Contracts\{ActivatableInterface,
     SearchableEntity,
     WithLogo};
 use App\Enum\CompanyCategoryEnum;
+use App\Enum\CompanyStatusEnum;
 use App\Enum\CustomerTypeEnum;
 use App\Models\{Appointment\Appointment,
     Appointment\ModelHasAppointments,
@@ -41,6 +42,7 @@ use App\Traits\{Activatable,
     Quote\HasQuotes,
     Search\Searchable,
     Uuid};
+use Carbon\CarbonInterface;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
 use Illuminate\Database\Eloquent\{Collection,
@@ -64,6 +66,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property string|null $default_country_id
  * @property string|null $default_vendor_id
  * @property string|null $default_template_id
+ * @property string|null $registered_number
  * @property string|null $name
  * @property string|null $short_code
  * @property string|null $vs_company_code
@@ -75,8 +78,11 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property string|null $vat_type
  * @property string|null $phone
  * @property string|null $website
+ * @property int|null $employees_number
+ * @property CarbonInterface|null $creation_date
  * @property string|null $activated_at
  * @property int|null $flags
+ * @property CompanyStatusEnum $status
  *
  * @property Image|null $image
  * @property Collection<int, Address>|Address[] $addresses
@@ -91,6 +97,8 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property-read Collection<int, Vendor>|Vendor[] $vendors
  * @property-read Collection<int, Country>|Country[] $countries
  * @property-read Collection<int, CompanyCategory> $categories
+ * @property-read Collection<int, Industry> $industries
+ * @property-read Collection<int, CompanyAlias> $aliases
  * @property-read User|null $user
  * @property-read SalesUnit|null $salesUnit
  * @property-read array $logo
@@ -133,7 +141,9 @@ class Company extends Model implements
     ];
 
     protected $casts = [
+        'status' => CompanyStatusEnum::class,
         'customer_type' => CustomerTypeEnum::class,
+        'creation_date' => 'datetime',
     ];
 
     protected static function newFactory(): CompanyFactory
@@ -163,6 +173,11 @@ class Company extends Model implements
         return new CompanyBuilder($query);
     }
 
+    public function aliases(): HasMany
+    {
+        return $this->hasMany(CompanyAlias::class);
+    }
+
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -171,6 +186,11 @@ class Company extends Model implements
             foreignPivotKey: 'company_id',
             relatedPivotKey: 'category_id'
         );
+    }
+
+    public function industries(): BelongsToMany
+    {
+        return $this->belongsToMany(Industry::class);
     }
 
     public function vendors(): BelongsToMany

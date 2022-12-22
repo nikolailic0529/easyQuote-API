@@ -75,6 +75,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Timezone $timezone
  * @property-read Image|null $image
  * @property-read Image|null $picture
+ * @property-read Collection<int, UserAssignedToModel> $assignedToModelRelations
  * @property-read Collection<int, User> $ledTeamUsers
  * @property-read Collection<int, Role> $roles
  * @property-read Collection<int, Team> $ledTeams
@@ -181,6 +182,23 @@ class User extends Model implements
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
+    }
+
+    public function assignedToModelRelations(): HasMany
+    {
+        return $this->hasMany(UserAssignedToModel::class);
+    }
+
+    public function assignedToOpportunities(): MorphToMany
+    {
+        $pivot = (new UserAssignedToModel());
+
+        return $this->morphedByMany(
+            Opportunity::class,
+            $pivot->related()->getRelationName(),
+            $pivot->getTable()
+        )
+            ->using($pivot::class);
     }
 
     public function team(): BelongsTo

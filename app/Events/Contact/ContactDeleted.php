@@ -9,20 +9,11 @@ use Illuminate\Queue\SerializesModels;
 
 final class ContactDeleted
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
 
-    public function __construct(protected Contact $contact,
-                                protected ?Model  $causer = null)
-    {
-    }
-
-    public function getContact(): Contact
-    {
-        return $this->contact;
-    }
-
-    public function getCauser(): ?Model
-    {
-        return $this->causer;
+    public function __construct(
+        public readonly Contact $contact,
+        public readonly ?Model $causer = null
+    ) {
     }
 }

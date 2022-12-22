@@ -766,6 +766,18 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('appointments/{appointment}', [AppointmentController::class, 'deleteAppointment']);
     Route::put('appointment-reminders/{reminder}', [AppointmentController::class, 'setAppointmentReminder']);
     Route::delete('appointment-reminders/{reminder}', [AppointmentController::class, 'deleteAppointmentReminder']);
+
+    /**
+     * Data Allocations.
+     */
+    Route::get('data-allocations', [DataAllocationController::class, 'paginateDataAllocations']);
+    Route::get('data-allocations/{allocation}', [DataAllocationController::class, 'showDataAllocation']);
+    Route::delete('data-allocations/{allocation}', [DataAllocationController::class, 'destroyDataAllocation']);
+    Route::post('data-allocations', [DataAllocationController::class, 'initializeDataAllocation']);
+    Route::post('data-allocations/{allocation}/files', [DataAllocationController::class, 'storeDataAllocationFile']);
+    Route::post('data-allocations/{allocation}/import', [DataAllocationController::class, 'processImportStage']);
+    Route::post('data-allocations/{allocation}/review', [DataAllocationController::class, 'processReviewStage']);
+    Route::post('data-allocations/{allocation}/results', [DataAllocationController::class, 'processResultsStage']);
 });
 
 Route::post('pipeliner/webhook', [PipelinerWebhookController::class, 'handleWebhookEvent'])->name('pipeliner.webhook');

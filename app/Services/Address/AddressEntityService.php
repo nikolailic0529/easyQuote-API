@@ -10,11 +10,9 @@ use App\Events\Address\AddressCreated;
 use App\Events\Address\AddressDeleted;
 use App\Events\Address\AddressUpdated;
 use App\Models\Address;
-use App\Models\Company;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as BaseCollection;
 use Spatie\LaravelData\DataCollection;
 use Webpatser\Uuid\Uuid;
@@ -46,16 +44,18 @@ class AddressEntityService implements CauserAware
             $this->connection->transaction(static function () use ($companyRelations, $address): void {
                 $address->save();
                 $address->companies()->syncWithoutDetaching($companyRelations->all());
-
-                $address->companies()
-                    ->where('updated_at', '<', $address->{$address->getUpdatedAtColumn()})
-                    ->get()
-                    ->each
-                    ->touch();
             });
 
+            $companyRelations = $address->companies()->pluck(
+                $address->companies()->getRelated()->getQualifiedKeyName()
+            );
+
             $this->eventDispatcher->dispatch(
-                new AddressCreated(address: $address, causer: $this->causer)
+                new AddressCreated(
+                    address: $address,
+                    companyRelations: $companyRelations->all(),
+                    causer: $this->causer
+                )
             );
         });
     }
@@ -64,6 +64,9 @@ class AddressEntityService implements CauserAware
     {
         return tap($address, function (Address $address) use ($data) {
             $oldAddress = (new Address())->setRawAttributes($address->getRawOriginal());
+            $oldCompanyRelations = $address->companies()->pluck(
+                $address->companies()->getRelated()->getQualifiedKeyName()
+            );
 
             $address->forceFill($data->except('company_relations')->all());
 
@@ -76,16 +79,15 @@ class AddressEntityService implements CauserAware
             $this->connection->transaction(static function () use ($companyRelations, $address): void {
                 $address->save();
                 $address->companies()->syncWithoutDetaching($companyRelations->all());
-
-                $address->companies()
-                    ->where('updated_at', '<', $address->{$address->getUpdatedAtColumn()})
-                    ->get()
-                    ->each
-                    ->touch();
             });
 
             $this->eventDispatcher->dispatch(
-                new AddressUpdated(address: $oldAddress, newAddress: $address, causer: $this->causer)
+                new AddressUpdated(
+                    address: $oldAddress,
+                    companyRelations: $oldCompanyRelations->all(),
+                    newAddress: $address,
+                    causer: $this->causer
+                )
             );
         });
     }

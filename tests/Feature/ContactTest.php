@@ -323,7 +323,6 @@ class ContactTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'sales_unit_id',
-                'address_id',
                 'contact_type',
                 'gender',
                 'first_name',

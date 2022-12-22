@@ -4,6 +4,7 @@ namespace App\Services\Company;
 
 use App\DTO\QueryFilter\Enum\FilterTypeEnum;
 use App\DTO\QueryFilter\FilterData;
+use App\Enum\CompanySource;
 use App\Models\Company;
 use App\Models\SalesUnit;
 use App\Models\User;
@@ -49,6 +50,19 @@ class CompanyQueryFilterDataProvider
                     ])
                 );
             }
+
+            $collection->push(
+                FilterData::from([
+                    'label' => __('Source'),
+                    'type' => FilterTypeEnum::Multiselect,
+                    'parameter' => 'filter[source]',
+                    'possible_values' => [
+                        ['label' => 'System 4', 'value' => CompanySource::S4],
+                        ['label' => 'easyQuote', 'value' => CompanySource::EQ],
+                        ['label' => 'Pipeliner', 'value' => CompanySource::PL],
+                    ],
+                ])
+            );
 
             $collection->push(
                 FilterData::from([

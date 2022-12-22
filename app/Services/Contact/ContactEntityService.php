@@ -52,12 +52,6 @@ class ContactEntityService implements CauserAware
             $this->connection->transaction(static function () use ($companyRelations, $contact): void {
                 $contact->save();
                 $contact->companies()->syncWithoutDetaching($companyRelations->all());
-
-                $contact->companies()
-                    ->where('updated_at', '<', $contact->{$contact->getUpdatedAtColumn()})
-                    ->get()
-                    ->each
-                    ->touch();
             });
 
             if (false === is_null($data->picture)) {
@@ -90,12 +84,6 @@ class ContactEntityService implements CauserAware
             $this->connection->transaction(static function () use ($contact, $companyRelations): void {
                 $contact->save();
                 $contact->companies()->syncWithoutDetaching($companyRelations->all());
-
-                $contact->companies()
-                    ->where('updated_at', '<', $contact->{$contact->getUpdatedAtColumn()})
-                    ->get()
-                    ->each
-                    ->touch();
             });
 
             if (false === is_null($data->picture)) {

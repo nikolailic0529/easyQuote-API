@@ -469,6 +469,19 @@ return [
                 'create_contracts', 'update_own_contracts', 'delete_own_contracts',
             ],
         ],
+        'Data Allocations' => [
+            $R => [
+                'view_own_data_allocations',
+            ],
+            $CRU => [
+                'view_own_data_allocations',
+                'create_data_allocations', 'update_own_data_allocations',
+            ],
+            $CRUD => [
+                'view_own_data_allocations',
+                'create_data_allocations', 'update_own_data_allocations', 'delete_own_data_allocations',
+            ],
+        ],
         'Templates' => [
             $R => [
                 'view_templates',

@@ -173,4 +173,8 @@
 - create_renewals
 - update_renewals
 - delete_renewals
+- view_own_data_allocations
+- create_data_allocations
+- update_own_data_allocations
+- delete_own_data_allocations
 

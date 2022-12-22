@@ -24,6 +24,7 @@ class UserRelationResource extends JsonResource
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
             'user_fullname' => $this->user_fullname,
+            'picture' => $this->picture,
         ];
     }
 }

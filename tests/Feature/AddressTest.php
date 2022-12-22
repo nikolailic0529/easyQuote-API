@@ -166,7 +166,6 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'contact_id',
-                'location_id',
                 'address_type',
                 'address_1',
                 'city',
@@ -220,7 +219,6 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'contact_id',
-                'location_id',
                 'address_type',
                 'address_1',
                 'city',
