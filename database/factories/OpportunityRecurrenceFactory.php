@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Opportunity\OpportunityRecurrence;
+use App\Domain\Worldwide\Models\OpportunityRecurrence;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class OpportunityRecurrenceFactory extends Factory
@@ -12,8 +12,6 @@ class OpportunityRecurrenceFactory extends Factory
     public function definition(): array
     {
         return [
-            //
         ];
     }
 }
-

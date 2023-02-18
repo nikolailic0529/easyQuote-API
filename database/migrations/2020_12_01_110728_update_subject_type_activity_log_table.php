@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class UpdateSubjectTypeActivityLogTable extends Migration
 {
@@ -35,6 +33,5 @@ class UpdateSubjectTypeActivityLogTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

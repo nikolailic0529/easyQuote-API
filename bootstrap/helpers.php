@@ -1,7 +1,7 @@
 <?php
 
-use App\Contracts\Services\HttpInterface;
-use App\Contracts\Services\NotificationFactory;
+use App\Domain\Notification\Contracts\NotificationFactory;
+use App\Foundation\Http\Contracts\HttpInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,7 +15,7 @@ if (!function_exists('to_array_recursive')) {
 if (!function_exists('carbon_format')) {
     function carbon_format($time, $format)
     {
-        return transform($time, fn($time) => Carbon::parse($time)->format($format));
+        return transform($time, fn ($time) => Carbon::parse($time)->format($format));
     }
 }
 
@@ -23,7 +23,7 @@ if (!function_exists('slack')) {
     /**
      * Slack notification client.
      *
-     * @return App\Contracts\Services\SlackInterface
+     * @return \App\Domain\Slack\Contracts\SlackInterface
      */
     function slack()
     {
@@ -38,8 +38,6 @@ if (!function_exists('slack')) {
 if (!function_exists('notification')) {
     /**
      * Begin Pending Notification instance.
-     *
-     * @return NotificationFactory
      */
     function notification(): NotificationFactory
     {
@@ -47,7 +45,7 @@ if (!function_exists('notification')) {
     }
 }
 
-/**
+/*
  * Filter Query String Parameters for the given resource.
  */
 if (!function_exists('filter')) {
@@ -60,7 +58,7 @@ if (!function_exists('filter')) {
 if (!function_exists('error_response')) {
     function error_response(string $details, string $code, int $status, array $headers = [])
     {
-        /** @var HttpInterface */
+        /** @var \App\Foundation\Http\Contracts\HttpInterface */
         $http = app(HttpInterface::class);
 
         return $http->makeErrorResponse($details, $code, $status, $headers);
@@ -153,11 +151,6 @@ if (!function_exists('ui_route')) {
 if (!function_exists('format')) {
     /**
      * Format the given value using the standard formatter.
-     *
-     * @param string $formatter
-     * @param mixed $value
-     * @param mixed ...$parameters
-     * @return mixed
      */
     function format(string $formatter, mixed $value, mixed ...$parameters): mixed
     {
@@ -168,11 +161,6 @@ if (!function_exists('format')) {
 if (!function_exists('format')) {
     /**
      * Format the given value using the standard formatter.
-     *
-     * @param string $formatter
-     * @param mixed $value
-     * @param mixed ...$parameters
-     * @return mixed
      */
     function format(string $formatter, mixed $value, mixed ...$parameters): mixed
     {
@@ -181,12 +169,8 @@ if (!function_exists('format')) {
 }
 
 if (!function_exists('coalesce_blank')) {
-
     /**
      * Return the first not-blank argument.
-     *
-     * @param mixed ...$args
-     * @return mixed
      */
     function coalesce_blank(mixed ...$args): mixed
     {
@@ -205,10 +189,8 @@ if (!function_exists('coalesce_blank')) {
 }
 
 if (!function_exists('blank_html')) {
-
     /**
      * Determine if the given value is "blank" html.
-     *
      */
     function blank_html(mixed $value): bool
     {

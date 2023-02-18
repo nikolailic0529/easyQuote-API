@@ -35,7 +35,7 @@ class DropUnusedIndexesQuotesTable extends Migration
 
             $table->char('document_type', 1)->change()->comment('Determines whether it quote or contract');
 
-            ! $indexes->contains('quotes_document_type_index') && $table->index('document_type');
+            !$indexes->contains('quotes_document_type_index') && $table->index('document_type');
         });
     }
 
@@ -46,6 +46,5 @@ class DropUnusedIndexesQuotesTable extends Migration
      */
     public function down()
     {
-        // 
     }
 }

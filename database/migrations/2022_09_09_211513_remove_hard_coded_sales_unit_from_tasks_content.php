@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -13,7 +13,6 @@ return new class extends Migration {
     public function up()
     {
         $con = DB::connection($this->getConnection());
-
 
         $con->transaction(static function () use ($con) {
             $con->table('tasks')
@@ -39,8 +38,6 @@ return new class extends Migration {
                         ->update(['content' => $content->toJson()]);
                 });
         });
-
-
     }
 
     /**
@@ -50,6 +47,5 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 };

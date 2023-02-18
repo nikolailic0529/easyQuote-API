@@ -2,7 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Quote\Discount\PromotionalDiscount;
+use App\Domain\Discount\Models\PromotionalDiscount;
 use Faker\Generator as Faker;
 
 $factory->define(PromotionalDiscount::class, function (Faker $faker) {
@@ -12,10 +12,10 @@ $factory->define(PromotionalDiscount::class, function (Faker $faker) {
     $minimum_limit = rand(1, 3);
 
     return [
-        'name'          => "PD {$country->code} {$value}",
-        'country_id'    => $country->id,
-        'vendor_id'     => $vendor->id,
-        'value'         => $value,
-        'minimum_limit' => $minimum_limit
+        'name' => "PD {$country->code} {$value}",
+        'country_id' => $country->id,
+        'vendor_id' => $vendor->id,
+        'value' => $value,
+        'minimum_limit' => $minimum_limit,
     ];
 });

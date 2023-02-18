@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Asset;
-use App\Models\Company;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Company\Models\Company;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -284,8 +284,6 @@ class ActivityTest extends TestCase
 
     /**
      * Test an ability to filter activity log by periods.
-     *
-     * @return void
      */
     public function testCanViewActivityLogByPeriods(): void
     {

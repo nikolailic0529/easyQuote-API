@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Enum\GenderEnum;
-use App\Models\Contact;
+use App\Domain\Contact\Enum\GenderEnum;
+use App\Domain\Contact\Models\Contact;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ContactFactory extends Factory
@@ -24,4 +24,3 @@ class ContactFactory extends Factory
         ];
     }
 }
-

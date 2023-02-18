@@ -16,7 +16,7 @@ class QuoteFileFormatsSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the quote_file_formats table
+        // Empty the quote_file_formats table
         Schema::disableForeignKeyConstraints();
 
         DB::table('quote_file_formats')->delete();
@@ -27,7 +27,7 @@ class QuoteFileFormatsSeeder extends Seeder
 
         collect($fileFormats)->each(function ($format) {
             DB::table('quote_file_formats')->insert([
-                'id' => (string)Uuid::generate(4),
+                'id' => (string) Uuid::generate(4),
                 'name' => $format['name'],
                 'extension' => $format['extension'],
             ]);

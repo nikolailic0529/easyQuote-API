@@ -2,15 +2,15 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use App\Events\Slack\Sent;
+use App\Domain\Slack\Events\Sent;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Event;
+use Tests\TestCase;
 
 class SlackTest extends TestCase
 {
     use DatabaseTransactions;
-    
+
     /**
      * Test Slack Message sending.
      *
@@ -25,7 +25,7 @@ class SlackTest extends TestCase
         $slack = slack()
             ->title('TEST')
             ->status(['TEST']);
-            
+
         $slack->send();
 
         Event::assertDispatched(Sent::class);

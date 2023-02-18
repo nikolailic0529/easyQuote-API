@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\DateDay;
-use App\Models\DateMonth;
-use App\Models\DateWeek;
-use App\Models\RecurrenceType;
-use App\Models\Task\Task;
-use App\Models\Task\TaskRecurrence;
+use App\Domain\Date\Models\DateDay;
+use App\Domain\Date\Models\DateMonth;
+use App\Domain\Date\Models\DateWeek;
+use App\Domain\Recurrence\Models\RecurrenceType;
+use App\Domain\Task\Models\Task;
+use App\Domain\Task\Models\TaskRecurrence;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TaskRecurrenceFactory extends Factory

@@ -21,7 +21,7 @@ class AddContractTypeIdWorldwideQuotesTable extends Migration
 
         \Illuminate\Support\Facades\DB::table('worldwide_quotes')
                 ->update([
-                    'contract_type_id' => CT_CONTRACT
+                    'contract_type_id' => CT_CONTRACT,
                 ]);
 
         Schema::table('worldwide_quotes', function (Blueprint $table) {

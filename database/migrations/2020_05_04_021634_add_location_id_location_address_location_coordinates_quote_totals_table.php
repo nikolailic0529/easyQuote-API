@@ -16,7 +16,6 @@ class AddLocationIdLocationAddressLocationCoordinatesQuoteTotalsTable extends Mi
         DB::transaction(function () {
             DB::table('quote_totals')->truncate();
 
-
             Schema::table('quote_totals', function (Blueprint $table) {
                 $table->uuid('location_id')->after('customer_id');
                 $table->foreign('location_id')->references('id')->on('locations')->onUpdate('cascade')->onDelete('cascade');

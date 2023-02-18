@@ -19,7 +19,7 @@ class AddCountryIdQuoteLocationsTable extends Migration
             $table->uuid('country_id')->nullable()->after('location_id');
             $table->foreign('country_id')->references('id')->on('countries')->onUpdate('cascade')->onDelete('set null');
         });
-        
+
         Schema::enableForeignKeyConstraints();
     }
 

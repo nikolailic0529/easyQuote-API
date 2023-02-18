@@ -3,7 +3,6 @@
 use Carbon\CarbonInterval;
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Mail Driver
@@ -141,5 +140,4 @@ return [
         'key' => 'limiter::mail',
         'decay_seconds' => CarbonInterval::month()->totalSeconds,
     ],
-
 ];

@@ -2,7 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
 use Faker\Generator as Faker;
 
 $factory->define(OpportunitySupplier::class, function (Faker $faker) {

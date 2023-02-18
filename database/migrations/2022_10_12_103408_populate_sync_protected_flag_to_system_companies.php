@@ -1,10 +1,10 @@
 <?php
 
-use App\Models\Company;
+use App\Domain\Company\Models\Company;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -14,10 +14,10 @@ return new class extends Migration {
     {
         DB::transaction(static function () {
             DB::table('companies')
-                ->whereRaw(sprintf("flags & %d = %d", Company::SYSTEM, Company::SYSTEM))
-                ->whereRaw(sprintf("flags & %d != %d", Company::SYNC_PROTECTED, Company::SYNC_PROTECTED))
+                ->whereRaw(sprintf('flags & %d = %d', Company::SYSTEM, Company::SYSTEM))
+                ->whereRaw(sprintf('flags & %d != %d', Company::SYNC_PROTECTED, Company::SYNC_PROTECTED))
                 ->update([
-                    'flags' => DB::raw("flags | ".Company::SYNC_PROTECTED),
+                    'flags' => DB::raw('flags | '.Company::SYNC_PROTECTED),
                 ]);
         });
     }
@@ -29,6 +29,5 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 };

@@ -10,6 +10,7 @@ class CurrencySeeder extends Seeder
      * Run the database seeders.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
@@ -19,19 +20,15 @@ class CurrencySeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         $connection->transaction(function () use ($connection, $currencies) {
-
             foreach ($currencies as $currency) {
-
                 $connection->table('currencies')
                     ->insertOrIgnore([
                         'id' => $currency['id'],
                         'name' => $currency['name'],
                         'code' => $currency['code'],
-                        'symbol' => $currency['symbol']
+                        'symbol' => $currency['symbol'],
                     ]);
-
             }
-
         });
     }
 }

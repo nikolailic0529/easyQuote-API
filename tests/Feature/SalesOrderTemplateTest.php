@@ -2,22 +2,33 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
-use App\Models\Data\Country;
-use App\Models\Role;
-use App\Models\Team;
-use App\Models\Template\SalesOrderTemplate;
-use App\Models\User;
-use App\Models\Vendor;
-use App\Services\Auth\UserTeamGate;
+use App\Domain\Authentication\Services\UserTeamGate;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\SalesOrderTemplate;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class SalesOrderTemplateTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view paginated sales order templates.
@@ -270,19 +281,18 @@ class SalesOrderTemplateTest extends TestCase
 
         $role->syncPermissions(['view_sales_order_templates', 'create_sales_order_templates', 'update_own_sales_order_templates']);
 
-        /** @var Team $team */
+        /** @var \App\Domain\Team\Models\Team $team */
         $team = factory(Team::class)->create();
 
         /** @var User $teamLeader */
         $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
         $teamLeader->syncRoles($role);
 
-        /** @var User $ledUser */
+        /** @var \App\Domain\User\Models\User $ledUser */
         $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
         $ledUser->syncRoles($role);
 
-
-        /** @var SalesOrderTemplate $template */
+        /** @var \App\Domain\Worldwide\Models\SalesOrderTemplate $template */
         $template = factory(SalesOrderTemplate::class)->create(['user_id' => $ledUser->getKey()]);
 
         $data = [
@@ -333,16 +343,15 @@ class SalesOrderTemplateTest extends TestCase
         /** @var Team $team */
         $team = factory(Team::class)->create();
 
-        /** @var User $teamLeader */
+        /** @var \App\Domain\User\Models\User $teamLeader */
         $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
         $teamLeader->syncRoles($role);
 
-        /** @var User $ledUser */
+        /** @var \App\Domain\User\Models\User $ledUser */
         $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
         $ledUser->syncRoles($role);
 
-
-        /** @var SalesOrderTemplate $template */
+        /** @var \App\Domain\Worldwide\Models\SalesOrderTemplate $template */
         $template = factory(SalesOrderTemplate::class)->create(['user_id' => $ledUser->getKey()]);
 
         $this->authenticateApi($teamLeader);

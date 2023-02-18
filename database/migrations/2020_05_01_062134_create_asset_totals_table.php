@@ -27,7 +27,7 @@ class CreateAssetTotalsTable extends Migration
 
             $table->decimal('total_value', 15)->default(0);
             $table->unsignedBigInteger('total_count')->default(0);
-            
+
             $table->timestamps();
         });
     }

@@ -13,12 +13,11 @@ return [
             'searchable',
             'service_level_description',
             'system_handle',
-            'pricing_document'
-        ]
+            'pricing_document',
+        ],
     ],
 
     'worldwide_quote' => [
-
         'fields' => [
             'product_no',
             'service_sku',
@@ -29,7 +28,7 @@ return [
             'qty',
             'price',
             'searchable',
-            'service_level_description'
+            'service_level_description',
         ],
 
         'required_fields' => [
@@ -40,7 +39,6 @@ return [
             'date_to',
             'price',
             'service_level_description',
-        ]
-
+        ],
     ],
 ];

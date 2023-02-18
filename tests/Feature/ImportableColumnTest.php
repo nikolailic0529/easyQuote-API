@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Data\Country;
-use App\Models\QuoteFile\ImportableColumn;
+use App\Domain\Country\Models\Country;
+use App\Domain\QuoteFile\Models\ImportableColumn;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -182,9 +182,7 @@ class ImportableColumnTest extends TestCase
         $this->assertCount(count($newAliases), $response->json('aliases'));
 
         foreach ($newAliases as $alias) {
-
             $this->assertContains($alias, $response->json('aliases.*.alias'));
-
         }
     }
 

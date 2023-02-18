@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Address;
+use App\Domain\Address\Models\Address;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class AddressFactory extends Factory
@@ -19,11 +19,10 @@ class AddressFactory extends Factory
             'state' => $this->faker->state(),
             'state_code' => $this->faker->regexify('[A-Z]{2}'),
             'address_2' => $this->faker->streetAddress(),
-            'country_id' => \App\Models\Data\Country::value('id'),
+            'country_id' => \App\Domain\Country\Models\Country::value('id'),
             'contact_name' => $this->faker->name(),
             'contact_number' => $this->faker->phoneNumber(),
             'contact_email' => $this->faker->email(),
         ];
     }
 }
-

@@ -2,10 +2,10 @@
 
 return [
     'types' => [
-        'By Country'
+        'By Country',
     ],
     'methods' => [
         'No Margin',
-        'Standard'
-    ]
+        'Standard',
+    ],
 ];

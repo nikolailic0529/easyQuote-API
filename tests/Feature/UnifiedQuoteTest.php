@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\Quote\Quote;
-use App\Models\Role;
-use App\Models\Team;
-use App\Models\User;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class UnifiedQuoteTest extends TestCase
 {
     /**
@@ -41,12 +44,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -54,10 +57,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ]);
 
         $this->getJson('api/unified-quotes/expiring?order_by_updated_at=desc')
@@ -79,7 +82,6 @@ class UnifiedQuoteTest extends TestCase
         $this->getJson('api/unified-quotes/expiring?order_by_completeness=desc')
 //            ->dump()
             ->assertOk();
-
     }
 
     /**
@@ -89,7 +91,7 @@ class UnifiedQuoteTest extends TestCase
      */
     public function testCanViewOnlyOwnUnifiedExpiringQuotes()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
@@ -133,7 +135,7 @@ class UnifiedQuoteTest extends TestCase
             'view_quote_files',
             'delete_own_hpe_contracts']);
 
-        /** @var User $user */
+        /** @var \App\Domain\User\Models\User $user */
         $user = User::factory()->create();
 
         $user->syncRoles($role);
@@ -147,7 +149,7 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         $quote->customer->update([
-            'valid_until' => now()->subDay()
+            'valid_until' => now()->subDay(),
         ]);
 
         $response = $this->getJson('api/unified-quotes/expiring')
@@ -172,12 +174,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -185,10 +187,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ])
             ->assertJsonPath('data.*.user_id', [$user->getKey()]);
     }
@@ -200,47 +202,47 @@ class UnifiedQuoteTest extends TestCase
      */
     public function testCanViewOwnAndTeamLedUsersOwnPaginatedExpiringQuotes()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
             'view_own_quotes',
             'update_own_external_quotes',
-            'update_own_internal_quotes'
+            'update_own_internal_quotes',
         ]);
 
         /** @var User $teamLeader */
         $teamLeader = User::factory()->create();
 
-        /** @var Team $team */
+        /** @var \App\Domain\Team\Models\Team $team */
         $team = factory(Team::class)->create();
 
         $team->teamLeaders()->attach($teamLeader);
 
         $ledUser = User::factory()->create([
-            'team_id' => $team->getKey()
+            'team_id' => $team->getKey(),
         ]);
 
         $teamLeader->syncRoles($role);
 
-        /** @var Quote $ownQuote */
+        /** @var \App\Domain\Rescue\Models\Quote $ownQuote */
         $ownQuote = factory(Quote::class)->create([
             'user_id' => $teamLeader->getKey(),
             'submitted_at' => null,
         ]);
 
         $ownQuote->customer->update([
-            'valid_until' => today()->subDay()
+            'valid_until' => today()->subDay(),
         ]);
 
-        /** @var Quote $ledUserOwnQuote */
+        /** @var \App\Domain\Rescue\Models\Quote $ledUserOwnQuote */
         $ledUserOwnQuote = factory(Quote::class)->create([
             'user_id' => $ledUser->getKey(),
             'submitted_at' => null,
         ]);
 
         $ledUserOwnQuote->customer->update([
-            'valid_until' => today()->subDay()
+            'valid_until' => today()->subDay(),
         ]);
 
         $this->actingAs($teamLeader, 'api');
@@ -267,12 +269,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -280,10 +282,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ]);
 
         $this->assertCount(2, $response->json('data'));
@@ -336,12 +338,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -349,10 +351,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ]);
 
         $this->getJson('api/unified-quotes/submitted?order_by_updated_at=desc')
@@ -374,7 +376,6 @@ class UnifiedQuoteTest extends TestCase
         $this->getJson('api/unified-quotes/submitted?order_by_completeness=desc')
 //            ->dump()
             ->assertOk();
-
     }
 
     /**
@@ -384,7 +385,7 @@ class UnifiedQuoteTest extends TestCase
      */
     public function testCanViewOwnPaginatedUnifiedSubmittedQuotes()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
@@ -437,7 +438,7 @@ class UnifiedQuoteTest extends TestCase
 
         factory(Quote::class)->create([
             'user_id' => $user->getKey(),
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $response = $this->getJson('api/unified-quotes/submitted')
@@ -473,12 +474,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -486,10 +487,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ])
             ->assertJsonPath('data.*.user_id', [$user->getKey()]);
     }
@@ -501,16 +502,16 @@ class UnifiedQuoteTest extends TestCase
      */
     public function testCanViewOwnAndTeamLedUsersOwnPaginatedUnifiedSubmittedQuotes()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
             'view_own_quotes',
             'update_own_external_quotes',
-            'update_own_internal_quotes'
+            'update_own_internal_quotes',
         ]);
 
-        /** @var User $teamLeader */
+        /** @var \App\Domain\User\Models\User $teamLeader */
         $teamLeader = User::factory()->create();
 
         /** @var Team $team */
@@ -519,18 +520,18 @@ class UnifiedQuoteTest extends TestCase
         $team->teamLeaders()->attach($teamLeader);
 
         $ledUser = User::factory()->create([
-            'team_id' => $team->getKey()
+            'team_id' => $team->getKey(),
         ]);
 
         $teamLeader->syncRoles($role);
 
-        /** @var Quote $ownQuote */
+        /** @var \App\Domain\Rescue\Models\Quote $ownQuote */
         $ownQuote = factory(Quote::class)->create([
             'user_id' => $teamLeader->getKey(),
             'submitted_at' => now(),
         ]);
 
-        /** @var Quote $ledUserOwnQuote */
+        /** @var \App\Domain\Rescue\Models\Quote $ledUserOwnQuote */
         $ledUserOwnQuote = factory(Quote::class)->create([
             'user_id' => $ledUser->getKey(),
             'submitted_at' => now(),
@@ -571,12 +572,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -584,10 +585,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ]);
 
         $this->assertCount(2, $response->json('data'));
@@ -640,12 +641,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -653,10 +654,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ]);
 
         $this->getJson('api/unified-quotes/drafted?order_by_updated_at=desc')
@@ -678,7 +679,6 @@ class UnifiedQuoteTest extends TestCase
         $this->getJson('api/unified-quotes/drafted?order_by_completeness=desc')
 //            ->dump()
             ->assertOk();
-
     }
 
     /**
@@ -688,7 +688,7 @@ class UnifiedQuoteTest extends TestCase
      */
     public function testCanViewOwnPaginatedUnifiedDraftedQuotes()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
@@ -741,7 +741,7 @@ class UnifiedQuoteTest extends TestCase
 
         factory(Quote::class)->create([
             'user_id' => $user->getKey(),
-            'submitted_at' => null
+            'submitted_at' => null,
         ]);
 
         $response = $this->getJson('api/unified-quotes/drafted')
@@ -777,12 +777,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -790,10 +790,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ])
             ->assertJsonPath('data.*.user_id', [$user->getKey()]);
     }
@@ -805,16 +805,16 @@ class UnifiedQuoteTest extends TestCase
      */
     public function testCanViewOwnAndTeamLedUsersOwnPaginatedUnifiedDraftedQuotes()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
             'view_own_quotes',
             'update_own_external_quotes',
-            'update_own_internal_quotes'
+            'update_own_internal_quotes',
         ]);
 
-        /** @var User $teamLeader */
+        /** @var \App\Domain\User\Models\User $teamLeader */
         $teamLeader = User::factory()->create();
 
         /** @var Team $team */
@@ -823,7 +823,7 @@ class UnifiedQuoteTest extends TestCase
         $team->teamLeaders()->attach($teamLeader);
 
         $ledUser = User::factory()->create([
-            'team_id' => $team->getKey()
+            'team_id' => $team->getKey(),
         ]);
 
         $teamLeader->syncRoles($role);
@@ -875,12 +875,12 @@ class UnifiedQuoteTest extends TestCase
 
                         'permissions' => [
                             'update',
-                            'delete'
-                        ]
-                    ]
+                            'delete',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -888,10 +888,10 @@ class UnifiedQuoteTest extends TestCase
                     'last_page',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
-                    ]
-                ]
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                ],
             ]);
 
         $this->assertCount(2, $response->json('data'));

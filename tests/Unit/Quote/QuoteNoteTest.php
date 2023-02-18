@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Quote;
 
-use App\Models\Note\Note;
-use App\Models\Quote\Quote;
+use App\Domain\Note\Models\Note;
+use App\Domain\Rescue\Models\Quote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Tests\TestCase;
@@ -17,8 +17,6 @@ class QuoteNoteTest extends TestCase
 
     /**
      * Test an ability to view paginated notes of quote.
-     *
-     * @return void
      */
     public function testCanViewPaginatedNotesOfQuote(): void
     {
@@ -68,8 +66,6 @@ class QuoteNoteTest extends TestCase
 
     /**
      * Test an ability to create a new note for a quote.
-     *
-     * @return void
      */
     public function testCanCreateNoteForQuote(): void
     {
@@ -92,8 +88,6 @@ class QuoteNoteTest extends TestCase
 
     /**
      * Test updating a newly created quote note.
-     *
-     * @return void
      */
     public function testCanUpdateNoteOfQuote(): void
     {
@@ -121,8 +115,6 @@ class QuoteNoteTest extends TestCase
 
     /**
      * Test deleting a newly create quote note.
-     *
-     * @return void
      */
     public function testCanDeleteNoteOfQuote(): void
     {

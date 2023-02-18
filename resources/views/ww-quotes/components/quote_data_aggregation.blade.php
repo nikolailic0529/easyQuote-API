@@ -1,4 +1,4 @@
-<table class="table table-striped table-bordered" style="page-break-inside: avoid;font-size: 12px;">
+<table class="table table-striped table-bordered" style="font-size: 12px;">
     <thead>
     <tr>
         @foreach ($aggregation_fields as $field)

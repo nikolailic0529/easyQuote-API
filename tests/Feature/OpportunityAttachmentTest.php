@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attachment;
-use App\Models\Opportunity;
+use App\Domain\Attachment\Models\Attachment;
+use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -16,12 +16,10 @@ class OpportunityAttachmentTest extends TestCase
 {
     /**
      * Test an ability to view a list of the existing attachments of opportunity.
-     *
-     * @return void
      */
     public function testCanViewListOfOpportunityAttachments(): void
     {
-        /** @var Opportunity $opp */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opp */
         $opp = Opportunity::factory()->create();
 
         $attachments = factory(Attachment::class, 2)->create();
@@ -62,8 +60,6 @@ class OpportunityAttachmentTest extends TestCase
 
     /**
      * Test an ability to create a new attachment for opportunity.
-     *
-     * @return void
      */
     public function testCanCreateNewAttachmentForOpportunity(): void
     {
@@ -117,7 +113,7 @@ class OpportunityAttachmentTest extends TestCase
      */
     public function testCanDeleteAttachmentFromOpportunity(): void
     {
-        /** @var Opportunity $opp */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opp */
         $opp = Opportunity::factory()->create();
 
         $attachment = factory(Attachment::class)->create();

@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\{Data\Country, Quote\Margin\CountryMargin, Vendor};
+use App\Domain\Country\Models\Country;
+use App\Domain\Margin\Models\CountryMargin;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +19,7 @@ class CountryMarginsSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the country_margins table
+        // Empty the country_margins table
         Schema::disableForeignKeyConstraints();
 
         DB::table('country_margins')->delete();
@@ -29,7 +31,7 @@ class CountryMarginsSeeder extends Seeder
         $this->command->info('Seeding Country Margins...');
 
         collect($countryMargins)->each(function ($margin) {
-            $id = (string)Uuid::generate(4);
+            $id = (string) Uuid::generate(4);
             $vendor_id = Vendor::query()->where('short_code', $margin['vendor'])->first()->id;
             $value = $margin['value'];
             $is_fixed = $margin['is_fixed'];

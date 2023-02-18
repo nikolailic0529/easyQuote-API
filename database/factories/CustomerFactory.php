@@ -2,8 +2,8 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Customer\Customer;
-use App\Models\Data\Country;
+use App\Domain\Country\Models\Country;
+use App\Domain\Rescue\Models\Customer;
 use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
 
@@ -22,7 +22,7 @@ $factory->define(Customer::class, function (Faker $faker) {
 });
 
 $factory->state(Customer::class, 'expired', [
-    'valid_until' => now()->addDays(setting('notification_time')->d)
+    'valid_until' => now()->addDays(setting('notification_time')->d),
 ]);
 
 $factory->state(Customer::class, 'request', function (Faker $faker) {
@@ -43,17 +43,17 @@ $factory->state(Customer::class, 'addresses', function (Faker $faker) {
     return [
         'addresses' => collect()->times(3)->map(function () {
             return [
-                'address_type'      => Arr::random(['Equipment', 'Software']),
-                'address_1'         => $this->faker->address,
-                'address_2'         => $this->faker->address,
-                'city'              => $this->faker->city,
-                'state'             => $this->faker->state,
-                'state_code'        => $this->faker->stateAbbr,
-                'post_code'         => $this->faker->postcode,
-                'country_code'      => $this->faker->countryCode,
-                'contact_name'      => $this->faker->firstName,
-                'contact_number'    => $this->faker->phoneNumber
+                'address_type' => Arr::random(['Equipment', 'Software']),
+                'address_1' => $this->faker->address,
+                'address_2' => $this->faker->address,
+                'city' => $this->faker->city,
+                'state' => $this->faker->state,
+                'state_code' => $this->faker->stateAbbr,
+                'post_code' => $this->faker->postcode,
+                'country_code' => $this->faker->countryCode,
+                'contact_name' => $this->faker->firstName,
+                'contact_number' => $this->faker->phoneNumber,
             ];
-        })->toArray()
+        })->toArray(),
     ];
 });

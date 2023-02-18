@@ -2,17 +2,18 @@
 
 namespace Tests\Feature;
 
-use App\Http\Middleware\PerformUserActivity;
-use App\Models\Data\Country;
-use App\Models\Data\Timezone;
-use App\Models\Template\HpeContractTemplate;
-use App\Models\User;
-use App\Services\User\UserActivityService;
+use App\Domain\Country\Models\Country;
+use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Timezone\Models\Timezone;
+use App\Domain\User\Middleware\PerformUserActivity;
+use App\Domain\User\Models\User;
+use App\Domain\User\Services\UserActivityService;
 use Faker\Generator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\{Arr, Str};
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -21,7 +22,15 @@ use Tests\TestCase;
  */
 class AuthTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to authenticate with valid credentials.
@@ -90,7 +99,7 @@ class AuthTest extends TestCase
 
         $this->withMiddleware(PerformUserActivity::class);
 
-        /** @var \App\Services\User\UserActivityService $activityService */
+        /** @var \App\Domain\User\Services\UserActivityService $activityService */
         $activityService = $this->app[UserActivityService::class];
 
         $activityService->updateActivityTimeOfUser($this->app['auth']->user(), now()->subHour());
@@ -136,6 +145,20 @@ class AuthTest extends TestCase
                     '*' => [
                         'id',
                         'unit_name',
+                    ],
+                ],
+                'notification_settings' => [
+                    '*' => [
+                        'label',
+                        'key',
+                        'controls' => [
+                            '*' => [
+                                'label',
+                                'key',
+                                'email_notif',
+                                'app_notif',
+                            ],
+                        ],
                     ],
                 ],
             ]);
@@ -212,10 +235,70 @@ class AuthTest extends TestCase
                 ],
             ]);
 
-        foreach (Arr::except($data,
-            ['password', 'current_password', 'change_password', 'delete_picture']) as $attr => $value) {
+        $assertableData = Arr::except($data, ['password', 'current_password', 'change_password', 'delete_picture']);
+
+        foreach (Arr::dot($assertableData) as $attr => $value) {
             $this->assertSame($value, $response->json($attr));
         }
+    }
+
+    /**
+     * Test an ability to update notification settings of the current user.
+     */
+    public function testCanUpdateNotificationSettingsOfCurrentUser(): void
+    {
+        $this->authenticateApi();
+
+        $data = [
+            [
+                'key' => 'activities',
+                'controls' => [
+                    [
+                        'key' => 'is_active',
+                        'email_notif' => false,
+                        'app_notif' => false,
+                    ],
+                ],
+            ],
+        ];
+
+        $this->postJson('api/auth/user', ['notification_settings' => $data])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/auth/user')
+            ->assertOk()
+            ->assertJsonStructure([
+                'notification_settings' => [
+                    '*' => [
+                        'label',
+                        'key',
+                        'controls' => [
+                            '*' => [
+                                'email_notif',
+                                'app_notif',
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+        $settingsMap = collect($response->json('notification_settings'))
+            ->lazy()
+            ->keyBy('key')
+            ->map(static function (array $group): array {
+                return collect($group['controls'])
+                    ->lazy()
+                    ->keyBy('key')
+                    ->map(static function (array $control): array {
+                        return Arr::only($control, ['email_notif', 'app_notif']);
+                    })
+                    ->all();
+            })
+            ->all();
+
+        $this->assertFalse(Arr::get($settingsMap, 'activities.is_active.email_notif'));
+        $this->assertFalse(Arr::get($settingsMap, 'activities.is_active.app_notif'));
     }
 
     protected function currentUserDataProvider(): \Generator
@@ -310,5 +393,42 @@ class AuthTest extends TestCase
                 ];
             },
         ];
+
+//        yield 'notification settings' => [
+//            function () {
+//                $faker = app(Generator::class);
+//
+//                return [
+//                    'notification_settings' => [
+//                        'activities' => [
+//                            'is_active' => $faker->boolean(),
+//                        ],
+//                        'emails' => [
+//                            'is_active' => $faker->boolean(),
+//                        ],
+//                        'quotes' => [
+//                            'is_active' => $faker->boolean(),
+//                            'permissions_change' => $faker->boolean(),
+//                            'ownership_change' => $faker->boolean(),
+//                            'status_change' => $faker->boolean(),
+//                            'expiration' => $faker->boolean(),
+//                        ],
+//                        'accounts_and_contacts' => [
+//                            'is_active' => $faker->boolean(),
+//                            'ownership_change' => $faker->boolean(),
+//                        ],
+//                        'opportunities' => [
+//                            'is_active' => $faker->boolean(),
+//                            'move' => $faker->boolean(),
+//                            'ownership_change' => $faker->boolean(),
+//                            'status_change' => $faker->boolean(),
+//                        ],
+//                        'sync' => [
+//                            'is_active' => $faker->boolean(),
+//                        ],
+//                    ],
+//                ];
+//            },
+//        ];
     }
 }

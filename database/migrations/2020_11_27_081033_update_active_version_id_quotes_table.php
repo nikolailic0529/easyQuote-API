@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class UpdateActiveVersionIdQuotesTable extends Migration
 {
@@ -17,7 +15,7 @@ class UpdateActiveVersionIdQuotesTable extends Migration
         DB::beginTransaction();
 
         try {
-            /**
+            /*
              * Update appropriate active_quote_id in the quotes table
              * using values from the pivot table
              */
@@ -43,6 +41,5 @@ class UpdateActiveVersionIdQuotesTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

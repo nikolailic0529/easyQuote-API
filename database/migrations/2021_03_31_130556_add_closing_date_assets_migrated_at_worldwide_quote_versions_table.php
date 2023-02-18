@@ -29,7 +29,7 @@ class AddClosingDateAssetsMigratedAtWorldwideQuoteVersionsTable extends Migratio
         Schema::table('worldwide_quote_versions', function (Blueprint $table) {
             $table->dropColumn([
                 'closing_date',
-                'assets_migrated_at'
+                'assets_migrated_at',
             ]);
         });
     }

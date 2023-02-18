@@ -18,9 +18,7 @@ class AddVatTypeCompaniesTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('companies')->update(['vat_type' => 'VAT Number']);
-
         });
     }
 

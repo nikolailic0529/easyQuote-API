@@ -5,7 +5,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -39,7 +39,6 @@ return new class extends Migration {
                 return collect($collection->all());
             });
 
-
         $con->transaction(static function () use ($seeds) {
             foreach ($seeds as $seed) {
                 DB::table('tasks')
@@ -56,7 +55,6 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 
     private function resolveDetailsFromContent(array $content): ?string

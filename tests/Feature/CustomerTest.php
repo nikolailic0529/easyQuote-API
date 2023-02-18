@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Enum\CompanyType;
-use App\Models\Address;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Customer\Customer;
-use App\Models\Vendor;
+use App\Domain\Address\Models\Address;
+use App\Domain\Company\Enum\CompanyType;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Str;
@@ -18,7 +18,15 @@ use Tests\TestCase;
  */
 class CustomerTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view customers listing.
@@ -57,7 +65,7 @@ class CustomerTest extends TestCase
 
         $customer = factory(Customer::class)->create();
 
-        $this->getJson("api/quotes/customers/".$customer->getKey())
+        $this->getJson('api/quotes/customers/'.$customer->getKey())
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -86,7 +94,6 @@ class CustomerTest extends TestCase
 
         $this->getJson('api/quotes/customers/'.$customer->getKey())
             ->assertNotFound();
-
     }
 
     /**
@@ -166,7 +173,7 @@ class CustomerTest extends TestCase
 
         $secondRfqNumber = $response->json('rfq_number');
 
-        $this->assertSame((int)Str::afterLast($firstRfqNumber, '-') + 1, (int)Str::afterLast($secondRfqNumber, '-'));
+        $this->assertSame((int) Str::afterLast($firstRfqNumber, '-') + 1, (int) Str::afterLast($secondRfqNumber, '-'));
 
         $response = $this->postJson('api/quotes/customers', [
             'int_company_id' => $internalCompany->getKey(),

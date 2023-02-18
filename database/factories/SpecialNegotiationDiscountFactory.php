@@ -2,7 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Quote\Discount\SND;
+use App\Domain\Discount\Models\SND;
 use Faker\Generator as Faker;
 
 $factory->define(SND::class, function (Faker $faker) {
@@ -11,9 +11,9 @@ $factory->define(SND::class, function (Faker $faker) {
     $value = number_format(rand(1, 99), 2, '.', '');
 
     return [
-        'name'          => "SN {$country->code} {$value}",
-        'country_id'    => $country->id,
-        'vendor_id'     => $vendor->id,
-        'value'         => $value
+        'name' => "SN {$country->code} {$value}",
+        'country_id' => $country->id,
+        'vendor_id' => $vendor->id,
+        'value' => $value,
     ];
 });

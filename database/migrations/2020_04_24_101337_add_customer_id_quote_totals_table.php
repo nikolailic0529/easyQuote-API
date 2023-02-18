@@ -35,7 +35,7 @@ class AddCustomerIdQuoteTotalsTable extends Migration
             $table->dropForeign(['customer_id']);
 
             $table->dropColumn('customer_name');
-            
+
             $table->index('rfq_number');
         });
     }

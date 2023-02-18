@@ -2,14 +2,12 @@
 
 namespace Tests\Unit;
 
-use App\DTO\Opportunity\BatchOpportunityUploadResult;
-use App\DTO\Opportunity\ImportFilesData;
-use App\Models\User;
-use App\Services\Opportunity\OpportunityEntityService;
-use App\Services\Opportunity\OpportunityImportService;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\DataTransferObjects\Opportunity\BatchOpportunityUploadResult;
+use App\Domain\Worldwide\DataTransferObjects\Opportunity\ImportFilesData;
+use App\Domain\Worldwide\Services\Opportunity\OpportunityImportService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
-use Spatie\DataTransferObject\DataTransferObject;
 use Tests\TestCase;
 
 /**

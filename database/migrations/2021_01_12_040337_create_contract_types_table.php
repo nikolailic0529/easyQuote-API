@@ -21,12 +21,10 @@ class CreateContractTypesTable extends Migration
         });
 
         DB::transaction(function () {
-
-           DB::table('contract_types')->insert([
-               ['id' => 'c4da2cab-7fd0-4f60-87df-2cc9ea602fee', 'type_name' => 'Fixed Package Service', 'type_short_name' => 'Pack'],
-               ['id' => 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3', 'type_name' => 'Services Contract', 'type_short_name' => 'Contract']
-           ]);
-
+            DB::table('contract_types')->insert([
+                ['id' => 'c4da2cab-7fd0-4f60-87df-2cc9ea602fee', 'type_name' => 'Fixed Package Service', 'type_short_name' => 'Pack'],
+                ['id' => 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3', 'type_name' => 'Services Contract', 'type_short_name' => 'Contract'],
+            ]);
         });
     }
 

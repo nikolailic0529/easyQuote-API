@@ -7,7 +7,7 @@ return [
     'key' => env('GOOGLE_ADDRESS_VALIDATION_API_KEY', ''),
 
     'log_formats' => [
-        'request' => "REQUEST: {method} - {uri} - HTTP/{version} - {req_headers} - {req_body}",
-        'response' => "RESPONSE: {code} - {res_body}",
+        'request' => 'REQUEST: {method} - {uri} - HTTP/{version} - {req_headers} - {req_body}',
+        'response' => 'RESPONSE: {code} - {res_body}',
     ],
 ];

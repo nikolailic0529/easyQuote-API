@@ -2,19 +2,30 @@
 
 namespace Tests\Feature;
 
-use App\Models\PipelinerModelScrollCursor;
-use App\Models\Role;
-use App\Models\SalesUnit;
-use App\Models\User;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Pipeliner\Models\PipelinerModelScrollCursor;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class SalesUnitTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test can view list of available sales units.
@@ -51,7 +62,7 @@ class SalesUnitTest extends TestCase
         $this->authenticateApi($user);
 
         $response = $this->get('api/sales-units/list?'.Arr::query([
-                'filter' => ['assigned_to_me' => "true"],
+                'filter' => ['assigned_to_me' => 'true'],
             ]))
 //            ->dump()
             ->assertOk()
@@ -70,6 +81,7 @@ class SalesUnitTest extends TestCase
 
     /**
      * Test an ability to bulk create or update sales units.
+     *
      * @depends testCanViewListOfSalesUnits
      */
     public function testCanBulkCreateOrUpdateSalesUnits(array $response): void
@@ -174,26 +186,26 @@ class SalesUnitTest extends TestCase
 
         $data = collect($response)
             ->take(2)
-            ->map(static fn($v) => [...$v, ...['is_default' => true]])
+            ->map(static fn ($v) => [...$v, ...['is_default' => true]])
             ->all();
 
         $assertResponseInvalid = static function (TestResponse $response): void {
             $response->assertUnprocessable()
                 ->assertInvalid(['sales_units' => 'Exactly 1 unit must be set as default.'], responseKey: 'Error.original');
-       };
+        };
 
         $assertResponseInvalid($this->putJson('api/sales-units', ['sales_units' => $data]));
 
         $data = collect($response)
             ->take(2)
-            ->map(static fn($v) => [...$v, ...['is_default' => false]])
+            ->map(static fn ($v) => [...$v, ...['is_default' => false]])
             ->all();
 
         $assertResponseInvalid($this->putJson('api/sales-units', ['sales_units' => $data]));
 
         $data = collect($response)
             ->take(2)
-            ->map(static fn($v) => [...$v, ...['is_default' => null]])
+            ->map(static fn ($v) => [...$v, ...['is_default' => null]])
             ->all();
 
         $assertResponseInvalid($this->putJson('api/sales-units', ['sales_units' => $data]));

@@ -2,14 +2,14 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Contracts\Repositories\{CurrencyRepositoryInterface as Currencies,};
-use App\Models\Company;
-use App\Models\Customer\Customer;
-use App\Models\Quote\Margin\CountryMargin;
-use App\Models\Quote\Quote;
-use App\Models\Template\QuoteTemplate;
-use App\Models\User;
-use App\Models\Vendor;
+use App\Domain\Company\Models\Company;
+use App\Domain\Currency\Contracts\{CurrencyRepositoryInterface as Currencies};
+use App\Domain\Margin\Models\CountryMargin;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
 use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
 
@@ -25,7 +25,7 @@ $factory->define(Quote::class, function (Faker $faker) {
 
             return $vendor;
         },
-        fn() => $company->vendors->random()
+        fn () => $company->vendors->random()
     );
 
     $country = $vendor->countries->random();
@@ -63,8 +63,8 @@ $factory->define(Quote::class, function (Faker $faker) {
         'additional_notes' => $faker->sentences(10, true),
         'closing_date' => now()->addDays(rand(1, 10))->format('Y-m-d'),
         'calculate_list_price' => true,
-        'buy_price' => (float)rand(10000, 40000),
-        'custom_discount' => (float)rand(5, 99),
+        'buy_price' => (float) rand(10000, 40000),
+        'custom_discount' => (float) rand(5, 99),
     ];
 });
 

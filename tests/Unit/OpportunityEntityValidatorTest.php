@@ -2,14 +2,14 @@
 
 namespace Tests\Unit;
 
-use App\Enum\AddressType;
-use App\Enum\ContactType;
-use App\Models\Address;
-use App\Models\Contact;
-use App\Models\Opportunity;
-use App\Models\OpportunitySupplier;
-use App\Models\Vendor;
-use App\Services\Opportunity\OpportunityEntityValidator;
+use App\Domain\Address\Enum\AddressType;
+use App\Domain\Address\Models\Address;
+use App\Domain\Contact\Enum\ContactType;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Services\Opportunity\OpportunityEntityValidator;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -21,7 +21,7 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test a valid opportunity entity passes the validation.
      */
-    public function test_valid_opportunity_passes_validation(): void
+    public function testValidOpportunityPassesValidation(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
@@ -30,7 +30,6 @@ class OpportunityEntityValidatorTest extends TestCase
         $opp = Opportunity::factory()
             ->has(OpportunitySupplier::factory())
             ->create();
-
 
         $opp->primaryAccount->vendors()->attach(factory(Vendor::class)->create());
         $opp->primaryAccount->addresses()
@@ -64,7 +63,7 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation with invalid primary account attributes.
      */
-    public function test_opportunity_fails_validation_with_invalid_primary_account_attributes(): void
+    public function testOpportunityFailsValidationWithInvalidPrimaryAccountAttributes(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
@@ -91,12 +90,12 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation with missing primary account entity.
      */
-    public function test_opportunity_fails_validation_with_missing_primary_account(): void
+    public function testOpportunityFailsValidationWithMissingPrimaryAccount(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
 
-        /** @var Opportunity $opp */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opp */
         $opp = Opportunity::factory()->create();
 
         $opp->primaryAccount()->disassociate();
@@ -111,7 +110,7 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation with invalid primary account contact attributes.
      */
-    public function test_opportunity_fails_validation_with_invalid_primary_account_contact_attributes(): void
+    public function testOpportunityFailsValidationWithInvalidPrimaryAccountContactAttributes(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
@@ -131,7 +130,7 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation with missing primary account contact entity.
      */
-    public function test_opportunity_fails_validation_with_missing_primary_account_contact(): void
+    public function testOpportunityFailsValidationWithMissingPrimaryAccountContact(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
@@ -151,12 +150,12 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation with invalid end user attributes.
      */
-    public function test_opportunity_fails_validation_with_invalid_end_user_attributes(): void
+    public function testOpportunityFailsValidationWithInvalidEndUserAttributes(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
 
-        /** @var Opportunity $opp */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opp */
         $opp = Opportunity::factory()->create();
 
         $opp->endUser->update(['vat_type' => 'VAT Number', 'vat' => '']);
@@ -176,12 +175,12 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation with missing end user entity.
      */
-    public function test_opportunity_fails_validation_with_missing_end_user(): void
+    public function testOpportunityFailsValidationWithMissingEndUser(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
 
-        /** @var Opportunity $opp */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opp */
         $opp = Opportunity::factory()->create();
 
         $opp->endUser()->disassociate();
@@ -196,7 +195,7 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation without start & end dates.
      */
-    public function test_opportunity_fails_validation_with_without_start_end_dates(): void
+    public function testOpportunityFailsValidationWithWithoutStartEndDates(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
@@ -219,7 +218,7 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation without support duration.
      */
-    public function test_opportunity_fails_validation_with_without_support_duration(): void
+    public function testOpportunityFailsValidationWithWithoutSupportDuration(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
@@ -240,12 +239,12 @@ class OpportunityEntityValidatorTest extends TestCase
     /**
      * Test an opportunity entity fails the validation without suppliers.
      */
-    public function test_opportunity_fails_validation_with_without_suppliers(): void
+    public function testOpportunityFailsValidationWithWithoutSuppliers(): void
     {
         /** @var OpportunityEntityValidator $validator */
         $validator = $this->app[OpportunityEntityValidator::class];
 
-        /** @var Opportunity $opp */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opp */
         $opp = Opportunity::factory()->create();
         $opp->opportunitySuppliers()->delete();
 

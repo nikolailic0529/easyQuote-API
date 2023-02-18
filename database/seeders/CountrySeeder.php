@@ -6,11 +6,11 @@ use Illuminate\Database\Seeder;
 
 class CountrySeeder extends Seeder
 {
-
     /**
      * Run the database seeders.
      *
-     * @return  void
+     * @return void
+     *
      * @throws \Throwable
      */
     public function run()
@@ -27,9 +27,7 @@ class CountrySeeder extends Seeder
         }, $countries);
 
         $connection->transaction(function () use ($connection, $countries) {
-
             foreach ($countries as $country) {
-
                 $connection->table('countries')
                     ->upsert([
                         'id' => $country['id'],
@@ -47,7 +45,7 @@ class CountrySeeder extends Seeder
                         'is_system' => true,
                         'created_at' => now(),
                         'updated_at' => now(),
-                        'activated_at' => now()
+                        'activated_at' => now(),
                     ], null, [
                         'capital' => $country['capital'],
                         'citizenship' => $country['citizenship'],
@@ -61,9 +59,7 @@ class CountrySeeder extends Seeder
                         'calling_code' => $country['calling_code'],
                         'default_currency_id' => $country['default_currency_id'],
                     ]);
-
             }
-
         });
     }
 }

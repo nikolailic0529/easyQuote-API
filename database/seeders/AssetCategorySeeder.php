@@ -18,17 +18,13 @@ class AssetCategorySeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         $connection->transaction(function () use ($connection, $assetCategories) {
-
             foreach ($assetCategories as $assetCategory) {
-
                 $connection->table('asset_categories')
                     ->insertOrIgnore([
                         'id' => $assetCategory['id'],
-                        'name' => $assetCategory['name']
+                        'name' => $assetCategory['name'],
                     ]);
-
             }
-
         });
     }
 }

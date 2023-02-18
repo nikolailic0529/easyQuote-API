@@ -2,17 +2,28 @@
 
 namespace Tests\Feature;
 
-use App\Models\BusinessDivision;
-use App\Models\SalesUnit;
-use App\Models\Team;
-use App\Models\User;
+use App\Domain\BusinessDivision\Models\BusinessDivision;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class TeamTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view paginated Teams.
@@ -38,10 +49,10 @@ class TeamTest extends TestCase
                         'business_division_name',
                         'monthly_goal_amount',
                         'sales_units' => [
-                            '*' => ['id', 'unit_name']
+                            '*' => ['id', 'unit_name'],
                         ],
                         'team_leaders' => [
-                          '*' => ['id', 'user_fullname', 'email']
+                          '*' => ['id', 'user_fullname', 'email'],
                         ],
                         'is_system',
                         'created_at',
@@ -231,5 +242,4 @@ class TeamTest extends TestCase
         $this->getJson('api/teams/'.$team->getKey())
             ->assertOk();
     }
-
 }

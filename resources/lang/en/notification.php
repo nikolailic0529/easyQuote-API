@@ -1,0 +1,20 @@
+<?php
+
+return [
+    'settings' => [
+        'groups' => [
+            'activities' => 'Activities',
+            'accounts_and_contacts' => 'Accounts & Contacts',
+            'opportunities' => 'Opportunities',
+            'quotes' => 'Quotes',
+            'sync' => 'Synchronization',
+        ],
+        'controls' => [
+            'is_active' => 'Is Active',
+            'ownership_change' => 'Ownership Change',
+            'status_change' => 'Status Change',
+            'tasks' => 'Tasks',
+            'appointments' => 'Appointments',
+        ],
+    ],
+];

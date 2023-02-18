@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 /**
@@ -23,8 +21,8 @@ class LanguageTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'name'
-                ]
+                    'id', 'name',
+                ],
             ]);
 
         $this->assertNotEmpty($response->json());

@@ -1,12 +1,12 @@
 <?php
 
-use App\Enum\EventFrequencyEnum;
-use App\Enum\PriceCalculationDurationEnum;
-use App\Services\Settings\ValueProviders\CurrencyValueProvider;
-use App\Services\Settings\ValueProviders\EnumValueProvider;
-use App\Services\Settings\ValueProviders\ExchangeRateProviderValueProvider;
-use App\Services\Settings\ValueProviders\RangeValueProvider;
-use App\Services\Settings\ValueProviders\UserValueProvider;
+use App\Domain\Settings\Enum\PriceCalculationDurationEnum;
+use App\Domain\Settings\ValueProviders\CurrencyValueProvider;
+use App\Domain\Settings\ValueProviders\EnumValueProvider;
+use App\Domain\Settings\ValueProviders\ExchangeRateProviderValueProvider;
+use App\Domain\Settings\ValueProviders\RangeValueProvider;
+use App\Domain\Settings\ValueProviders\UserValueProvider;
+use App\Domain\ExchangeRate\Enum\EventFrequencyEnum;
 
 return [
     'table' => 'system_settings',
@@ -25,7 +25,7 @@ return [
             'with' => [
                 'start' => 7,
                 'end' => 30,
-                'label' => ":value Days Before Expiration",
+                'label' => ':value Days Before Expiration',
             ],
         ],
         'notification_time' => [
@@ -33,7 +33,7 @@ return [
             'with' => [
                 'start' => 1,
                 'end' => 3,
-                'label' => ":value Week Before Closing Date|:value Weeks Before Closing Date",
+                'label' => ':value Week Before Closing Date|:value Weeks Before Closing Date',
             ],
         ],
         'failure_report_recipients' => [
@@ -50,7 +50,7 @@ return [
             'with' => [
                 'start' => 1,
                 'end' => 12,
-                'label' => "Every Hour|Every :value Hours",
+                'label' => 'Every Hour|Every :value Hours',
             ],
         ],
         'file_upload_size' => [
@@ -58,7 +58,7 @@ return [
             'with' => [
                 'start' => 2,
                 'end' => 10,
-                'label' => ":value MB",
+                'label' => ':value MB',
             ],
         ],
         'exchange_rate_provider' => [
@@ -75,7 +75,7 @@ return [
             'with' => [
                 'start' => 1,
                 'end' => 30,
-                'label' => ":value minute from now|:value minutes from now",
+                'label' => ':value minute from now|:value minutes from now',
             ],
         ],
         'maintenance_end_time' => [
@@ -84,7 +84,7 @@ return [
                 'start' => 5,
                 'end' => 120,
                 'step' => 5,
-                'label' => ":value minutes",
+                'label' => ':value minutes',
             ],
         ],
     ],

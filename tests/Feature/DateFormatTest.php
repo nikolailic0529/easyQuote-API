@@ -4,12 +4,13 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class DateFormatTest extends TestCase
 {
     /**
      * A basic feature test example.
-     *
-     * @return void
      */
     public function testCanViewListOfDateFormats(): void
     {

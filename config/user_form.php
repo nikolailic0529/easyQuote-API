@@ -7,8 +7,8 @@ return [
                 'roles' => [],
                 'users' => [],
                 'level' => ACL_R,
-                'module' => 'quotes'
+                'module' => 'quotes',
             ],
-        ]
-    ]
+        ],
+    ],
 ];

@@ -2,30 +2,32 @@
 
 namespace Tests\Feature;
 
-use App\Enum\DateDayEnum;
-use App\Enum\DateMonthEnum;
-use App\Enum\DateWeekEnum;
-use App\Enum\DayOfWeekEnum;
-use App\Enum\OpportunityRecurrenceConditionEnum;
-use App\Enum\RecurrenceTypeEnum;
-use App\Models\Address;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Opportunity;
-use App\Models\OpportunitySupplier;
-use App\Models\OpportunityValidationResult;
-use App\Models\Permission;
-use App\Models\Pipeline\Pipeline;
-use App\Models\Pipeline\PipelineStage;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Role;
-use App\Models\SalesUnit;
-use App\Models\System\CustomField;
-use App\Models\System\CustomFieldValue;
-use App\Models\Team;
-use App\Models\User;
-use App\Models\Vendor;
-use App\Services\Opportunity\ImportedOpportunityDataValidator;
+use App\Domain\Address\Enum\AddressType;
+use App\Domain\Address\Models\Address;
+use App\Domain\Authorization\Models\Permission;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Enum\CompanyType;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\CustomField\Models\CustomField;
+use App\Domain\CustomField\Models\CustomFieldValue;
+use App\Domain\Date\Enum\DateDayEnum;
+use App\Domain\Date\Enum\DateMonthEnum;
+use App\Domain\Date\Enum\DateWeekEnum;
+use App\Domain\Date\Enum\DayOfWeekEnum;
+use App\Domain\Pipeline\Models\Pipeline;
+use App\Domain\Pipeline\Models\PipelineStage;
+use App\Domain\Recurrence\Enum\RecurrenceTypeEnum;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Enum\OpportunityRecurrenceConditionEnum;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Models\OpportunityValidationResult;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Services\Opportunity\ImportedOpportunityDataValidator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -34,7 +36,8 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Class OpportunityTest
+ * Class OpportunityTest.
+ *
  * @group worldwide
  * @group opportunity
  * @group build
@@ -43,6 +46,13 @@ class OpportunityTest extends TestCase
 {
     use DatabaseTransactions;
     use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     protected function setUp(): void
     {
@@ -445,58 +455,6 @@ class OpportunityTest extends TestCase
     }
 
     /**
-     * Test an ability to view assigned opportunity entities.
-     */
-    public function testCanViewAssignedPaginatedOpportunities(): void
-    {
-        $this->markTestSkipped('Data allocation ignored for now');
-
-        /** @var Role $role */
-        $role = factory(Role::class)->create();
-
-        $role->syncPermissions('view_opportunities', 'update_own_opportunities', 'delete_own_opportunities');
-
-        /** @var User $user */
-        $user = User::factory()
-            ->hasAttached(SalesUnit::factory())
-            ->create();
-
-        $user->syncRoles($role);
-
-        $opportunity = Opportunity::factory()
-            ->for($user->salesUnits->first())
-            ->hasAttached($user, pivot: [
-                'assignment_start_date' => today(), 'assignment_end_date' => today()->addDay(),
-            ], relationship: 'assignedToUsers')
-            ->create();
-
-        Opportunity::factory()->create();
-
-        $this->actingAs($user, 'api');
-
-        $response = $this->getJson('api/opportunities')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                        'permissions',
-                    ],
-                ],
-            ])
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $opportunity->getKey());
-
-        foreach ($response->json('data') as $item) {
-            $this->assertTrue($item['permissions']['view']);
-            $this->assertTrue($item['permissions']['update']);
-            $this->assertTrue($item['permissions']['delete']);
-        }
-    }
-
-    /**
      * Test an ability to view own lost opportunity entities.
      */
     public function testCanViewOwnPaginatedLostOpportunities(): void
@@ -517,7 +475,7 @@ class OpportunityTest extends TestCase
             ->for($user)
             ->for($user->salesUnits->first())
             ->create([
-                'status' => 0 // lost
+                'status' => 0, // lost
             ]);
 
         Opportunity::factory()->create([
@@ -600,7 +558,7 @@ class OpportunityTest extends TestCase
      */
     public function testCanViewOpportunity(): void
     {
-        /** @var Company $primaryAccount */
+        /** @var \App\Domain\Company\Models\Company $primaryAccount */
         $primaryAccount = Company::factory()->create();
 
         $primaryAccount->vendors()->sync(Vendor::query()->limit(2)->get());
@@ -628,7 +586,7 @@ class OpportunityTest extends TestCase
                     'first_name',
                     'middle_name',
                     'last_name',
-                    'user_fullname'
+                    'user_fullname',
                 ],
                 'pipeline_id',
                 'pipeline',
@@ -814,7 +772,7 @@ class OpportunityTest extends TestCase
             /** @var CustomField $field */
             $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
 
-            /** @var CustomFieldValue $value */
+            /** @var \App\Domain\CustomField\Models\CustomFieldValue $value */
             $value = $field->values()->whereHas('allowedBy')->first();
 
             return [
@@ -972,7 +930,7 @@ class OpportunityTest extends TestCase
     public function testCanCanNotUpdateOpportunityWithoutAccountManager(): void
     {
         $data = [
-            'project_name' => Str::random(100)
+            'project_name' => Str::random(100),
         ];
 
         $this->authenticateApi();
@@ -1059,10 +1017,10 @@ class OpportunityTest extends TestCase
         ]);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
-            /** @var CustomField $field */
+            /** @var \App\Domain\CustomField\Models\CustomField $field */
             $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
 
-            /** @var CustomFieldValue $value */
+            /** @var \App\Domain\CustomField\Models\CustomFieldValue $value */
             $value = $field->values()->whereHas('allowedBy')->first();
 
             return [
@@ -1273,7 +1231,7 @@ class OpportunityTest extends TestCase
         ]);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
-            /** @var CustomField $field */
+            /** @var \App\Domain\CustomField\Models\CustomField $field */
             $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
 
             /** @var CustomFieldValue $value */
@@ -1501,7 +1459,7 @@ class OpportunityTest extends TestCase
             /** @var CustomField $field */
             $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
 
-            /** @var CustomFieldValue $value */
+            /** @var \App\Domain\CustomField\Models\CustomFieldValue $value */
             $value = $field->values()->whereHas('allowedBy')->first();
 
             return [
@@ -1629,10 +1587,61 @@ class OpportunityTest extends TestCase
                 'end_user_id' => $endUser->getKey(),
                 'are_end_user_addresses_available' => true,
                 'are_end_user_contacts_available' => true,
-
             ]);
 
         $this->assertNotEmpty($response->json('primary_account_contact_id'));
+    }
+
+    /**
+     * Test timestamps of an opportunity won't be touched any attribute changed.
+     */
+    public function testDoesntTouchOpportunityTimestampsWhenNoChanges(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Opportunity $opp */
+        $opp = Opportunity::factory()->create([
+            'opportunity_start_date' => now()->addMonth()->format('Y-m-d'),
+            'opportunity_end_date' => now()->addMonth()->format('Y-m-d'),
+            'opportunity_closing_date' => now()->addMonth()->format('Y-m-d'),
+            'notes' => null,
+        ]);
+
+        $r = $this->getJson('api/opportunities/'.$opp->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at',
+            ]);
+
+        $originalUpdatedAt = $r->json('updated_at');
+
+        $this->travelTo(now()->addDay());
+
+        $this->patchJson('api/opportunities/'.$opp->getKey(), [
+            'opportunity_start_date' => $opp->opportunity_start_date,
+            'opportunity_end_date' => $opp->opportunity_end_date,
+            'opportunity_closing_date' => $opp->opportunity_closing_date,
+            'is_opportunity_start_date_assumed' => (bool) $opp->is_opportunity_start_date_assumed,
+            'is_opportunity_end_date_assumed' => (bool) $opp->is_opportunity_end_date_assumed,
+            'is_contract_duration_checked' => (bool) $opp->is_contract_duration_checked,
+            'has_higher_sla' => (bool) $opp->has_higher_sla,
+            'is_multi_year' => (bool) $opp->is_multi_year,
+            'has_additional_hardware' => (bool) $opp->has_additional_hardware,
+            'has_service_credits' => (bool) $opp->has_service_credits,
+            'notes' => (string) $opp->notes,
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $r = $this->getJson('api/opportunities/'.$opp->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at',
+            ])
+            ->assertJsonPath('updated_at', $originalUpdatedAt);
     }
 
     /**
@@ -1829,10 +1838,10 @@ class OpportunityTest extends TestCase
         ]);
 
         $data['suppliers_grid'] = collect()->times(5, function (int $n) {
-            /** @var CustomField $field */
+            /** @var \App\Domain\CustomField\Models\CustomField $field */
             $field = CustomField::query()->where('field_name', "opportunity_distributor$n")->sole();
 
-            /** @var CustomFieldValue $value */
+            /** @var \App\Domain\CustomField\Models\CustomFieldValue $value */
             $value = $field->values()->whereHas('allowedBy')->first();
 
             return [
@@ -2036,7 +2045,7 @@ class OpportunityTest extends TestCase
                 'primary_account' => [
                     'id', 'name',
                     'vendors' => [
-                        '*' => ['id', 'name', 'short_code',],
+                        '*' => ['id', 'name', 'short_code'],
                     ],
                     'addresses' => [
                         '*' => [
@@ -2070,7 +2079,7 @@ class OpportunityTest extends TestCase
         $this->assertSame('Invoice', $response->json('primary_account.addresses.0.address_type'));
 
         $groupedAddresses = collect($response->json('primary_account.addresses'))
-            ->map(static fn(array $a) => [
+            ->map(static fn (array $a) => [
                 'address_type' => $a['address_type'],
                 'address_1' => $a['address_1'],
                 'address_2' => $a['address_2'],
@@ -2114,7 +2123,7 @@ class OpportunityTest extends TestCase
     /**
      * Test an ability to batch upload the opportunities from a file.
      * The new fields added to the accounts file: Address 2, Hardware Country Code, Hardware Country Code, VAT, VAT Type, State Code
-     * The new fields added to the contacts file: Type(Hardware, Software)
+     * The new fields added to the contacts file: Type(Hardware, Software).
      *
      * @group opportunity-import
      */
@@ -2178,7 +2187,7 @@ class OpportunityTest extends TestCase
                 'primary_account' => [
                     'id', 'name',
                     'vendors' => [
-                        '*' => ['id', 'name', 'short_code',],
+                        '*' => ['id', 'name', 'short_code'],
                     ],
                     'addresses' => [
                         '*' => [
@@ -2321,7 +2330,7 @@ class OpportunityTest extends TestCase
                 'primary_account' => [
                     'id', 'name',
                     'vendors' => [
-                        '*' => ['id', 'name', 'short_code',],
+                        '*' => ['id', 'name', 'short_code'],
                     ],
                     'addresses' => [
                         '*' => [
@@ -2352,12 +2361,55 @@ class OpportunityTest extends TestCase
         $this->assertSame('john.bricknell@solid-global.com', $response->json('suppliers_grid.0.contact_email'));
     }
 
+    public function testCanNotImportOpportunityWithInvalidSuppliers(): void
+    {
+        $accountsDataFile = UploadedFile::fake()->createWithContent(
+            'accounts.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/accounts-inv-sup.xlsx'))
+        );
+
+        $accountContactsFile = UploadedFile::fake()->createWithContent(
+            'contacts.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/contacts-inv-sup.xlsx'))
+        );
+
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'opps.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opps-inv-sup.xlsx'))
+        );
+
+        $this->authenticateApi();
+
+        $response = $this->postJson('api/opportunities/upload', [
+            'opportunities_file' => $opportunitiesFile,
+            'accounts_data_file' => $accountsDataFile,
+            'account_contacts_file' => $accountContactsFile,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'opportunities' => [
+                    '*' => [
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
+                    ],
+                ],
+                'errors',
+            ])
+            ->assertJsonCount(0, 'opportunities')
+            ->assertJsonCount(1, 'errors');
+
+        $this->assertStringMatchesFormat('%aThe supplier %s is not allowed%a', $response->json('errors.0'));
+    }
+
     /**
-     * Test an ability to batch upload the opportunities from a file without accounts data file.
+     * Test an ability to batch upload the opportunities from a file without accounts data file
+     * when company doesn't exist.
      *
      * @group opportunity-import
      */
-    public function testCanBatchUploadOpportunitiesWithoutAccountsDataFiles(): void
+    public function testCanNotImportOpportunitiesWithoutAccountsFileWhenCompanyDoesntExist(): void
     {
         $opportunitiesFile = UploadedFile::fake()->createWithContent(
             'Opportunities-04042021.xlsx',
@@ -2385,6 +2437,92 @@ class OpportunityTest extends TestCase
             ]);
 
         $this->assertNotEmpty($response->json('errors'));
+    }
+
+    /**
+     * Test an ability to batch upload the opportunities from a file without accounts data file
+     * when company exists.
+     *
+     * @group opportunity-import
+     */
+    public function testCanImportOpportunitiesWithoutAccountsFileWhenCompanyExists(): void
+    {
+        $opportunitiesFile = UploadedFile::fake()->createWithContent(
+            'Opportunities-04042021.xlsx',
+            file_get_contents(base_path('tests/Feature/Data/opportunity/opportunities-without-accounts-file-company-exists.xlsx'))
+        );
+
+        $this->authenticateApi();
+
+        $this->app['db.connection']->table('companies')->where('type', 'External')->delete();
+
+        /** @var Company $company */
+        $company = Company::factory([
+            'name' => 'Triangle Computer Services 84B7BoIH8SEsIew7',
+            'type' => CompanyType::EXTERNAL,
+        ])
+            ->hasAttached(
+                Address::factory([
+                    'address_type' => AddressType::INVOICE,
+                    'address_1' => Str::random(40),
+                ]),
+                ['is_default' => true]
+            )
+            ->create();
+
+        /** @var Address $address */
+        $address = $company->addresses->sole();
+
+        $response = $this->postJson('api/opportunities/upload', [
+            'opportunities_file' => $opportunitiesFile,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'opportunities' => [
+                    '*' => [
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount',
+                        'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                        'sale_action_name', 'campaign_name',
+                    ],
+                ],
+                'errors',
+            ])
+            ->assertJsonCount(1, 'opportunities')
+            ->assertJsonCount(0, 'errors');
+
+        $this->assertEmpty($response->json('errors'));
+
+        $oppId = $response->json('opportunities.0.id');
+
+        $this->patchJson('api/opportunities/save', [
+            'opportunities' => [$oppId],
+        ])
+            ->assertNoContent();
+
+        $this->getJson('api/opportunities/'.$oppId)
+            ->assertJsonStructure([
+                'id',
+                'primary_account' => [
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                            'address_type',
+                            'address_1',
+                            'address_2',
+                            'country',
+                            'city',
+                            'state',
+                            'state_code',
+                            'post_code',
+                            'is_default',
+                        ],
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'primary_account.addresses')
+            ->assertJsonPath('primary_account.addresses.0.address_1', $address->address_1);
     }
 
     /**
@@ -2700,7 +2838,6 @@ class OpportunityTest extends TestCase
             }
         }
 
-
         // Assert pipeline view contain opportunities with quotes.
         $opportunityKeys = $response->json('*.opportunities.*.id');
 
@@ -2848,6 +2985,48 @@ class OpportunityTest extends TestCase
                 $this->assertContains($opportunity->getKey(), array_column($stage['opportunities'], 'id'));
             }
         }
+    }
+
+    /**
+     * Test an ability to view paginated opportunities via sharing user relations.
+     */
+    public function testCanViewPaginatedOpportunitiesViaSharingUserRelations(): void
+    {
+        /** @var Role $role */
+        $role = Role::factory()->create();
+        $role->syncPermissions('view_opportunities');
+
+        /** @var User $currentUser */
+        $currentUser = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+        $currentUser->syncRoles($role);
+
+        $this->authenticateApi($currentUser);
+
+        $opp = Opportunity::factory()
+            ->for($currentUser->salesUnits->first())
+            ->hasAttached($currentUser, relationship: 'sharingUsers')
+            ->create();
+
+        // Opportunity without sharing user relations.
+        Opportunity::factory()
+            ->for($currentUser->salesUnits->first())
+            ->create();
+
+        $this->getJson('api/opportunities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $opp->getKey());
     }
 
     /**

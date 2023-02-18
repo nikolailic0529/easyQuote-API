@@ -1,14 +1,15 @@
 <?php
 
-
 namespace Tests\Feature;
 
-
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\WorldwideQuote;
+use App\Domain\Discount\Models\PrePayDiscount;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class PrePayDiscountTest extends TestCase
 {
     use DatabaseTransactions;
@@ -24,7 +25,7 @@ class PrePayDiscountTest extends TestCase
 
         factory(PrePayDiscount::class, 30)->create();
 
-        $this->getJson("api/discounts/pre_pay")
+        $this->getJson('api/discounts/pre_pay')
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -69,7 +70,7 @@ class PrePayDiscountTest extends TestCase
 
         $attributes = factory(PrePayDiscount::class)->raw();
 
-        $this->postJson("api/discounts/pre_pay", $attributes)
+        $this->postJson('api/discounts/pre_pay', $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -103,7 +104,7 @@ class PrePayDiscountTest extends TestCase
 
         $attributes = factory(PrePayDiscount::class)->raw();
 
-        $this->patchJson("api/discounts/pre_pay/".$discount->getKey(), $attributes)
+        $this->patchJson('api/discounts/pre_pay/'.$discount->getKey(), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -135,7 +136,7 @@ class PrePayDiscountTest extends TestCase
 
         $discount = factory(PrePayDiscount::class)->create();
 
-        $this->deleteJson("api/discounts/pre_pay/".$discount->getKey())
+        $this->deleteJson('api/discounts/pre_pay/'.$discount->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -154,7 +155,7 @@ class PrePayDiscountTest extends TestCase
 
         $discount = factory(PrePayDiscount::class)->create();
 
-        /** @var WorldwideQuote $quote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'submitted_at' => now(),
         ]);
@@ -163,7 +164,7 @@ class PrePayDiscountTest extends TestCase
 
         $this->authenticateApi();
 
-        $response = $this->deleteJson("api/discounts/pre_pay/".$discount->getKey())
+        $response = $this->deleteJson('api/discounts/pre_pay/'.$discount->getKey())
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([

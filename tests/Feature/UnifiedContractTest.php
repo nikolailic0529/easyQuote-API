@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\HpeContract;
-use App\Models\Quote\Contract;
-use App\Models\Role;
-use App\Models\User;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\HpeContract\Models\HpeContract;
+use App\Domain\Rescue\Models\Contract;
+use App\Domain\User\Models\User;
 use Elasticsearch\Client as Elasticsearch;
 use Elasticsearch\ClientBuilder;
 use GuzzleHttp\Ring\Client\MockHandler;
@@ -13,6 +13,9 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class UnifiedContractTest extends TestCase
 {
     use DatabaseTransactions;
@@ -203,10 +206,10 @@ class UnifiedContractTest extends TestCase
             'user_id' => User::factory()->create()->getKey(),
         ]);
 
-        /** @var User $user */
+        /** @var \App\Domain\User\Models\User $user */
         $user = User::factory()->create();
 
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions(
@@ -291,11 +294,11 @@ class UnifiedContractTest extends TestCase
 
         $contracts = factory(Contract::class, 10)->create();
 
-        $stream = fopen('php://memory','r+');
+        $stream = fopen('php://memory', 'r+');
         fwrite($stream, json_encode([
             'hits' => [
-                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all())
-            ]
+                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all()),
+            ],
         ]));
         rewind($stream);
 
@@ -305,7 +308,7 @@ class UnifiedContractTest extends TestCase
                 'total_time' => 100,
             ],
             'body' => $stream,
-            'effective_url' => 'localhost'
+            'effective_url' => 'localhost',
         ]);
 
         $esClient = ClientBuilder::create()
@@ -315,7 +318,7 @@ class UnifiedContractTest extends TestCase
 
         $this->app->instance(Elasticsearch::class, $esClient);
 
-        $customerNames = $contracts->map(fn(Contract $contract) => $contract->customer->name)->all();
+        $customerNames = $contracts->map(fn (Contract $contract) => $contract->customer->name)->all();
 
         $this->getJson('api/contracts/drafted?'.Arr::query([
                 'filter' => [
@@ -389,11 +392,11 @@ class UnifiedContractTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        $stream = fopen('php://memory','r+');
+        $stream = fopen('php://memory', 'r+');
         fwrite($stream, json_encode([
             'hits' => [
-                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all())
-            ]
+                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all()),
+            ],
         ]));
         rewind($stream);
 
@@ -403,7 +406,7 @@ class UnifiedContractTest extends TestCase
                 'total_time' => 100,
             ],
             'body' => $stream,
-            'effective_url' => 'localhost'
+            'effective_url' => 'localhost',
         ]);
 
         $esClient = ClientBuilder::create()
@@ -413,7 +416,7 @@ class UnifiedContractTest extends TestCase
 
         $this->app->instance(Elasticsearch::class, $esClient);
 
-        $customerNames = $contracts->map(fn(Contract $contract) => $contract->customer->name)->all();
+        $customerNames = $contracts->map(fn (Contract $contract) => $contract->customer->name)->all();
 
         $this->getJson('api/contracts/submitted?'.Arr::query([
                 'filter' => [
@@ -553,10 +556,10 @@ class UnifiedContractTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        /** @var User $user */
+        /** @var \App\Domain\User\Models\User $user */
         $user = User::factory()->create();
 
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions(

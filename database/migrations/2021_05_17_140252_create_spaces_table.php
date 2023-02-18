@@ -23,13 +23,11 @@ class CreateSpacesTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('spaces')
                 ->insertOrIgnore([
                     'id' => SP_EPD,
                     'space_name' => 'EPD',
                 ]);
-
         });
     }
 

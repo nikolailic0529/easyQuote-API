@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -18,7 +18,6 @@ return new class extends Migration {
         $oppStageMap = [];
 
         foreach ($opps as $opp) {
-
             sscanf($opp->sale_action_name, '%d.%s', $ord, $stage);
 
             $stage ??= $opp->sale_action_name;
@@ -31,15 +30,11 @@ return new class extends Migration {
         }
 
         DB::transaction(static function () use ($oppStageMap) {
-
             foreach ($oppStageMap as $oppId => $stageId) {
-
                 DB::table('opportunities')
                     ->where('id', $oppId)
                     ->update(['pipeline_stage_id' => $stageId]);
-
             }
-
         });
     }
 
@@ -50,6 +45,5 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 };

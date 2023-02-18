@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Customer\Customer;
+use App\Domain\Rescue\Models\Customer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Carbon, Str};
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Tests\TestCase;
-use function factory;
-use function now;
 
 /**
  * @group build
@@ -20,39 +20,36 @@ class S4RfqPostTest extends TestCase
 
     /**
      * Test an ability to post a new RFQ with valid data.
-     *
-     * @return void
      */
     public function testCanPostNewRfqWithValidData(): void
     {
         $this->authenticateAsClient();
 
         $response = $this->postJson('api/s4/quotes', $rfqData = [
-            'quotation_valid_until' => now()->addYear()->format('m/d/Y'),
+            'quotation_valid_until' => \now()->addYear()->format('m/d/Y'),
             'customer_name' => Str::random(),
             'country' => 'FR',
-            'support_start_date' => now()->format('Y-m-d'),
-            'support_end_date' => now()->addYear()->format('Y-m-d'),
+            'support_start_date' => \now()->format('Y-m-d'),
+            'support_end_date' => \now()->addYear()->format('Y-m-d'),
             'service_levels' => [
                 ['service_level' => 'Proactive Care 24x7'],
             ],
             'addresses' => [
                 [
-                    "state" => null,
-                    "post_code" => "92523",
-                    "country_code" => "FR",
-                    "address_type" => "Equipment",
-                    "address_1" => "41-43 Rue De Villiers",
-                    "address_2" => null,
-                    "city" => "Neuilly Sur Seine",
-                    "contact_name" => "Jean-Michel Perret",
-                    "state_code" => null,
-                    "contact_number" => "0080033140887464",
+                    'state' => null,
+                    'post_code' => '92523',
+                    'country_code' => 'FR',
+                    'address_type' => 'Equipment',
+                    'address_1' => '41-43 Rue De Villiers',
+                    'address_2' => null,
+                    'city' => 'Neuilly Sur Seine',
+                    'contact_name' => 'Jean-Michel Perret',
+                    'state_code' => null,
+                    'contact_number' => '0080033140887464',
                 ],
             ],
             'invoicing_terms' => 'UP_FRONT',
             'rfq_number' => Str::random(20),
-
         ])
 //            ->dump()
             ->assertOk()
@@ -92,14 +89,12 @@ class S4RfqPostTest extends TestCase
 
     /**
      * Test an ability to post RFQ data without address data.
-     *
-     * @return void
      */
     public function testCanPostRfqWithoutAddressData(): void
     {
         $this->authenticateAsClient();
 
-        $attributes = Arr::only(factory(Customer::class)->state('request')->raw(), [
+        $attributes = Arr::only(\factory(Customer::class)->state('request')->raw(), [
             'customer_name',
             'rfq_number',
             'quotation_valid_until',
@@ -135,7 +130,7 @@ class S4RfqPostTest extends TestCase
                         'contact_name',
                         'contact_number',
                         'contact_email',
-                    ]
+                    ],
                 ],
             ]);
 
@@ -150,14 +145,12 @@ class S4RfqPostTest extends TestCase
 
     /**
      * Test an ability to post RFQ data with invalid number.
-     *
-     * @return void
      */
     public function testCanNotPostRfqWithInvalidNumber(): void
     {
         $this->authenticateAsClient();
 
-        $attributes = factory(Customer::class)->state('request')->raw(['rfq_number' => Str::random(40)]);
+        $attributes = \factory(Customer::class)->state('request')->raw(['rfq_number' => Str::random(40)]);
 
         $this->postJson('/api/s4/quotes', $attributes)
             ->assertStatus(422);
@@ -165,16 +158,14 @@ class S4RfqPostTest extends TestCase
 
     /**
      * Test an ability to post RFQ data with duplicated number.
-     *
-     * @return void
      */
     public function testCanNotPostRfqWithDuplicatedNumber(): void
     {
         $this->authenticateAsClient();
 
-        $customer = factory(Customer::class)->create();
+        $customer = \factory(Customer::class)->create();
 
-        $attributes = factory(Customer::class)->state('request')->raw([
+        $attributes = \factory(Customer::class)->state('request')->raw([
             'rfq_number' => $customer->rfq,
         ]);
 
@@ -184,21 +175,19 @@ class S4RfqPostTest extends TestCase
 
     /**
      * Test an ability to post RFQ data with deleted number.
-     *
-     * @return void
      */
     public function testCanPostRfqForDeletedNumber(): void
     {
         $this->authenticateAsClient();
 
-        $customer = factory(Customer::class)->create();
+        $customer = \factory(Customer::class)->create();
 
         $customer->delete();
 
         $this->assertSoftDeleted($customer);
 
-        $attributes = Arr::only(factory(Customer::class)->state('request')->raw([
-            'rfq_number' => $customer->rfq
+        $attributes = Arr::only(\factory(Customer::class)->state('request')->raw([
+            'rfq_number' => $customer->rfq,
         ]), [
             'customer_name',
             'rfq_number',
@@ -235,7 +224,7 @@ class S4RfqPostTest extends TestCase
                         'contact_name',
                         'contact_number',
                         'contact_email',
-                    ]
+                    ],
                 ],
             ]);
 

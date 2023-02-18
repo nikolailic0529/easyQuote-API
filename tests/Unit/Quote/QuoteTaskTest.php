@@ -2,24 +2,24 @@
 
 namespace Tests\Unit\Quote;
 
-use App\Enum\DateDayEnum;
-use App\Enum\DateMonthEnum;
-use App\Enum\DateWeekEnum;
-use App\Enum\DayOfWeekEnum;
-use App\Enum\RecurrenceTypeEnum;
-use App\Enum\TaskTypeEnum;
-use App\Events\Task\TaskCreated;
-use App\Events\Task\TaskDeleted;
-use App\Events\Task\TaskUpdated;
-use App\Listeners\TaskEventSubscriber;
-use App\Models\Data\Timezone;
-use App\Models\Quote\Quote;
-use App\Models\SalesUnit;
-use App\Models\Task\Task;
-use App\Models\Task\TaskRecurrence;
-use App\Models\Task\TaskReminder;
-use App\Models\User;
-use App\Notifications\Task\RevokedInvitationFromTaskNotification as RevokedNotification;
+use App\Domain\Date\Enum\DateDayEnum;
+use App\Domain\Date\Enum\DateMonthEnum;
+use App\Domain\Date\Enum\DateWeekEnum;
+use App\Domain\Date\Enum\DayOfWeekEnum;
+use App\Domain\Recurrence\Enum\RecurrenceTypeEnum;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Task\Enum\TaskTypeEnum;
+use App\Domain\Task\Events\TaskCreated;
+use App\Domain\Task\Events\TaskDeleted;
+use App\Domain\Task\Events\TaskUpdated;
+use App\Domain\Task\Listeners\TaskEventSubscriber;
+use App\Domain\Task\Models\Task;
+use App\Domain\Task\Models\TaskRecurrence;
+use App\Domain\Task\Models\TaskReminder;
+use App\Domain\Task\Notifications\RevokedInvitationFromTaskNotification as RevokedNotification;
+use App\Domain\Timezone\Models\Timezone;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Carbon;
@@ -33,7 +33,16 @@ use Tests\Unit\Traits\AssertsListing;
  */
 class QuoteTaskTest extends TestCase
 {
-    use WithFaker, AssertsListing, DatabaseTransactions;
+    use WithFaker;
+    use AssertsListing;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test can view paginated tasks of a quote.
@@ -126,7 +135,7 @@ class QuoteTaskTest extends TestCase
 
         $id = $response->json('id');
 
-        Event::assertDispatched(TaskCreated::class, fn(TaskCreated $event) => $event->task->getKey() === $id);
+        Event::assertDispatched(TaskCreated::class, fn (TaskCreated $event) => $event->task->getKey() === $id);
     }
 
     /**
@@ -245,7 +254,7 @@ class QuoteTaskTest extends TestCase
         $user = $this->app['auth']->user();
 
         $quote = factory(Quote::class)->create();
-        /** @var Task $task */
+        /** @var \App\Domain\Task\Models\Task $task */
         $task = Task::factory()->create();
         $task->rescueQuotes()->attach($quote);
 
@@ -307,7 +316,7 @@ class QuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var User $user */
+        /** @var \App\Domain\User\Models\User $user */
         $user = $this->app['auth']->user();
 
         $this->assertTrue($user->timezone->exists);
@@ -378,7 +387,6 @@ class QuoteTaskTest extends TestCase
                 'reminder',
             ]);
 
-
         $taskId = $response->json('id');
 
         $response = $this->getJson('api/quotes/tasks/'.$quote->getKey().'/'.$taskId)
@@ -434,7 +442,7 @@ class QuoteTaskTest extends TestCase
         $user = $this->app['auth']->user();
 
         $quote = factory(Quote::class)->create();
-        /** @var Task $task */
+        /** @var \App\Domain\Task\Models\Task $task */
         $task = Task::factory()->create();
         $task->rescueQuotes()->attach($quote);
 
@@ -523,7 +531,7 @@ class QuoteTaskTest extends TestCase
         $this->authenticateApi();
 
         $quote = factory(Quote::class)->create();
-        /** @var Task $task */
+        /** @var \App\Domain\Task\Models\Task $task */
         $task = Task::factory()->create();
         $task->rescueQuotes()->attach($quote);
 
@@ -572,7 +580,7 @@ class QuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
-        $quote = Quote::factory()->for($this->app['auth']->user())->create();
+        $quote = \App\Domain\Rescue\Models\Quote::factory()->for($this->app['auth']->user())->create();
         $attributes = Task::factory()->raw();
 
         $this->postJson('api/quotes/tasks/'.$quote->getKey(), $attributes)
@@ -591,7 +599,7 @@ class QuoteTaskTest extends TestCase
         Event::fake(TaskUpdated::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
-        /** @var Task $task */
+        /** @var \App\Domain\Task\Models\Task $task */
         $task = Task::factory()->create();
         $task->rescueQuotes()->attach($quote);
 
@@ -606,13 +614,11 @@ class QuoteTaskTest extends TestCase
             ->assertJsonFragment(['content' => $attributes['content']]);
 
         Event::assertDispatched(TaskUpdated::class,
-            static fn(TaskUpdated $event) => $event->task->getKey() === $task->getKey());
+            static fn (TaskUpdated $event) => $event->task->getKey() === $task->getKey());
     }
 
     /**
      * Test an ability to remove relations to users from an existing task of a quote.
-     *
-     * @return void
      */
     public function testCanRemoveRelationsToUsersFromTaskOfQuote(): void
     {
@@ -621,7 +627,7 @@ class QuoteTaskTest extends TestCase
         $quote = Quote::factory()->for($this->app['auth']->user())->create();
 
         Notification::fake();
-        /** @var Task $task */
+        /** @var \App\Domain\Task\Models\Task $task */
         $task = Task::factory()
             ->has(User::factory()->count(2), 'users')
             ->create();
@@ -654,7 +660,7 @@ class QuoteTaskTest extends TestCase
         Event::fake(TaskDeleted::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
-        /** @var Task $task */
+        /** @var \App\Domain\Task\Models\Task $task */
         $task = Task::factory()
             ->has(User::factory()->count(2), 'users')
             ->create();
@@ -667,6 +673,6 @@ class QuoteTaskTest extends TestCase
         $this->assertSoftDeleted($task);
 
         Event::assertDispatched(TaskDeleted::class,
-            static fn(TaskDeleted $event) => $event->task->getKey() === $task->getKey());
+            static fn (TaskDeleted $event) => $event->task->getKey() === $task->getKey());
     }
 }

@@ -2,7 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\OpportunityForm\OpportunityFormSchema;
+use App\Domain\Worldwide\Models\OpportunityFormSchema;
 use Faker\Generator as Faker;
 
 $factory->define(OpportunityFormSchema::class, function (Faker $faker) {

@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class AddCountriesTimezonesUsersTable extends Migration
 {
@@ -33,7 +33,7 @@ class AddCountriesTimezonesUsersTable extends Migration
             $table->dropForeign(['timezone_id']);
             $table->dropColumn([
                 'country_id',
-                'timezone_id'
+                'timezone_id',
             ]);
         });
     }

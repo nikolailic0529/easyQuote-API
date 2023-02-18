@@ -2,9 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\Vendor;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Str};
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\Unit\Traits\{AssertsListing};
 
@@ -13,7 +14,8 @@ use Tests\Unit\Traits\{AssertsListing};
  */
 class VendorTest extends TestCase
 {
-    use AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     /**
      * Test Vendor Listing.
@@ -113,7 +115,7 @@ class VendorTest extends TestCase
 
         $attributes = factory(Vendor::class)->state('countries')->raw();
 
-        $this->patchJson(url("api/vendors/".$vendor->getKey()), $attributes)
+        $this->patchJson(url('api/vendors/'.$vendor->getKey()), $attributes)
             ->assertOk()
             ->assertJsonStructure(
                 array_keys(Arr::except($attributes, ['user_id', 'countries']))

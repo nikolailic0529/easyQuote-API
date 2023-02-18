@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\HpeContract;
+use App\Domain\HpeContract\Models\HpeContract;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -15,7 +15,15 @@ use Tests\TestCase;
  */
 class HpeContractTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to initiate a new hpe contract.
@@ -27,7 +35,7 @@ class HpeContractTest extends TestCase
         $this->authenticateApi();
 
         $response = $this->postJson('api/hpe-contracts', [
-            'last_drafted_step' => 'Initiated'
+            'last_drafted_step' => 'Initiated',
         ])
             ->assertOk()
             ->assertJsonStructure([
@@ -71,7 +79,6 @@ class HpeContractTest extends TestCase
             ]);
     }
 
-
     /**
      * Test an ability to upload HPE Contract file.
      *
@@ -91,7 +98,7 @@ class HpeContractTest extends TestCase
                 'original_file_path',
                 'user_id',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
 
         $this->assertEquals($response->json('original_file_name'), $file->name);
@@ -108,12 +115,12 @@ class HpeContractTest extends TestCase
     {
         $this->authenticateApi();
 
-        $response = $this->postJson('api/hpe-contracts'.'?'.Arr::query(['include' => 'hpe_contract_file']), [
-            'last_drafted_step' => 'Initiated'
+        $response = $this->postJson('api/hpe-contracts?'.Arr::query(['include' => 'hpe_contract_file']), [
+            'last_drafted_step' => 'Initiated',
         ])
             ->assertOk()
             ->assertJsonStructure([
-                'id'
+                'id',
             ]);
 
         $contractKey = $response->json('id');
@@ -128,13 +135,13 @@ class HpeContractTest extends TestCase
                 'original_file_path',
                 'user_id',
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
 
         $fileKey = $response->json('id');
 
         $this->patchJson("api/hpe-contracts/{$contractKey}/import/{$fileKey}", [
-            'date_format' => 'd/m/Y'
+            'date_format' => 'd/m/Y',
         ])
 //            ->dump()
             ->assertOk();
@@ -146,13 +153,12 @@ class HpeContractTest extends TestCase
                 'id',
                 'hpe_contract_file' => [
                     'id',
-                    'date_format'
-                ]
+                    'date_format',
+                ],
             ]);
 
         $this->assertEquals('d/m/Y', $response->json('hpe_contract_file.date_format'));
     }
-
 
     /**
      * Test an ability to delete an existing hpe contract.
@@ -164,7 +170,7 @@ class HpeContractTest extends TestCase
         $this->authenticateApi();
 
         $response = $this->postJson('api/hpe-contracts', [
-            'last_drafted_step' => 'Initiated'
+            'last_drafted_step' => 'Initiated',
         ])
             ->assertOk()
             ->assertJsonStructure(['id']);
@@ -188,7 +194,7 @@ class HpeContractTest extends TestCase
         $this->authenticateApi();
 
         $response = $this->postJson('api/hpe-contracts', [
-            'last_drafted_step' => 'Initiated'
+            'last_drafted_step' => 'Initiated',
         ])
             ->assertOk()
             ->assertJsonStructure(['id', 'activated_at']);
@@ -203,7 +209,7 @@ class HpeContractTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -214,12 +220,11 @@ class HpeContractTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertNotEmpty($response->json('activated_at'));
     }
-
 
     /**
      * Test an ability to deactivate an existing hpe contract.
@@ -231,7 +236,7 @@ class HpeContractTest extends TestCase
         $this->authenticateApi();
 
         $response = $this->postJson('api/hpe-contracts', [
-            'last_drafted_step' => 'Initiated'
+            'last_drafted_step' => 'Initiated',
         ])
             ->assertOk()
             ->assertJsonStructure(['id', 'activated_at']);
@@ -246,7 +251,7 @@ class HpeContractTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -263,7 +268,7 @@ class HpeContractTest extends TestCase
 
         /** @var HpeContract */
         $hpeContract = factory(HpeContract::class)->create([
-            'purchase_order_no' => $this->faker->randomNumber()
+            'purchase_order_no' => $this->faker->randomNumber(),
         ]);
 
         $this->getJson('api/hpe-contracts/'.$hpeContract->getKey().'/export')
@@ -281,7 +286,7 @@ class HpeContractTest extends TestCase
         $this->authenticateApi();
 
         $response = $this->postJson('api/hpe-contracts', [
-            'last_drafted_step' => 'Initiated'
+            'last_drafted_step' => 'Initiated',
         ])
             ->assertOk()
             ->assertJsonStructure(['id']);

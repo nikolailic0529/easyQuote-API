@@ -22,7 +22,7 @@ class MakeWorldwideQuoteIdAsMorphWorldwideDistributionsTable extends Migration
         });
 
         DB::transaction(function () {
-           DB::table('worldwide_distributions')->update(['worldwide_quote_type' => \App\Models\Quote\WorldwideQuote::class]);
+            DB::table('worldwide_distributions')->update(['worldwide_quote_type' => \App\Domain\Worldwide\Models\WorldwideQuote::class]);
         });
 
         Schema::table('worldwide_distributions', function (Blueprint $table) {

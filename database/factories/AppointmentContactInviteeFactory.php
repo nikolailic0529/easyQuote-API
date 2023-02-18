@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Enum\InviteeResponse;
-use App\Enum\InviteeType;
-use App\Models\Appointment\AppointmentContactInvitee;
+use App\Domain\Appointment\Enum\InviteeResponse;
+use App\Domain\Appointment\Enum\InviteeType;
+use App\Domain\Appointment\Models\AppointmentContactInvitee;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class AppointmentContactInviteeFactory extends Factory
@@ -22,4 +22,3 @@ class AppointmentContactInviteeFactory extends Factory
         ];
     }
 }
-

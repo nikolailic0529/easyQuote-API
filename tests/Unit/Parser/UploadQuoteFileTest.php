@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Facades\Setting;
+use App\Domain\Settings\Facades\Setting;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Testing\File as TestingFile;
 use Illuminate\Http\UploadedFile;
@@ -31,8 +31,6 @@ class UploadQuoteFileTest extends TestCase
 
     /**
      * Test QuoteFile Storing.
-     *
-     * @return void
      */
     public function testUploadSupportedQuoteFile(): void
     {
@@ -49,7 +47,7 @@ class UploadQuoteFileTest extends TestCase
                 'original_file_path',
                 'original_file_name',
                 'user_id',
-                'quote_file_format_id'
+                'quote_file_format_id',
             ]);
     }
 
@@ -64,7 +62,7 @@ class UploadQuoteFileTest extends TestCase
         $response->assertStatus(422);
 
         $response->assertJsonStructure([
-            'message', 'Error' => ['original' => ['quote_file']]
+            'message', 'Error' => ['original' => ['quote_file']],
         ]);
     }
 
@@ -79,7 +77,7 @@ class UploadQuoteFileTest extends TestCase
         $response->assertStatus(422);
 
         $response->assertJsonStructure([
-            'message', 'Error' => ['original' => ['quote_file']]
+            'message', 'Error' => ['original' => ['quote_file']],
         ]);
     }
 

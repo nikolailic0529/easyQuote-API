@@ -27,13 +27,12 @@ class CreateTeamsTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('teams')->insertOrIgnore([
                 'id' => UT_RESCUE,
                 'team_name' => 'Rescue',
                 'is_system' => true,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
 
             DB::table('teams')->insertOrIgnore([
@@ -41,9 +40,8 @@ class CreateTeamsTable extends Migration
                 'team_name' => 'EPD Worldwide',
                 'is_system' => true,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
-
         });
     }
 

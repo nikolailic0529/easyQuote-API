@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\Services\ManagesExchangeRates as Service;
-use App\Repositories\RateFileRepository as RateFiles;
+use App\Domain\ExchangeRate\Contracts\ManagesExchangeRates as Service;
+use App\Domain\ExchangeRate\Repositories\RateFileRepository as RateFiles;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;

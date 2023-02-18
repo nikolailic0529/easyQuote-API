@@ -2,24 +2,24 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\Services\ProcessesWorldwideQuoteState;
-use App\Models\Address;
-use App\Models\Contact;
-use App\Models\Note\Note;
-use App\Models\Opportunity;
-use App\Models\OpportunitySupplier;
-use App\Models\Quote\WorldwideDistribution;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\QuoteFile\DistributionRowsGroup;
-use App\Models\QuoteFile\MappedRow;
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\QuoteFile\ScheduleData;
-use App\Models\Template\TemplateField;
-use App\Models\User;
-use App\Models\WorldwideQuoteAsset;
-use App\Models\WorldwideQuoteAssetsGroup;
-use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
+use App\Domain\Address\Models\Address;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\DocumentMapping\Models\MappedRow;
+use App\Domain\Note\Models\Note;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\QuoteFile\Models\ScheduleData;
+use App\Domain\Template\Models\TemplateField;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Contracts\ProcessesWorldwideQuoteState;
+use App\Domain\Worldwide\Models\DistributionRowsGroup;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Models\WorldwideDistribution;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideQuoteAsset;
+use App\Domain\Worldwide\Models\WorldwideQuoteAssetsGroup;
+use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
+use App\Domain\Worldwide\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -30,6 +30,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
      * when the acting user is not owner of the quote.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function testResolvesNewVersionForActingUser()
@@ -39,12 +40,12 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         /** @var Opportunity $opportunity */
         $opportunity = Opportunity::factory()->create();
 
-        /** @var OpportunitySupplier $supplier */
+        /** @var \App\Domain\Worldwide\Models\OpportunitySupplier $supplier */
         $supplier = factory(OpportunitySupplier::class)->create([
             'opportunity_id' => $opportunity->getKey(),
         ]);
 
-        /** @var WorldwideQuote $quote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'user_id' => $quoteOwner->getKey(),
             'opportunity_id' => $opportunity->getKey(),
@@ -53,7 +54,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $version = $quote->activeVersion;
 
         $version->update([
-            'payment_terms' => Str::random(40)
+            'payment_terms' => Str::random(40),
         ]);
 
         $packAssets = factory(WorldwideQuoteAsset::class, 5)->create([
@@ -61,7 +62,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
         ]);
 
-        /** @var WorldwideQuoteAssetsGroup $groupOfPackAssets */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuoteAssetsGroup $groupOfPackAssets */
         $groupOfPackAssets = factory(WorldwideQuoteAssetsGroup::class)->create([
             'worldwide_quote_version_id' => $quote->active_version_id,
         ]);
@@ -75,10 +76,10 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         $distributorFile = factory(QuoteFile::class)->create();
 
-        /** @var QuoteFile $scheduleFile */
+        /** @var \App\Domain\QuoteFile\Models\QuoteFile $scheduleFile */
         $scheduleFile = factory(QuoteFile::class)->create();
 
-        /** @var ScheduleData $scheduleFileData */
+        /** @var \App\Domain\QuoteFile\Models\ScheduleData $scheduleFileData */
         $scheduleFileData = factory(ScheduleData::class)->create([
             'quote_file_id' => $scheduleFile->getKey(),
         ]);
@@ -104,7 +105,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
             $templateFields
         );
 
-        /** @var DistributionRowsGroup $rowsGroup */
+        /** @var \App\Domain\Worldwide\Models\DistributionRowsGroup $rowsGroup */
         $rowsGroup = factory(DistributionRowsGroup::class)->create([
             'worldwide_distribution_id' => $distributorQuote->getKey(),
         ]);
@@ -120,7 +121,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $distributorQuote->addresses()->sync($distributorQuoteAddresses);
         $distributorQuote->contacts()->sync($distributorQuoteContacts);
 
-        /** @var User $actingUser */
+        /** @var \App\Domain\User\Models\User $actingUser */
         $actingUser = User::factory()->create();
 
         /** @var WorldwideQuoteVersion $newVersion */
@@ -178,11 +179,9 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $this->assertCount($groupOfPackAssets->assets->count(), $newVersion->assetsGroups[0]->assets);
 
         foreach ($newVersion->assetsGroups[0]->assets as $asset) {
-
             $this->assertNotNull($asset->replicated_asset_id);
 
             $this->assertArrayHasKey($asset->replicated_asset_id, $packAssetDictionary);
-
         }
     }
 
@@ -190,6 +189,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
      * Test replicates active version of worldwide quote entity and creates new worldwide quote entity.
      *
      * @return void
+     *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     public function testReplicatesWorldwideQuoteEntity()
@@ -199,12 +199,12 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         /** @var Opportunity $opportunity */
         $opportunity = Opportunity::factory()->create();
 
-        /** @var OpportunitySupplier $supplier */
+        /** @var \App\Domain\Worldwide\Models\OpportunitySupplier $supplier */
         $supplier = factory(OpportunitySupplier::class)->create([
             'opportunity_id' => $opportunity->getKey(),
         ]);
 
-        /** @var WorldwideQuote $quote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'user_id' => $quoteOwner->getKey(),
             'opportunity_id' => $opportunity->getKey(),
@@ -212,7 +212,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         $distributorFile = factory(QuoteFile::class)->create();
 
-        /** @var QuoteFile $scheduleFile */
+        /** @var \App\Domain\QuoteFile\Models\QuoteFile $scheduleFile */
         $scheduleFile = factory(QuoteFile::class)->create();
 
         /** @var ScheduleData $scheduleFileData */
@@ -241,7 +241,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
             $templateFields
         );
 
-        /** @var DistributionRowsGroup $rowsGroup */
+        /** @var \App\Domain\Worldwide\Models\DistributionRowsGroup $rowsGroup */
         $rowsGroup = factory(DistributionRowsGroup::class)->create([
             'worldwide_distribution_id' => $distributorQuote->getKey(),
         ]);
@@ -257,10 +257,10 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $distributorQuote->addresses()->sync($distributorQuoteAddresses);
         $distributorQuote->contacts()->sync($distributorQuoteContacts);
 
-        /** @var User $actingUser */
+        /** @var \App\Domain\User\Models\User $actingUser */
         $actingUser = User::factory()->create();
 
-        /** @var WorldwideQuote $newQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $newQuote */
         $newQuote = $this->app[ProcessesWorldwideQuoteState::class]->processQuoteReplication($quote, $actingUser);
 
         $this->assertInstanceOf(WorldwideQuote::class, $newQuote);

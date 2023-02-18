@@ -15,7 +15,7 @@ class CreateQuoteVersionsTable extends Migration
     {
         Schema::create('quote_versions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            
+
             $table->foreignUuid('user_id')->comment('Foreign key on users table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('quote_id')->comment('Foreign key on quotes table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('customer_id')->comment('Foreign key on customers table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
@@ -27,7 +27,7 @@ class CreateQuoteVersionsTable extends Migration
             $table->foreignUuid('vendor_id')->nullable()->comment('Foreign key on vendors table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('country_id')->nullable()->comment('Foreign key on countries table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('quote_template_id')->nullable()->comment('Foreign key on quote_templates table')->constrained()->nullOnDelete()->cascadeOnUpdate();
-            
+
             $table->foreignUuid('country_margin_id')->nullable()->comment('Foreign key on country_margins table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('source_currency_id')->nullable()->comment('Foreign key on currencies table')->constrained('currencies')->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('target_currency_id')->nullable()->comment('Foreign key on currencies table')->constrained('currencies')->nullOnDelete()->cascadeOnUpdate();
@@ -37,7 +37,7 @@ class CreateQuoteVersionsTable extends Migration
             // TODO: create rows_groups table instead of the json column
             $table->json('group_description')->nullable()->comment('Quote group description');
             $table->json('sort_group_description')->nullable()->comment('Groups sorting columns');
-            
+
             $table->decimal('custom_discount')->nullable()->comment('Custom discount value');
 
             $table->decimal('buy_price', 15)->nullable()->comment('Quote Buy price');
@@ -45,7 +45,7 @@ class CreateQuoteVersionsTable extends Migration
 
             $table->boolean('calculate_list_price')->default(false)->comment('Whether calculate or not list price');
             $table->boolean('use_groups')->default(false)->comment('Whether use or not grouped rows');
-            
+
             $table->unsignedInteger('version_number')->default(1)->comment('Quote Version number');
 
             $table->text('pricing_document')->nullable()->comment('Pricing document number');

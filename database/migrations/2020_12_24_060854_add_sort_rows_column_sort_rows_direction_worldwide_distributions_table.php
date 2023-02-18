@@ -48,7 +48,7 @@ class AddSortRowsColumnSortRowsDirectionWorldwideDistributionsTable extends Migr
                 'sort_rows_column',
                 'sort_rows_direction',
                 'sort_rows_groups_column',
-                'sort_rows_groups_direction'
+                'sort_rows_groups_direction',
             ]);
         });
     }

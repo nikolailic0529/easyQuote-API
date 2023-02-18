@@ -2,35 +2,35 @@
 
 namespace Tests\Feature;
 
-use App\Models\Address;
-use App\Models\Asset;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Data\Country;
-use App\Models\Data\Currency;
-use App\Models\Note\Note;
-use App\Models\Opportunity;
-use App\Models\OpportunitySupplier;
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Models\Quote\Discount\SND;
-use App\Models\Quote\WorldwideDistribution;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\QuoteFile\DistributionRowsGroup;
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\MappedRow;
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\QuoteFile\ScheduleData;
-use App\Models\SalesOrder;
-use App\Models\SalesUnit;
-use App\Models\System\CustomField;
-use App\Models\System\CustomFieldValue;
-use App\Models\Template\ContractTemplate;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Template\TemplateField;
-use App\Models\Vendor;
+use App\Domain\Address\Models\Address;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\CustomField\Models\CustomField;
+use App\Domain\CustomField\Models\CustomFieldValue;
+use App\Domain\Discount\Models\MultiYearDiscount;
+use App\Domain\Discount\Models\PrePayDiscount;
+use App\Domain\Discount\Models\PromotionalDiscount;
+use App\Domain\Discount\Models\SND;
+use App\Domain\DocumentMapping\Models\MappedRow;
+use App\Domain\Note\Models\Note;
+use App\Domain\QuoteFile\Models\ImportableColumn;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\QuoteFile\Models\ScheduleData;
+use App\Domain\Rescue\Models\ContractTemplate;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Template\Models\TemplateField;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\DistributionRowsGroup;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\WorldwideDistribution;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -41,12 +41,21 @@ use Tests\TestCase;
 use Webpatser\Uuid\Uuid;
 
 /**
- * Class WorldwideQuoteTest
+ * Class WorldwideQuoteTest.
+ *
  * @group worldwide
  */
 class WorldwideContractQuoteTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to initialize a new Contract Worldwide Quote.
@@ -228,7 +237,7 @@ class WorldwideContractQuoteTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var WorldwideQuote $wwQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create();
 
         $wwDistributions = factory(WorldwideDistribution::class, 2)->create(
@@ -251,7 +260,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $quoteExpiryDate = now()->addMonth();
 
-        $distributionsData = $wwDistributions->map(fn(WorldwideDistribution $distribution) => [
+        $distributionsData = $wwDistributions->map(fn (WorldwideDistribution $distribution) => [
             'id' => $distribution->getKey(),
             'vendors' => Vendor::query()->limit(2)->pluck('id')->all(),
             'country_id' => Country::query()->value('id'),
@@ -315,7 +324,6 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertCount(1, $response->json('worldwide_distributions.1.contacts'));
 //        $this->assertEquals(1, $response->json('worldwide_distributions.0.contacts.0.is_default'));
 
-
         $this->assertSame($importStageData['are_end_user_addresses_available'],
             $response->json('are_end_user_addresses_available'));
         $this->assertSame($importStageData['are_end_user_contacts_available'],
@@ -330,7 +338,6 @@ class WorldwideContractQuoteTest extends TestCase
             $response->json('worldwide_distributions.0.distribution_currency_quote_currency_exchange_rate_margin'));
         $this->assertSame($distributionsData[1]['distribution_currency_quote_currency_exchange_rate_margin'],
             $response->json('worldwide_distributions.1.distribution_currency_quote_currency_exchange_rate_margin'));
-
 
         $distributionsData[0]['id'] = $response->json('worldwide_distributions.0.id');
         $distributionsData[1]['id'] = $response->json('worldwide_distributions.1.id');
@@ -353,7 +360,7 @@ class WorldwideContractQuoteTest extends TestCase
             ->assertOk();
 
 //        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.addresses')
-////            ->dump()
+        // //            ->dump()
 //            ->assertOk()
 //            ->assertJsonStructure([
 //                'id',
@@ -375,8 +382,6 @@ class WorldwideContractQuoteTest extends TestCase
 
     /**
      * Test an ability to process worldwide quote import step.
-     *
-     * @return void
      */
     public function testCanProcessImportStepOfWorldwideContractQuoteWithCustomFileDateFormat(): void
     {
@@ -405,7 +410,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $quoteExpiryDate = now()->addMonth();
 
-        $distributionsData = $wwDistributions->map(fn(WorldwideDistribution $distribution) => [
+        $distributionsData = $wwDistributions->map(fn (WorldwideDistribution $distribution) => [
             'id' => $distribution->getKey(),
             'vendors' => Vendor::query()->limit(2)->pluck('id')->all(),
             'country_id' => Country::query()->value('id'),
@@ -470,7 +475,6 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertCount(1, $response->json('worldwide_distributions.1.contacts'));
 //        $this->assertEquals(1, $response->json('worldwide_distributions.0.contacts.0.is_default'));
 
-
         $this->assertSame($importStageData['are_end_user_addresses_available'],
             $response->json('are_end_user_addresses_available'));
         $this->assertSame($importStageData['are_end_user_contacts_available'],
@@ -485,7 +489,6 @@ class WorldwideContractQuoteTest extends TestCase
             $response->json('worldwide_distributions.0.distribution_currency_quote_currency_exchange_rate_margin'));
         $this->assertSame($distributionsData[1]['distribution_currency_quote_currency_exchange_rate_margin'],
             $response->json('worldwide_distributions.1.distribution_currency_quote_currency_exchange_rate_margin'));
-
 
         $distributionsData[0]['id'] = $response->json('worldwide_distributions.0.id');
         $distributionsData[1]['id'] = $response->json('worldwide_distributions.1.id');
@@ -508,7 +511,7 @@ class WorldwideContractQuoteTest extends TestCase
             ->assertOk();
 
 //        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.addresses')
-////            ->dump()
+        // //            ->dump()
 //            ->assertOk()
 //            ->assertJsonStructure([
 //                'id',
@@ -541,7 +544,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
-        /** @var WorldwideQuote $wwQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_CONTRACT, 'opportunity_id' => $opportunity->getKey(),
         ]);
@@ -560,7 +563,7 @@ class WorldwideContractQuoteTest extends TestCase
             'vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(),
         ]);
 
-        /** @var WorldwideDistribution[]|Collection $distributorQuotes */
+        /** @var \App\Domain\Worldwide\Models\WorldwideDistribution[]|Collection $distributorQuotes */
         $distributorQuotes = factory(WorldwideDistribution::class, 2)->create(
             [
                 'opportunity_supplier_id' => $opportunitySupplier->getKey(),
@@ -603,7 +606,6 @@ class WorldwideContractQuoteTest extends TestCase
 
             $distributorQuote->templateFields()->sync($templateFields);
 
-
             $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
             $distributorQuote->opportunitySupplier()->associate($opportunitySupplier)->save();
@@ -613,8 +615,7 @@ class WorldwideContractQuoteTest extends TestCase
             $distributorQuote->snDiscount()->associate($snDiscount)->save();
         });
 
-
-        /** @var Asset $sameAsset */
+        /** @var \App\Domain\Asset\Models\Asset $sameAsset */
         $sameAsset = factory(Asset::class)->create([
             'serial_number' => $distributorQuotes[0]->mappedRows[0]->serial_no,
             'product_number' => $distributorQuotes[0]->mappedRows[0]->product_no,
@@ -842,7 +843,7 @@ class WorldwideContractQuoteTest extends TestCase
                 $this->assertArrayHasKey('view', $row['owned_by_customer']['permissions']);
                 $this->assertArrayHasKey('update', $row['owned_by_customer']['permissions']);
                 $this->assertArrayHasKey('delete', $row['owned_by_customer']['permissions']);
-                $duplicatedAssetCount++;
+                ++$duplicatedAssetCount;
             } else {
                 $this->assertTrue($row['is_customer_exclusive_asset']);
             }
@@ -955,7 +956,6 @@ class WorldwideContractQuoteTest extends TestCase
 
             $distribution->templateFields()->sync($templateFields);
 
-
             $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
             $distribution->opportunitySupplier()->associate($opportunitySupplier)->save();
@@ -965,7 +965,7 @@ class WorldwideContractQuoteTest extends TestCase
             $distribution->snDiscount()->associate($snDiscount)->save();
         });
 
-        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey()."?".Arr::query([
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?'.Arr::query([
                 'include' => [
                     'worldwide_distributions.mapping',
                     'worldwide_distributions.mapping.original_price',
@@ -997,8 +997,7 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertNotEmpty($response->json('worldwide_distributions.*.mapping'));
 
         foreach ($response->json('worldwide_distributions.*.mapping') as $mappingOfDistributorQuote) {
-
-            for ($i = 0; $i < count($mappingOfDistributorQuote); $i++) {
+            for ($i = 0; $i < count($mappingOfDistributorQuote); ++$i) {
                 if ($mappingOfDistributorQuote[$i]['template_field_name'] === 'original_price') {
                     $this->assertArrayHasKey($i + 1, $mappingOfDistributorQuote);
 
@@ -1006,14 +1005,10 @@ class WorldwideContractQuoteTest extends TestCase
                 }
             }
         }
-
-
     }
 
     /**
      * Test an ability to view prepared sales order data of worldwide contract quote.
-     *
-     * @return void
      */
     public function testCanViewWorldwideContractQuoteSalesOrderData(): void
     {
@@ -1024,7 +1019,7 @@ class WorldwideContractQuoteTest extends TestCase
         $country = Country::query()->first();
         $vendor = factory(Vendor::class)->create();
 
-        /** @var WorldwideQuote $wwQuote * */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote * */
         $wwQuote = factory(WorldwideQuote::class)->create();
 
         $wwQuote->activeVersion->update(['quote_template_id' => $template->getKey()]);
@@ -1132,120 +1127,120 @@ class WorldwideContractQuoteTest extends TestCase
             'form_data' => [
                 'first_page' => [
                     [
-                        "id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
-                        "name" => "Two Column",
-                        "child" => [
+                        'id' => 'bb9ea3cc-95eb-4be1-b78d-7565b68c78cf',
+                        'name' => 'Two Column',
+                        'child' => [
                             [
-                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                "class" => "col-lg-4",
-                                "controls" => [
+                                'id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                'class' => 'col-lg-4',
+                                'controls' => [
                                     [
-                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
-                                        "src" => null,
-                                        "name" => "l-1",
-                                        "show" => true,
-                                        "type" => "label",
-                                        "class" => "bold",
-                                        "label" => "Label",
-                                        "value" => "List Price:",
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => false,
-                                        "is_required" => false,
-                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                        'id' => 'c0093711-ea9d-478d-b288-8433ef02af26',
+                                        'src' => null,
+                                        'name' => 'l-1',
+                                        'show' => true,
+                                        'type' => 'label',
+                                        'class' => 'bold',
+                                        'label' => 'Label',
+                                        'value' => 'List Price:',
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => false,
+                                        'is_required' => false,
+                                        'attached_child_id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                        'attached_element_id' => 'bb9ea3cc-95eb-4be1-b78d-7565b68c78cf',
                                     ],
                                 ],
-                                "position" => 1,
+                                'position' => 1,
                             ],
                             [
-                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                "class" => "col-lg-8",
-                                "controls" => [
+                                'id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                'class' => 'col-lg-8',
+                                'controls' => [
                                     [
-                                        "id" => "list_price",
-                                        "name" => "list_price",
-                                        "type" => "tag",
-                                        "class" => "s4-form-control text-nowrap",
-                                        "label" => "Total List Price",
-                                        "value" => null,
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => true,
-                                        "is_required" => false,
-                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                        'id' => 'list_price',
+                                        'name' => 'list_price',
+                                        'type' => 'tag',
+                                        'class' => 's4-form-control text-nowrap',
+                                        'label' => 'Total List Price',
+                                        'value' => null,
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => true,
+                                        'is_required' => false,
+                                        'attached_child_id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                        'attached_element_id' => 'bb9ea3cc-95eb-4be1-b78d-7565b68c78cf',
                                     ],
                                 ],
-                                "position" => 2,
+                                'position' => 2,
                             ],
                         ],
-                        "class" => "two-column field-dragger",
-                        "order" => 3,
-                        "controls" => [],
-                        "is_field" => false,
-                        "droppable" => false,
-                        "decoration" => "1+3",
+                        'class' => 'two-column field-dragger',
+                        'order' => 3,
+                        'controls' => [],
+                        'is_field' => false,
+                        'droppable' => false,
+                        'decoration' => '1+3',
                     ],
                     [
-                        "id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
-                        "name" => "Two Column",
-                        "child" => [
+                        'id' => 'a7623070-c87b-428f-a894-87ccfcb909c2',
+                        'name' => 'Two Column',
+                        'child' => [
                             [
-                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                "class" => "col-lg-4",
-                                "controls" => [
+                                'id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                'class' => 'col-lg-4',
+                                'controls' => [
                                     [
-                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
-                                        "src" => null,
-                                        "name" => "l-1",
-                                        "show" => true,
-                                        "type" => "label",
-                                        "class" => "bold",
-                                        "label" => "Label",
-                                        "value" => "Applicable Discounts:",
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => false,
-                                        "is_required" => false,
-                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                        'id' => 'c0093711-ea9d-478d-b288-8433ef02af26',
+                                        'src' => null,
+                                        'name' => 'l-1',
+                                        'show' => true,
+                                        'type' => 'label',
+                                        'class' => 'bold',
+                                        'label' => 'Label',
+                                        'value' => 'Applicable Discounts:',
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => false,
+                                        'is_required' => false,
+                                        'attached_child_id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                        'attached_element_id' => 'a7623070-c87b-428f-a894-87ccfcb909c2',
                                     ],
                                 ],
-                                "position" => 1,
+                                'position' => 1,
                             ],
                             [
-                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                "class" => "col-lg-8",
-                                "controls" => [
+                                'id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                'class' => 'col-lg-8',
+                                'controls' => [
                                     [
-                                        "id" => "applicable_discounts",
-                                        "name" => "applicable_discounts",
-                                        "type" => "tag",
-                                        "class" => "s4-form-control text-nowrap",
-                                        "label" => "Total Discounts",
-                                        "value" => null,
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => true,
-                                        "is_required" => false,
-                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                        'id' => 'applicable_discounts',
+                                        'name' => 'applicable_discounts',
+                                        'type' => 'tag',
+                                        'class' => 's4-form-control text-nowrap',
+                                        'label' => 'Total Discounts',
+                                        'value' => null,
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => true,
+                                        'is_required' => false,
+                                        'attached_child_id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                        'attached_element_id' => 'a7623070-c87b-428f-a894-87ccfcb909c2',
                                     ],
                                 ],
-                                "position" => 2,
+                                'position' => 2,
                             ],
                         ],
-                        "class" => "two-column field-dragger",
-                        "order" => 3,
-                        "controls" => [],
-                        "is_field" => false,
-                        "droppable" => false,
-                        "decoration" => "1+3",
+                        'class' => 'two-column field-dragger',
+                        'order' => 3,
+                        'controls' => [],
+                        'is_field' => false,
+                        'droppable' => false,
+                        'decoration' => '1+3',
                     ],
                 ],
             ],
@@ -1366,7 +1361,6 @@ class WorldwideContractQuoteTest extends TestCase
         $wwDistributions[0]->schedule_file_id = $paymentScheduleFile->getKey();
         $wwDistributions[0]->save();
 
-
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/preview')
 //            ->dump()
             ->assertOk()
@@ -1432,7 +1426,7 @@ class WorldwideContractQuoteTest extends TestCase
                         'vendors', 'country', 'supplier',
                         'asset_fields' => [
                             '*' => ['field_name', 'field_header'],
-                        ]
+                        ],
 //                        'assets_data' => [
 //                            '*' => [
 //                                'buy_currency_code'
@@ -1443,24 +1437,24 @@ class WorldwideContractQuoteTest extends TestCase
             ]);
 
         $assetDataFields = [
-            "buy_currency_code",
-            "vendor_short_code",
-            "product_no",
-            "service_sku",
-            "description",
-            "serial_no",
-            "is_serial_number_generated",
-            "date_from",
-            "date_to",
-            "contract_duration",
-            "qty",
-            "price",
-            "price_float",
-            "pricing_document",
-            "system_handle",
-            "searchable",
-            "service_level_description",
-            "machine_address_string",
+            'buy_currency_code',
+            'vendor_short_code',
+            'product_no',
+            'service_sku',
+            'description',
+            'serial_no',
+            'is_serial_number_generated',
+            'date_from',
+            'date_to',
+            'contract_duration',
+            'qty',
+            'price',
+            'price_float',
+            'pricing_document',
+            'system_handle',
+            'searchable',
+            'service_level_description',
+            'machine_address_string',
         ];
 
         $assetFields = [
@@ -1510,120 +1504,120 @@ class WorldwideContractQuoteTest extends TestCase
             'form_data' => [
                 'first_page' => [
                     [
-                        "id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
-                        "name" => "Two Column",
-                        "child" => [
+                        'id' => 'bb9ea3cc-95eb-4be1-b78d-7565b68c78cf',
+                        'name' => 'Two Column',
+                        'child' => [
                             [
-                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                "class" => "col-lg-4",
-                                "controls" => [
+                                'id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                'class' => 'col-lg-4',
+                                'controls' => [
                                     [
-                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
-                                        "src" => null,
-                                        "name" => "l-1",
-                                        "show" => true,
-                                        "type" => "label",
-                                        "class" => "bold",
-                                        "label" => "Label",
-                                        "value" => "List Price:",
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => false,
-                                        "is_required" => false,
-                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                        'id' => 'c0093711-ea9d-478d-b288-8433ef02af26',
+                                        'src' => null,
+                                        'name' => 'l-1',
+                                        'show' => true,
+                                        'type' => 'label',
+                                        'class' => 'bold',
+                                        'label' => 'Label',
+                                        'value' => 'List Price:',
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => false,
+                                        'is_required' => false,
+                                        'attached_child_id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                        'attached_element_id' => 'bb9ea3cc-95eb-4be1-b78d-7565b68c78cf',
                                     ],
                                 ],
-                                "position" => 1,
+                                'position' => 1,
                             ],
                             [
-                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                "class" => "col-lg-8",
-                                "controls" => [
+                                'id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                'class' => 'col-lg-8',
+                                'controls' => [
                                     [
-                                        "id" => "list_price",
-                                        "name" => "list_price",
-                                        "type" => "tag",
-                                        "class" => "s4-form-control text-nowrap",
-                                        "label" => "Total List Price",
-                                        "value" => null,
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => true,
-                                        "is_required" => false,
-                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                        'id' => 'list_price',
+                                        'name' => 'list_price',
+                                        'type' => 'tag',
+                                        'class' => 's4-form-control text-nowrap',
+                                        'label' => 'Total List Price',
+                                        'value' => null,
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => true,
+                                        'is_required' => false,
+                                        'attached_child_id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                        'attached_element_id' => 'bb9ea3cc-95eb-4be1-b78d-7565b68c78cf',
                                     ],
                                 ],
-                                "position" => 2,
+                                'position' => 2,
                             ],
                         ],
-                        "class" => "two-column field-dragger",
-                        "order" => 3,
-                        "controls" => [],
-                        "is_field" => false,
-                        "droppable" => false,
-                        "decoration" => "1+3",
+                        'class' => 'two-column field-dragger',
+                        'order' => 3,
+                        'controls' => [],
+                        'is_field' => false,
+                        'droppable' => false,
+                        'decoration' => '1+3',
                     ],
                     [
-                        "id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
-                        "name" => "Two Column",
-                        "child" => [
+                        'id' => 'a7623070-c87b-428f-a894-87ccfcb909c2',
+                        'name' => 'Two Column',
+                        'child' => [
                             [
-                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                "class" => "col-lg-4",
-                                "controls" => [
+                                'id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                'class' => 'col-lg-4',
+                                'controls' => [
                                     [
-                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
-                                        "src" => null,
-                                        "name" => "l-1",
-                                        "show" => true,
-                                        "type" => "label",
-                                        "class" => "bold",
-                                        "label" => "Label",
-                                        "value" => "Applicable Discounts:",
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => false,
-                                        "is_required" => false,
-                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
-                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                        'id' => 'c0093711-ea9d-478d-b288-8433ef02af26',
+                                        'src' => null,
+                                        'name' => 'l-1',
+                                        'show' => true,
+                                        'type' => 'label',
+                                        'class' => 'bold',
+                                        'label' => 'Label',
+                                        'value' => 'Applicable Discounts:',
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => false,
+                                        'is_required' => false,
+                                        'attached_child_id' => '2521a5c6-6eda-4420-876d-b821841f892e',
+                                        'attached_element_id' => 'a7623070-c87b-428f-a894-87ccfcb909c2',
                                     ],
                                 ],
-                                "position" => 1,
+                                'position' => 1,
                             ],
                             [
-                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                "class" => "col-lg-8",
-                                "controls" => [
+                                'id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                'class' => 'col-lg-8',
+                                'controls' => [
                                     [
-                                        "id" => "applicable_discounts",
-                                        "name" => "applicable_discounts",
-                                        "type" => "tag",
-                                        "class" => "s4-form-control text-nowrap",
-                                        "label" => "Total Discounts",
-                                        "value" => null,
-                                        "is_field" => true,
-                                        "is_image" => false,
-                                        "droppable" => false,
-                                        "is_system" => true,
-                                        "is_required" => false,
-                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                        'id' => 'applicable_discounts',
+                                        'name' => 'applicable_discounts',
+                                        'type' => 'tag',
+                                        'class' => 's4-form-control text-nowrap',
+                                        'label' => 'Total Discounts',
+                                        'value' => null,
+                                        'is_field' => true,
+                                        'is_image' => false,
+                                        'droppable' => false,
+                                        'is_system' => true,
+                                        'is_required' => false,
+                                        'attached_child_id' => '49e0ebf9-8c4d-422b-8641-7d5622e6f087',
+                                        'attached_element_id' => 'a7623070-c87b-428f-a894-87ccfcb909c2',
                                     ],
                                 ],
-                                "position" => 2,
+                                'position' => 2,
                             ],
                         ],
-                        "class" => "two-column field-dragger",
-                        "order" => 3,
-                        "controls" => [],
-                        "is_field" => false,
-                        "droppable" => false,
-                        "decoration" => "1+3",
+                        'class' => 'two-column field-dragger',
+                        'order' => 3,
+                        'controls' => [],
+                        'is_field' => false,
+                        'droppable' => false,
+                        'decoration' => '1+3',
                     ],
                 ],
             ],
@@ -1633,7 +1627,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $opportunity = Opportunity::factory()->create();
 
-        /** @var WorldwideQuote $wwQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create([
             'opportunity_id' => $opportunity->getKey(), 'contract_type_id' => CT_CONTRACT,
         ]);
@@ -1718,7 +1712,7 @@ class WorldwideContractQuoteTest extends TestCase
                 'quote_file_id' => $distributorFile->getKey(), 'is_selected' => true, 'price' => 250,
             ]);
 
-            /** @var MappedRow[] $mappedRowsWithSameSerial */
+            /** @var \App\Domain\DocumentMapping\Models\MappedRow[] $mappedRowsWithSameSerial */
             $mappedRowsWithSameSerial = [
                 $mappedRows[0],
                 $mappedRows[count($mappedRows) - 1],
@@ -1748,7 +1742,6 @@ class WorldwideContractQuoteTest extends TestCase
 
         $wwDistributions[0]->schedule_file_id = $paymentScheduleFile->getKey();
         $wwDistributions[0]->save();
-
 
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/preview')
 //            ->dump()
@@ -1819,24 +1812,24 @@ class WorldwideContractQuoteTest extends TestCase
             ]);
 
         $assetDataFields = [
-            "buy_currency_code",
-            "vendor_short_code",
-            "product_no",
-            "service_sku",
-            "description",
-            "serial_no",
-            "is_serial_number_generated",
-            "date_from",
-            "date_to",
-            "contract_duration",
-            "qty",
-            "price",
-            "price_float",
-            "pricing_document",
-            "system_handle",
-            "searchable",
-            "service_level_description",
-            "machine_address_string",
+            'buy_currency_code',
+            'vendor_short_code',
+            'product_no',
+            'service_sku',
+            'description',
+            'serial_no',
+            'is_serial_number_generated',
+            'date_from',
+            'date_to',
+            'contract_duration',
+            'qty',
+            'price',
+            'price_float',
+            'pricing_document',
+            'system_handle',
+            'searchable',
+            'service_level_description',
+            'machine_address_string',
         ];
 
         $assetFields = [
@@ -1868,7 +1861,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $this->app['db.connection']->table('assets')->delete();
 
-        /** @var WorldwideQuote $wwQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
         $wwQuote = WorldwideQuote::factory()
             ->create([
                 'contract_type_id' => CT_CONTRACT,
@@ -1916,7 +1909,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $distributorFile = factory(QuoteFile::class)->create();
 
-        /** @var WorldwideDistribution $distributorQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideDistribution $distributorQuote */
         $distributorQuote = factory(WorldwideDistribution::class)
             ->create([
                 'country_id' => Country::query()->where('iso_3166_2', 'GB')->sole()->getKey(),
@@ -1928,7 +1921,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $distributorQuote->vendors()->sync(Vendor::query()->where('short_code', 'HPE')->sole());
 
-        /** @var MappedRow $mappedRow */
+        /** @var \App\Domain\DocumentMapping\Models\MappedRow $mappedRow */
         $mappedRow = factory(MappedRow::class)->create([
             'quote_file_id' => $distributorFile->getKey(),
         ]);
@@ -1963,7 +1956,6 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertNotEmpty($response->json('data'));
         $this->assertCount(1, $response->json('data'));
 
-
         $this->assertSame('HPE', $response->json('data.0.vendor_short_code'));
         $this->assertSame($wwQuote->quote_number, $response->json('data.0.rfq_number'));
         $this->assertSame($wwQuote->opportunity->primaryAccount->name, $response->json('data.0.customer_name'));
@@ -1971,7 +1963,6 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertSame($mappedRow->product_no, $response->json('data.0.product_number'));
         $this->assertSame($mappedRow->serial_no, $response->json('data.0.serial_number'));
         $this->assertSame($mappedRow->description, $response->json('data.0.product_description'));
-
 
         // Assert a separated note created on quote submission.
         $notesResponse = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes')
@@ -2000,8 +1991,8 @@ class WorldwideContractQuoteTest extends TestCase
 
         $notesText = $notesResponse->json('data.*.text');
 
-        $this->assertContainsEquals("Note for drafted quote", $notesText);
-        $this->assertContainsEquals("Note for submitted quote", $notesText);
+        $this->assertContainsEquals('Note for drafted quote', $notesText);
+        $this->assertContainsEquals('Note for submitted quote', $notesText);
     }
 
     /**
@@ -2081,7 +2072,6 @@ class WorldwideContractQuoteTest extends TestCase
     {
 //        $this->markTestSkipped();
 
-
         $this->authenticateApi();
 
         $template = factory(QuoteTemplate::class)->create();
@@ -2098,14 +2088,14 @@ TEMPLATE;
 
         $wwQuote->activeVersion->update(['quote_template_id' => $template->getKey()]);
 
-        /** @var Opportunity $opportunity */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
         $opportunity = $wwQuote->opportunity;
 
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Hardware'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Hardware'])
         );
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Software'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Software'])
         );
 
         $country = Country::query()->first();
@@ -2217,7 +2207,7 @@ TEMPLATE;
 
         $wwQuote->activeVersion->update(['quote_template_id' => $template->getKey()]);
 
-        /** @var Opportunity $opportunity */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
         $opportunity = $wwQuote->opportunity;
 
         $opportunity->update([
@@ -2226,10 +2216,10 @@ TEMPLATE;
         ]);
 
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Hardware'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Hardware'])
         );
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Software'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Software'])
         );
 
         $country = Country::query()->first();
@@ -2475,7 +2465,7 @@ TEMPLATE;
 
         $quoteNumber = $response->json('quote_number');
 
-        $expectedFileName = $quoteNumber."-distributor-files.zip";
+        $expectedFileName = $quoteNumber.'-distributor-files.zip';
 
         $response = $this->getJson('api/ww-quotes/'.$quoteModelKey.'/files/distributor-files')
 //            ->dump()
@@ -2589,7 +2579,7 @@ TEMPLATE;
 
         $quoteNumber = $response->json('quote_number');
 
-        $expectedFileName = $quoteNumber."-payment-schedule-files.zip";
+        $expectedFileName = $quoteNumber.'-payment-schedule-files.zip';
 
         $response = $this->get('api/ww-quotes/'.$quoteModelKey.'/files/schedule-files')
 //            ->dumpHeaders()
@@ -2637,7 +2627,6 @@ TEMPLATE;
             'distributor_file_id' => $distributorFile->getKey(),
             'buy_price' => $buyPrice = 2_000,
             'sn_discount_id' => $snDiscount->getKey(),
-
         ]);
 
         foreach ($distributorQuotes as $distributorQuote) {
@@ -2706,7 +2695,6 @@ TEMPLATE;
             ]);
 
         $this->postJson('api/ww-distributions/margin', [
-
             'worldwide_distributions' => [
                 [
                     'id' => $distributorQuotes[0]->getKey(),
@@ -2748,8 +2736,6 @@ TEMPLATE;
         $this->assertEquals('6486.49', $response->json('summary.final_total_price_excluding_tax'));
         $this->assertEquals('572.34', $response->json('summary.applicable_discounts_value'));
         $this->assertEquals('38.33', $response->json('summary.final_margin'));
-
-
     }
 
     /**
@@ -2784,7 +2770,7 @@ TEMPLATE;
             'vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(), 'value' => 5,
         ]);
 
-        /** @var WorldwideDistribution[] $distributorQuotes */
+        /** @var \App\Domain\Worldwide\Models\WorldwideDistribution[] $distributorQuotes */
         $distributorQuotes = factory(WorldwideDistribution::class, 2)->create([
             'country_id' => $country->getKey(),
             'distributor_file_id' => $distributorFile->getKey(),
@@ -2792,7 +2778,6 @@ TEMPLATE;
 //            'sn_discount_id' => $snDiscount->getKey(),
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
-
         ]);
 
         foreach ($distributorQuotes as $distributorQuote) {
@@ -2803,7 +2788,6 @@ TEMPLATE;
             $distributorQuote->save();
 
             $distributorQuote->vendors()->sync($vendor);
-
         }
 
         $discountsData = [
@@ -2819,7 +2803,6 @@ TEMPLATE;
                     'sn_discount' => $snDiscount->getKey(),
                 ],
             ],
-
         ];
 
         $this->authenticateApi();
@@ -2878,7 +2861,6 @@ TEMPLATE;
                         'sn_discount' => $snDiscount->getKey(),
                     ],
                 ],
-
             ],
 
             'stage' => 'Discount',
@@ -2915,7 +2897,6 @@ TEMPLATE;
         $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_CONTRACT]);
         $salesOrder = factory(SalesOrder::class)->create(['worldwide_quote_id' => $quote->getKey()]);
 
-
         $this->authenticateApi();
 
         $this->deleteJson('api/ww-quotes/'.$quote->getKey())
@@ -2948,14 +2929,14 @@ TEMPLATE;
         /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create(['submitted_at' => now()]);
 
-        /** @var Opportunity $opportunity */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
         $opportunity = $wwQuote->opportunity;
 
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Hardware'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Hardware'])
         );
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Software'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Software'])
         );
 
         $country = Country::query()->first();
@@ -3375,7 +3356,6 @@ TEMPLATE;
             'contacts' => [
                 ['id' => $contact->getKey(), 'is_default' => true],
             ],
-
         ])
 //            ->dump()
             ->assertOk();
@@ -3452,7 +3432,6 @@ TEMPLATE;
 
         $this->assertCount(1, $response->json('worldwide_distributions.0.addresses'));
         $this->assertCount(1, $response->json('worldwide_distributions.0.contacts'));
-
 
         // Updating the opportunity entity again
         // to ensure no duplicated data is populated.
@@ -3700,7 +3679,7 @@ TEMPLATE;
     {
         $this->authenticateApi();
 
-        /** @var Opportunity $opportunity */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
         $opportunity = Opportunity::factory()->create();
 
         /** @var WorldwideQuote $quote */
@@ -3719,7 +3698,7 @@ TEMPLATE;
 
         $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
-        /** @var WorldwideDistribution $distributorQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideDistribution $distributorQuote */
         $distributorQuote = factory(WorldwideDistribution::class)->create([
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
@@ -3827,4 +3806,3 @@ TEMPLATE;
         }
     }
 }
-

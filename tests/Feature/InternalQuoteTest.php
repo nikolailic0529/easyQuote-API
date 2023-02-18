@@ -2,19 +2,17 @@
 
 namespace Tests\Feature;
 
-use App\DTO\RowsGroup;
-use App\Models\Address;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Customer\Customer;
-use App\Models\Quote\Quote;
-use App\Models\QuoteFile\ImportedRow;
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\User;
-use App\Models\Vendor;
+use App\Domain\Address\Models\Address;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\QuoteFile\Models\ImportedRow;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\Rescue\DataTransferObjects\RowsGroup;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -32,25 +30,24 @@ class InternalQuoteTest extends TestCase
         $this->authenticateApi();
 
         $this->postJson('api/quotes/customers', [
-
-            "int_company_id" => Company::where('type', 'Internal')->value('id'),
-            "customer_name" => "James Brown Ltd",
-            "quotation_valid_until" => "2020-12-16",
-            "support_start_date" => "2020-12-16",
-            "support_end_date" => "2020-12-15",
-            "invoicing_terms" => "Upfront",
-            "vendors" => [
-                Vendor::inRandomOrder()->value('id')
+            'int_company_id' => Company::where('type', 'Internal')->value('id'),
+            'customer_name' => 'James Brown Ltd',
+            'quotation_valid_until' => '2020-12-16',
+            'support_start_date' => '2020-12-16',
+            'support_end_date' => '2020-12-15',
+            'invoicing_terms' => 'Upfront',
+            'vendors' => [
+                Vendor::inRandomOrder()->value('id'),
             ],
-            "email" => "Customer@JBLTD.com",
-            "vat" => "Exempt",
-            "service_levels" => [
+            'email' => 'Customer@JBLTD.com',
+            'vat' => 'Exempt',
+            'service_levels' => [
                 [
-                    "service_level" => "test"
-                ]
+                    'service_level' => 'test',
+                ],
             ],
-            "addresses" => Address::limit(2)->pluck('id')->all(),
-            "contacts" => Contact::limit(2)->pluck('id')->all()
+            'addresses' => Address::limit(2)->pluck('id')->all(),
+            'contacts' => Contact::limit(2)->pluck('id')->all(),
         ])->assertCreated();
     }
 
@@ -71,10 +68,10 @@ class InternalQuoteTest extends TestCase
 
         $this->authenticateApi($actingUser = User::factory()->create());
 
-        $response = $this->postJson('api/quotes/groups/' . $quote->getKey(), [
+        $response = $this->postJson('api/quotes/groups/'.$quote->getKey(), [
             'name' => Str::random(),
             'search_text' => Str::random(),
-            'rows' => $importedRows->modelKeys()
+            'rows' => $importedRows->modelKeys(),
         ])
             ->assertOk()
             ->assertJsonStructure([
@@ -82,7 +79,7 @@ class InternalQuoteTest extends TestCase
                 'is_selected',
                 'name',
                 'rows_ids',
-                'search_text'
+                'search_text',
             ]);
 
         $response = $this->getJson('api/quotes/groups/'.$quote->getKey());
@@ -120,9 +117,9 @@ class InternalQuoteTest extends TestCase
                     'id' => (string) Str::uuid(),
                     'name' => Str::random(),
                     'search_text' => Str::random(),
-                    'rows_ids' => $importedRows->modelKeys()
-                ])
-            ])
+                    'rows_ids' => $importedRows->modelKeys(),
+                ]),
+            ]),
         ]);
 
         $this->authenticateApi($actingUser = User::factory()->create());
@@ -130,7 +127,7 @@ class InternalQuoteTest extends TestCase
         $this->patchJson('api/quotes/groups/'.$quote->getKey().'/'.$group->id, [
             'name' => Str::random(),
             'search_text' => Str::random(),
-            'rows' => $importedRows->modelKeys()
+            'rows' => $importedRows->modelKeys(),
         ])
             ->assertOk()
             ->assertExactJson([true]);
@@ -147,7 +144,6 @@ class InternalQuoteTest extends TestCase
 
         $this->assertEquals($expectedGroupRows, $actualGroupRows);
     }
-
 
     /**
      * Test an ability to delete an existing rows group when the acting user is not the quote owner.
@@ -171,9 +167,9 @@ class InternalQuoteTest extends TestCase
                     'id' => (string) Str::uuid(),
                     'name' => Str::random(),
                     'search_text' => Str::random(),
-                    'rows_ids' => $importedRows->modelKeys()
-                ])
-            ])
+                    'rows_ids' => $importedRows->modelKeys(),
+                ]),
+            ]),
         ]);
 
         $this->authenticateApi($actingUser = User::factory()->create());
@@ -205,7 +201,7 @@ class InternalQuoteTest extends TestCase
         $quote = factory(Quote::class)->create([
             'user_id' => $quoteOwner->getKey(),
             'customer_id' => $quoteCustomer->getKey(),
-            'distributor_file_id' => $distributorFile->getKey()
+            'distributor_file_id' => $distributorFile->getKey(),
         ]);
 
         $this->authenticateApi($quoteOwner);
@@ -217,10 +213,9 @@ class InternalQuoteTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'replicated_row_id', 'is_selected'
-                ]
+                    'id', 'replicated_row_id', 'is_selected',
+                ],
             ]);
-
 
         $this->assertNotEmpty($response->json());
     }

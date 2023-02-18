@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateQuoteDiscountTable extends Migration
 {
@@ -21,7 +21,7 @@ class CreateQuoteDiscountTable extends Migration
 
             $table->unsignedTinyInteger('duration')->nullable();
             $table->decimal('margin_percentage')->nullable();
-            
+
             $table->primary(['quote_id', 'discount_id']);
         });
     }

@@ -2,18 +2,18 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Company;
-use App\Models\Data\Country;
-use App\Models\Template\SalesOrderTemplate;
-use App\Models\Template\TemplateSchema;
-use App\Models\Vendor;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Template\Models\TemplateSchema;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\SalesOrderTemplate;
 use Faker\Generator as Faker;
 
 $factory->define(SalesOrderTemplate::class, function (Faker $faker) {
     $templateSchema = factory(TemplateSchema::class)->create([
         'data_headers' => array_map(function (array $header) {
             return $header['value'];
-        }, __('template.sales_order_data_headers'))
+        }, __('template.sales_order_data_headers')),
     ]);
 
     return [

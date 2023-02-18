@@ -19,9 +19,9 @@ class RenameSequenceNumberToUserVersionSequenceNumberWorldwideQuoteVersionsTable
         });
 
         Schema::table('worldwide_quote_versions', function (Blueprint $table) {
-           $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();
 
-           $table->renameColumn('sequence_number', 'user_version_sequence_number');
+            $table->renameColumn('sequence_number', 'user_version_sequence_number');
         });
     }
 

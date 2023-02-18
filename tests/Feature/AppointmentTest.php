@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
-use App\Enum\ReminderStatus;
-use App\Models\Appointment\Appointment;
-use App\Models\Appointment\AppointmentContactInvitee;
-use App\Models\Appointment\AppointmentReminder;
-use App\Models\Attachment;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Opportunity;
-use App\Models\Quote\Quote;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\User;
+use App\Domain\Appointment\Models\Appointment;
+use App\Domain\Appointment\Models\AppointmentContactInvitee;
+use App\Domain\Appointment\Models\AppointmentReminder;
+use App\Domain\Attachment\Models\Attachment;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Reminder\Enum\ReminderStatus;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
@@ -20,9 +20,20 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class AppointmentTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view a list of appointments linked to company.
@@ -31,7 +42,7 @@ class AppointmentTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var \App\Models\Appointment\Appointment $appointment */
+        /** @var \App\Domain\Appointment\Models\Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Company::factory(), 'companiesHaveAppointment')
             ->create([
@@ -79,7 +90,7 @@ class AppointmentTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var \App\Models\Appointment\Appointment $appointment */
+        /** @var \App\Domain\Appointment\Models\Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Opportunity::factory(), 'opportunitiesHaveAppointment')
             ->create([
@@ -120,7 +131,6 @@ class AppointmentTest extends TestCase
         $this->assertCount(1, $response->json('data'));
     }
 
-
     /**
      * Test an ability to view a list of appointments linked to contact.
      */
@@ -128,7 +138,7 @@ class AppointmentTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Appointment $appointment */
+        /** @var \App\Domain\Appointment\Models\Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Contact::factory(), 'contactsHaveAppointment')
             ->create([
@@ -176,7 +186,7 @@ class AppointmentTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Appointment $appointment */
+        /** @var \App\Domain\Appointment\Models\Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(Quote::factory(), 'rescueQuotesHaveAppointment')
             ->create([
@@ -224,7 +234,7 @@ class AppointmentTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Appointment $appointment */
+        /** @var \App\Domain\Appointment\Models\Appointment $appointment */
         $appointment = Appointment::factory()
             ->has(WorldwideQuote::factory(), 'worldwideQuotesHaveAppointment')
             ->create([
@@ -799,7 +809,7 @@ class AppointmentTest extends TestCase
 //        ];
 //
 //        $response = $this->postJson('api/appointments', $data)
-////            ->dump()
+// //            ->dump()
 //            ->assertCreated()
 //            ->assertJsonStructure([
 //                'id',
@@ -925,7 +935,6 @@ class AppointmentTest extends TestCase
 
         $this->assertContains($attachment->getKey(), $response->json('attachment_relations.*.attachment_id'));
     }
-
 
     /**
      * Test an ability to create a new appointment with reminder set.
@@ -1075,7 +1084,7 @@ class AppointmentTest extends TestCase
 
         $this->authenticateApi();
 
-        /** @var User $user */
+        /** @var \App\Domain\User\Models\User $user */
         $user = $this->app['auth']->user();
 
         $this->patchJson('api/appointments/'.$appointment->getKey(), $data)
@@ -1145,6 +1154,10 @@ class AppointmentTest extends TestCase
             'status' => ReminderStatus::Snoozed->value,
         ];
 
+        $tz = $this->app['auth']->user()->timezone->utc ?? config('app.timezone');
+
+        $snoozeDateConv = Carbon::instance(Carbon::parse($data['snooze_date'], tz: $tz))->tz(config('app.timezone'));
+
         $this->putJson("api/appointment-reminders/{$reminder->getKey()}", $data)
 //            ->dump()
             ->assertOk()
@@ -1160,7 +1173,7 @@ class AppointmentTest extends TestCase
                 ],
             ])
             ->assertJsonPath('data.status', $data['status'])
-            ->assertJsonPath('data.snooze_date', Carbon::parse($data['snooze_date'])->toJSON());
+            ->assertJsonPath('data.snooze_date', $snoozeDateConv->toJSON());
     }
 
     /**
@@ -1180,7 +1193,7 @@ class AppointmentTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'reminder'
+                'reminder',
             ])
             ->assertJsonPath('reminder.id', $reminder->getKey());
 
@@ -1208,7 +1221,7 @@ class AppointmentTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'reminder'
+                'reminder',
             ])
             ->assertJsonPath('reminder', null);
     }

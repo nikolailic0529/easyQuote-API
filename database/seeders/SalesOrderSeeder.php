@@ -13,6 +13,6 @@ class SalesOrderSeeder extends Seeder
      */
     public function run()
     {
-        factory(\App\Models\SalesOrder::class, 10)->create();
+        factory(\App\Domain\Worldwide\Models\SalesOrder::class, 10)->create();
     }
 }

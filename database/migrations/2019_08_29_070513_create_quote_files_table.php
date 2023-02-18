@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateQuoteFilesTable extends Migration
 {
@@ -21,7 +21,7 @@ class CreateQuoteFilesTable extends Migration
             $table->string('file_type')->index()->nullable();
             $table->string('original_file_path');
             $table->string('original_file_name')->nullable();
-            
+
             $table->integer('pages');
             $table->tinyInteger('imported_page')->nullable();
 

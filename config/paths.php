@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'storage' => env('STORAGE_PATH')
+    'storage' => env('STORAGE_PATH'),
 ];

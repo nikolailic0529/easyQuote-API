@@ -2,21 +2,19 @@
 
 namespace Tests\Unit\Traits;
 
-use DB, Schema;
-
 trait TruncatesDatabaseTables
 {
     protected function truncateDatabaseTables(): void
     {
-        if (! isset($this->truncatableTables)) {
+        if (!isset($this->truncatableTables)) {
             return;
         }
 
-        Schema::disableForeignKeyConstraints();
+        \Schema::disableForeignKeyConstraints();
 
         collect($this->truncatableTables)
-            ->each(fn ($table) => DB::table($table)->truncate());
+            ->each(fn ($table) => \DB::table($table)->truncate());
 
-        Schema::enableForeignKeyConstraints();
+        \Schema::enableForeignKeyConstraints();
     }
 }

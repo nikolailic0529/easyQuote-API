@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Contracts\Services\ManagesExchangeRates;
-use App\Models\Data\Currency;
-use App\Services\ExchangeRate\NullExchangeRatesProvider;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\ExchangeRate\Contracts\ManagesExchangeRates;
+use App\Domain\ExchangeRate\Services\NullExchangeRatesProvider;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class ExchangeRateTest extends TestCase
 {
     /**

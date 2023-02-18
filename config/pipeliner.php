@@ -1,16 +1,14 @@
 <?php
 
 return [
-
     'webhook' => [
-
         'event_handlers' => [
-            \App\Services\Pipeliner\Webhook\EventHandlers\AccountEventHandler::class,
-            \App\Services\Pipeliner\Webhook\EventHandlers\AccountRelationEventHandler::class,
-            \App\Services\Pipeliner\Webhook\EventHandlers\AppointmentEventHandler::class,
-            \App\Services\Pipeliner\Webhook\EventHandlers\ContactEventHandler::class,
-            \App\Services\Pipeliner\Webhook\EventHandlers\TaskEventHandler::class,
-            \App\Services\Pipeliner\Webhook\EventHandlers\OpportunityEventHandler::class,
+            \App\Domain\Pipeliner\Services\Webhook\EventHandlers\AccountEventHandler::class,
+            \App\Domain\Pipeliner\Services\Webhook\EventHandlers\AccountRelationEventHandler::class,
+            \App\Domain\Pipeliner\Services\Webhook\EventHandlers\AppointmentEventHandler::class,
+            \App\Domain\Pipeliner\Services\Webhook\EventHandlers\ContactEventHandler::class,
+            \App\Domain\Pipeliner\Services\Webhook\EventHandlers\TaskEventHandler::class,
+            \App\Domain\Pipeliner\Services\Webhook\EventHandlers\OpportunityEventHandler::class,
         ],
 
         'options' => [
@@ -18,55 +16,53 @@ return [
                 'eq_integration',
             ],
         ],
-
     ],
 
     'client' => [
         'throttle' => [
             'rpm' => 100_000 / 5,
             'max_connections' => 10,
-        ]
+        ],
     ],
 
     'sync' => [
-
         'schedule' => [
             'enabled' => env('PIPELINER_SYNC_SCHEDULE_ENABLED', true),
         ],
 
-        /**
+        /*
          * The allowed methods for synchronization.
          * Supported Methods: "pull", "push". Use '*' to mean all methods.
          */
         'allowed_methods' => explode(',', env('PIPELINER_SYNC_ALLOWED_METHODS', '*')),
 
-        /**
+        /*
          * The allowed sales units for synchronization.
          * Use '*' to mean all sales units.
          */
         'allowed_sales_units' => explode(',', env('PIPELINER_SYNC_ALLOWED_UNITS', '*')),
 
-        /**
+        /*
          * The strategies EQ will use to synchronize entities between Pipeliner CRM & itself.
          */
         'strategies' => [
-            'PushCompanyStrategy' => \App\Services\Pipeliner\Strategies\PushCompanyStrategy::class,
-            'PullCompanyStrategy' => \App\Services\Pipeliner\Strategies\PullCompanyStrategy::class,
-            'PushOpportunityStrategy' => \App\Services\Pipeliner\Strategies\PushOpportunityStrategy::class,
-            'PullOpportunityStrategy' => \App\Services\Pipeliner\Strategies\PullOpportunityStrategy::class,
-            'PushTaskStrategy' => \App\Services\Pipeliner\Strategies\PushTaskStrategy::class,
-            'PullTaskStrategy' => \App\Services\Pipeliner\Strategies\PullTaskStrategy::class,
-            'PushAppointmentStrategy' => \App\Services\Pipeliner\Strategies\PushAppointmentStrategy::class,
-            'PullAppointmentStrategy' => \App\Services\Pipeliner\Strategies\PullAppointmentStrategy::class,
-            'PushNoteStrategy' => \App\Services\Pipeliner\Strategies\PushNoteStrategy::class,
-            'PullNoteStrategy' => \App\Services\Pipeliner\Strategies\PullNoteStrategy::class,
-            'PushAttachmentStrategy' => \App\Services\Pipeliner\Strategies\PushAttachmentStrategy::class,
-            'PullAttachmentStrategy' => \App\Services\Pipeliner\Strategies\PullAttachmentStrategy::class,
-            'PushCustomFieldStrategy' => \App\Services\Pipeliner\Strategies\PushCustomFieldStrategy::class,
-            'PullCustomFieldStrategy' => \App\Services\Pipeliner\Strategies\PullCustomFieldStrategy::class,
-            'PushSalesUnitStrategy' => \App\Services\Pipeliner\Strategies\PushSalesUnitStrategy::class,
-            'PullSalesUnitStrategy' => \App\Services\Pipeliner\Strategies\PullSalesUnitStrategy::class,
-            'PushCurrencyStrategy' => \App\Services\Pipeliner\Strategies\PushCurrencyStrategy::class,
+            'PushCompanyStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushCompanyStrategy::class,
+            'PullCompanyStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullCompanyStrategy::class,
+            'PushOpportunityStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushOpportunityStrategy::class,
+            'PullOpportunityStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullOpportunityStrategy::class,
+            'PushTaskStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushTaskStrategy::class,
+            'PullTaskStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullTaskStrategy::class,
+            'PushAppointmentStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushAppointmentStrategy::class,
+            'PullAppointmentStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullAppointmentStrategy::class,
+            'PushNoteStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushNoteStrategy::class,
+            'PullNoteStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullNoteStrategy::class,
+            'PushAttachmentStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushAttachmentStrategy::class,
+            'PullAttachmentStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullAttachmentStrategy::class,
+            'PushCustomFieldStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushCustomFieldStrategy::class,
+            'PullCustomFieldStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullCustomFieldStrategy::class,
+            'PushSalesUnitStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushSalesUnitStrategy::class,
+            'PullSalesUnitStrategy' => \App\Domain\Pipeliner\Services\Strategies\PullSalesUnitStrategy::class,
+            'PushCurrencyStrategy' => \App\Domain\Pipeliner\Services\Strategies\PushCurrencyStrategy::class,
         ],
 
         'aggregate_strategies' => [
@@ -81,13 +77,12 @@ return [
             'PullOpportunityStrategy',
         ],
 
-        /**
+        /*
          * The email of client used as default entity.
          */
         'default_client_email' => env('PIPELINER_SYNC_DEFAULT_CLIENT_EMAIL', 'fakhar.anwar@europlusdirect.com'),
 
         'custom_fields' => [
-
             'enabled' => env('PIPELINER_SYNC_CUSTOM_FIELDS_ENABLED', true),
 
             'mapping' => [
@@ -105,14 +100,11 @@ return [
 
                 'opportunity_personal_rating' => 'cf_personal_rating_id',
             ],
-
         ],
-
     ],
 
     'custom_fields' => [
-
-        /**
+        /*
          * Used for country name normalization.
          */
         'country_field_aliases' => [
@@ -177,7 +169,5 @@ return [
                 'email_address' => 'cfEmailAddress4',
             ],
         ],
-
     ],
-
 ];

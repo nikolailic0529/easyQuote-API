@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\OpportunityValidationResult;
+use App\Domain\Worldwide\Models\OpportunityValidationResult;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\MessageBag;
 
@@ -14,8 +14,7 @@ class OpportunityValidationResultFactory extends Factory
     {
         return [
             'is_passed' => true,
-            'messages' => (new MessageBag())->add('one', $this->faker->text,)->add('two', $this->faker->text),
+            'messages' => (new MessageBag())->add('one', $this->faker->text)->add('two', $this->faker->text),
         ];
     }
 }
-

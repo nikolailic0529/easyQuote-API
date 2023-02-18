@@ -29,7 +29,7 @@ class AddStatusStatusReasonColumnsWorldwideQuotesTable extends Migration
         Schema::table('worldwide_quotes', function (Blueprint $table) {
             $table->dropColumn([
                 'status',
-                'status_reason'
+                'status_reason',
             ]);
         });
     }

@@ -3,7 +3,6 @@
 use Illuminate\Support\Str;
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Horizon Domain
@@ -176,6 +175,7 @@ return [
             'tries' => 3,
             'timeout' => 60,
             'nice' => 0,
+            'sleep' => 5,
         ],
         'search-index' => [
             'connection' => 'redis',
@@ -188,6 +188,7 @@ return [
             'tries' => 3,
             'timeout' => 60 * 10,
             'nice' => 0,
+            'sleep' => 5,
         ],
         'long' => [
             'connection' => 'redis_long',
@@ -212,7 +213,7 @@ return [
             'tries' => 1,
             'timeout' => 60 * 20,
             'nice' => 0,
-            'sleep' => 1,
+            'sleep' => 3,
         ],
         'pipeliner-sync' => [
             'connection' => 'redis',
@@ -225,7 +226,8 @@ return [
             'tries' => 1,
             'timeout' => 60 * 20,
             'nice' => 0,
-            'sleep' => 1,
+            'sleep' => 3,
+            'rest' => 0.5,
         ],
     ],
 
@@ -242,7 +244,7 @@ return [
                 'balanceCooldown' => 3,
             ],
             'pipeliner-aggregate-sync' => [
-                'maxProcesses' => 15,
+                'maxProcesses' => 8,
                 'balanceMaxShift' => 4,
                 'balanceCooldown' => 1,
             ],
@@ -265,7 +267,7 @@ return [
                 'balanceCooldown' => 3,
             ],
             'pipeliner-aggregate-sync' => [
-                'maxProcesses' => 15,
+                'maxProcesses' => 8,
                 'balanceMaxShift' => 4,
                 'balanceCooldown' => 1,
             ],

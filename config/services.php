@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -110,5 +109,4 @@ return [
         'username' => env('COMPANIES_HOUSE_USERNAME', ''),
         'password' => env('COMPANIES_HOUSE_PASSWORD', ''),
     ],
-
 ];

@@ -19,6 +19,7 @@ class CompanyCategorySeeder extends Seeder
                 $seed['entity_order'] = $i;
                 $seed['created_at'] = now();
                 $seed['updated_at'] = now();
+
                 return $seed;
             });
 

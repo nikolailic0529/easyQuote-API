@@ -2,29 +2,40 @@
 
 namespace Tests\Feature;
 
-use App\Enum\ReminderStatus;
-use App\Models\Company;
-use App\Models\Opportunity;
-use App\Models\Quote\Quote;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\SalesUnit;
-use App\Models\Task\Task;
-use App\Models\Task\TaskReminder;
+use App\Domain\Company\Models\Company;
+use App\Domain\Reminder\Enum\ReminderStatus;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Task\Models\Task;
+use App\Domain\Task\Models\TaskReminder;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class TaskTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     public function testCanListTasksOfTaskable(): void
     {
         /** @var Company $company */
         $company = Company::factory()->create();
 
-        /** @var Task[] $tasks */
+        /** @var \App\Domain\Task\Models\Task[] $tasks */
         $tasks = Task::factory()
             ->count(2)
             ->create();
@@ -225,7 +236,7 @@ class TaskTest extends TestCase
 
         $this->authenticateApi();
 
-        $this->patchJson("api/tasks/".$task->getKey(), [
+        $this->patchJson('api/tasks/'.$task->getKey(), [
             'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
             'activity_type' => 'Task',
             'name' => $this->faker->text(100),
@@ -313,8 +324,8 @@ class TaskTest extends TestCase
                     'id',
                     'reminder' => [
                         'id',
-                    ]
-                ]
+                    ],
+                ],
             ])
             ->assertJsonPath('data.reminder.id', $reminder->getKey());
 
@@ -343,8 +354,8 @@ class TaskTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     'id',
-                    'reminder'
-                ]
+                    'reminder',
+                ],
             ])
             ->assertJsonPath('reminder', null);
     }
@@ -358,8 +369,7 @@ class TaskTest extends TestCase
 
         $task = Task::factory()
             ->has(
-                TaskReminder::factory()->for($this->app['auth']->user())->state(['status' => ReminderStatus::Scheduled])
-                , relationship: 'reminder')
+                TaskReminder::factory()->for($this->app['auth']->user())->state(['status' => ReminderStatus::Scheduled]), relationship: 'reminder')
             ->create();
 
         $r = $this->getJson("api/tasks/{$task->getKey()}")
@@ -391,7 +401,5 @@ class TaskTest extends TestCase
                 ],
             ])
             ->assertJsonPath('data.reminder', null);
-
     }
-
 }

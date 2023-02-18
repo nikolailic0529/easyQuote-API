@@ -2,19 +2,20 @@
 
 namespace Tests\Feature;
 
-use App\Models\Asset;
-use App\Models\Company;
-use App\Models\Quote\Quote;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Role;
-use App\Models\Team;
-use App\Models\User;
-use App\Models\Vendor;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
+ * @group asset
  * @group build
  */
 class AssetTest extends TestCase
@@ -22,15 +23,13 @@ class AssetTest extends TestCase
     use DatabaseTransactions;
 
     /**
-     * Test can view assets listing.
-     *
-     * @return void
+     * Test an ability to view assets listing.
      */
-    public function testCanViewAssetsListing()
+    public function testCanViewAssetsListing(): void
     {
         $this->authenticateApi();
 
-        factory(Asset::class, 20)->create();
+        Asset::factory(20)->create();
 
         $worldwideQuote = factory(WorldwideQuote::class)->create();
 
@@ -51,6 +50,7 @@ class AssetTest extends TestCase
                         'address_id',
                         'vendor_id',
                         'quote_id',
+                        'user_fullname',
                         'customer_name',
                         'rfq_number',
                         'vendor_short_code',
@@ -90,10 +90,8 @@ class AssetTest extends TestCase
 
     /**
      * Test an ability to view paginated assets of business division of user's team.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedAssetsOfBusinessDivisionOfUserTeam()
+    public function testCanViewPaginatedAssetsOfBusinessDivisionOfUserTeam(): void
     {
         $this->authenticateApi();
 
@@ -104,7 +102,7 @@ class AssetTest extends TestCase
             'business_division_id' => BD_RESCUE,
         ]);
 
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions('view_assets');
@@ -119,11 +117,10 @@ class AssetTest extends TestCase
         $this->be($user, 'api');
 
         /** @var Asset $asset */
-        $asset = factory(Asset::class)->create([
-            'user_id' => $user->getKey(),
-            'quote_id' => $rescueQuote->getKey(),
-            'quote_type' => $rescueQuote->getMorphClass(),
-        ]);
+        $asset = Asset::factory()
+            ->for($user)
+            ->for($rescueQuote, 'quote')
+            ->create();
 
         $response = $this->getJson('api/assets')
 //            ->dump()
@@ -177,15 +174,75 @@ class AssetTest extends TestCase
     }
 
     /**
-     * Test can create a new asset.
-     *
-     * @return void
+     * Test an ability to view an existing asset.
      */
-    public function testCanCreateNewAsset()
+    public function testCanViewAsset(): void
     {
         $this->authenticateApi();
 
-        $attributes = factory(Asset::class)->raw();
+        $asset = Asset::factory()
+            ->for(User::factory())
+            ->hasAttached(User::factory(2), relationship: 'sharingUsers')
+            ->create();
+
+        $this->getJson('api/assets/'.$asset->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'asset_category_id',
+                'user_id',
+                'address_id',
+                'vendor_id',
+                'quote_id',
+                'quote_type',
+                'user' => [
+                    'id',
+                    'first_name',
+                    'last_name',
+                    'email',
+                ],
+                'sharing_users' => [
+                    '*' => [
+                        'id',
+                        'first_name',
+                        'last_name',
+                        'email',
+                    ],
+                ],
+                'rfq_number',
+                'vendor_short_code',
+                'asset_category_name',
+                'address' => [
+                    'id',
+                    'address_type',
+                ],
+                'country' => [
+                    'id',
+                    'iso_3166_2',
+                ],
+                'unit_price',
+                'base_warranty_start_date',
+                'base_warranty_end_date',
+                'active_warranty_start_date',
+                'active_warranty_end_date',
+                'product_number',
+                'serial_number',
+                'product_description',
+                'product_image',
+                'created_at',
+                'updated_at',
+            ]);
+    }
+
+    /**
+     * Test an ability to create a new asset.
+     */
+    public function testCanCreateNewAsset(): void
+    {
+        $this->authenticateApi();
+
+        $attributes = Asset::factory()->raw();
 
         $this->getJson('api/assets/create')
 //            ->dump()
@@ -193,14 +250,14 @@ class AssetTest extends TestCase
             ->assertJsonStructure([
                 'asset_categories' => [
                     '*' => [
-                        'id', 'name'
-                    ]
+                        'id', 'name',
+                    ],
                 ],
                 'vendors' => [
                     '*' => [
                         'id', 'name',
-                    ]
-                ]
+                    ],
+                ],
             ]);
 
         $response = $this->postJson('api/assets', $attributes)
@@ -235,18 +292,15 @@ class AssetTest extends TestCase
     }
 
     /**
-     * Test can update a newly created asset.
-     *
-     * @return void
+     * Test an ability to update a newly created asset.
      */
     public function testCanUpdateAsset()
     {
         $this->authenticateApi();
 
-        /** @var Asset */
-        $asset = factory(Asset::class)->create();
+        $asset = Asset::factory()->create();
 
-        $attributes = factory(Asset::class)->raw();
+        $attributes = Asset::factory()->raw();
 
         $response = $this->patchJson('api/assets/'.$asset->getKey(), $attributes)
 //            ->dump()
@@ -280,16 +334,13 @@ class AssetTest extends TestCase
     }
 
     /**
-     * Test can delete a newly created asset.
-     *
-     * @return void
+     * Test an ability to delete a newly created asset.
      */
-    public function testCanDeleteAsset()
+    public function testCanDeleteAsset(): void
     {
         $this->authenticateApi();
 
-        /** @var Asset */
-        $asset = factory(Asset::class)->create();
+        $asset = Asset::factory()->create();
 
         $this->deleteJson('api/assets/'.$asset->getKey())->assertOk();
 
@@ -298,10 +349,8 @@ class AssetTest extends TestCase
 
     /**
      * Test an ability to check uniqueness of the specified asset data.
-     *
-     * @return void
      */
-    public function testCanCheckUniquenessOfAsset()
+    public function testCanCheckUniquenessOfAsset(): void
     {
         $this->authenticateApi();
 
@@ -316,7 +365,7 @@ class AssetTest extends TestCase
         $this->assertTrue(filter_var($response->getContent(), FILTER_VALIDATE_BOOLEAN));
 
         /** @var Asset $asset */
-        $asset = factory(Asset::class)->create();
+        $asset = Asset::factory()->create();
 
         $response = $this->postJson('api/assets/unique', [
             'vendor_id' => $asset->vendor_id,
@@ -332,15 +381,13 @@ class AssetTest extends TestCase
 
     /**
      * Test an ability to view existing companies list of the specified asset entity.
-     *
-     * @return void
      */
-    public function testCanViewCompaniesOfAsset()
+    public function testCanViewCompaniesOfAsset(): void
     {
         $this->authenticateApi();
 
         /** @var Asset $asset */
-        $asset = factory(Asset::class)->create();
+        $asset = Asset::factory()->create();
         /** @var Company $companyOfAsset */
         $companyOfAsset = Company::factory()->create();
         /** @var Company $anotherCompany */

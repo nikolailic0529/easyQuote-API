@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Models\QuoteFile\QuoteFile;
-use App\Services\DocumentProcessor\EasyQuote\Parsers\ExcelPaymentScheduleParser;
+use App\Domain\DocumentProcessing\EasyQuote\Parsers\ExcelPaymentScheduleParser;
+use App\Domain\QuoteFile\Models\QuoteFile;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
 
@@ -17,7 +17,7 @@ class PaymentScheduleParsingTest extends ParsingTest
     /**
      * Test an ability to process Austria payment schedule files.
      */
-    public function test_it_processes_austria_payment_schedule_files(): void
+    public function testItProcessesAustriaPaymentScheduleFiles(): void
     {
         $this->processFilesFromDir('Austria');
     }
@@ -25,7 +25,7 @@ class PaymentScheduleParsingTest extends ParsingTest
     /**
      * Test an ability to process France payment schedule files.
      */
-    public function test_it_processes_france_payment_schedule_files(): void
+    public function testItProcessesFrancePaymentScheduleFiles(): void
     {
         $this->processFilesFromDir('France');
     }
@@ -33,7 +33,7 @@ class PaymentScheduleParsingTest extends ParsingTest
     /**
      * Test an ability to process United Kingdom payment schedule files.
      */
-    public function test_it_processes_united_kingdom_payment_schedule_files(): void
+    public function testItProcessesUnitedKingdomPaymentScheduleFiles(): void
     {
         $this->processFilesFromDir('UK');
     }
@@ -41,7 +41,7 @@ class PaymentScheduleParsingTest extends ParsingTest
     /**
      * Test an ability to process United States payment schedule files.
      */
-    public function test_it_processes_united_states_payment_schedule_files(): void
+    public function testItProcessesUnitedStatesPaymentScheduleFiles(): void
     {
         $this->processFilesFromDir('USA');
     }
@@ -49,7 +49,7 @@ class PaymentScheduleParsingTest extends ParsingTest
     /**
      * Test an ability to process Nederland payment schedule files.
      */
-    public function test_it_processes_nederland_payment_schedule_files(): void
+    public function testItProcessesNederlandPaymentScheduleFiles(): void
     {
         $this->processFilesFromDir('Nederland');
     }
@@ -57,9 +57,8 @@ class PaymentScheduleParsingTest extends ParsingTest
     /**
      * Test an ability to parse excel payment schedule using internal implementation of parser.
      */
-    public function test_it_parses_new_support_warehouse_ltd_kensico_capital_management_01172020_xlsx_using_internal_parser(
-    ): void
-    {
+    public function testItParsesNewSupportWarehouseLtdKensicoCapitalManagement01172020XlsxUsingInternalParser(
+    ): void {
         $file = new \SplFileInfo(base_path('tests/Unit/Data/schedule-files-test/USA/New Support Warehouse Ltd-Kensico Capital Management-01172020.xlsx'));
 
         $data = $this->app[ExcelPaymentScheduleParser::class]->parse($file, 6);
@@ -95,9 +94,8 @@ class PaymentScheduleParsingTest extends ParsingTest
     /**
      * Test an ability to parse excel payment schedule using internal implementation of parser.
      */
-    public function test_it_parses_copy_of_support_warehouse_ltd_cable_one_it_012920192_xlsx_using_internal_parser(
-    ): void
-    {
+    public function testItParsesCopyOfSupportWarehouseLtdCableOneIt012920192XlsxUsingInternalParser(
+    ): void {
         $file = new \SplFileInfo(base_path('tests/Unit/Data/schedule-files-test/UK/Copy of Support Warehouse Ltd-Cable One IT-012920192.xlsx'));
 
         $data = $this->app[ExcelPaymentScheduleParser::class]->parse($file, 4);

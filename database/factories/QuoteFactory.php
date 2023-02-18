@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Models\Company;
-use App\Models\Customer\Customer;
-use App\Models\Data\Country;
-use App\Models\Data\Currency;
-use App\Models\Quote\Quote;
-use App\Models\Template\QuoteTemplate;
-use App\Models\User;
-use App\Models\Vendor;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Arr;
 
@@ -37,9 +37,8 @@ class QuoteFactory extends Factory
             'additional_notes' => $this->faker->sentences(10, true),
             'closing_date' => now()->addDays(rand(1, 10))->format('Y-m-d'),
             'calculate_list_price' => true,
-            'buy_price' => (float)rand(10000, 40000),
-            'custom_discount' => (float)rand(5, 99),
+            'buy_price' => (float) rand(10000, 40000),
+            'custom_discount' => (float) rand(5, 99),
         ];
     }
 }
-

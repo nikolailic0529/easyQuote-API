@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Enum\CompanyType;
-use App\Models\BusinessDivision;
-use App\Models\Company;
-use App\Models\Data\Timezone;
-use App\Models\Role;
-use App\Models\SalesUnit;
-use App\Models\Team;
-use App\Models\User;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\BusinessDivision\Models\BusinessDivision;
+use App\Domain\Company\Enum\CompanyType;
+use App\Domain\Company\Models\Company;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Team\Models\Team;
+use App\Domain\Timezone\Models\Timezone;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
@@ -22,7 +22,15 @@ use Tests\TestCase;
  */
 class UserTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view paginated users.
@@ -84,7 +92,7 @@ class UserTest extends TestCase
         $this->authenticateApi();
         $user = User::factory()->create();
 
-        $this->getJson("api/users/".$user->getKey())
+        $this->getJson('api/users/'.$user->getKey())
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -100,7 +108,7 @@ class UserTest extends TestCase
                 'picture',
                 'privileges',
                 'sales_units' => [
-                    '*' => ['id', 'unit_name',],
+                    '*' => ['id', 'unit_name'],
                 ],
                 'companies' => [
                     '*' => ['id', 'name'],
@@ -117,14 +125,14 @@ class UserTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->patchJson("api/users/".$user->getKey(), $data = [
+        $this->patchJson('api/users/'.$user->getKey(), $data = [
             'first_name' => $firstName = preg_replace('/[^[:alpha:]]/', '', $this->faker->firstName),
             'middle_name' => $middleName = null,
             'last_name' => $lastName = preg_replace('/[^[:alpha:]]/', '', $this->faker->lastName),
             'timezone_id' => Timezone::query()->get()->random()->getKey(),
             'team_id' => $teamKey = UT_EPD_WW,
             'sales_units' => SalesUnit::query()->get()->random(2)->map(
-                static fn(SalesUnit $unit) => ['id' => $unit->getKey()]
+                static fn (SalesUnit $unit) => ['id' => $unit->getKey()]
             ),
             'companies' => Company::factory()->count(2)->create(['type' => CompanyType::INTERNAL])->map->only('id'),
             'role_id' => Role::query()->get()->random()->getKey(),
@@ -145,7 +153,7 @@ class UserTest extends TestCase
                 ],
                 'team_id',
                 'sales_units' => [
-                    '*' => ['id', 'unit_name',],
+                    '*' => ['id', 'unit_name'],
                 ],
             ])
             ->assertJsonFragment([
@@ -187,7 +195,7 @@ class UserTest extends TestCase
 
         $this->assertEmpty($response->json('activated_at'));
 
-        $this->putJson("api/users/activate/".$user->getKey())
+        $this->putJson('api/users/activate/'.$user->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -221,7 +229,7 @@ class UserTest extends TestCase
 
         $this->assertNotEmpty($response->json('activated_at'));
 
-        $this->putJson("api/users/deactivate/".$user->getKey())
+        $this->putJson('api/users/deactivate/'.$user->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -243,7 +251,7 @@ class UserTest extends TestCase
     {
         $this->authenticateApi();
 
-        $this->deleteJson("api/users/".$this->app['auth']->id())
+        $this->deleteJson('api/users/'.$this->app['auth']->id())
 //            ->dump()
             ->assertForbidden();
     }
@@ -259,7 +267,7 @@ class UserTest extends TestCase
 
         $user = User::factory()->create();
 
-        $this->deleteJson("api/users/".$user->getKey())
+        $this->deleteJson('api/users/'.$user->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -386,7 +394,7 @@ class UserTest extends TestCase
             ->assertJsonStructure([
                 '*' => [
                     'id',
-                ]
+                ],
             ]);
 
         $this->assertContains($activeUser->getKey(), $r->json('*.id'));
@@ -397,7 +405,7 @@ class UserTest extends TestCase
             ->assertJsonStructure([
                 '*' => [
                     'id',
-                ]
+                ],
             ]);
 
         $this->assertNotContains($activeUser->getKey(), $r->json('*.id'));

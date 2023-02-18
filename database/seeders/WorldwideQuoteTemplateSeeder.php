@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Company;
-use App\Services\ThumbHelper;
+use App\Domain\Company\Models\Company;
+use App\Domain\Image\Services\ThumbHelper;
 use Illuminate\Database\Seeder;
 
 class WorldwideQuoteTemplateSeeder extends Seeder
@@ -12,11 +12,12 @@ class WorldwideQuoteTemplateSeeder extends Seeder
      * Run the database seeds.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
     {
-        /** @var \App\Models\Company $epdCompanyModel */
+        /** @var \App\Domain\Company\Models\Company $epdCompanyModel */
         $epdCompanyModel = Company::query()->where('short_code', 'EPD')->sole();
         $templateAssets = ThumbHelper::retrieveLogoFromModels([$epdCompanyModel], ThumbHelper::MAP);
 
@@ -120,7 +121,6 @@ class WorldwideQuoteTemplateSeeder extends Seeder
         ];
 
         $connection->transaction(function () use ($connection, $seeds) {
-
             foreach ($seeds as $seed) {
                 $connection->table('quote_templates')
                     ->upsert([
@@ -160,9 +160,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
                             'vendor_id' => $key,
                         ]);
                 }
-
             }
-
         });
     }
 

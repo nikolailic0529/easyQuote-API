@@ -24,10 +24,8 @@ class CreateCancelSalesOrderReasonsTable extends Migration
 
         Artisan::call('db:seed', [
             '--class' => \Database\Seeders\CancelSalesOrderReasonSeeder::class,
-            '--force' => true
+            '--force' => true,
         ]);
-
-
     }
 
     /**

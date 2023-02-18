@@ -2,11 +2,13 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\Services\AddressGeocoder;
-use App\DTO\Stats\SummaryRequestData;
-use App\DTO\Summary;
-use App\Models\{Data\Country, Quote\Quote, Quote\WorldwideQuote};
-use App\Services\Stats\StatsAggregationService;
+use App\Domain\Country\Models\Country;
+use App\Domain\Geocoding\Contracts\AddressGeocoder;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Stats\DataTransferObjects\Summary;
+use App\Domain\Stats\DataTransferObjects\SummaryRequestData;
+use App\Domain\Stats\Services\StatsAggregationService;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Carbon\CarbonPeriod;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Illuminate\Contracts\Container\BindingResolutionException;
@@ -22,7 +24,15 @@ use Tests\TestCase;
  */
 class StatsTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
 //    /**
 //     * Test stats calculation.
@@ -65,7 +75,7 @@ class StatsTest extends TestCase
         /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var AddressGeocoder $locationService */
+        /** @var \App\Domain\Geocoding\Contracts\AddressGeocoder $locationService */
         $locationService = $this->app->make(AddressGeocoder::class);
 
         $quotes = $aggregator->getQuoteLocations(
@@ -96,7 +106,7 @@ class StatsTest extends TestCase
         /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var AddressGeocoder $locationService */
+        /** @var \App\Domain\Geocoding\Contracts\AddressGeocoder $locationService */
         $locationService = $this->app->make(AddressGeocoder::class);
 
         $assets = $aggregator->getAssetTotalLocations(
@@ -114,7 +124,6 @@ class StatsTest extends TestCase
         );
 
         $this->assertInstanceOf(Collection::class, $assets);
-
     }
 
     /**
@@ -129,7 +138,7 @@ class StatsTest extends TestCase
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var AddressGeocoder */
+        /** @var \App\Domain\Geocoding\Contracts\AddressGeocoder */
         $locationService = $this->app->make(AddressGeocoder::class);
 
         $customers = $aggregator->getCustomerTotalLocations(
@@ -149,6 +158,7 @@ class StatsTest extends TestCase
      * Test Customers Summary aggregate.
      *
      * @return void
+     *
      * @throws BindingResolutionException
      */
     public function testAggregatesSummaryOfCustomers()
@@ -162,14 +172,14 @@ class StatsTest extends TestCase
 
         $entityTypes = [
             $classMap[Quote::class],
-            $classMap[WorldwideQuote::class]
+            $classMap[WorldwideQuote::class],
         ];
 
         $customers = $aggregator->getCustomersSummary(new SummaryRequestData([
                 'country_id' => Country::query()->value('id'),
                 'entity_types' => $entityTypes,
                 'any_owner_entities' => true,
-                'acting_user_led_teams' => []
+                'acting_user_led_teams' => [],
             ])
         );
 
@@ -181,6 +191,7 @@ class StatsTest extends TestCase
      * Test Quotes Summary aggregate.
      *
      * @return void
+     *
      * @throws BindingResolutionException
      */
     public function testAggregatesSummaryOfQuotes()
@@ -196,7 +207,7 @@ class StatsTest extends TestCase
 
         $entityTypes = [
             $classMap[Quote::class],
-            $classMap[WorldwideQuote::class]
+            $classMap[WorldwideQuote::class],
         ];
 
         /** @var Summary */
@@ -204,7 +215,7 @@ class StatsTest extends TestCase
             'period' => $period,
             'entity_types' => $entityTypes,
             'any_owner_entities' => true,
-            'acting_user_led_teams' => []
+            'acting_user_led_teams' => [],
         ]));
 
         $this->assertInstanceOf(Summary::class, $quotes);

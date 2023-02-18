@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Traits;
 
-use App\Models\User;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\WithFaker;
 
 trait WithFakeUser
@@ -12,7 +12,7 @@ trait WithFakeUser
     /**
      * User instance.
      *
-     * @var \App\Models\User
+     * @var \App\Domain\User\Models\User
      */
     protected $user;
 

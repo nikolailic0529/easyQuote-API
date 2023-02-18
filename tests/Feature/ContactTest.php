@@ -2,21 +2,32 @@
 
 namespace Tests\Feature;
 
-use App\Enum\GenderEnum;
-use App\Models\Address;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Role;
-use App\Models\SalesUnit;
-use App\Models\User;
+use App\Domain\Address\Models\Address;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Enum\GenderEnum;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class ContactTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view a list of available contacts.
@@ -81,7 +92,7 @@ class ContactTest extends TestCase
             'delete_contacts',
         ]);
 
-        /** @var User $user */
+        /** @var \App\Domain\User\Models\User $user */
         $user = User::factory()
             ->hasAttached(SalesUnit::factory())
             ->create();
@@ -133,8 +144,6 @@ class ContactTest extends TestCase
 
     /**
      * Test an ability to create a new contact.
-     *
-     * @return string
      */
     public function testCanCreateContact(): string
     {
@@ -213,8 +222,6 @@ class ContactTest extends TestCase
 
     /**
      * Test an ability to create a new contact associated with address.
-     *
-     * @return string
      */
     public function testCanCreateContactAssociatedWithAddress(): string
     {
@@ -286,9 +293,7 @@ class ContactTest extends TestCase
     }
 
     /**
-     * Test an ability to create a new contact with company relations
-     *
-     * @return string
+     * Test an ability to create a new contact with company relations.
      */
     public function testCanCreateContactAssociatedWithCompanyRelations(): string
     {
@@ -305,7 +310,7 @@ class ContactTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'updated_at'
+                'updated_at',
             ])
             ->json('updated_at');
 
@@ -387,7 +392,7 @@ class ContactTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'updated_at'
+                'updated_at',
             ]);
 
         $this->assertNotSame($companyUpdatedAt, $r->json('updated_at'));
@@ -474,7 +479,7 @@ class ContactTest extends TestCase
     }
 
     /**
-     * Test an ability to update an existing contact associated with address
+     * Test an ability to update an existing contact associated with address.
      */
     public function testCanUpdateContactAssociatedWithAddress(): void
     {

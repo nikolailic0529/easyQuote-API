@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateVendorsTable extends Migration
 {
@@ -22,7 +22,7 @@ class CreateVendorsTable extends Migration
             $table->string('name');
             $table->string('short_code');
             $table->boolean('is_system')->default(false);
-            
+
             $table->timestamps();
             $table->timestamp('activated_at')->index()->nullable();
             $table->softDeletes()->index();

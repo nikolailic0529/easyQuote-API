@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -21,7 +21,6 @@ return new class extends Migration {
                         'sales_unit_id' => '9e9ea3fc-e532-49f9-8b2b-e8bde016e149']);
             }
         });
-
     }
 
     /**
@@ -31,6 +30,5 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 };

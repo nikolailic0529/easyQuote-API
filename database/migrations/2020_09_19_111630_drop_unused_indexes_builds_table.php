@@ -38,6 +38,5 @@ class DropUnusedIndexesBuildsTable extends Migration
      */
     public function down()
     {
-        // 
     }
 }

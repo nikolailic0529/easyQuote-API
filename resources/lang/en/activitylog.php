@@ -32,6 +32,6 @@ return [
         'authenticated' => 'Authenticated',
         'unauthenticated' => 'Unauthenticated',
         'created_version' => 'Created Version',
-        'deleted_version' => 'Deleted Version', 
-    ]
+        'deleted_version' => 'Deleted Version',
+    ],
 ];

@@ -1,12 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -27,7 +24,7 @@ return new class extends Migration
 
                 $unitId ??= '9e9ea3fc-e532-49f9-8b2b-e8bde016e149';
 
-                return (array)$opp + ['sales_unit_id' => $unitId];
+                return (array) $opp + ['sales_unit_id' => $unitId];
             });
 
         DB::transaction(static function () use ($seeds): void {
@@ -46,6 +43,5 @@ return new class extends Migration
      */
     public function down()
     {
-        //
     }
 };

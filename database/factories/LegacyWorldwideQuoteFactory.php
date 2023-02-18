@@ -2,13 +2,10 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Company;
-use App\Models\Customer\WorldwideCustomer;
-use App\Models\Data\Currency;
-use App\Models\Opportunity;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\User;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
 use Faker\Generator as Faker;
 
 $factory->define(WorldwideQuote::class, function (Faker $faker) {
@@ -26,7 +23,7 @@ $factory->define(WorldwideQuote::class, function (Faker $faker) {
         'user_id' => $user->getKey(),
         'opportunity_id' => $opportunity->getKey(),
         'sequence_number' => $newNumber,
-        'quote_number' => sprintf("EPD-WW-DP-%'.07d", $newNumber)
+        'quote_number' => sprintf("EPD-WW-DP-%'.07d", $newNumber),
     ];
 });
 

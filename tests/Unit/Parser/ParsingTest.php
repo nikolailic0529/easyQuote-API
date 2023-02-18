@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Contracts\Services\ManagesDocumentProcessors;
-use App\Models\{QuoteFile\QuoteFile};
-use App\Services\QuoteFileService;
+use App\Domain\DocumentProcessing\Contracts\ManagesDocumentProcessors;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\QuoteFile\Services\QuoteFileService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +18,7 @@ abstract class ParsingTest extends TestCase
         Storage::persistentFake();
 
         return collect($this->listFilesInDir($dir))
-            ->map(function ($file) use ($dir): QuoteFile {
+            ->map(function ($file): QuoteFile {
                 Storage::putFileAs('', $file->getRealPath(), $file->getFilename());
 
                 Storage::assertExists($file->getFilename());
@@ -50,22 +50,18 @@ abstract class ParsingTest extends TestCase
 
     /**
      * Process files from directory.
-     *
-     * @param string $dir
-     * @return void
      */
     protected function processFilesFromDir(string $dir): void
     {
         $quoteFiles = $this->createQuoteFilesFromDir($dir);
 
-        $quoteFiles->each(function ($quoteFile) use ($dir) {
+        $quoteFiles->each(function ($quoteFile) {
             $this->app[ManagesDocumentProcessors::class]->forwardProcessor($quoteFile);
             $this->performFileAssertions($quoteFile);
         });
     }
 
     /**
-     * @param string $dir
      * @return SplFileInfo[]
      */
     protected function listFilesInDir(string $dir): array
@@ -89,30 +85,21 @@ abstract class ParsingTest extends TestCase
 
     /**
      * Get Mapping for specified Parsing.
-     *
-     * @return \Illuminate\Support\Collection
      */
     abstract protected function assertionMapping(): Collection;
 
     /**
      * Specified Directory with Files.
-     *
-     * @return string
      */
     abstract protected function filesDirPath(): string;
 
     /**
-     * Testing Files Type ("Payment Schedule" | "Distributor Price List")
-     *
-     * @return string
+     * Testing Files Type ("Payment Schedule" | "Distributor Price List").
      */
     abstract protected function fileType(): string;
 
     /**
      * Perform specified assertions on each parsed file.
-     *
-     * @param QuoteFile $quoteFile
-     * @return void
      */
     abstract protected function performFileAssertions(QuoteFile $quoteFile): void;
 }

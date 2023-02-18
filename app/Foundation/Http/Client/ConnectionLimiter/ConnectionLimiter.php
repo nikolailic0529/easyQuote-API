@@ -23,7 +23,7 @@ class ConnectionLimiter
             usleep($this->sleepMilliseconds * 1000);
 
             if ($this->currentTime() - $this->waitSeconds >= $starting) {
-                throw new ConnectionTimeoutException;
+                throw new ConnectionTimeoutException();
             }
         }
 

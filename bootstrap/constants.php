@@ -13,7 +13,6 @@ const PWDE_01 = 'Your password is expiring on :expires_at.';
 const PWDE_02 = "Your password is expiring on :expires_at. It's strongly recommended to change password.";
 const PWDC_01 = 'You have successfully changed your password.';
 const UN_FALLBACK_ROUTE = 'users.notifications';
-const ENF_PWD_CHANGE_DAYS = 30;
 const AT_01 = 'Some one tried to login to your account from ip address: :ip_address.';
 
 // Activity
@@ -132,7 +131,6 @@ const CSRT_01 = [
     'ZA',
 ];
 
-
 // Timezone
 const TZ_DEF_01 = '(UTC+01:00) Edinburgh, London';
 const TZ_DEF_02 = '(UTC) Edinburgh, London';
@@ -197,7 +195,7 @@ const SN_IMG_MS = 'img/slack/ms.gif';
 const SN_IMG_MF = 'img/slack/mf.gif';
 
 // Exchange rate
-const ER_SERVICE_CLASS = App\Services\ExchangeRate\HMRCRates::class;
+const ER_SERVICE_CLASS = App\Domain\ExchangeRate\Services\HMRCRates::class;
 // Exchange Rates update frequency. daily, weekly, monthly.
 const ER_UPD_DEFAULT_SCHEDULE = 'monthly';
 const ER_PARSE_ERR_01 = 'An error occured when trying to parse exchange rates.';

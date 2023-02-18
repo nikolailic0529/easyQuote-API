@@ -2,36 +2,36 @@
 
 namespace Tests\Feature;
 
-use App\Models\Address;
-use App\Models\Company;
-use App\Models\Data\Country;
-use App\Models\Data\Currency;
-use App\Models\Opportunity;
-use App\Models\OpportunitySupplier;
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Models\Quote\Discount\SND;
-use App\Models\Quote\WorldwideDistribution;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\QuoteFile\DistributionRowsGroup;
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\MappedRow;
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\QuoteFile\ScheduleData;
-use App\Models\Role;
-use App\Models\SalesOrder;
-use App\Models\SalesUnit;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Template\SalesOrderTemplate;
-use App\Models\Template\TemplateField;
-use App\Models\User;
-use App\Models\Vendor;
-use App\Models\WorldwideQuoteAsset;
-use App\Services\SalesOrder\CancelSalesOrderService;
-use App\Services\SalesOrder\SubmitSalesOrderService;
-use App\Services\VendorServices\CheckSalesOrderService;
-use App\Services\VendorServices\OauthClient as VSOauthClient;
+use App\Domain\Address\Models\Address;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\Discount\Models\MultiYearDiscount;
+use App\Domain\Discount\Models\PrePayDiscount;
+use App\Domain\Discount\Models\PromotionalDiscount;
+use App\Domain\Discount\Models\SND;
+use App\Domain\DocumentMapping\Models\MappedRow;
+use App\Domain\QuoteFile\Models\ImportableColumn;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\QuoteFile\Models\ScheduleData;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Template\Models\TemplateField;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\VendorServices\Services\CheckSalesOrderService;
+use App\Domain\VendorServices\Services\OauthClient as VSOauthClient;
+use App\Domain\Worldwide\Models\DistributionRowsGroup;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\SalesOrderTemplate;
+use App\Domain\Worldwide\Models\WorldwideDistribution;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideQuoteAsset;
+use App\Domain\Worldwide\Services\SalesOrder\CancelSalesOrderService;
+use App\Domain\Worldwide\Services\SalesOrder\SubmitSalesOrderService;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Handler\MockHandler;
@@ -44,24 +44,30 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Class SalesOrderTest
+ * Class SalesOrderTest.
  *
  * @group worldwide
  */
 class SalesOrderTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view drafted sales orders listing.
-     *
-     * @return void
      */
     public function testCanViewDraftedSalesOrdersListing(): void
     {
         $this->authenticateApi();
 
-        /** @var SalesOrder[] $orders */
+        /** @var \App\Domain\Worldwide\Models\SalesOrder[] $orders */
         $orders = factory(SalesOrder::class, 10)->create(['submitted_at' => null, 'assets_count' => 3]);
 
         $endUser = Company::factory()->create();
@@ -122,7 +128,7 @@ class SalesOrderTest extends TestCase
 
         $user->syncRoles($role);
 
-        /** @var SalesOrder $salesOrder */
+        /** @var \App\Domain\Worldwide\Models\SalesOrder $salesOrder */
         // Acting user own entity.
         $salesOrder = SalesOrder::factory()
             ->for($user)
@@ -252,7 +258,7 @@ class SalesOrderTest extends TestCase
 
         $user->syncRoles($role);
 
-        /** @var SalesOrder $salesOrder */
+        /** @var \App\Domain\Worldwide\Models\SalesOrder $salesOrder */
         // Acting user own entity.
         $salesOrder = SalesOrder::factory()
             ->for($user)
@@ -318,7 +324,7 @@ class SalesOrderTest extends TestCase
 
         $user->syncRoles($role);
 
-        /** @var SalesOrder $salesOrder */
+        /** @var \App\Domain\Worldwide\Models\SalesOrder $salesOrder */
         // Acting user own entity.
         $salesOrder = SalesOrder::factory()
             ->for($user)
@@ -375,7 +381,7 @@ class SalesOrderTest extends TestCase
         $endUser = Company::factory()->create();
         $accountMgr = User::factory()->create();
 
-        /** @var SalesOrder[] $orders */
+        /** @var \App\Domain\Worldwide\Models\SalesOrder[] $orders */
         $orders = factory(SalesOrder::class, 10)->create([
             'assets_count' => 3, 'submitted_at' => now(), 'failure_reason' => $this->faker->text(),
         ]);
@@ -678,7 +684,6 @@ class SalesOrderTest extends TestCase
         ]);
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey(), [
-
             'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
@@ -689,7 +694,6 @@ class SalesOrderTest extends TestCase
             ->assertInvalid('contract_number', responseKey: 'Error.original');
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey(), [
-
             'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
@@ -715,7 +719,6 @@ class SalesOrderTest extends TestCase
             ]);
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey(), [
-
             'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'vat_number' => null,
             'vat_type' => 'NO VAT',
@@ -747,7 +750,7 @@ class SalesOrderTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Opportunity $opportunity */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
         $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_PACK,
         ]);
@@ -800,7 +803,7 @@ class SalesOrderTest extends TestCase
             ]),
         ]);
 
-        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn() => $oauthFactory);
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn () => $oauthFactory);
 
         /** @var HttpFactory $oauthFactory */
         $httpFactory = $this->app[HttpFactory::class];
@@ -810,8 +813,7 @@ class SalesOrderTest extends TestCase
         ]);
 
         $this->app->when(SubmitSalesOrderService::class)->needs(HttpFactory::class)
-            ->give(fn() => $httpFactory);
-
+            ->give(fn () => $httpFactory);
 
         $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')
 //                        ->dump()
@@ -838,7 +840,7 @@ class SalesOrderTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Opportunity $opportunity */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
         $opportunity = Opportunity::factory()->create([
             'contract_type_id' => CT_CONTRACT,
         ]);
@@ -890,7 +892,7 @@ class SalesOrderTest extends TestCase
             'quote_file_id' => $distributorFile->getKey(),
         ]);
 
-        /** @var DistributionRowsGroup $groupOfRows */
+        /** @var \App\Domain\Worldwide\Models\DistributionRowsGroup $groupOfRows */
         $groupOfRows = factory(DistributionRowsGroup::class)->create([
             'worldwide_distribution_id' => $distributorQuote->getKey(),
             'is_selected' => true,
@@ -916,7 +918,6 @@ class SalesOrderTest extends TestCase
                 return new Client(['handler' => $handlerStack]);
             });
 
-
         $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')//            ->dump()
         ;
 
@@ -939,7 +940,7 @@ class SalesOrderTest extends TestCase
      */
     public function testCanCancelSalesOrder(): void
     {
-        $this->markTestIncomplete("Failure reason message is not replaced with generic text on server error.");
+        $this->markTestIncomplete('Failure reason message is not replaced with generic text on server error.');
 
         $this->authenticateApi();
 
@@ -1061,7 +1062,6 @@ class SalesOrderTest extends TestCase
                 'id', 'activated_at',
             ]);
 
-
         $this->assertNotEmpty($response->json('activated_at'));
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey().'/deactivate')
@@ -1180,14 +1180,14 @@ class SalesOrderTest extends TestCase
             'quote_template_id' => $quoteTemplate->getKey(),
         ]);
 
-        /** @var Opportunity $opportunity */
+        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
         $opportunity = $wwQuote->opportunity;
 
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Hardware'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Hardware'])
         );
         $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
-            factory(\App\Models\Address::class)->create(['address_type' => 'Software'])
+            factory(\App\Domain\Address\Models\Address::class)->create(['address_type' => 'Software'])
         );
 
         $country = Country::query()->first();
@@ -1296,7 +1296,7 @@ class SalesOrderTest extends TestCase
      */
     public function testCanRefreshStatusOfSalesOrder(): void
     {
-        /** @var SalesOrder $salesOrder */
+        /** @var \App\Domain\Worldwide\Models\SalesOrder $salesOrder */
         $salesOrder = factory(SalesOrder::class)->create([
             'submitted_at' => now(),
             'status' => 2,
@@ -1311,7 +1311,7 @@ class SalesOrderTest extends TestCase
             ]),
         ]);
 
-        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn() => $oauthFactory);
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn () => $oauthFactory);
 
         /** @var HttpFactory $factory */
         $factory = $this->app[HttpFactory::class];
@@ -1364,7 +1364,7 @@ class SalesOrderTest extends TestCase
 
         $this->app->when(CheckSalesOrderService::class)
             ->needs(HttpFactory::class)
-            ->give(fn() => $factory);
+            ->give(fn () => $factory);
 
         $this->authenticateApi();
 
@@ -1379,6 +1379,5 @@ class SalesOrderTest extends TestCase
             ->assertJson([
                 'status' => 1,
             ]);
-
     }
 }

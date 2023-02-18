@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
+use App\Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,6 +22,7 @@ class UserFactory extends Factory
             'timezone_id' => DB::table('timezones')->value('id'),
             'remember_token' => Str::random(10),
             'password_changed_at' => now(),
+            'notification_settings' => [],
             // 'last_activity_at'    => now(),
             'ip_address' => $this->faker->ipv4,
             'already_logged_in' => 1,

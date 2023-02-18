@@ -2,16 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Contracts\Repositories\CurrencyRepositoryInterface;
-use App\Models\Template\HpeContractTemplate;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Contracts\CurrencyRepositoryInterface;
+use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Image\Services\ThumbHelper;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Database\Seeder;
-use App\Models\{Company, Vendor, Data\Country,};
-use App\Services\ThumbHelper;
 use Illuminate\Support\Facades\DB;
 
 class HpeContractTemplatesSeeder extends Seeder
 {
-    /** @var string */
     protected string $design;
 
     /**
@@ -23,7 +24,7 @@ class HpeContractTemplatesSeeder extends Seeder
     {
         DB::beginTransaction();
 
-        $templates = json_decode(file_get_contents(__DIR__ . '/models/hpe_contract_templates.json'), true);
+        $templates = json_decode(file_get_contents(__DIR__.'/models/hpe_contract_templates.json'), true);
         $hpeTemplateSchema = file_get_contents(database_path('seeders/models/hpe_contract_template_design.json'));
         $arubaTemplateSchema = file_get_contents(database_path('seeders/models/aruba_contract_template_design.json'));
 
@@ -58,14 +59,14 @@ class HpeContractTemplatesSeeder extends Seeder
         $currency = $currencies->findByCountryCode(head($attributes['countries']));
 
         $template->forceFill([
-            'id'            => $attributes['id'],
-            'name'          => $attributes['name'],
-            'is_system'     => true,
-            'form_data'     => $formData,
-            'company_id'    => $company->getKey(),
-            'vendor_id'     => $vendor->getKey(),
-            'currency_id'   => optional($currency)->getKey(),
-            'deleted_at'    => null,
+            'id' => $attributes['id'],
+            'name' => $attributes['name'],
+            'is_system' => true,
+            'form_data' => $formData,
+            'company_id' => $company->getKey(),
+            'vendor_id' => $vendor->getKey(),
+            'currency_id' => optional($currency)->getKey(),
+            'deleted_at' => null,
         ])->save();
 
         $template->countries()->sync($countries);

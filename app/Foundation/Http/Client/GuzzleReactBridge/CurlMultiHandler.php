@@ -25,7 +25,7 @@ class CurlMultiHandler extends \GuzzleHttp\Handler\CurlMultiHandler
 
     public function __invoke(RequestInterface $request, array $options): PromiseInterface
     {
-        $this->activeRequests++;
+        ++$this->activeRequests;
 
         $this->updateTimer();
 
@@ -44,7 +44,7 @@ class CurlMultiHandler extends \GuzzleHttp\Handler\CurlMultiHandler
     private function responseCompleteHandler(): callable
     {
         return function (): void {
-            $this->activeRequests--;
+            --$this->activeRequests;
             $this->updateTimer();
         };
     }

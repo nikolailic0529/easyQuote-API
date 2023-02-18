@@ -1,103 +1,103 @@
 <?php
 
-use App\Models\AccessAttempt;
-use App\Models\Address;
-use App\Models\Addressable;
-use App\Models\Asset;
-use App\Models\AssetCategory;
-use App\Models\AssetTotal;
-use App\Models\Attachment;
-use App\Models\BusinessDivision;
-use App\Models\CancelSalesOrderReason;
-use App\Models\Collaboration\Invitation;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Contactable;
-use App\Models\ContractType;
-use App\Models\Customer\Customer;
-use App\Models\Customer\CustomerTotal;
-use App\Models\Customer\WorldwideCustomer;
-use App\Models\Data\Country;
-use App\Models\Data\Currency;
-use App\Models\Data\ExchangeRate;
-use App\Models\Data\Language;
-use App\Models\Data\Timezone;
-use App\Models\DocumentProcessLog;
-use App\Models\HpeContract;
-use App\Models\HpeContractData;
-use App\Models\HpeContractFile;
-use App\Models\Image;
-use App\Models\InternalCompany;
-use App\Models\Location;
-use App\Models\ModelHasRoles;
-use App\Models\ModelNotification;
-use App\Models\Opportunity;
-use App\Models\OpportunityForm\OpportunityForm;
-use App\Models\OpportunityForm\OpportunityFormSchema;
-use App\Models\OpportunitySupplier;
-use App\Models\PasswordReset;
-use App\Models\Permission;
-use App\Models\Pipeline\Pipeline;
-use App\Models\Pipeline\PipelineStage;
-use App\Models\Quote\BaseQuote;
-use App\Models\Quote\BaseWorldwideQuote;
-use App\Models\Quote\Contract;
-use App\Models\Quote\ContractFieldColumn;
-use App\Models\Quote\Discount\Discount;
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Models\Quote\Discount\SND;
-use App\Models\Quote\DistributionFieldColumn;
-use App\Models\Quote\FieldColumn;
-use App\Models\Quote\Margin\CountryMargin;
-use App\Models\Quote\Margin\Margin;
-use App\Models\Quote\Quote;
-use App\Models\Quote\QuoteLocationTotal;
-use App\Models\Quote\QuoteTotal;
-use App\Models\Quote\QuoteVersion;
-use App\Models\Quote\QuoteVersionFieldColumn;
-use App\Models\Quote\QuoteVersionPivot;
-use App\Models\Quote\WorldwideDistribution;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\QuoteFile\DataSelectSeparator;
-use App\Models\QuoteFile\DistributionRowsGroup;
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\ImportableColumnAlias;
-use App\Models\QuoteFile\ImportedRawData;
-use App\Models\QuoteFile\ImportedRow;
-use App\Models\QuoteFile\MappedRow;
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\QuoteFile\QuoteFileFormat;
-use App\Models\QuoteFile\ScheduleData;
-use App\Models\Role;
-use App\Models\SalesOrder;
-use App\Models\Space;
-use App\Models\System\Activity;
-use App\Models\System\ActivityExportCollection;
-use App\Models\System\Build;
-use App\Models\System\CustomField;
-use App\Models\System\CustomFieldValue;
-use App\Models\System\DocumentProcessorDriver;
-use App\Models\System\Notification;
-use App\Models\System\Period;
-use App\Models\System\SystemSetting;
-use App\Models\Task\Task;
-use App\Models\Team;
-use App\Models\Template\ContractTemplate;
-use App\Models\Template\HpeContractTemplate;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Template\SalesOrderTemplate;
-use App\Models\Template\TemplateField;
-use App\Models\Template\TemplateFieldType;
-use App\Models\Template\TemplateForm;
-use App\Models\Template\TemplateSchema;
-use App\Models\User;
-use App\Models\UserForm;
-use App\Models\Vendor;
-use App\Models\WorldwideQuoteAsset;
-use App\Models\WorldwideQuoteAssetsGroup;
+use App\Domain\Activity\DataTransferObjects\ActivityExportCollection;
+use App\Domain\Activity\Models\Activity;
+use App\Domain\Address\Models\Address;
+use App\Domain\Address\Models\Addressable;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Asset\Models\AssetCategory;
+use App\Domain\Attachment\Models\Attachment;
+use App\Domain\Authentication\Models\AccessAttempt;
+use App\Domain\Authentication\Models\PasswordReset;
+use App\Domain\Authorization\Models\ModelHasRoles;
+use App\Domain\Authorization\Models\Permission;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Build\Models\Build;
+use App\Domain\BusinessDivision\Models\BusinessDivision;
+use App\Domain\Company\Models\Company;
+use App\Domain\Company\Models\InternalCompany;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Contact\Models\Contactable;
+use App\Domain\ContractType\Models\ContractType;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\CustomField\Models\CustomField;
+use App\Domain\CustomField\Models\CustomFieldValue;
+use App\Domain\Discount\Models\Discount;
+use App\Domain\Discount\Models\MultiYearDiscount;
+use App\Domain\Discount\Models\PrePayDiscount;
+use App\Domain\Discount\Models\PromotionalDiscount;
+use App\Domain\Discount\Models\SND;
+use App\Domain\DocumentMapping\Models\MappedRow;
+use App\Domain\DocumentProcessing\Models\DocumentProcessLog;
+use App\Domain\DocumentProcessing\Models\DocumentProcessorDriver;
+use App\Domain\ExchangeRate\Models\ExchangeRate;
+use App\Domain\HpeContract\Models\HpeContract;
+use App\Domain\HpeContract\Models\HpeContractData;
+use App\Domain\HpeContract\Models\HpeContractFile;
+use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Image\Models\Image;
+use App\Domain\Invitation\Models\Invitation;
+use App\Domain\Language\Models\Language;
+use App\Domain\Location\Models\Location;
+use App\Domain\Margin\Models\CountryMargin;
+use App\Domain\Margin\Models\Margin;
+use App\Domain\Notification\Models\ModelNotification;
+use App\Domain\Notification\Models\Notification;
+use App\Domain\Pipeline\Models\Pipeline;
+use App\Domain\Pipeline\Models\PipelineStage;
+use App\Domain\QuoteFile\Models\DataSelectSeparator;
+use App\Domain\QuoteFile\Models\ImportableColumn;
+use App\Domain\QuoteFile\Models\ImportableColumnAlias;
+use App\Domain\QuoteFile\Models\ImportedRawData;
+use App\Domain\QuoteFile\Models\ImportedRow;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\QuoteFile\Models\QuoteFileFormat;
+use App\Domain\QuoteFile\Models\ScheduleData;
+use App\Domain\Rescue\Models\BaseQuote;
+use App\Domain\Rescue\Models\Contract;
+use App\Domain\Rescue\Models\ContractFieldColumn;
+use App\Domain\Rescue\Models\ContractTemplate;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Rescue\Models\FieldColumn;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\Rescue\Models\QuoteVersion;
+use App\Domain\Rescue\Models\QuoteVersionFieldColumn;
+use App\Domain\Rescue\Models\QuoteVersionPivot;
+use App\Domain\Settings\Models\SystemSetting;
+use App\Domain\Space\Models\Space;
+use App\Domain\Stats\Models\AssetTotal;
+use App\Domain\Stats\Models\CustomerTotal;
+use App\Domain\Stats\Models\QuoteLocationTotal;
+use App\Domain\Stats\Models\QuoteTotal;
+use App\Domain\Task\Models\Task;
+use App\Domain\Team\Models\Team;
+use App\Domain\Template\Models\TemplateField;
+use App\Domain\Template\Models\TemplateFieldType;
+use App\Domain\Template\Models\TemplateForm;
+use App\Domain\Template\Models\TemplateSchema;
+use App\Domain\Timezone\Models\Timezone;
+use App\Domain\User\Models\User;
+use App\Domain\User\Models\UserForm;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\BaseWorldwideQuote;
+use App\Domain\Worldwide\Models\CancelSalesOrderReason;
+use App\Domain\Worldwide\Models\DistributionFieldColumn;
+use App\Domain\Worldwide\Models\DistributionRowsGroup;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\OpportunityForm;
+use App\Domain\Worldwide\Models\OpportunityFormSchema;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\SalesOrderTemplate;
+use App\Domain\Worldwide\Models\WorldwideCustomer;
+use App\Domain\Worldwide\Models\WorldwideDistribution;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideQuoteAsset;
+use App\Domain\Worldwide\Models\WorldwideQuoteAssetsGroup;
+use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
+use App\Foundation\Support\Date\Period;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -151,7 +151,7 @@ class MigrateMorphTypeActivityLogAddressablesContactablesDiscountsImagesModelHas
         'ac73c359-4beb-41b4-86de-4548e63c1244' => BaseWorldwideQuote::class,
         '41ada60c-2646-4579-b0fc-097f0bda4339' => Contract::class,
         '9984e3af-4a95-4095-a65b-bdb251ae55ba' => ContractFieldColumn::class,
-        '856c0b52-c33f-443a-b055-b1ed6833714c' => \App\Models\Quote\Discount::class,
+        '856c0b52-c33f-443a-b055-b1ed6833714c' => \App\Domain\Rescue\Models\Discount::class,
         'ace97f60-b7b1-4a9e-8fbb-aa0960ec5044' => Discount::class,
         '0cf9a1aa-13a8-4c20-a187-51c45552c848' => MultiYearDiscount::class,
         '00dd8cd2-fea4-48c3-836f-d14429e4113e' => PrePayDiscount::class,
@@ -219,7 +219,7 @@ class MigrateMorphTypeActivityLogAddressablesContactablesDiscountsImagesModelHas
         'tasks' => ['taskable_type'],
         'quote_totals' => ['quote_type'],
         'worldwide_distributions' => ['worldwide_quote_type'],
-        'worldwide_quote_assets' => ['worldwide_quote_type']
+        'worldwide_quote_assets' => ['worldwide_quote_type'],
     ];
 
     /**
@@ -232,20 +232,15 @@ class MigrateMorphTypeActivityLogAddressablesContactablesDiscountsImagesModelHas
         DB::beginTransaction();
 
         foreach ($this->tableMorphColumn as $table => $morphColumns) {
-
             foreach ($this->morphMap as $morphType => $class) {
-
                 foreach ($morphColumns as $column) {
-
                     DB::table($table)
                         ->where($column, $class)
                         ->update([
                             $column => $morphType,
                         ]);
-
                 }
             }
-
         }
 
         DB::commit();
@@ -261,20 +256,15 @@ class MigrateMorphTypeActivityLogAddressablesContactablesDiscountsImagesModelHas
         DB::beginTransaction();
 
         foreach ($this->tableMorphColumn as $table => $morphColumns) {
-
             foreach ($this->morphMap as $morphType => $class) {
-
                 foreach ($morphColumns as $column) {
-
                     DB::table($table)
                         ->where($column, $morphType)
                         ->update([
                             $column => $class,
                         ]);
-
                 }
             }
-
         }
 
         DB::commit();

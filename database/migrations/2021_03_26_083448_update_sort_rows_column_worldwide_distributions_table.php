@@ -18,7 +18,7 @@ class UpdateSortRowsColumnWorldwideDistributionsTable extends Migration
         });
 
         Schema::table('worldwide_distributions', function (Blueprint $table) {
-            $table->enum('sort_rows_column', ['product_no','service_sku','description','serial_no','date_from','date_to','qty','price','pricing_document','system_handle','service_level_description','machine_address'])
+            $table->enum('sort_rows_column', ['product_no', 'service_sku', 'description', 'serial_no', 'date_from', 'date_to', 'qty', 'price', 'pricing_document', 'system_handle', 'service_level_description', 'machine_address'])
                 ->nullable()
                 ->after('use_groups')
                 ->comment('Column name on the mapped_rows table for sorting');
@@ -37,7 +37,7 @@ class UpdateSortRowsColumnWorldwideDistributionsTable extends Migration
         });
 
         Schema::table('worldwide_distributions', function (Blueprint $table) {
-            $table->enum('sort_rows_column', ['product_no','description','serial_no','date_from','date_to','qty','price','pricing_document','system_handle','service_level_description'])
+            $table->enum('sort_rows_column', ['product_no', 'description', 'serial_no', 'date_from', 'date_to', 'qty', 'price', 'pricing_document', 'system_handle', 'service_level_description'])
                 ->nullable()
                 ->after('use_groups')
                 ->comment('Column name on the mapped_rows table for sorting');

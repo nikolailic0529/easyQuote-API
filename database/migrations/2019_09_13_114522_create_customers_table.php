@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateCustomersTable extends Migration
 {
@@ -26,7 +26,7 @@ class CreateCustomersTable extends Migration
             $table->string('payment_terms')->nullable();
             $table->string('invoicing_terms')->nullable();
             $table->json('service_levels')->nullable();
-            
+
             $table->timestamps();
             $table->softDeletes()->index();
             $table->timestamp('submitted_at')->index()->nullable();

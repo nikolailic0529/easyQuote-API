@@ -24,10 +24,10 @@ class UpdateQuoteTemplatesTable extends Migration
         });
 
         DB::transaction(function () {
-            DB::update("UPDATE `quote_templates` SET `type` = CASE WHEN `type` = ? THEN ? ELSE ? END", ['contract', QT_TYPE_CONTRACT, QT_TYPE_QUOTE]);
+            DB::update('UPDATE `quote_templates` SET `type` = CASE WHEN `type` = ? THEN ? ELSE ? END', ['contract', QT_TYPE_CONTRACT, QT_TYPE_QUOTE]);
         });
 
-        /**
+        /*
          * @todo Unknown database type json requested Doctrine\DBAL\Platforms\MysqlPlatform may not support it.
          */
         DB::statement("ALTER TABLE `quote_templates` MODIFY `type` smallint(5) unsigned NOT NULL DEFAULT '0'");
@@ -40,6 +40,5 @@ class UpdateQuoteTemplatesTable extends Migration
      */
     public function down()
     {
-        // 
     }
 }

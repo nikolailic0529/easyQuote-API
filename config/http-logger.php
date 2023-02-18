@@ -1,18 +1,17 @@
 <?php
 
 return [
-
     /*
      * The log profile which determines whether a request should be logged.
      * It should implement `LogProfile`.
      */
-    'log_profile' => \App\Log\Http\LogNonGetRequests::class,
+    'log_profile' => \App\Foundation\Log\HttpLogger\LogNonGetRequests::class,
 
     /*
      * The log writer used to write the request to a log.
      * It should implement `LogWriter`.
      */
-    'log_writer' => \App\Log\Http\HttpLogWriter::class,
+    'log_writer' => \App\Foundation\Log\HttpLogger\HttpLogWriter::class,
 
     /*
      * Filter out body fields which will never be logged.
@@ -23,7 +22,6 @@ return [
     ],
 
     'enforce_request_log' => [
-        'api/s4/*'
+        'api/s4/*',
     ],
-
 ];

@@ -2,15 +2,15 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Role;
+use App\Domain\Authorization\Models\Role;
 use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 $factory->define(Role::class, function (Faker $faker) {
     return [
-        'name'       => Str::random(40),
-        'guard_name' => 'web'
+        'name' => Str::random(40),
+        'guard_name' => 'web',
     ];
 });
 
@@ -27,7 +27,7 @@ $factory->state(Role::class, 'privileges', function () {
         return [
             'module' => $module,
             'privilege' => Arr::random($modulePrivileges[$module]),
-            'submodules' => $sub
+            'submodules' => $sub,
         ];
     })->toArray();
 

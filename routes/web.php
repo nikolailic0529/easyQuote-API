@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Controllers\API\V1\HpeContractController;
-use App\Http\Controllers\API\V1\Quotes\QuoteSubmittedController;
-use App\Http\Controllers\API\V1\WorldwideQuotes\WorldwideQuoteController;
+use App\Domain\HpeContract\Controllers\V1\HpeContractController;
+use App\Domain\Rescue\Controllers\V1\QuoteSubmittedController;
+use App\Domain\Worldwide\Controllers\V1\Quote\WorldwideQuoteController;
 use Illuminate\Support\Facades\Route;
 
 /*

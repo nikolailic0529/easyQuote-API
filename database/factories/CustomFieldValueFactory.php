@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\System\CustomFieldValue;
+use App\Domain\CustomField\Models\CustomFieldValue;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -17,4 +17,3 @@ class CustomFieldValueFactory extends Factory
         ];
     }
 }
-

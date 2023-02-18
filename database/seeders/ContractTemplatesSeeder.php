@@ -2,19 +2,19 @@
 
 namespace Database\Seeders;
 
-use App\Facades\Setting;
-use App\Models\{Company, Data\Country, Data\Currency, Vendor};
-use App\Models\Template\ContractTemplate;
-use DB;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\Rescue\Models\ContractTemplate;
+use App\Domain\Settings\Facades\Setting;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
 
 class ContractTemplatesSeeder extends Seeder
 {
-    /** @var string */
     protected string $design;
 
-    /** @var Currency */
     protected Currency $currency;
 
     /**
@@ -28,9 +28,9 @@ class ContractTemplatesSeeder extends Seeder
         $this->design = file_get_contents(database_path('seeders/models/contract_template_design.json'));
         $this->currency = Currency::query()->whereCode(Setting::get('base_currency'))->first();
 
-        DB::transaction(
-            fn() => collect($templates)->each(
-                fn($attributes) => $this->createCompanyTemplates($attributes)
+        \DB::transaction(
+            fn () => collect($templates)->each(
+                fn ($attributes) => $this->createCompanyTemplates($attributes)
             )
         );
     }
@@ -41,7 +41,7 @@ class ContractTemplatesSeeder extends Seeder
         $vendors = Vendor::query()->whereIn('short_code', $attributes['vendors'])->get();
         $countries = Country::query()->whereIn('iso_3166_2', $attributes['countries'])->get();
 
-        $vendors->each(fn($vendor) => $this->createVendorTemplates($company, $vendor, $countries, $attributes));
+        $vendors->each(fn ($vendor) => $this->createVendorTemplates($company, $vendor, $countries, $attributes));
     }
 
     protected function createVendorTemplates(Company $company, Vendor $vendor, Collection $countries, array $attributes): void
@@ -59,7 +59,7 @@ class ContractTemplatesSeeder extends Seeder
             'form_data' => $formData,
             'company_id' => $company->getKey(),
             'vendor_id' => $vendor->getKey(),
-            'currency_id' => $this->currency->getKey()
+            'currency_id' => $this->currency->getKey(),
         ]);
 
         $template->countries()->sync($countries);
@@ -67,7 +67,7 @@ class ContractTemplatesSeeder extends Seeder
 
     protected function parseDesign(string $design, array $attributes): array
     {
-        $design = preg_replace_callback('/{{(.*)}}/m', fn($item) => data_get($attributes, last($item)), $design);
+        $design = preg_replace_callback('/{{(.*)}}/m', fn ($item) => data_get($attributes, last($item)), $design);
 
         return json_decode($design, true);
     }

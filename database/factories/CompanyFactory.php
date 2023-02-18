@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Company;
-use App\Models\SalesUnit;
+use App\Domain\Company\Models\Company;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CompanyFactory extends Factory
@@ -25,4 +25,3 @@ class CompanyFactory extends Factory
         ];
     }
 }
-

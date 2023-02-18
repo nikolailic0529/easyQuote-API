@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     'enabled' => env('GOOGLE_MAPS_GEOCODING_ENABLED', true),
 
     /*
@@ -37,5 +36,4 @@ return [
      * More info: https://developers.google.com/maps/documentation/javascript/geocoding#GeocodingRequests
      */
     'country' => '',
-
 ];

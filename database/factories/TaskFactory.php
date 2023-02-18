@@ -2,11 +2,11 @@
 
 namespace Database\Factories;
 
-use App\Enum\Priority;
-use App\Enum\TaskTypeEnum;
-use App\Models\SalesUnit;
-use App\Models\Task\Task;
-use App\Models\User;
+use App\Domain\Priority\Enum\Priority;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Task\Enum\TaskTypeEnum;
+use App\Domain\Task\Models\Task;
+use App\Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TaskFactory extends Factory
@@ -40,9 +40,8 @@ class TaskFactory extends Factory
 
     public function expired(): TaskFactory
     {
-        return $this->state(fn(): array => [
+        return $this->state(fn (): array => [
             'expiry_date' => now()->subDay(),
         ]);
     }
 }
-

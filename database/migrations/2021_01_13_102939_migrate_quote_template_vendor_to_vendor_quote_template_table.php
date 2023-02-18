@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class MigrateQuoteTemplateVendorToVendorQuoteTemplateTable extends Migration
 {
@@ -19,11 +17,10 @@ class MigrateQuoteTemplateVendorToVendorQuoteTemplateTable extends Migration
             ->get();
 
         $pivotRecords = $pivotRecords->map(function (object $pivot) {
-            return (array)$pivot;
+            return (array) $pivot;
         });
 
         DB::transaction(function () use ($pivotRecords) {
-
             DB::table('quote_template_vendor')
                 ->insert(
                     $pivotRecords->all()
@@ -38,6 +35,5 @@ class MigrateQuoteTemplateVendorToVendorQuoteTemplateTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

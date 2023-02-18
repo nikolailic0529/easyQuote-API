@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
-use App\Mail\MailLimitExceededMail;
-use App\Services\Mail\Exceptions\MailRateLimitException;
-use App\Services\Mail\MailRateLimiter;
+use App\Foundation\Mail\Exceptions\MailRateLimitException;
+use App\Foundation\Mail\Mail\MailLimitExceededMail;
+use App\Foundation\Mail\Services\MailRateLimiter;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Event;
@@ -19,7 +19,7 @@ class MailLimitTest extends TestCase
     /**
      * Test rate limiting of mail sent.
      */
-    public function test_it_doesnt_allow_send_emails_over_the_set_limit(): void
+    public function testItDoesntAllowSendEmailsOverTheSetLimit(): void
     {
         $this->app[MailRateLimiter::class]->clear();
 
@@ -33,8 +33,8 @@ class MailLimitTest extends TestCase
 
         $this->assertSame(5, setting('mail_limit'));
 
-        for ($i = 0; $i < 4; $i++) {
-            Mail::send((new TestMailable()));
+        for ($i = 0; $i < 4; ++$i) {
+            Mail::send(new TestMailable());
         }
 
         Event::assertDispatchedTimes(MessageSent::class, 4);
@@ -42,7 +42,7 @@ class MailLimitTest extends TestCase
         $exception = null;
 
         try {
-            Mail::send((new TestMailable()));
+            Mail::send(new TestMailable());
         } catch (\Throwable $e) {
             $exception = $e;
         }

@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Enum\ReminderStatus;
-use App\Models\Task\Task;
-use App\Models\Task\TaskReminder;
+use App\Domain\Reminder\Enum\ReminderStatus;
+use App\Domain\Task\Models\Task;
+use App\Domain\Task\Models\TaskReminder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TaskReminderFactory extends Factory
@@ -40,4 +40,3 @@ class TaskReminderFactory extends Factory
         return $this->for(auth()->user());
     }
 }
-

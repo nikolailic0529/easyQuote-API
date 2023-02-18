@@ -38,13 +38,13 @@ class CustomFieldSeeder extends Seeder
                     'is_default' => $fieldValue['is_default'],
                     'entity_order' => $key,
                     'created_at' => now()->toDateTimeString(),
-                    'updated_at' => now()->toDateTimeString()
+                    'updated_at' => now()->toDateTimeString(),
                 ];
 
                 foreach ($fieldValue['allowed_by'] ?? [] as $allowedById) {
                     $allowedBySeeds[] = [
                         'field_value_id' => $fieldValue['id'],
-                        'allowed_by_id' => $allowedById
+                        'allowed_by_id' => $allowedById,
                     ];
                 }
             }

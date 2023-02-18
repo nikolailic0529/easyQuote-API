@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\OpportunitySupplier;
+use App\Domain\Worldwide\Models\OpportunitySupplier;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class OpportunitySupplierFactory extends Factory
@@ -19,4 +19,3 @@ class OpportunitySupplierFactory extends Factory
         ];
     }
 }
-

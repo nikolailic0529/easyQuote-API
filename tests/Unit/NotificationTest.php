@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Models\System\Notification;
+use App\Domain\Notification\Models\Notification;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Tests\Unit\Traits\{AssertsListing};
@@ -12,7 +12,8 @@ use Tests\Unit\Traits\{AssertsListing};
  */
 class NotificationTest extends TestCase
 {
-    use AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     /**
      * Test Notification listing.
@@ -29,10 +30,10 @@ class NotificationTest extends TestCase
 
         $query = http_build_query([
             'order_by_created_at' => 'asc',
-            'order_by_priority' => 'asc'
+            'order_by_priority' => 'asc',
         ]);
 
-        $response = $this->getJson(url('api/companies?' . $query));
+        $response = $this->getJson(url('api/companies?'.$query));
 
         $this->assertListing($response);
     }
@@ -90,7 +91,7 @@ class NotificationTest extends TestCase
                 'data' => [],
                 'total' => 0,
                 'read' => 0,
-                'unread' => 0
+                'unread' => 0,
             ]);
     }
 

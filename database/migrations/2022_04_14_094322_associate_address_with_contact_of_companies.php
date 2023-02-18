@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -56,7 +56,6 @@ return new class extends Migration {
                     ->update(['contact_id' => $address->contact_id]);
             }
         });
-
     }
 
     /**
@@ -66,6 +65,5 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 };

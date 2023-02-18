@@ -14,6 +14,6 @@ return [
         'users.profile' => 'users/profile',
         'users.notifications' => 'users/notification',
         'opportunities.update' => 'worldwide/update-opportunity/{opportunity}/list',
-        'companies.update' => 'company/modify/{company}'
+        'companies.update' => 'company/modify/{company}',
     ],
 ];

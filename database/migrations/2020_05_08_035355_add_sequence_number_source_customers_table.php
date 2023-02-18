@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Customer\Customer;
+use App\Domain\Rescue\Models\Customer;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -20,12 +20,10 @@ class AddSequenceNumberSourceCustomersTable extends Migration
             $table->string('source')->index()->after('sequence_number')->comment('Determines whether customer belongs to the specific source');
         });
 
-        DB::transaction(fn () =>
-            DB::table('customers')->update(['source' => Customer::S4_SOURCE])
+        DB::transaction(fn () => DB::table('customers')->update(['source' => Customer::S4_SOURCE])
         );
 
-        DB::transaction(fn () =>
-            DB::table('quotes')->update(['cached_relations->customer->source' => Customer::S4_SOURCE])    
+        DB::transaction(fn () => DB::table('quotes')->update(['cached_relations->customer->source' => Customer::S4_SOURCE])
         );
     }
 

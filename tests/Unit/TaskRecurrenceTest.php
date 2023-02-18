@@ -2,18 +2,18 @@
 
 namespace Tests\Unit;
 
-use App\Enum\DateDayEnum;
-use App\Enum\DateMonthEnum;
-use App\Enum\DateWeekEnum;
-use App\Enum\DayOfWeekEnum;
-use App\Enum\RecurrenceTypeEnum;
-use App\Models\DateDay;
-use App\Models\DateMonth;
-use App\Models\DateWeek;
-use App\Models\RecurrenceType;
-use App\Models\Task\Task;
-use App\Models\Task\TaskRecurrence;
-use App\Services\Task\ProcessTaskRecurrenceService;
+use App\Domain\Date\Enum\DateDayEnum;
+use App\Domain\Date\Enum\DateMonthEnum;
+use App\Domain\Date\Enum\DateWeekEnum;
+use App\Domain\Date\Enum\DayOfWeekEnum;
+use App\Domain\Date\Models\DateDay;
+use App\Domain\Date\Models\DateMonth;
+use App\Domain\Date\Models\DateWeek;
+use App\Domain\Recurrence\Enum\RecurrenceTypeEnum;
+use App\Domain\Recurrence\Models\RecurrenceType;
+use App\Domain\Task\Models\Task;
+use App\Domain\Task\Models\TaskRecurrence;
+use App\Domain\Task\Services\ProcessTaskRecurrenceService;
 use Carbon\Carbon;
 use Tests\TestCase;
 
@@ -21,8 +21,6 @@ class TaskRecurrenceTest extends TestCase
 {
     /**
      * Test it checks whether the recurrence with Daily type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherDailyRecurrenceCanBePerformed(): void
     {
@@ -31,7 +29,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -47,8 +45,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with AfterNDays type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherAfterNDaysRecurrenceCanBePerformed(): void
     {
@@ -57,7 +53,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -76,8 +72,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with Weekly type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherWeeklyRecurrenceCanBePerformed(): void
     {
@@ -86,7 +80,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -106,8 +100,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with AfterNWeeks type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherAfterNWeeksRecurrenceCanBePerformed(): void
     {
@@ -116,7 +108,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -136,8 +128,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with MonthlyRelative type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherMonthlyRelativeRecurrenceCanBePerformed(): void
     {
@@ -146,7 +136,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -167,8 +157,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with MonthlyAbsolute type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherMonthlyAbsoluteRecurrenceCanBePerformed(): void
     {
@@ -177,7 +165,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -200,8 +188,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with AfterNMonths type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherAfterNMonthsRecurrenceCanBePerformed(): void
     {
@@ -210,7 +196,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -237,8 +223,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with YearlyRelative type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherYearlyRelativeRecurrenceCanBePerformed(): void
     {
@@ -247,7 +231,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -274,8 +258,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with YearlyAbsolute type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherYearlyAbsoluteRecurrenceCanBePerformed(): void
     {
@@ -284,7 +266,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;
@@ -339,8 +321,6 @@ class TaskRecurrenceTest extends TestCase
 
     /**
      * Test it checks whether the recurrence with AfterNYears type can be performed.
-     *
-     * @return void
      */
     public function testItChecksWhetherAfterNYearsRecurrenceCanBePerformed(): void
     {
@@ -349,7 +329,7 @@ class TaskRecurrenceTest extends TestCase
         /** @var ProcessTaskRecurrenceService $service */
         $service = $this->app->make(ProcessTaskRecurrenceService::class);
 
-        $recurrence = new TaskRecurrence;
+        $recurrence = new TaskRecurrence();
         $recurrence->start_date = now();
         $recurrence->end_date = null;
         $recurrence->occurrences_count = -1;

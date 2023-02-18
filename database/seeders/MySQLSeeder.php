@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class MySQLSeeder extends Seeder
 {
@@ -99,7 +98,7 @@ class MySQLSeeder extends Seeder
                         RETURN 0;
                     END IF;
                 END
-            "
+            ",
         ];
     }
 }

@@ -29,7 +29,7 @@ class AddPurchaseOrderNoVatNumberWorldwideDistributionsTable extends Migration
         Schema::table('worldwide_distributions', function (Blueprint $table) {
             $table->dropColumn([
                 'purchase_order_number',
-                'vat_number'
+                'vat_number',
             ]);
         });
     }

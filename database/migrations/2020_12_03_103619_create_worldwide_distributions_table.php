@@ -24,13 +24,13 @@ class CreateWorldwideDistributionsTable extends Migration
             $table->foreignUuid('vendor_id')->nullable()->comment('Foreign key on vendors table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('country_id')->nullable()->comment('Foreign key on countries table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('quote_template_id')->nullable()->comment('Foreign key on quote_templates table')->constrained()->nullOnDelete()->cascadeOnUpdate();
-            
+
             $table->foreignUuid('country_margin_id')->nullable()->comment('Foreign key on country_margins table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('distribution_currency_id')->nullable()->comment('Foreign key on currencies table')->constrained('currencies')->nullOnDelete()->cascadeOnUpdate();
 
             $table->json('group_description')->nullable()->comment('Quote group description');
             $table->json('sort_group_description')->nullable()->comment('Groups sorting columns');
-            
+
             $table->decimal('custom_discount')->nullable()->comment('Custom discount value');
 
             $table->decimal('buy_price', 15)->nullable()->comment('Quote Buy price');

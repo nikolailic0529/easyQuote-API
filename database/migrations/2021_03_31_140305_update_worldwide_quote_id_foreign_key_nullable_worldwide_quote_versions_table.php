@@ -17,7 +17,7 @@ class UpdateWorldwideQuoteIdForeignKeyNullableWorldwideQuoteVersionsTable extend
             $table->dropForeign(['worldwide_quote_id']);
         });
 
-        Schema::table('worldwide_quote_versions', function (Blueprint  $table) {
+        Schema::table('worldwide_quote_versions', function (Blueprint $table) {
             $table->uuid('worldwide_quote_id')->nullable(true)->change();
 
             $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();
@@ -35,7 +35,7 @@ class UpdateWorldwideQuoteIdForeignKeyNullableWorldwideQuoteVersionsTable extend
             $table->dropForeign(['worldwide_quote_id']);
         });
 
-        Schema::table('worldwide_quote_versions', function (Blueprint  $table) {
+        Schema::table('worldwide_quote_versions', function (Blueprint $table) {
             $table->uuid('worldwide_quote_id')->nullable(true)->change();
 
             $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();

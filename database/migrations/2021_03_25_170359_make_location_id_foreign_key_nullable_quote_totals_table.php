@@ -34,7 +34,7 @@ class MakeLocationIdForeignKeyNullableQuoteTotalsTable extends Migration
             $table->dropColumn('location_coordinates');
         });
 
-        Schema::table('quote_totals', function (Blueprint $table) use ($indexes) {
+        Schema::table('quote_totals', function (Blueprint $table) {
             $table->string('location_address', 500)->nullable(true)->change();
 
             $table->point('location_coordinates')->nullable()->after('location_address');

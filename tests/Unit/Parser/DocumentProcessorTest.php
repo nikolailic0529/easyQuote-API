@@ -2,12 +2,12 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Contracts\Services\ManagesDocumentProcessors;
-use App\Contracts\Services\ProcessesQuoteFile;
-use App\Services\DocumentProcessor\DocumentEngine\DeExcelPriceListProcessor;
-use App\Services\DocumentProcessor\DocumentEngine\DePdfRescuePriceListProcessor;
-use App\Services\DocumentProcessor\DocumentEngine\DePdfWorldwidePriceListProcessor;
-use App\Services\DocumentProcessor\DocumentEngine\DeWordRescuePriceListProcessor;
+use App\Domain\DocumentProcessing\Contracts\ManagesDocumentProcessors;
+use App\Domain\DocumentProcessing\Contracts\ProcessesQuoteFile;
+use App\Domain\DocumentProcessing\DocumentEngine\DeExcelPriceListProcessor;
+use App\Domain\DocumentProcessing\DocumentEngine\DePdfRescuePriceListProcessor;
+use App\Domain\DocumentProcessing\DocumentEngine\DePdfWorldwidePriceListProcessor;
+use App\Domain\DocumentProcessing\DocumentEngine\DeWordRescuePriceListProcessor;
 use Tests\TestCase;
 
 class DocumentProcessorTest extends TestCase
@@ -16,11 +16,12 @@ class DocumentProcessorTest extends TestCase
      * Test DocumentProcessor manager creates document engine processor for pdf rescue price list file.
      *
      * @return void
+     *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     public function testItCreatesDocumentEngineProcessorForPdfRescuePriceListFile()
     {
-        /** @var ManagesDocumentProcessors $documentProcessor */
+        /** @var \App\Domain\DocumentProcessing\Contracts\ManagesDocumentProcessors $documentProcessor */
         $documentProcessor = $this->app->make(ManagesDocumentProcessors::class);
 
         $this->app['config']['docprocessor.document_engine_enabled'] = true;
@@ -35,6 +36,7 @@ class DocumentProcessorTest extends TestCase
      * Test DocumentProcessor manager creates document engine processor for pdf worldwide price list file.
      *
      * @return void
+     *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     public function testItCreatesDocumentEngineProcessorForPdfWorldwidePriceListFile()

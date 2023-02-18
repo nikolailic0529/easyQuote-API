@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Models\Quote\WorldwideQuote;
+use App\Domain\Discount\Models\PromotionalDiscount;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class PromotionalDiscountTest extends TestCase
 {
     use DatabaseTransactions;
@@ -22,7 +25,7 @@ class PromotionalDiscountTest extends TestCase
 
         factory(PromotionalDiscount::class, 30)->create();
 
-        $this->getJson("api/discounts/promotions")
+        $this->getJson('api/discounts/promotions')
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -64,7 +67,7 @@ class PromotionalDiscountTest extends TestCase
 
         $attributes = factory(PromotionalDiscount::class)->raw();
 
-        $this->postJson("api/discounts/promotions", $attributes)
+        $this->postJson('api/discounts/promotions', $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -95,7 +98,7 @@ class PromotionalDiscountTest extends TestCase
 
         $attributes = factory(PromotionalDiscount::class)->raw();
 
-        $this->patchJson("api/discounts/promotions/".$discount->getKey(), $attributes)
+        $this->patchJson('api/discounts/promotions/'.$discount->getKey(), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -124,7 +127,7 @@ class PromotionalDiscountTest extends TestCase
 
         $discount = factory(PromotionalDiscount::class)->create();
 
-        $this->deleteJson("api/discounts/promotions/".$discount->getKey())
+        $this->deleteJson('api/discounts/promotions/'.$discount->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -143,20 +146,20 @@ class PromotionalDiscountTest extends TestCase
 
         $discount = factory(PromotionalDiscount::class)->create();
 
-        /** @var WorldwideQuote $quote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $quote->activeVersion->promotionalDiscount()->associate($discount)->save();
 
         $this->authenticateApi();
 
-        $response = $this->deleteJson("api/discounts/promotions/".$discount->getKey())
+        $response = $this->deleteJson('api/discounts/promotions/'.$discount->getKey())
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([
-                'message'
+                'message',
             ]);
 
         $this->assertStringStartsWith('You can not delete the promotional discount', $response->json('message'));

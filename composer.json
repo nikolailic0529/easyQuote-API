@@ -15,7 +15,6 @@
     "ext-sockets": "*",
     "ext-yaml": "*",
     "ext-zip": "*",
-    "archtechx/enums": "^0.3.0",
     "awobaz/compoships": "^2.1",
     "barryvdh/laravel-snappy": "^1.0.0",
     "box/spout": "^3.1",
@@ -41,6 +40,7 @@
     "laravel/framework": "^8.0",
     "laravel/horizon": "^5.10",
     "laravel/legacy-factories": "^1.1",
+    "laravel/octane": "^1.4",
     "laravel/passport": "^10.1",
     "laravel/telescope": "^4.5",
     "laravel/tinker": "^2.0",
@@ -64,6 +64,7 @@
     "spatie/once": "^3.1",
     "spatie/pdf-to-text": "^1.2",
     "spatie/valuestore": "^1.2",
+    "spiral/roadrunner": "^2.8.2",
     "staudenmeir/eloquent-has-many-deep": "^1.14",
     "staudenmeir/laravel-cte": "^1.0",
     "symfony/event-dispatcher": "^5.2",
@@ -110,7 +111,8 @@
     ],
     "files": [
       "bootstrap/constants.php",
-      "app/Foundation/String/functions.php"
+      "app/Foundation/Support/Str/functions.php",
+      "app/Foundation/Support/Collection/functions.php"
     ]
   },
   "autoload-dev": {

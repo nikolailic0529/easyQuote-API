@@ -28,6 +28,7 @@
 - create_ww_quotes
 - update_own_ww_quotes
 - delete_own_ww_quotes
+- change_ww_quotes_ownership
 - view_own_sales_orders
 - create_sales_orders
 - update_own_sales_orders
@@ -72,6 +73,7 @@
 - create_companies
 - update_companies
 - delete_companies
+- change_companies_ownership
 - view_vendors
 - create_vendors
 - update_vendors
@@ -89,6 +91,7 @@
 - create_assets
 - update_assets
 - delete_assets
+- change_assets_ownership
 - view_own_quotes
 - update_own_quotes
 - delete_own_quotes
@@ -157,6 +160,7 @@
 - create_opportunities
 - update_own_opportunities
 - delete_own_opportunities
+- change_opportunities_ownership
 - view_teams
 - create_teams
 - update_teams
@@ -173,8 +177,4 @@
 - create_renewals
 - update_renewals
 - delete_renewals
-- view_own_data_allocations
-- create_data_allocations
-- update_own_data_allocations
-- delete_own_data_allocations
 

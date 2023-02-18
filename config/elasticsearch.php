@@ -1,34 +1,32 @@
 <?php
 
-use App\Models\Address;
-use App\Models\Asset;
-use App\Models\Collaboration\Invitation;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Customer\WorldwideCustomer;
-use App\Models\Data\Country;
-use App\Models\HpeContract;
-use App\Models\Opportunity;
-use App\Models\OpportunityForm\OpportunityForm;
-use App\Models\Pipeline\Pipeline;
-use App\Models\Quote\Contract;
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Models\Quote\Discount\SND;
-use App\Models\Quote\Margin\CountryMargin;
-use App\Models\Quote\Quote;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\Role;
-use App\Models\SalesOrder;
-use App\Models\System\Activity;
-use App\Models\Team;
-use App\Models\Template\ContractTemplate;
-use App\Models\Template\HpeContractTemplate;
-use App\Models\Template\QuoteTemplate;
-use App\Models\User;
-use App\Models\Vendor;
+use App\Domain\Activity\Models\Activity;
+use App\Domain\Address\Models\Address;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Country\Models\Country;
+use App\Domain\Discount\Models\MultiYearDiscount;
+use App\Domain\Discount\Models\PrePayDiscount;
+use App\Domain\Discount\Models\PromotionalDiscount;
+use App\Domain\Discount\Models\SND;
+use App\Domain\HpeContract\Models\HpeContract;
+use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Invitation\Models\Invitation;
+use App\Domain\Margin\Models\CountryMargin;
+use App\Domain\Pipeline\Models\Pipeline;
+use App\Domain\Rescue\Models\Contract;
+use App\Domain\Rescue\Models\ContractTemplate;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\OpportunityForm;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 
 return [
     'reindex_models' => [
@@ -38,7 +36,6 @@ return [
         Contract::class,
         HpeContract::class,
         WorldwideQuote::class,
-        WorldwideCustomer::class,
         QuoteTemplate::class,
         ContractTemplate::class,
         HpeContractTemplate::class,

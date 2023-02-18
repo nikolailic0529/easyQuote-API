@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attachment;
-use App\Models\Quote\Quote;
+use App\Domain\Attachment\Models\Attachment;
+use App\Domain\Rescue\Models\Quote;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -18,7 +18,7 @@ class RescueQuoteAttachmentTest extends TestCase
      */
     public function testCanViewListOfAttachmentsOfQuote(): void
     {
-        /** @var Quote $quote */
+        /** @var \App\Domain\Rescue\Models\Quote $quote */
         $quote = factory(Quote::class)->create();
 
         $attachments = factory(Attachment::class, 2)->create();
@@ -49,9 +49,7 @@ class RescueQuoteAttachmentTest extends TestCase
         $response->assertJsonCount(2, 'data');
 
         foreach ($attachments as $attachment) {
-
             $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
-
         }
     }
 
@@ -60,7 +58,7 @@ class RescueQuoteAttachmentTest extends TestCase
      */
     public function testCanCreateNewAttachmentForQuote(): void
     {
-        /** @var Quote $quote */
+        /** @var \App\Domain\Rescue\Models\Quote $quote */
         $quote = factory(Quote::class)->create();
 
         $file = UploadedFile::fake()->create(Str::random(40).'.txt', 1_000);

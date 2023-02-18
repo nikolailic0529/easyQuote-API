@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -14,7 +14,6 @@ return new class extends Migration {
         $seeds = DB::table('company_notes')->get();
 
         DB::transaction(static function () use ($seeds): void {
-
             foreach ($seeds as $seed) {
                 DB::table('notes')
                     ->insertOrIgnore([
@@ -32,7 +31,6 @@ return new class extends Migration {
                         'model_type' => '5b2fe950-aa70-4c36-9b1f-1383daecbb18',
                         'model_id' => $seed->company_id,
                     ]);
-
             }
         });
     }
@@ -44,6 +42,5 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 };

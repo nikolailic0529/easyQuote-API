@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\OpportunityForm\OpportunityForm;
-use App\Models\Pipeline\Pipeline;
+use App\Domain\Pipeline\Models\Pipeline;
+use App\Domain\Worldwide\Models\OpportunityForm;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Str;
 use Tests\TestCase;
-use Webpatser\Uuid\Uuid;
 
 /**
  * @group opportunity
@@ -89,6 +89,7 @@ class OpportunityFormTest extends TestCase
                     'updated_at',
                 ],
                 'form_data',
+                'sidebar_0',
                 'is_system',
                 'created_at',
                 'updated_at',
@@ -248,7 +249,12 @@ class OpportunityFormTest extends TestCase
         $this->patchJson('api/opportunity-forms/'.$opportunityForm->getKey().'/schema', [
             'form_data' => $formData = [
                 [
-                    'id' => (string) Uuid::generate(4),
+                    'id' => Str::uuid()->toString(),
+                ],
+            ],
+            'sidebar_0' => $sidebar0 = [
+                [
+                    'id' => Str::uuid()->toString(),
                 ],
             ],
         ])
@@ -269,11 +275,13 @@ class OpportunityFormTest extends TestCase
                     'updated_at',
                 ],
                 'form_data',
+                'sidebar_0',
                 'created_at',
                 'updated_at',
             ])
             ->assertJsonFragment([
                 'form_data' => $formData,
+                'sidebar_0' => $sidebar0,
             ]);
     }
 

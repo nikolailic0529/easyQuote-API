@@ -2,15 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
-use App\Models\Data\Country;
-use App\Models\Role;
-use App\Models\Team;
-use App\Models\Template\ContractTemplate;
-use App\Models\Template\QuoteTemplate;
-use App\Models\User;
-use App\Models\Vendor;
-use App\Services\Auth\UserTeamGate;
+use App\Domain\Authentication\Services\UserTeamGate;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Rescue\Models\ContractTemplate;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Str};
 use Tests\TestCase;
@@ -31,7 +30,7 @@ class ContractTemplateTest extends TestCase
     {
         $this->authenticateApi();
 
-        $this->getJson("api/contract-templates")
+        $this->getJson('api/contract-templates')
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -135,7 +134,7 @@ class ContractTemplateTest extends TestCase
         $vendor = factory(Vendor::class)->create();
         $country = Country::query()->where('iso_3166_2', 'GB')->first();
 
-        /** @var ContractTemplate $contactTemplate */
+        /** @var \App\Domain\Rescue\Models\ContractTemplate $contactTemplate */
         $contactTemplate = factory(ContractTemplate::class)->create([
             'company_id' => $company->getKey(),
             'vendor_id' => $vendor->getKey(),
@@ -215,7 +214,7 @@ class ContractTemplateTest extends TestCase
             'name' => Str::random(40),
         ]);
 
-        $this->postJson(url("api/contract-templates"), $attributes)
+        $this->postJson(url('api/contract-templates'), $attributes)
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
@@ -247,7 +246,7 @@ class ContractTemplateTest extends TestCase
             'form_values_data' => ['TEMPLATE_SCHEMA'],
         ]);
 
-        $this->patchJson("api/contract-templates/".$template->getKey(), $attributes)
+        $this->patchJson('api/contract-templates/'.$template->getKey(), $attributes)
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -273,7 +272,7 @@ class ContractTemplateTest extends TestCase
 
         $template = factory(ContractTemplate::class)->create();
 
-        $response = $this->putJson("api/contract-templates/copy/".$template->getKey(), [])->assertOk();
+        $response = $this->putJson('api/contract-templates/copy/'.$template->getKey(), [])->assertOk();
 
         /**
          * Test that a newly copied Template existing.
@@ -303,7 +302,7 @@ class ContractTemplateTest extends TestCase
 
         $template = factory(ContractTemplate::class)->create();
 
-        $this->deleteJson("api/contract-templates/".$template->getKey(), [])
+        $this->deleteJson('api/contract-templates/'.$template->getKey(), [])
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -324,7 +323,7 @@ class ContractTemplateTest extends TestCase
         $template->activated_at = null;
         $template->save();
 
-        $this->putJson("api/contract-templates/activate/".$template->getKey(), [])
+        $this->putJson('api/contract-templates/activate/'.$template->getKey(), [])
             ->assertOk();
 
         $response = $this->getJson('api/contract-templates/'.$template->getKey())
@@ -349,7 +348,7 @@ class ContractTemplateTest extends TestCase
         $template->activated_at = now();
         $template->save();
 
-        $this->putJson("api/contract-templates/deactivate/".$template->getKey(), [])
+        $this->putJson('api/contract-templates/deactivate/'.$template->getKey(), [])
             ->assertOk();
 
         $response = $this->getJson('api/contract-templates/'.$template->getKey())
@@ -391,7 +390,7 @@ class ContractTemplateTest extends TestCase
 
         $template = factory(ContractTemplate::class)->create();
 
-        $this->getJson("api/contract-templates/designer/".$template->getKey())
+        $this->getJson('api/contract-templates/designer/'.$template->getKey())
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -407,7 +406,7 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanUpdateContractTemplateOwnedByLedTeamUser(): void
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions(['view_own_contract_templates', 'create_contract_templates', 'update_own_contract_templates']);
@@ -415,7 +414,7 @@ class ContractTemplateTest extends TestCase
         /** @var Team $team */
         $team = factory(Team::class)->create();
 
-        /** @var User $teamLeader */
+        /** @var \App\Domain\User\Models\User $teamLeader */
         $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
         $teamLeader->syncRoles($role);
 
@@ -423,8 +422,7 @@ class ContractTemplateTest extends TestCase
         $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
         $ledUser->syncRoles($role);
 
-
-        /** @var QuoteTemplate $template */
+        /** @var \App\Domain\Rescue\Models\QuoteTemplate $template */
         $template = factory(ContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
 
         $data = [
@@ -462,7 +460,7 @@ class ContractTemplateTest extends TestCase
      */
     public function testCanDeleteContractTemplateOwnedByLedTeamUser(): void
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions(['view_own_contract_templates', 'create_contract_templates', 'update_own_contract_templates', 'delete_own_contract_templates']);
@@ -474,12 +472,11 @@ class ContractTemplateTest extends TestCase
         $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
         $teamLeader->syncRoles($role);
 
-        /** @var User $ledUser */
+        /** @var \App\Domain\User\Models\User $ledUser */
         $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
         $ledUser->syncRoles($role);
 
-
-        /** @var ContractTemplate $template */
+        /** @var \App\Domain\Rescue\Models\ContractTemplate $template */
         $template = factory(ContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
 
         $this->authenticateApi($teamLeader);

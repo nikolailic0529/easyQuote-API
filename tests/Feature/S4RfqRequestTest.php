@@ -2,13 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\Quote\Quote;
-use App\Models\QuoteFile\QuoteFile;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\Rescue\Models\Quote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Response;
 use Tests\TestCase;
-use function factory;
-use function now;
 
 /**
  * @group build
@@ -21,23 +19,21 @@ class S4RfqRequestTest extends TestCase
 
     /**
      * Test an ability to request an existing active submitted quote by RFQ number.
-     *
-     * @return void
      */
     public function testCanRequestExistingActiveSubmittedQuote(): void
     {
         $this->authenticateAsClient();
 
-        $quoteFile = factory(QuoteFile::class)->create();
+        $quoteFile = \factory(QuoteFile::class)->create();
 
-        /** @var Quote $quote */
-        $quote = factory(Quote::class)->create([
-            'submitted_at' => now(),
-            'activated_at' => now(),
-            'distributor_file_id' => $quoteFile->getKey()
+        /** @var \App\Domain\Rescue\Models\Quote $quote */
+        $quote = \factory(Quote::class)->create([
+            'submitted_at' => \now(),
+            'activated_at' => \now(),
+            'distributor_file_id' => $quoteFile->getKey(),
         ]);
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
+        $this->getJson('/api/s4/quotes/'.$quote->customer->rfq)
             ->assertOk()
             ->assertJsonStructure([
                 'price_list_file',
@@ -46,8 +42,8 @@ class S4RfqRequestTest extends TestCase
                     'first_page',
                     'data_pages',
                     'last_page',
-                    'payment_schedule'
-                ]
+                    'payment_schedule',
+                ],
             ]);
     }
 
@@ -59,76 +55,70 @@ class S4RfqRequestTest extends TestCase
         $this->authenticateAsClient();
 
         /** @var Quote $quote */
-        $quote = factory(Quote::class)->create([
-            'submitted_at' => now(),
-            'activated_at' => now(),
+        $quote = \factory(Quote::class)->create([
+            'submitted_at' => \now(),
+            'activated_at' => \now(),
         ]);
 
         $quote->delete();
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
+        $this->getJson('/api/s4/quotes/'.$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     /**
      * Test an ability to request an existing active drafted quote by RFQ number.
-     *
-     * @return void
      */
     public function testCanNotRequestExistingActiveDraftedQuote(): void
     {
         $this->authenticateAsClient();
 
         /** @var Quote $quote */
-        $quote = factory(Quote::class)->create([
+        $quote = \factory(Quote::class)->create([
             'submitted_at' => null,
-            'activated_at' => now(),
+            'activated_at' => \now(),
         ]);
 
         $quote->delete();
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
+        $this->getJson('/api/s4/quotes/'.$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     /**
      * Test an ability to request an existing inactive drafted quote by RFQ number.
-     *
-     * @return void
      */
     public function testCanNotRequestExistingInactiveDraftedQuote(): void
     {
         $this->authenticateAsClient();
 
         /** @var Quote $quote */
-        $quote = factory(Quote::class)->create([
+        $quote = \factory(Quote::class)->create([
             'submitted_at' => null,
             'activated_at' => null,
         ]);
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
+        $this->getJson('/api/s4/quotes/'.$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     /**
      * Test an ability to request an existing inactive submitted quote by RFQ number.
-     *
-     * @return void
      */
     public function testCanNotRequestExistingInactiveSubmittedQuote(): void
     {
         $this->authenticateAsClient();
 
         /** @var Quote $quote */
-        $quote = factory(Quote::class)->create([
-            'submitted_at' => now(),
+        $quote = \factory(Quote::class)->create([
+            'submitted_at' => \now(),
             'activated_at' => null,
         ]);
 
         $quote->activated_at = null;
         $quote->save();
 
-        $this->getJson("/api/s4/quotes/".$quote->customer->rfq)
+        $this->getJson('/api/s4/quotes/'.$quote->customer->rfq)
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
@@ -141,13 +131,13 @@ class S4RfqRequestTest extends TestCase
     {
         $this->authenticateAsClient();
 
-        $quoteFile = factory(QuoteFile::class)->create();
+        $quoteFile = \factory(QuoteFile::class)->create();
 
         /** @var Quote $quote */
-        $quote = factory(Quote::class)->create([
-            'submitted_at' => now(),
-            'activated_at' => now(),
-            'distributor_file_id' => $quoteFile->getKey()
+        $quote = \factory(Quote::class)->create([
+            'submitted_at' => \now(),
+            'activated_at' => \now(),
+            'distributor_file_id' => $quoteFile->getKey(),
         ]);
 
         $this->get("/api/s4/quotes/{$quote->customer->rfq}/pdf")

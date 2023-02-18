@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use App\Models\User;
+use App\Domain\User\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Query\Builder;
@@ -26,33 +26,29 @@ abstract class TestCase extends BaseTestCase
      * Authenticate as User on API guard.
      * Disable Activity Middleware.
      *
-     * @param  Authenticatable|null $user
      * @return $this
      */
     protected function authenticateApi(?Authenticatable $user = null): static
     {
-        return tap($this, function () use ($user) {
-            $user ??= User::factory()->create();
+        $user ??= User::factory()->create();
 
-            $this->withoutMiddleware(\App\Http\Middleware\PerformUserActivity::class);
+        $this->withoutMiddleware(\App\Domain\User\Middleware\PerformUserActivity::class);
 
-            $this->actingAs($user, 'api');
+        $this->actingAs($user, 'api');
 
-            return $this;
-        });
+        return $this;
     }
 
     protected function authenticateAsClient(): static
     {
         return tap($this, function () {
-
             /** @var ClientRepository $clientRepository */
             $clientRepository = $this->app[ClientRepository::class];
 
             $appName = $this->app['config']['app.name'];
             $clientName = "$appName::test_client";
 
-            /** @var Client $client */
+            /* @var Client $client */
 
             try {
                 $client = Passport::client()->query()->where('name', $clientName)->sole();
@@ -64,7 +60,7 @@ abstract class TestCase extends BaseTestCase
                 'client_id' => $client->getKey(),
                 'client_secret' => $client->secret,
                 'grant_type' => 'client_credentials',
-                'scope' => '*'
+                'scope' => '*',
             ]);
 
             $this->withHeader('Authorization', "Bearer {$response->json('access_token')}");
@@ -80,10 +76,6 @@ abstract class TestCase extends BaseTestCase
 
     /**
      * Assert that the given associative array has equal values from the second one.
-     *
-     * @param array $assocArray
-     * @param array $assocValues
-     * @return void
      */
     protected function assertArrayHasEqualValues(array $assocArray, array $assocValues): void
     {

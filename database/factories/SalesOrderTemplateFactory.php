@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
-use App\Models\Company;
-use App\Models\Template\SalesOrderTemplate;
-use App\Models\Template\TemplateSchema;
-use App\Models\Vendor;
+use App\Domain\Company\Models\Company;
+use App\Domain\Template\Models\TemplateSchema;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\SalesOrderTemplate;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class SalesOrderTemplateFactory extends Factory
@@ -17,7 +17,7 @@ class SalesOrderTemplateFactory extends Factory
         $templateSchema = factory(TemplateSchema::class)->create([
             'data_headers' => array_map(function (array $header) {
                 return $header['value'];
-            }, __('template.sales_order_data_headers'))
+            }, __('template.sales_order_data_headers')),
         ]);
 
         return [
@@ -30,4 +30,3 @@ class SalesOrderTemplateFactory extends Factory
         ];
     }
 }
-

@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class DeleteQuoteVersionsQuotesTable extends Migration
 {
@@ -30,7 +28,6 @@ class DeleteQuoteVersionsQuotesTable extends Migration
             throw $e;
         }
 
-
         DB::commit();
     }
 
@@ -41,6 +38,5 @@ class DeleteQuoteVersionsQuotesTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

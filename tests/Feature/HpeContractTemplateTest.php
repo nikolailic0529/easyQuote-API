@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Data\Country;
-use App\Models\Role;
-use App\Models\Team;
-use App\Models\Template\HpeContractTemplate;
-use App\Models\User;
-use App\Services\Auth\UserTeamGate;
+use App\Domain\Authentication\Services\UserTeamGate;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Country\Models\Country;
+use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -18,7 +18,8 @@ use Tests\Unit\Traits\AssertsListing;
  */
 class HpeContractTemplateTest extends TestCase
 {
-    use AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     protected static array $assertableAttributes = ['id', 'name', 'company_id', 'vendor_id', 'currency_id', 'form_data', 'data_headers', 'countries'];
 
@@ -31,7 +32,7 @@ class HpeContractTemplateTest extends TestCase
     {
         $this->authenticateApi();
 
-        $this->getJson(url("api/hpe-contract-templates"))->assertOk()
+        $this->getJson(url('api/hpe-contract-templates'))->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
@@ -221,10 +222,9 @@ class HpeContractTemplateTest extends TestCase
         $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
         $teamLeader->syncRoles($role);
 
-        /** @var User $ledUser */
+        /** @var \App\Domain\User\Models\User $ledUser */
         $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
         $ledUser->syncRoles($role);
-
 
         /** @var HpeContractTemplate $template */
         $template = factory(HpeContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
@@ -282,8 +282,7 @@ class HpeContractTemplateTest extends TestCase
         $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
         $ledUser->syncRoles($role);
 
-
-        /** @var HpeContractTemplate $template */
+        /** @var \App\Domain\HpeContract\Models\HpeContractTemplate $template */
         $template = factory(HpeContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
 
         $this->authenticateApi($teamLeader);

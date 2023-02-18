@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Appointment\Appointment;
-use App\Models\Appointment\AppointmentReminder;
+use App\Domain\Appointment\Models\Appointment;
+use App\Domain\Appointment\Models\AppointmentReminder;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class AppointmentReminderFactory extends Factory
@@ -30,8 +30,7 @@ class AppointmentReminderFactory extends Factory
                 14 * 24 * 60 * 60, // 2 weeks before
             ]),
             'snooze_date' => null,
-            'status' => \App\Enum\ReminderStatus::Scheduled,
+            'status' => \App\Domain\Reminder\Enum\ReminderStatus::Scheduled,
         ];
     }
 }
-

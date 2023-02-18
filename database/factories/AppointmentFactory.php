@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Enum\AppointmentTypeEnum;
-use App\Models\Appointment\Appointment;
-use App\Models\SalesUnit;
+use App\Domain\Appointment\Enum\AppointmentTypeEnum;
+use App\Domain\Appointment\Models\Appointment;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -20,8 +20,8 @@ class AppointmentFactory extends Factory
             'subject' => $this->faker->text(100),
             'description' => $this->faker->realText(),
             'location' => $this->faker->city(),
-            'start_date' => $startDate = $this->faker->dateTimeBetween("+1d", "+3days"),
-            'end_date' => $this->faker->dateTimeBetween(Carbon::instance($startDate)->addDay(), "+10days"),
+            'start_date' => $startDate = $this->faker->dateTimeBetween('+1d', '+3days'),
+            'end_date' => $this->faker->dateTimeBetween(Carbon::instance($startDate)->addDay(), '+10days'),
         ];
     }
 }

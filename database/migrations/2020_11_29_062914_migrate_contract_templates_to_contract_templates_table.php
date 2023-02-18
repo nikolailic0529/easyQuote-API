@@ -1,10 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class MigrateContractTemplatesToContractTemplatesTable extends Migration
 {
@@ -18,7 +16,7 @@ class MigrateContractTemplatesToContractTemplatesTable extends Migration
         DB::beginTransaction();
 
         try {
-            /**
+            /*
              * Migrate quote_templates with type = 2 to contract_templates table.
              */
             DB::table('quote_templates')
@@ -74,6 +72,5 @@ class MigrateContractTemplatesToContractTemplatesTable extends Migration
      */
     public function down()
     {
-        // 
     }
 }

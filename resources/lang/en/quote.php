@@ -12,6 +12,6 @@ return [
         'Margin' => 70,
         'Discount' => 90,
         'Additional Detail' => 99,
-        'Complete' => 100
-    ]
+        'Complete' => 100,
+    ],
 ];

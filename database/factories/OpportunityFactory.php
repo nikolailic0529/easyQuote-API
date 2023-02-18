@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Opportunity;
-use App\Models\Pipeline\PipelineStage;
-use App\Models\SalesUnit;
-use App\Models\User;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Pipeline\Models\PipelineStage;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -68,18 +68,18 @@ class OpportunityFactory extends Factory
             'supplier_order_confirmation_date' => $this->faker->dateTimeBetween('now', '+60 days')->format('Y-m-d'),
             'expected_order_date' => $this->faker->dateTimeBetween('now', '+60 days')->format('Y-m-d'),
 
-            'opportunity_amount' => (string)$this->faker->randomFloat(2, 1000, 10000),
+            'opportunity_amount' => (string) $this->faker->randomFloat(2, 1000, 10000),
             'base_opportunity_amount' => $this->faker->randomFloat(2, 1000, 10000),
             'opportunity_amount_currency_code' => $this->faker->currencyCode,
-            'purchase_price' => (string)$this->faker->randomFloat(2, 1000, 10000),
+            'purchase_price' => (string) $this->faker->randomFloat(2, 1000, 10000),
             'base_purchase_price' => $this->faker->randomFloat(2, 1000, 10000),
             'purchase_price_currency_code' => $this->faker->currencyCode,
-            'list_price' => (string)$this->faker->randomFloat(2, 1000, 10000),
+            'list_price' => (string) $this->faker->randomFloat(2, 1000, 10000),
             'base_list_price' => $this->faker->randomFloat(2, 1000, 10000),
             'list_price_currency_code' => $this->faker->currencyCode,
-            'estimated_upsell_amount' => (string)$this->faker->randomFloat(2, 100, 1000),
+            'estimated_upsell_amount' => (string) $this->faker->randomFloat(2, 100, 1000),
             'estimated_upsell_amount_currency_code' => $this->faker->currencyCode,
-            'margin_value' => (string)$this->faker->randomFloat(2, 10, 90),
+            'margin_value' => (string) $this->faker->randomFloat(2, 10, 90),
 
             'account_manager_name' => $this->faker->name,
             'service_level_agreement_id' => Str::random(40),
@@ -111,14 +111,8 @@ class OpportunityFactory extends Factory
             'ranking' => $this->faker->randomElement([0, 20, 40, 60, 80, 100]),
 
             'sale_action_name' => $this->faker->randomElement([
-                "Preparation", "Special Bid Required", "Quote Ready", "Customer Contact", "Customer Order OK", "PO Placed", "Processed in MC", "Closed",
+                'Preparation', 'Special Bid Required', 'Quote Ready', 'Customer Contact', 'Customer Order OK', 'PO Placed', 'Processed in MC', 'Closed',
             ]),
         ];
     }
-
-    public function imported(): static
-    {
-        return $this->state(['deleted_at' => now()]);
-    }
 }
-

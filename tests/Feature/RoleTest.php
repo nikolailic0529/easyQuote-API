@@ -2,24 +2,20 @@
 
 namespace Tests\Feature;
 
-use App\Models\Role;
+use App\Domain\Authorization\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Str};
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\Unit\Traits\{AssertsListing};
-use function data_set;
-use function factory;
-use function tap;
-use function url;
-use const RSD_01;
-use const RSU_01;
 
 /**
  * @group build
  */
 class RoleTest extends TestCase
 {
-    use AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to view a listing of existing roles.
@@ -41,7 +37,7 @@ class RoleTest extends TestCase
             'order_by_role' => 'asc',
         ]);
 
-        $this->getJson(url('api/roles?'.$query))->assertOk();
+        $this->getJson(\url('api/roles?'.$query))->assertOk();
     }
 
     /**
@@ -53,7 +49,7 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $attributes = factory(Role::class)->state('privileges')->raw();
+        $attributes = \factory(Role::class)->state('privileges')->raw();
 
         $this->postJson('api/roles', $attributes)
             ->assertOk()
@@ -71,9 +67,9 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $attributes = factory(Role::class)->state('privileges')->raw();
+        $attributes = \factory(Role::class)->state('privileges')->raw();
 
-        data_set($attributes, 'privileges.0', Str::random(20));
+        \data_set($attributes, 'privileges.0', Str::random(20));
 
         $this->postJson('api/roles', $attributes)
             ->assertJsonStructure([
@@ -90,9 +86,9 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = factory(Role::class)->create();
+        $role = \factory(Role::class)->create();
 
-        $attributes = factory(Role::class)->state('privileges')->raw();
+        $attributes = \factory(Role::class)->state('privileges')->raw();
 
         $this->patchJson("api/roles/{$role->id}", $attributes)
             ->assertOk()
@@ -123,9 +119,9 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = factory(Role::class)->create();
+        $role = \factory(Role::class)->create();
 
-        $attributes = factory(Role::class)->state('privileges')->raw();
+        $attributes = \factory(Role::class)->state('privileges')->raw();
 
         $attributes = array_merge($attributes, [
             'properties' => array_fill_keys([
@@ -142,10 +138,10 @@ class RoleTest extends TestCase
                 'resubmit_sales_orders',
                 'unravel_sales_orders',
                 'alter_active_status_of_sales_orders',
-            ], true)
+            ], true),
         ]);
 
-        $this->patchJson("api/roles/".$role->getKey(), $attributes)
+        $this->patchJson('api/roles/'.$role->getKey(), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'user_id', 'is_system', 'created_at', 'activated_at',
@@ -201,10 +197,10 @@ class RoleTest extends TestCase
                 'resubmit_sales_orders',
                 'unravel_sales_orders',
                 'alter_active_status_of_sales_orders',
-            ], false)
+            ], false),
         ]);
 
-        $this->patchJson("api/roles/".$role->getKey(), $attributes)
+        $this->patchJson('api/roles/'.$role->getKey(), $attributes)
             ->assertOk();
 
         $response = $this->getJson('api/roles/'.$role->getKey())
@@ -224,15 +220,15 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = factory(Role::class)->create(['is_system' => true]);
+        $role = \factory(Role::class)->create(['is_system' => true]);
 
-        $attributes = factory(Role::class)->state('privileges')->raw();
+        $attributes = \factory(Role::class)->state('privileges')->raw();
 
         $response = $this->patchJson('api/roles/'.$role->getKey(), $attributes)
 //            ->dump()
             ->assertForbidden();
 
-        $this->assertEquals(RSU_01, $response->json('message'));
+        $this->assertEquals(\RSU_01, $response->json('message'));
     }
 
     /**
@@ -244,9 +240,9 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = factory(Role::class)->create();
+        $role = \factory(Role::class)->create();
 
-        $this->deleteJson("api/roles/".$role->getKey())
+        $this->deleteJson('api/roles/'.$role->getKey())
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -260,11 +256,11 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = factory(Role::class)->create(['is_system' => true]);
+        $role = \factory(Role::class)->create(['is_system' => true]);
 
         $response = $this->deleteJson('api/roles/'.$role->getKey())->assertForbidden();
 
-        $this->assertEquals(RSD_01, $response->json('message'));
+        $this->assertEquals(\RSD_01, $response->json('message'));
     }
 
     /**
@@ -276,13 +272,13 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = tap(factory(Role::class)->create(), function (Role $role) {
+        $role = \tap(\factory(Role::class)->create(), function (Role $role) {
             $role->activated_at = null;
 
             $role->save();
         });
 
-        $this->putJson("api/roles/activate/".$role->getKey())
+        $this->putJson('api/roles/activate/'.$role->getKey())
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -296,13 +292,13 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = tap(factory(Role::class)->create(), function (Role $role) {
+        $role = \tap(\factory(Role::class)->create(), function (Role $role) {
             $role->activated_at = now();
 
             $role->save();
         });
 
-        $this->putJson("api/roles/deactivate/".$role->getKey())
+        $this->putJson('api/roles/deactivate/'.$role->getKey())
 //            ->dump()
             ->assertOk()
             ->assertExactJson([true]);

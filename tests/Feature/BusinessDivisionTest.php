@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class BusinessDivisionTest extends TestCase
 {
     /**
@@ -20,7 +21,7 @@ class BusinessDivisionTest extends TestCase
         $this->getJson('api/business-divisions')
             ->assertOk()
             ->assertJsonStructure([
-                '*' => ['id', 'division_name']
+                '*' => ['id', 'division_name'],
             ]);
     }
 }

@@ -2,17 +2,17 @@
 
 namespace Tests\Feature;
 
-use App\Models\Note\Note;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\User;
+use App\Domain\Note\Models\Note;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
- * Class WorldwideQuoteNoteTest
  * @group worldwide
+ * @group build
  */
 class WorldwideQuoteNoteTest extends TestCase
 {
@@ -20,8 +20,6 @@ class WorldwideQuoteNoteTest extends TestCase
 
     /**
      * Test can view paginated listing of notes on worldwide quote.
-     *
-     * @return void
      */
     public function testCanViewPaginatedListingOfNotesOnWorldwideQuote(): void
     {
@@ -102,8 +100,6 @@ class WorldwideQuoteNoteTest extends TestCase
 
     /**
      * Test can update an existing note on worldwide quote.
-     *
-     * @return void
      */
     public function testCanUpdateNoteOnWorldwideQuote(): void
     {
@@ -135,8 +131,6 @@ class WorldwideQuoteNoteTest extends TestCase
 
     /**
      * Test can delete an existing note on worldwide quote.
-     *
-     * @return void
      */
     public function testCanDeleteNoteOnWorldwideQuote(): void
     {

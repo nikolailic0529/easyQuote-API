@@ -2,9 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class PopulateUserIdToContactsTable extends Migration
 {
@@ -36,13 +34,11 @@ class PopulateUserIdToContactsTable extends Migration
         }
 
         DB::transaction(function () use ($contactUserMap) {
-
             foreach ($contactUserMap as $addressID => $userID) {
                 DB::table('contacts')
                     ->where('id', $addressID)
                     ->update(['user_id' => $userID]);
             }
-
         });
     }
 
@@ -53,6 +49,5 @@ class PopulateUserIdToContactsTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

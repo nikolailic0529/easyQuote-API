@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Models\System\SystemSetting;
-use App\Models\User;
+use App\Domain\Settings\Models\SystemSetting;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -13,7 +13,15 @@ use Tests\TestCase;
  */
 class SettingsTest extends TestCase
 {
-    use WithFaker, DatabaseTransactions;
+    use WithFaker;
+    use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test Setting listing.
@@ -118,7 +126,7 @@ class SettingsTest extends TestCase
 
         [$section, $property] = explode('.', $property);
 
-        /** @var SystemSetting $settingsProperty */
+        /** @var \App\Domain\Settings\Models\SystemSetting $settingsProperty */
         $settingsProperty = SystemSetting::where('key', $property)->sole();
 
         if (is_callable($data)) {
@@ -203,48 +211,48 @@ class SettingsTest extends TestCase
     {
         foreach (['GBP', 'EUR', 'USD'] as $item) {
             yield "base currency: $item" => [
-                "global.base_currency",
+                'global.base_currency',
                 $item,
             ];
         }
 
         foreach (range(7, 30) as $item) {
             yield "password expiry notification: $item" => [
-                "global.password_expiry_notification",
+                'global.password_expiry_notification',
                 $item,
             ];
         }
 
         foreach (range(1, 3) as $item) {
             yield "notification time: $item" => [
-                "global.notification_time",
+                'global.notification_time',
                 $item,
             ];
         }
 
-        yield "failure report recipients" => [
-            "global.failure_report_recipients",
+        yield 'failure report recipients' => [
+            'global.failure_report_recipients',
             static function (): array {
                 return User::factory()->count(10)->create()->modelKeys();
             },
         ];
         foreach (range(1, 12) as $case) {
             yield "pipeliner sync schedule: $case" => [
-                "global.pipeliner_sync_schedule",
+                'global.pipeliner_sync_schedule',
                 $case,
             ];
         }
 
         foreach ([true, false] as $item) {
             yield "google recaptcha enabled: $item" => [
-                "global.google_recaptcha_enabled",
+                'global.google_recaptcha_enabled',
                 $item,
             ];
         }
 
         foreach (range(1000, 5000, step: 1000) as $item) {
             yield "mail limit: $item" => [
-                "mail.mail_limit",
+                'mail.mail_limit',
                 $item,
             ];
         }

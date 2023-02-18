@@ -114,6 +114,7 @@ CREATE TABLE `addresses` (
   `contact_email` varchar(191) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
+  `validated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `activated_at` timestamp NULL DEFAULT NULL,
   `contact_id` char(36) DEFAULT NULL COMMENT 'Foreign key to contacts table',
@@ -129,6 +130,22 @@ CREATE TABLE `addresses` (
   CONSTRAINT `addresses_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `addresses_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `addresses_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `app_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `app_events` (
+  `id` char(36) NOT NULL,
+  `name` varchar(255) NOT NULL COMMENT 'Event name',
+  `payload` json NOT NULL DEFAULT (json_object()) /*!80023 INVISIBLE */ COMMENT 'Event payload',
+  `occurred_at` timestamp NOT NULL COMMENT 'Event occurrence timestamp',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `app_events_occurred_at_index` (`occurred_at` DESC),
+  KEY `app_events_deleted_at_index` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `appointment_company`;
@@ -221,6 +238,7 @@ DROP TABLE IF EXISTS `appointment_reminders`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `appointment_reminders` (
   `id` char(36) NOT NULL,
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
   `appointment_id` char(36) NOT NULL COMMENT 'Foreign key to appointments table',
   `start_date_offset` mediumint NOT NULL COMMENT 'Offset in seconds of appointment start date',
   `snooze_date` datetime DEFAULT NULL COMMENT 'Snooze datetime of reminder',
@@ -231,7 +249,9 @@ CREATE TABLE `appointment_reminders` (
   PRIMARY KEY (`id`),
   KEY `appointment_reminders_appointment_id_foreign` (`appointment_id`),
   KEY `appointment_reminders_deleted_at_index` (`deleted_at`),
-  CONSTRAINT `appointment_reminders_appointment_id_foreign` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `appointment_reminders_user_id_foreign` (`user_id`),
+  CONSTRAINT `appointment_reminders_appointment_id_foreign` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `appointment_reminders_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `appointment_rescue_quote`;
@@ -275,7 +295,10 @@ DROP TABLE IF EXISTS `appointments`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `appointments` (
   `id` char(36) NOT NULL,
+  `user_id` char(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT 'Foreign key to users table(DC2Type:guid)',
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to Appointment in Pipeliner',
+  `activity_type` varchar(100) NOT NULL DEFAULT 'Appointment' COMMENT 'Appointment Type',
   `subject` varchar(250) NOT NULL COMMENT 'Subject of appointment',
   `description` text NOT NULL COMMENT 'Description of appointment',
   `start_date` datetime NOT NULL COMMENT 'Start datetime of appointment',
@@ -285,11 +308,12 @@ CREATE TABLE `appointments` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
-  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
   PRIMARY KEY (`id`),
   KEY `appointments_deleted_at_index` (`deleted_at`),
   KEY `appointments_pl_reference_index` (`pl_reference`),
   KEY `appointments_user_id_foreign` (`user_id`),
+  KEY `appointments_sales_unit_id_foreign` (`sales_unit_id`),
+  CONSTRAINT `appointments_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `appointments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -407,17 +431,23 @@ DROP TABLE IF EXISTS `attachments`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `attachments` (
   `id` char(36) NOT NULL,
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
+  `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to CloudObject in Pipeliner',
   `type` varchar(191) NOT NULL COMMENT 'Attachment type',
   `filepath` varchar(191) NOT NULL COMMENT 'Stored filepath',
   `filename` varchar(191) NOT NULL COMMENT 'Original filename',
   `extension` varchar(191) NOT NULL COMMENT 'File extension',
   `size` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'File size in bytes',
+  `flags` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'Bitwise flags of attachment',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `attachments_type_index` (`type`),
-  KEY `attachments_deleted_at_index` (`deleted_at`)
+  KEY `attachments_deleted_at_index` (`deleted_at`),
+  KEY `attachments_pl_reference_index` (`pl_reference`),
+  KEY `attachments_user_id_foreign` (`user_id`),
+  CONSTRAINT `attachments_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `builds`;
@@ -446,6 +476,26 @@ CREATE TABLE `business_divisions` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `cache`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cache` (
+  `key` varchar(255) NOT NULL,
+  `value` mediumtext NOT NULL,
+  `expiration` int NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `cache_locks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cache_locks` (
+  `key` varchar(255) NOT NULL,
+  `owner` varchar(255) NOT NULL,
+  `expiration` int NOT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `cancel_sales_order_reasons`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -459,28 +509,46 @@ CREATE TABLE `cancel_sales_order_reasons` (
   KEY `cancel_sales_order_reasons_deleted_at_index` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `category_company`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `category_company` (
+  `company_id` char(36) NOT NULL COMMENT 'Foreign key to companies table',
+  `category_id` char(36) NOT NULL COMMENT 'Foreign key to company_categories table',
+  PRIMARY KEY (`company_id`,`category_id`),
+  KEY `category_company_category_id_foreign` (`category_id`),
+  CONSTRAINT `category_company_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `company_categories` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `category_company_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `companies`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `companies` (
   `id` char(36) NOT NULL,
+  `user_id` char(36) DEFAULT NULL,
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
+  `default_vendor_id` char(36) DEFAULT NULL,
+  `default_country_id` char(36) DEFAULT NULL,
+  `default_template_id` char(36) DEFAULT NULL,
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to Account in Pipeliner',
+  `registered_number` varchar(255) DEFAULT NULL COMMENT 'Company registered number',
   `name` varchar(191) NOT NULL,
   `short_code` char(3) DEFAULT NULL COMMENT 'Company short name',
   `vs_company_code` varchar(191) DEFAULT NULL COMMENT 'Vendor-Services acceptable company name',
   `vat` varchar(191) DEFAULT NULL,
   `vat_type` varchar(191) DEFAULT NULL COMMENT 'EXEMPT, NO VAT, VAT Number',
   `flags` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'Imported Company Bit Flags',
+  `status` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Company status',
   `type` varchar(191) NOT NULL,
   `category` varchar(191) DEFAULT NULL,
-  `source` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8_general_ci DEFAULT NULL COMMENT 'Customer Source',
+  `customer_type` varchar(255) DEFAULT NULL COMMENT 'Customer Type',
+  `source` varchar(40) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT 'Customer Source',
   `email` varchar(191) DEFAULT NULL,
   `phone` varchar(191) DEFAULT NULL,
   `website` varchar(191) DEFAULT NULL,
-  `user_id` char(36) DEFAULT NULL,
-  `default_vendor_id` char(36) DEFAULT NULL,
-  `default_country_id` char(36) DEFAULT NULL,
-  `default_template_id` char(36) DEFAULT NULL,
+  `employees_number` bigint unsigned DEFAULT NULL COMMENT 'Number of company employees',
+  `creation_date` date DEFAULT NULL COMMENT 'Company date of creation',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -497,11 +565,54 @@ CREATE TABLE `companies` (
   KEY `companies_source_index` (`source`),
   KEY `companies_type_category_index` (`type`(8),`category`(16)),
   KEY `companies_pl_reference_index` (`pl_reference`),
+  KEY `companies_sales_unit_id_foreign` (`sales_unit_id`),
   KEY `companies_is_active_index` (`is_active`),
   CONSTRAINT `companies_default_country_id_foreign` FOREIGN KEY (`default_country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `companies_default_template_id_foreign` FOREIGN KEY (`default_template_id`) REFERENCES `quote_templates` (`id`) ON DELETE SET NULL,
   CONSTRAINT `companies_default_vendor_id_foreign` FOREIGN KEY (`default_vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `companies_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `companies_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `company_aliases`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `company_aliases` (
+  `id` char(36) NOT NULL,
+  `company_id` char(36) NOT NULL COMMENT 'Foreign key to companies table',
+  `name` varchar(255) NOT NULL COMMENT 'Alias name',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `company_aliases_company_id_foreign` (`company_id`),
+  KEY `company_aliases_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `company_aliases_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `company_categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `company_categories` (
+  `id` char(36) NOT NULL,
+  `name` varchar(255) NOT NULL COMMENT 'Category name',
+  `entity_order` int unsigned NOT NULL DEFAULT '0' COMMENT 'Entity order',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `company_categories_name_unique` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `company_industry`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `company_industry` (
+  `company_id` char(36) NOT NULL COMMENT 'Foreign key to companies table',
+  `industry_id` char(36) NOT NULL COMMENT 'Foreign key to industries table',
+  PRIMARY KEY (`company_id`,`industry_id`),
+  KEY `company_industry_industry_id_foreign` (`industry_id`),
+  CONSTRAINT `company_industry_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `company_industry_industry_id_foreign` FOREIGN KEY (`industry_id`) REFERENCES `industries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `company_vendor`;
@@ -575,9 +686,12 @@ DROP TABLE IF EXISTS `contacts`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `contacts` (
   `id` char(36) NOT NULL,
+  `address_id` char(36) DEFAULT NULL COMMENT 'Foreign key to addresses table',
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to Contact in Pipeliner',
   `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key on users table',
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
   `contact_type` varchar(191) DEFAULT NULL,
+  `gender` varchar(255) NOT NULL DEFAULT 'Unknown' COMMENT 'Gender of the contact',
   `contact_name` varchar(191) DEFAULT NULL,
   `phone` varchar(191) DEFAULT NULL,
   `first_name` varchar(191) DEFAULT NULL,
@@ -597,7 +711,11 @@ CREATE TABLE `contacts` (
   KEY `contacts_activated_at_index` (`activated_at`),
   KEY `contacts_user_id_foreign` (`user_id`),
   KEY `contacts_pl_reference_index` (`pl_reference`),
+  KEY `contacts_address_id_foreign` (`address_id`),
+  KEY `contacts_sales_unit_id_foreign` (`sales_unit_id`),
+  CONSTRAINT `contacts_address_id_foreign` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `contacts_image_id_foreign` FOREIGN KEY (`image_id`) REFERENCES `images` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `contacts_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `contacts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -894,13 +1012,27 @@ CREATE TABLE `currencies` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `custom_field_value_allowed_by`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `custom_field_value_allowed_by` (
+  `field_value_id` char(36) NOT NULL COMMENT 'Foreign key to custom_field_values table',
+  `allowed_by_id` char(36) NOT NULL COMMENT 'Foreign key to custom_field_values table',
+  PRIMARY KEY (`field_value_id`,`allowed_by_id`),
+  KEY `custom_field_value_allowed_by_allowed_by_id_foreign` (`allowed_by_id`),
+  CONSTRAINT `custom_field_value_allowed_by_allowed_by_id_foreign` FOREIGN KEY (`allowed_by_id`) REFERENCES `custom_field_values` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `custom_field_value_allowed_by_field_value_id_foreign` FOREIGN KEY (`field_value_id`) REFERENCES `custom_field_values` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `custom_field_values`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `custom_field_values` (
   `id` char(36) NOT NULL,
+  `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to entity in Pipeliner',
   `custom_field_id` char(36) NOT NULL,
   `field_value` varchar(250) NOT NULL COMMENT 'Custom Field Value',
+  `calc_value` double(8,2) NOT NULL DEFAULT '0.00' COMMENT 'Calculated value',
   `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the field value is default',
   `entity_order` bigint NOT NULL DEFAULT '0' COMMENT 'Entity Order',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -909,6 +1041,7 @@ CREATE TABLE `custom_field_values` (
   PRIMARY KEY (`id`),
   KEY `custom_field_values_custom_field_id_foreign` (`custom_field_id`),
   KEY `custom_field_values_deleted_at_index` (`deleted_at`),
+  KEY `custom_field_values_pl_reference_index` (`pl_reference`),
   CONSTRAINT `custom_field_values_custom_field_id_foreign` FOREIGN KEY (`custom_field_id`) REFERENCES `custom_fields` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -917,12 +1050,18 @@ DROP TABLE IF EXISTS `custom_fields`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `custom_fields` (
   `id` char(36) NOT NULL,
+  `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to entity in Pipeliner',
+  `parent_field_id` char(36) DEFAULT NULL COMMENT 'Foreign key to custom_fields table',
   `field_name` varchar(191) NOT NULL COMMENT 'Custom Field Name',
+  `calc_formula` text COMMENT 'Calculated formula used for fields which supports calculation',
   `deleted_at` timestamp NULL DEFAULT NULL,
   `is_not_deleted` tinyint(1) GENERATED ALWAYS AS (if((`deleted_at` is null),1,NULL)) VIRTUAL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `custom_fields_field_name_is_not_deleted_unique` (`field_name`,`is_not_deleted`),
-  KEY `custom_fields_deleted_at_index` (`deleted_at`)
+  KEY `custom_fields_deleted_at_index` (`deleted_at`),
+  KEY `custom_fields_parent_field_id_foreign` (`parent_field_id`),
+  KEY `custom_fields_pl_reference_index` (`pl_reference`),
+  CONSTRAINT `custom_fields_parent_field_id_foreign` FOREIGN KEY (`parent_field_id`) REFERENCES `custom_fields` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `customer_totals`;
@@ -1013,6 +1152,89 @@ CREATE TABLE `customers` (
   CONSTRAINT `customers_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `customers_int_company_id_foreign` FOREIGN KEY (`int_company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `customers_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `data_allocation_files`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `data_allocation_files` (
+  `id` char(36) NOT NULL,
+  `filepath` varchar(500) NOT NULL COMMENT 'Path to file in local filesystem',
+  `filename` varchar(500) NOT NULL COMMENT 'Client original file name',
+  `extension` varchar(255) NOT NULL COMMENT 'File extension',
+  `size` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'File size in bytes',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `imported_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `data_allocation_files_deleted_at_index` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `data_allocation_records`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `data_allocation_records` (
+  `id` char(36) NOT NULL,
+  `file_id` char(36) NOT NULL COMMENT 'Foreign key to data_allocation_files table',
+  `opportunity_id` char(36) NOT NULL COMMENT 'Foreign key to data_allocation_files table',
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
+  `entity_order` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Entity order',
+  `is_selected` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the entity is selected',
+  `result` varchar(255) NOT NULL DEFAULT 'Unprocessed' COMMENT 'Record allocation result',
+  `result_reason` varchar(500) DEFAULT NULL COMMENT 'Record allocation result reason',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `data_allocation_records_file_id_foreign` (`file_id`),
+  KEY `data_allocation_records_opportunity_id_foreign` (`opportunity_id`),
+  KEY `data_allocation_records_user_id_foreign` (`user_id`),
+  KEY `data_allocation_records_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `data_allocation_records_file_id_foreign` FOREIGN KEY (`file_id`) REFERENCES `data_allocation_files` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `data_allocation_records_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `data_allocation_records_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `data_allocation_user`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `data_allocation_user` (
+  `data_allocation_id` char(36) NOT NULL COMMENT 'Foreign key to data_allocations table',
+  `user_id` char(36) NOT NULL COMMENT 'Foreign key to users table',
+  `entity_order` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Entity order',
+  PRIMARY KEY (`data_allocation_id`,`user_id`),
+  KEY `data_allocation_user_user_id_foreign` (`user_id`),
+  CONSTRAINT `data_allocation_user_data_allocation_id_foreign` FOREIGN KEY (`data_allocation_id`) REFERENCES `data_allocations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `data_allocation_user_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `data_allocations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `data_allocations` (
+  `id` char(36) NOT NULL,
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
+  `company_id` char(36) DEFAULT NULL COMMENT 'Foreign key to companies table',
+  `business_division_id` char(36) DEFAULT NULL COMMENT 'Foreign key to business_divisions table',
+  `file_id` char(36) DEFAULT NULL COMMENT 'Foreign key to data_allocation_files table',
+  `assignment_start_date` date DEFAULT NULL COMMENT 'Assignment start date',
+  `assignment_end_date` date DEFAULT NULL COMMENT 'Assignment end date',
+  `distribution_algorithm` varchar(255) NOT NULL DEFAULT 'Evenly' COMMENT 'Distribution algorithm',
+  `stage` varchar(255) NOT NULL DEFAULT 'Import' COMMENT 'Allocation stage',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `data_allocations_user_id_foreign` (`user_id`),
+  KEY `data_allocations_company_id_foreign` (`company_id`),
+  KEY `data_allocations_business_division_id_foreign` (`business_division_id`),
+  KEY `data_allocations_file_id_foreign` (`file_id`),
+  KEY `data_allocations_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `data_allocations_business_division_id_foreign` FOREIGN KEY (`business_division_id`) REFERENCES `business_divisions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `data_allocations_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `data_allocations_file_id_foreign` FOREIGN KEY (`file_id`) REFERENCES `data_allocation_files` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `data_allocations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `data_select_separators`;
@@ -1418,7 +1640,7 @@ DROP TABLE IF EXISTS `imported_addresses`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `imported_addresses` (
   `id` char(36) NOT NULL,
-  `contact_id` char(36) DEFAULT NULL COMMENT 'Foreign key to imported_contacts table',
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to Contact in Pipeliner',
   `address_type` varchar(191) DEFAULT NULL COMMENT 'Address Type',
   `country_id` char(36) DEFAULT NULL COMMENT 'Foreign key on countries table',
@@ -1434,9 +1656,9 @@ CREATE TABLE `imported_addresses` (
   PRIMARY KEY (`id`),
   KEY `imported_addresses_country_id_foreign` (`country_id`),
   KEY `imported_addresses_deleted_at_index` (`deleted_at`),
-  KEY `imported_addresses_contact_id_foreign` (`contact_id`),
-  CONSTRAINT `imported_addresses_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `imported_contacts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `imported_addresses_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `imported_addresses_user_id_foreign` (`user_id`),
+  CONSTRAINT `imported_addresses_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `imported_addresses_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `imported_companies`;
@@ -1444,22 +1666,41 @@ DROP TABLE IF EXISTS `imported_companies`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `imported_companies` (
   `id` char(36) NOT NULL,
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Pipeliner AccountEntity Reference ID',
   `primary_contact_id` char(36) DEFAULT NULL COMMENT 'Foreign key on imported_contacts table',
   `company_name` varchar(250) NOT NULL COMMENT 'Company Name',
-  `company_category` varchar(191) DEFAULT NULL COMMENT 'Company Category',
+  `company_categories` json NOT NULL DEFAULT (json_array()) COMMENT 'Company categories',
+  `customer_type` varchar(255) DEFAULT NULL COMMENT 'Customer Type',
   `vat` varchar(191) DEFAULT NULL COMMENT 'Company VAT',
   `vat_type` varchar(191) DEFAULT NULL COMMENT 'EXEMPT, NO VAT, VAT Number',
   `email` varchar(191) DEFAULT NULL COMMENT 'Company Email',
   `phone` varchar(191) DEFAULT NULL COMMENT 'Company Phone',
   `website` varchar(191) DEFAULT NULL COMMENT 'Company Website',
+  `address_1` varchar(255) DEFAULT NULL COMMENT 'Company Address One',
+  `address_2` varchar(255) DEFAULT NULL COMMENT 'Company Address Two',
+  `city` varchar(255) DEFAULT NULL COMMENT 'Company City',
+  `post_code` varchar(255) DEFAULT NULL COMMENT 'Company Post Code',
+  `state` varchar(255) DEFAULT NULL COMMENT 'Company State',
+  `state_code` varchar(255) DEFAULT NULL COMMENT 'Company State Code',
+  `country_name` varchar(255) DEFAULT NULL COMMENT 'Company Country',
+  `hw_country_code` varchar(255) DEFAULT NULL COMMENT 'Hardware Country Code',
+  `sw_country_code` varchar(255) DEFAULT NULL COMMENT 'Software Country Code',
   `vendors_cs` varchar(1000) DEFAULT NULL COMMENT 'Vendor names comma-separated',
+  `contact_relations` json NOT NULL DEFAULT (json_array()) COMMENT 'Pipeliner contact relations',
+  `picture_filename` varchar(250) DEFAULT NULL COMMENT 'Filename of company picture',
+  `picture_url` varchar(250) DEFAULT NULL COMMENT 'Url to company picture',
   `flags` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'Imported Company Bit Flags',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `imported_companies_primary_contact_id_foreign` (`primary_contact_id`),
-  CONSTRAINT `imported_companies_primary_contact_id_foreign` FOREIGN KEY (`primary_contact_id`) REFERENCES `imported_contacts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+  KEY `imported_companies_sales_unit_id_foreign` (`sales_unit_id`),
+  KEY `imported_companies_user_id_foreign` (`user_id`),
+  CONSTRAINT `imported_companies_primary_contact_id_foreign` FOREIGN KEY (`primary_contact_id`) REFERENCES `imported_contacts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `imported_companies_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `imported_companies_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `imported_contact_imported_company`;
@@ -1479,19 +1720,30 @@ DROP TABLE IF EXISTS `imported_contacts`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `imported_contacts` (
   `id` char(36) NOT NULL,
+  `address_id` char(36) DEFAULT NULL COMMENT 'Foreign key to imported_addresses table',
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to Contact in Pipeliner',
   `contact_type` varchar(191) DEFAULT NULL COMMENT 'Contact Type',
+  `gender` varchar(255) NOT NULL DEFAULT 'Unknown' COMMENT 'Gender of the contact',
   `first_name` varchar(191) DEFAULT NULL COMMENT 'Contact First Name',
   `last_name` varchar(191) DEFAULT NULL COMMENT 'Contact Last Name',
   `email` varchar(191) DEFAULT NULL COMMENT 'Contact Email',
   `phone` varchar(191) DEFAULT NULL COMMENT 'Contact Phone No',
+  `phone_2` varchar(255) DEFAULT NULL COMMENT 'Secondary Phone Number',
   `job_title` varchar(191) DEFAULT NULL COMMENT 'Contact Job Title',
   `is_verified` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether The Contact Is Verified',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `imported_contacts_deleted_at_index` (`deleted_at`)
+  KEY `imported_contacts_deleted_at_index` (`deleted_at`),
+  KEY `imported_contacts_user_id_foreign` (`user_id`),
+  KEY `imported_contacts_address_id_foreign` (`address_id`),
+  KEY `imported_contacts_sales_unit_id_foreign` (`sales_unit_id`),
+  CONSTRAINT `imported_contacts_address_id_foreign` FOREIGN KEY (`address_id`) REFERENCES `imported_addresses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `imported_contacts_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `imported_contacts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `imported_raw_data`;
@@ -1566,6 +1818,17 @@ CREATE TABLE `imported_rows_rtbfxdi6uqjxjwma` (
   CONSTRAINT `imported_rows_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `industries`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `industries` (
+  `id` char(36) NOT NULL,
+  `sic_code` varchar(255) NOT NULL COMMENT 'Standard Industrial Classification',
+  `description` varchar(500) NOT NULL COMMENT 'Description of industry',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `industries_sic_code_unique` (`sic_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `invitations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -1574,6 +1837,7 @@ CREATE TABLE `invitations` (
   `user_id` char(36) NOT NULL,
   `role_id` char(36) NOT NULL,
   `team_id` char(36) DEFAULT NULL COMMENT 'Foreign key on teams table',
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
   `email` varchar(191) NOT NULL,
   `invitation_token` varchar(191) NOT NULL,
   `host` varchar(191) DEFAULT NULL,
@@ -1587,7 +1851,9 @@ CREATE TABLE `invitations` (
   KEY `invitations_deleted_at_index` (`deleted_at`),
   KEY `invitations_expires_at_index` (`expires_at`),
   KEY `invitations_team_id_foreign` (`team_id`),
+  KEY `invitations_sales_unit_id_foreign` (`sales_unit_id`),
   CONSTRAINT `invitations_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
+  CONSTRAINT `invitations_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `invitations_team_id_foreign` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `invitations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
@@ -1724,6 +1990,30 @@ CREATE TABLE `model_has_appointments` (
   CONSTRAINT `model_has_appointments_appointment_id_foreign` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `model_has_companies`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `model_has_companies` (
+  `company_id` char(36) NOT NULL COMMENT 'Foreign key to companies table',
+  `model_type` varchar(255) NOT NULL,
+  `model_id` char(36) NOT NULL,
+  PRIMARY KEY (`company_id`,`model_id`,`model_type`),
+  KEY `model_has_companies_model_id_model_type_index` (`model_id`,`model_type`),
+  CONSTRAINT `model_has_companies_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `model_has_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `model_has_events` (
+  `event_id` char(36) NOT NULL COMMENT 'Foreign key to app_events table',
+  `model_type` varchar(255) NOT NULL,
+  `model_id` char(36) NOT NULL,
+  PRIMARY KEY (`event_id`,`model_id`,`model_type`),
+  KEY `model_has_events_model_id_model_type_index` (`model_id`,`model_type`),
+  CONSTRAINT `model_has_events_event_id_foreign` FOREIGN KEY (`event_id`) REFERENCES `app_events` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `model_has_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -1758,6 +2048,18 @@ CREATE TABLE `model_has_roles` (
   PRIMARY KEY (`role_id`,`model_id`,`model_type`),
   KEY `model_has_roles_model_id_model_type_index` (`model_id`,`model_type`),
   CONSTRAINT `model_has_roles_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `model_has_sales_units`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `model_has_sales_units` (
+  `sales_unit_id` char(36) NOT NULL COMMENT 'Foreign key to sales_units table',
+  `model_type` varchar(255) NOT NULL,
+  `model_id` char(36) NOT NULL,
+  PRIMARY KEY (`sales_unit_id`,`model_id`,`model_type`),
+  KEY `model_has_sales_units_model_id_model_type_index` (`model_id`,`model_type`),
+  CONSTRAINT `model_has_sales_units_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `model_has_tasks`;
@@ -1839,7 +2141,7 @@ CREATE TABLE `notifications` (
   `user_id` char(36) NOT NULL,
   `subject_type` varchar(191) DEFAULT NULL,
   `subject_id` char(36) DEFAULT NULL,
-  `message` varchar(191) NOT NULL,
+  `message` text CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL,
   `url` varchar(191) DEFAULT NULL,
   `read_at` timestamp NULL DEFAULT NULL,
   `priority` tinyint NOT NULL DEFAULT '1',
@@ -1934,7 +2236,8 @@ CREATE TABLE `opportunities` (
   `id` char(36) NOT NULL,
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to Opportunity in Pipeliner',
   `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key on users table(DC2Type:guid)',
-  `pipeline_id` char(36) CHARACTER SET utf8mb3 COLLATE utf8_general_ci NOT NULL COMMENT 'Foreign key on pipelines table(DC2Type:guid)',
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
+  `pipeline_id` char(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NOT NULL COMMENT 'Foreign key on pipelines table(DC2Type:guid)',
   `pipeline_stage_id` char(36) DEFAULT NULL COMMENT 'Foreign key on pipeline_stages table',
   `contract_type_id` char(36) DEFAULT NULL COMMENT 'Foreign key on contract_types table',
   `primary_account_id` char(36) DEFAULT NULL COMMENT 'Foreign key on companies table',
@@ -1995,12 +2298,14 @@ CREATE TABLE `opportunities` (
   `ranking` double(8,2) DEFAULT NULL COMMENT 'Opportunity Ranking percentage',
   `remarks` text COMMENT 'Opportunity remarks',
   `notes` text COMMENT 'Opportunity notes',
+  `flags` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'Entity bitwise flags',
   `status` mediumint NOT NULL DEFAULT '1' COMMENT 'Opportunity Status',
   `status_reason` varchar(500) DEFAULT NULL COMMENT 'Opportunity Status Reason',
   `order_in_stage` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Order in Pipeline Stage',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
+  `archived_at` timestamp NULL DEFAULT NULL COMMENT 'Timestamp when the entity was archived',
   PRIMARY KEY (`id`),
   KEY `opportunities_primary_account_id_foreign` (`primary_account_id`),
   KEY `opportunities_primary_account_contact_id_foreign` (`primary_account_contact_id`),
@@ -2014,6 +2319,8 @@ CREATE TABLE `opportunities` (
   KEY `opportunities_end_user_id_foreign` (`end_user_id`),
   KEY `opportunities_pipeline_stage_id_foreign` (`pipeline_stage_id`),
   KEY `opportunities_pl_reference_index` (`pl_reference`),
+  KEY `opportunities_sales_unit_id_foreign` (`sales_unit_id`),
+  KEY `opportunities_deleted_at_archived_at_index` (`deleted_at`,`archived_at`),
   CONSTRAINT `opportunities_account_manager_id_foreign` FOREIGN KEY (`account_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_contract_type_id_foreign` FOREIGN KEY (`contract_type_id`) REFERENCES `contract_types` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_end_user_id_foreign` FOREIGN KEY (`end_user_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2023,6 +2330,7 @@ CREATE TABLE `opportunities` (
   CONSTRAINT `opportunities_pipeline_stage_id_foreign` FOREIGN KEY (`pipeline_stage_id`) REFERENCES `pipeline_stages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_primary_account_contact_id_foreign` FOREIGN KEY (`primary_account_contact_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_primary_account_id_foreign` FOREIGN KEY (`primary_account_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `opportunities_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -2060,6 +2368,45 @@ CREATE TABLE `opportunity_forms` (
   CONSTRAINT `opportunity_forms_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `opportunity_recurrences`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `opportunity_recurrences` (
+  `id` char(36) NOT NULL,
+  `opportunity_id` char(36) NOT NULL COMMENT 'Foreign key to opportunities table',
+  `stage_id` char(36) NOT NULL COMMENT 'Foreign key to pipeline_stages table',
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
+  `type_id` char(36) NOT NULL COMMENT 'Foreign key to recurrence_types table',
+  `date_day_id` char(36) NOT NULL COMMENT 'Foreign key to date_days table',
+  `date_week_id` char(36) NOT NULL COMMENT 'Foreign key to date_weeks table',
+  `date_month_id` char(36) NOT NULL COMMENT 'Foreign key to date_months table',
+  `day_of_week` tinyint unsigned NOT NULL DEFAULT '2' COMMENT 'The days of week in bit mask',
+  `occur_every` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'The number of units of a given recurrence type between occurrences',
+  `occurrences_count` mediumint NOT NULL DEFAULT '-1' COMMENT 'The number of remaining occurrences',
+  `condition` tinyint unsigned NOT NULL DEFAULT '3' COMMENT 'The recurrence condition in bit mask',
+  `start_date` datetime NOT NULL COMMENT 'The effective start date of recurrence',
+  `end_date` datetime DEFAULT NULL COMMENT 'The end date of recurrence',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `opportunity_recurrences_opportunity_id_foreign` (`opportunity_id`),
+  KEY `opportunity_recurrences_stage_id_foreign` (`stage_id`),
+  KEY `opportunity_recurrences_user_id_foreign` (`user_id`),
+  KEY `opportunity_recurrences_type_id_foreign` (`type_id`),
+  KEY `opportunity_recurrences_date_day_id_foreign` (`date_day_id`),
+  KEY `opportunity_recurrences_date_week_id_foreign` (`date_week_id`),
+  KEY `opportunity_recurrences_date_month_id_foreign` (`date_month_id`),
+  KEY `opportunity_recurrences_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `opportunity_recurrences_date_day_id_foreign` FOREIGN KEY (`date_day_id`) REFERENCES `date_days` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_recurrences_date_month_id_foreign` FOREIGN KEY (`date_month_id`) REFERENCES `date_months` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_recurrences_date_week_id_foreign` FOREIGN KEY (`date_week_id`) REFERENCES `date_weeks` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_recurrences_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_recurrences_stage_id_foreign` FOREIGN KEY (`stage_id`) REFERENCES `pipeline_stages` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_recurrences_type_id_foreign` FOREIGN KEY (`type_id`) REFERENCES `recurrence_types` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_recurrences_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `opportunity_suppliers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2070,6 +2417,7 @@ CREATE TABLE `opportunity_suppliers` (
   `country_name` varchar(191) DEFAULT NULL COMMENT 'Supplier Country Name',
   `contact_name` varchar(191) DEFAULT NULL COMMENT 'Supplier Contact Name',
   `contact_email` varchar(191) DEFAULT NULL COMMENT 'Supplier Contact Email Address',
+  `entity_order` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Entity order',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2099,6 +2447,21 @@ CREATE TABLE `opportunity_totals` (
   CONSTRAINT `opportunity_totals_account_manager_id_foreign` FOREIGN KEY (`account_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunity_totals_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `opportunity_totals_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `opportunity_validation_results`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `opportunity_validation_results` (
+  `id` char(36) NOT NULL,
+  `opportunity_id` char(36) NOT NULL COMMENT 'Foreign key to opportunities table',
+  `messages` longblob NOT NULL COMMENT 'Json array of validation messages',
+  `is_passed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the validation is passed',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `opportunity_validation_results_opportunity_id_foreign` (`opportunity_id`),
+  CONSTRAINT `opportunity_validation_results_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `password_resets`;
@@ -2152,21 +2515,33 @@ CREATE TABLE `pipeline_stages` (
   CONSTRAINT `pipeline_stages_pipeline_id_foreign` FOREIGN KEY (`pipeline_id`) REFERENCES `pipelines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pipeliner_custom_fields`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pipeliner_custom_fields` (
+  `id` char(36) NOT NULL,
+  `entity_name` varchar(255) NOT NULL COMMENT 'Related entity name for field',
+  `name` varchar(255) NOT NULL COMMENT 'User friendly name for field',
+  `api_name` varchar(255) NOT NULL COMMENT 'Immutable and generated name. This name is used for integrations.',
+  `eq_reference` varchar(255) NOT NULL COMMENT 'EQ reference to field',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `pipeliner_custom_fields_eq_reference_unique` (`eq_reference`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pipeliner_model_scroll_cursors`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `pipeliner_model_scroll_cursors` (
   `id` char(36) NOT NULL,
   `model_type` char(36) NOT NULL COMMENT 'Model type',
-  `pipeline_id` char(36) NOT NULL COMMENT 'Foreign key to pipelines table',
   `cursor` varchar(1000) NOT NULL COMMENT 'Base64 encoded cursor',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `pipeliner_model_scroll_cursors_pipeline_id_foreign` (`pipeline_id`),
   KEY `pipeliner_model_scroll_cursors_created_at_index` (`created_at`),
-  KEY `pipeliner_model_scroll_cursors_model_type_index` (`model_type`),
-  CONSTRAINT `pipeliner_model_scroll_cursors_pipeline_id_foreign` FOREIGN KEY (`pipeline_id`) REFERENCES `pipelines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `pipeliner_model_scroll_cursors_model_type_index` (`model_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pipeliner_model_update_logs`;
@@ -2175,14 +2550,109 @@ DROP TABLE IF EXISTS `pipeliner_model_update_logs`;
 CREATE TABLE `pipeliner_model_update_logs` (
   `id` char(36) NOT NULL,
   `model_type` char(36) NOT NULL COMMENT 'Model type',
-  `pipeline_id` char(36) NOT NULL COMMENT 'Foreign key to pipelines table',
   `latest_model_updated_at` timestamp NOT NULL COMMENT 'Timestamp of the latest updated model in Pipeliner',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `pipeliner_model_update_logs_model_type_index` (`model_type`),
-  KEY `pipeliner_model_update_logs_pipeline_id_foreign` (`pipeline_id`),
-  CONSTRAINT `pipeliner_model_update_logs_pipeline_id_foreign` FOREIGN KEY (`pipeline_id`) REFERENCES `pipelines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+  KEY `pipeliner_model_update_logs_model_type_index` (`model_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pipeliner_snapshot_entries`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pipeliner_snapshot_entries` (
+  `id` char(36) NOT NULL,
+  `snapshot_id` char(36) NOT NULL COMMENT 'Foreign key to pipeliner_snapshots table',
+  `reference` char(36) NOT NULL,
+  `type` varchar(255) NOT NULL,
+  `data` text NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pipeliner_snapshot_entries_snapshot_id_foreign` (`snapshot_id`),
+  CONSTRAINT `pipeliner_snapshot_entries_snapshot_id_foreign` FOREIGN KEY (`snapshot_id`) REFERENCES `pipeliner_snapshots` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pipeliner_snapshots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pipeliner_snapshots` (
+  `id` char(36) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pipeliner_sync_errors`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pipeliner_sync_errors` (
+  `id` char(36) NOT NULL,
+  `entity_type` varchar(255) NOT NULL,
+  `entity_id` char(36) NOT NULL,
+  `strategy_name` varchar(255) NOT NULL COMMENT 'Strategy caused the error',
+  `error_message` text NOT NULL COMMENT 'Error message text',
+  `error_message_hash` varchar(255) GENERATED ALWAYS AS (sha(`error_message`)) STORED COMMENT 'Error message hash',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `archived_at` timestamp NULL DEFAULT NULL,
+  `resolved_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pipeliner_sync_errors_entity_type_entity_id_index` (`entity_type`,`entity_id`),
+  KEY `pipeliner_sync_errors_deleted_at_archived_at_index` (`deleted_at`,`archived_at`),
+  KEY `pipeliner_sync_errors_deleted_at_index` (`deleted_at`),
+  KEY `pipeliner_sync_errors_deleted_at_resolved_at_index` (`deleted_at`,`resolved_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pipeliner_sync_strategy_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pipeliner_sync_strategy_logs` (
+  `id` char(36) NOT NULL,
+  `model_type` varchar(255) NOT NULL,
+  `model_id` char(36) NOT NULL,
+  `strategy_name` varchar(255) NOT NULL COMMENT 'Applied strategy name',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pipeliner_sync_strategy_logs_model_type_model_id_index` (`model_type`,`model_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pipeliner_webhook_events`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pipeliner_webhook_events` (
+  `id` char(36) NOT NULL,
+  `webhook_id` char(36) NOT NULL COMMENT 'Foreign key to pipeliner_webhooks table',
+  `event` varchar(255) NOT NULL COMMENT 'Notification event',
+  `event_time` datetime NOT NULL COMMENT 'Notification event time',
+  `payload` json NOT NULL COMMENT 'Notification payload',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pipeliner_webhook_events_webhook_id_foreign` (`webhook_id`),
+  KEY `pipeliner_webhook_events_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `pipeliner_webhook_events_webhook_id_foreign` FOREIGN KEY (`webhook_id`) REFERENCES `pipeliner_webhooks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `pipeliner_webhooks`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pipeliner_webhooks` (
+  `id` char(36) NOT NULL,
+  `pl_reference` char(36) NOT NULL COMMENT 'Reference to Pipeliner entity',
+  `signature` char(36) DEFAULT NULL COMMENT 'Webhook signature',
+  `url` varchar(250) NOT NULL COMMENT 'Webhook url',
+  `events` json NOT NULL COMMENT 'Webhook events',
+  `insecure_ssl` tinyint(1) NOT NULL COMMENT 'Whether to validate remote side ssl certificate when delivering notifications',
+  `options` json DEFAULT NULL COMMENT 'Webhook options',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `pipeliner_webhooks_deleted_at_index` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pipelines`;
@@ -2741,6 +3211,7 @@ CREATE TABLE `sales_orders` (
   `vat_type` varchar(191) DEFAULT NULL COMMENT 'EXEMPT, NO VAT, VAT Number',
   `customer_po` varchar(191) NOT NULL COMMENT 'Purchase Order Number',
   `exchange_rate` double(15,4) unsigned DEFAULT NULL COMMENT 'Exchange Rate of Sales Order Currency',
+  `assets_count` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Count of order assets',
   `status` mediumint unsigned NOT NULL DEFAULT '0' COMMENT 'Sales Order Status',
   `status_reason` varchar(500) DEFAULT NULL COMMENT 'Sales Order Status Reason',
   `failure_reason` varchar(500) DEFAULT NULL COMMENT 'Failure Reason Description',
@@ -2760,6 +3231,25 @@ CREATE TABLE `sales_orders` (
   CONSTRAINT `sales_orders_sales_order_template_id_foreign` FOREIGN KEY (`sales_order_template_id`) REFERENCES `sales_order_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `sales_orders_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `sales_orders_worldwide_quote_id_foreign` FOREIGN KEY (`worldwide_quote_id`) REFERENCES `worldwide_quotes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `sales_units`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sales_units` (
+  `id` char(36) NOT NULL,
+  `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to entity in Pipeliner',
+  `unit_name` varchar(255) NOT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the entity is default',
+  `is_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the entity is enabled',
+  `entity_order` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Entity order',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `sales_units_unit_name_unique` (`unit_name`,(if((`deleted_at` is null),1,NULL))),
+  UNIQUE KEY `sales_units_is_default_unique` ((if((`is_default` = true),true,NULL)),(if((`deleted_at` is null),1,NULL))),
+  KEY `sales_units_deleted_at_index` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `schedule_data`;
@@ -2830,6 +3320,22 @@ CREATE TABLE `spaces` (
   KEY `spaces_deleted_at_index` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `states`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `states` (
+  `id` char(36) NOT NULL,
+  `country_id` char(36) NOT NULL COMMENT 'Foreign key to countries table',
+  `name` varchar(255) NOT NULL COMMENT 'State name',
+  `state_code` varchar(255) NOT NULL COMMENT 'State code',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `states_state_code_country_id_unique` (`state_code`,`country_id`),
+  KEY `states_country_id_foreign` (`country_id`),
+  CONSTRAINT `states_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `system_settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -2839,6 +3345,7 @@ CREATE TABLE `system_settings` (
   `section` varchar(191) NOT NULL,
   `value` text,
   `type` varchar(191) NOT NULL DEFAULT 'string',
+  `field_type` varchar(255) DEFAULT NULL COMMENT 'Field type',
   `order` tinyint unsigned NOT NULL DEFAULT '1',
   `possible_values` json DEFAULT NULL,
   `is_read_only` tinyint(1) NOT NULL DEFAULT '0',
@@ -2889,6 +3396,7 @@ DROP TABLE IF EXISTS `task_reminders`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `task_reminders` (
   `id` char(36) NOT NULL,
+  `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to entity in Pipeliner',
   `task_id` char(36) NOT NULL COMMENT 'Foreign key to tasks table',
   `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key to users table',
   `set_date` datetime NOT NULL COMMENT 'Datetime of reminder',
@@ -2924,7 +3432,9 @@ DROP TABLE IF EXISTS `tasks`;
 CREATE TABLE `tasks` (
   `id` char(36) NOT NULL,
   `pl_reference` char(36) DEFAULT NULL COMMENT 'Reference to Task in Pipeliner',
-  `user_id` char(36) CHARACTER SET utf8mb3 COLLATE utf8_general_ci DEFAULT NULL COMMENT 'Creator foreign key(DC2Type:guid)',
+  `user_id` char(36) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci DEFAULT NULL COMMENT 'Creator foreign key(DC2Type:guid)',
+  `sales_unit_id` char(36) DEFAULT NULL COMMENT 'Foreign key to sales_units table',
+  `activity_type` varchar(100) NOT NULL DEFAULT 'Task' COMMENT 'Task Type',
   `name` varchar(191) NOT NULL COMMENT 'Task name',
   `content` json NOT NULL COMMENT 'Task content',
   `priority` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Task priority',
@@ -2936,6 +3446,8 @@ CREATE TABLE `tasks` (
   KEY `tasks_user_id_foreign` (`user_id`),
   KEY `tasks_deleted_at_index` (`deleted_at`),
   KEY `tasks_pl_reference_index` (`pl_reference`),
+  KEY `tasks_sales_unit_id_foreign` (`sales_unit_id`),
+  CONSTRAINT `tasks_sales_unit_id_foreign` FOREIGN KEY (`sales_unit_id`) REFERENCES `sales_units` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `tasks_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -3068,6 +3580,23 @@ SET @saved_cs_client     = @@character_set_client;
  1 AS `object_name`,
  1 AS `index_name`*/;
 SET character_set_client = @saved_cs_client;
+DROP TABLE IF EXISTS `user_assigned_to_model`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_assigned_to_model` (
+  `user_id` char(36) NOT NULL COMMENT 'Foreign key to users table',
+  `model_type` varchar(255) NOT NULL,
+  `model_id` char(36) NOT NULL,
+  `assignment_start_date` date DEFAULT NULL COMMENT 'Assignment start date',
+  `assignment_end_date` date DEFAULT NULL COMMENT 'Assignment start date',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`user_id`,`model_id`,`model_type`),
+  KEY `user_assigned_to_model_model_id_model_type_index` (`model_id`,`model_type`),
+  KEY `user_assigned_to_model_assignment_dates_index` (`assignment_start_date`,`assignment_end_date`),
+  CONSTRAINT `user_assigned_to_model_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `user_forms`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -3105,6 +3634,7 @@ CREATE TABLE `users` (
   `country_id` char(36) DEFAULT NULL COMMENT 'User Country',
   `company_id` char(36) DEFAULT NULL COMMENT 'Foreign Key on Companies Table',
   `hpe_contract_template_id` char(36) DEFAULT NULL COMMENT 'Foreign Key on Quote Templates Table',
+  `picture_id` char(36) DEFAULT NULL COMMENT 'Foreign key to images table',
   `already_logged_in` tinyint(1) NOT NULL DEFAULT '0',
   `ip_address` varchar(191) DEFAULT NULL,
   `default_route` varchar(191) DEFAULT NULL,
@@ -3118,6 +3648,7 @@ CREATE TABLE `users` (
   `password_changed_at` timestamp NULL DEFAULT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `users_email_unique` (`email`,(if((`deleted_at` is null),1,NULL))),
   KEY `users_timezone_id_foreign` (`timezone_id`),
   KEY `users_deleted_at_index` (`deleted_at`),
   KEY `users_failed_attempts_index` (`failed_attempts`),
@@ -3126,10 +3657,12 @@ CREATE TABLE `users` (
   KEY `users_hpe_contract_template_id_foreign` (`hpe_contract_template_id`),
   KEY `users_team_id_foreign` (`team_id`),
   KEY `users_pl_reference_index` (`pl_reference`),
+  KEY `users_picture_id_foreign` (`picture_id`),
   KEY `users_is_active_index` (`is_active`),
   CONSTRAINT `users_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `users_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `users_hpe_contract_template_id_foreign` FOREIGN KEY (`hpe_contract_template_id`) REFERENCES `hpe_contract_templates` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `users_picture_id_foreign` FOREIGN KEY (`picture_id`) REFERENCES `images` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `users_team_id_foreign` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `users_timezone_id_foreign` FOREIGN KEY (`timezone_id`) REFERENCES `timezones` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
@@ -3165,39 +3698,6 @@ CREATE TABLE `vendors` (
   KEY `vendors_deleted_at_index` (`deleted_at`),
   KEY `vendors_activated_at_index` (`activated_at`),
   CONSTRAINT `vendors_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
-/*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `worldwide_customers`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `worldwide_customers` (
-  `id` char(36) NOT NULL,
-  `country_id` char(36) DEFAULT NULL COMMENT 'Foreign key on countries table',
-  `hardware_address_id` char(36) DEFAULT NULL COMMENT 'Foreign key on addresses table',
-  `software_address_id` char(36) DEFAULT NULL COMMENT 'Foreign key on addresses table',
-  `customer_name` varchar(191) NOT NULL COMMENT 'Customer name',
-  `rfq_number` varchar(191) NOT NULL COMMENT 'Request for quote number',
-  `source` varchar(191) NOT NULL COMMENT 'Customer Source',
-  `valid_until_date` date NOT NULL COMMENT 'Quote valid until date',
-  `support_start_date` date NOT NULL COMMENT 'Quote support start date',
-  `support_end_date` date NOT NULL COMMENT 'Quote support end date',
-  `invoicing_terms` varchar(191) DEFAULT NULL COMMENT 'Customer Invoice terms',
-  `service_levels` json DEFAULT NULL COMMENT 'Customer Service levels',
-  `customer_vat` varchar(191) DEFAULT NULL COMMENT 'Customer VAT',
-  `customer_email` varchar(191) DEFAULT NULL COMMENT 'Customer Email',
-  `customer_phone` varchar(191) DEFAULT NULL COMMENT 'Customer phone',
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `worldwide_customers_rfq_number_deleted_at_unique` (`rfq_number`,`deleted_at`),
-  KEY `worldwide_customers_country_id_foreign` (`country_id`),
-  KEY `worldwide_customers_deleted_at_index` (`deleted_at`),
-  KEY `worldwide_customers_hardware_address_id_foreign` (`hardware_address_id`),
-  KEY `worldwide_customers_software_address_id_foreign` (`software_address_id`),
-  CONSTRAINT `worldwide_customers_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `worldwide_customers_hardware_address_id_foreign` FOREIGN KEY (`hardware_address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  CONSTRAINT `worldwide_customers_software_address_id_foreign` FOREIGN KEY (`software_address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worldwide_distributions`;
@@ -3305,6 +3805,7 @@ CREATE TABLE `worldwide_quote_assets` (
   `original_price` decimal(16,4) DEFAULT '0.0000' COMMENT 'Original Price value',
   `exchange_rate_value` decimal(12,4) DEFAULT NULL COMMENT 'Exchange Rate Value of Asset',
   `exchange_rate_margin` decimal(12,4) DEFAULT NULL COMMENT 'Exchange Rate Margin of Asset',
+  `entity_order` bigint NOT NULL DEFAULT '0' COMMENT 'Entity order',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -3459,7 +3960,7 @@ CREATE TABLE `worldwide_quotes` (
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
 /*!50003 SET character_set_client  = utf8mb3 */ ;
 /*!50003 SET character_set_results = utf8mb3 */ ;
-/*!50003 SET collation_connection  = utf8_general_ci */ ;
+/*!50003 SET collation_connection  = utf8mb3_general_ci */ ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
@@ -4209,3 +4710,132 @@ INSERT INTO `migrations` VALUES (667,'2022_05_24_124550_drop_company_notes_table
 INSERT INTO `migrations` VALUES (668,'2022_05_24_124600_drop_quote_notes_table',80);
 INSERT INTO `migrations` VALUES (669,'2022_05_24_124632_drop_worldwide_quote_notes_table',80);
 INSERT INTO `migrations` VALUES (670,'2022_05_24_124645_drop_opportunity_notes_table',80);
+INSERT INTO `migrations` VALUES (671,'2022_05_13_201906_add_assets_count_sales_orders_table',81);
+INSERT INTO `migrations` VALUES (672,'2022_05_13_202201_populate_assets_count_to_sales_orders_table',81);
+INSERT INTO `migrations` VALUES (673,'2022_05_25_165329_add_entity_order_worldwide_quote_assets_table',81);
+INSERT INTO `migrations` VALUES (674,'2022_06_09_122748_create_pipeliner_custom_fields_table',81);
+INSERT INTO `migrations` VALUES (675,'2022_06_15_092359_add_user_id_imported_addresses_table',81);
+INSERT INTO `migrations` VALUES (676,'2022_06_15_092411_add_user_id_imported_contacts_table',81);
+INSERT INTO `migrations` VALUES (677,'2022_06_20_145738_add_pl_reference_attachments_table',81);
+INSERT INTO `migrations` VALUES (678,'2022_06_21_141030_update_pipeline_stages',81);
+INSERT INTO `migrations` VALUES (679,'2022_06_22_162900_update_task_statuses_custom_field',81);
+INSERT INTO `migrations` VALUES (680,'2022_06_24_141034_create_pipeliner_model_sync_logs_table',81);
+INSERT INTO `migrations` VALUES (681,'2022_06_25_131259_add_address_1_address_2_city_post_code_state_state_code_country_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (682,'2022_06_27_073634_add_gender_contacts_table',81);
+INSERT INTO `migrations` VALUES (683,'2022_06_27_134526_add_gender_imported_contacts_table',81);
+INSERT INTO `migrations` VALUES (684,'2022_06_28_121214_add_picture_url_picture_filename_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (685,'2022_06_30_082316_add_parent_field_id_custom_fields_table',81);
+INSERT INTO `migrations` VALUES (686,'2022_06_30_082814_create_custom_field_value_allowed_by_table',81);
+INSERT INTO `migrations` VALUES (687,'2022_06_30_152749_create_pipeliner_webhooks_table',81);
+INSERT INTO `migrations` VALUES (688,'2022_06_30_153111_create_pipeliner_webhook_notifications_table',81);
+INSERT INTO `migrations` VALUES (689,'2022_07_05_064901_add_pl_reference_custom_fields_table',81);
+INSERT INTO `migrations` VALUES (690,'2022_07_05_065033_add_pl_reference_custom_field_values_table',81);
+INSERT INTO `migrations` VALUES (691,'2022_07_06_110851_add_activity_type_tasks_table',81);
+INSERT INTO `migrations` VALUES (692,'2022_07_06_110942_add_activity_type_appointments_table',81);
+INSERT INTO `migrations` VALUES (693,'2022_07_06_141805_add_phone_2_imported_contacts_table',81);
+INSERT INTO `migrations` VALUES (694,'2022_07_06_174035_add_pl_reference_task_reminders_table',81);
+INSERT INTO `migrations` VALUES (695,'2022_07_08_131432_create_opportunity_recurrences_table',81);
+INSERT INTO `migrations` VALUES (696,'2022_07_12_101015_create_sales_units_table',81);
+INSERT INTO `migrations` VALUES (697,'2022_07_12_103332_add_sales_unit_foreign_pipeliner_model_scroll_cursors_table',81);
+INSERT INTO `migrations` VALUES (698,'2022_07_12_103343_add_sales_unit_foreign_pipeliner_model_scroll_cursors_table',81);
+INSERT INTO `migrations` VALUES (699,'2022_07_12_104339_drop_pipeline_id_pipeliner_model_scroll_cursors_table',81);
+INSERT INTO `migrations` VALUES (700,'2022_07_12_104349_drop_pipeline_id_pipeliner_model_update_logs_table',81);
+INSERT INTO `migrations` VALUES (701,'2022_07_12_110539_add_is_default_sales_units_table',81);
+INSERT INTO `migrations` VALUES (702,'2022_07_12_181648_add_address_id_contacts_table',81);
+INSERT INTO `migrations` VALUES (703,'2022_07_12_181957_migrate_address_contact_relation_to_contacts_table',81);
+INSERT INTO `migrations` VALUES (704,'2022_07_13_140038_add_address_id_imported_contacts_table',81);
+INSERT INTO `migrations` VALUES (705,'2022_07_13_140237_drop_contact_id_imported_addresses_table',81);
+INSERT INTO `migrations` VALUES (706,'2022_07_13_185014_add_calc_value_custom_field_values_table',81);
+INSERT INTO `migrations` VALUES (707,'2022_07_14_124726_add_calc_formula_custom_fields_table',81);
+INSERT INTO `migrations` VALUES (708,'2022_07_18_172039_make_is_not_deleted_column_invisible_custom_fields_table',81);
+INSERT INTO `migrations` VALUES (709,'2022_07_19_171721_run_sales_units_seeder',81);
+INSERT INTO `migrations` VALUES (710,'2022_07_19_171723_add_sales_unit_id_users_table',81);
+INSERT INTO `migrations` VALUES (711,'2022_07_19_180735_add_sales_unit_id_invitations_table',81);
+INSERT INTO `migrations` VALUES (712,'2022_07_20_123050_add_sales_unit_id_opportunities_table',81);
+INSERT INTO `migrations` VALUES (713,'2022_07_20_124515_populate_sales_unit_id_to_opportunities',81);
+INSERT INTO `migrations` VALUES (714,'2022_07_20_142741_create_model_has_sales_units_table',81);
+INSERT INTO `migrations` VALUES (715,'2022_07_20_144914_drop_sales_unit_id_users_table',81);
+INSERT INTO `migrations` VALUES (716,'2022_07_20_145043_populate_default_sales_unit_to_model_has_sales_units_table',81);
+INSERT INTO `migrations` VALUES (717,'2022_07_21_131108_add_sales_unit_id_tasks_table',81);
+INSERT INTO `migrations` VALUES (718,'2022_07_21_131135_add_sales_unit_id_appointments_table',81);
+INSERT INTO `migrations` VALUES (719,'2022_07_21_131146_add_sales_unit_id_companies_table',81);
+INSERT INTO `migrations` VALUES (720,'2022_07_21_131202_add_sales_unit_id_contacts_table',81);
+INSERT INTO `migrations` VALUES (721,'2022_07_21_143721_add_sales_unit_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (722,'2022_07_21_144843_add_sales_unit_id_imported_contacts_table',81);
+INSERT INTO `migrations` VALUES (723,'2022_07_24_144127_add_customer_type_companies_table',81);
+INSERT INTO `migrations` VALUES (724,'2022_07_25_112808_add_is_enabled_sales_units_table',81);
+INSERT INTO `migrations` VALUES (725,'2022_07_25_144817_drop_sales_unit_id_pipeliner_model_update_logs_table',81);
+INSERT INTO `migrations` VALUES (726,'2022_07_25_144842_drop_sales_unit_id_pipeliner_model_scroll_cursors_table',81);
+INSERT INTO `migrations` VALUES (727,'2022_07_26_110801_set_default_enabled_sales_units',81);
+INSERT INTO `migrations` VALUES (728,'2022_07_29_101826_add_customer_type_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (729,'2022_07_30_171504_add_hw_country_code_sw_country_code_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (730,'2022_08_12_142324_create_opportunity_validation_results_table',81);
+INSERT INTO `migrations` VALUES (731,'2022_08_15_134658_change_messages_type_to_blob_opportunity_validation_results_table',81);
+INSERT INTO `migrations` VALUES (732,'2022_08_17_074258_create_data_allocation_files_table',81);
+INSERT INTO `migrations` VALUES (733,'2022_08_17_152722_create_data_allocations_table',81);
+INSERT INTO `migrations` VALUES (734,'2022_08_17_170907_create_data_allocation_user_table',81);
+INSERT INTO `migrations` VALUES (735,'2022_08_18_225108_add_imported_at_data_allocations_files_table',81);
+INSERT INTO `migrations` VALUES (736,'2022_08_19_111154_add_entity_order_data_allocation_user_table',81);
+INSERT INTO `migrations` VALUES (737,'2022_08_19_144546_create_model_has_companies_table',81);
+INSERT INTO `migrations` VALUES (738,'2022_08_19_153340_migrate_company_relation_users_table',81);
+INSERT INTO `migrations` VALUES (739,'2022_08_21_110335_migrate_stage_to_integer_data_allocations_table',81);
+INSERT INTO `migrations` VALUES (740,'2022_08_22_104240_create_data_allocation_records_table',81);
+INSERT INTO `migrations` VALUES (741,'2022_08_22_112228_add_result_result_reason_data_allocation_records_table',81);
+INSERT INTO `migrations` VALUES (742,'2022_08_23_083945_create_user_assigned_to_model_table',81);
+INSERT INTO `migrations` VALUES (743,'2022_08_23_111056_add_assignment_start_date_assignment_end_date_user_assigned_to_model_table',81);
+INSERT INTO `migrations` VALUES (744,'2022_09_06_121524_create_app_events_table',81);
+INSERT INTO `migrations` VALUES (745,'2022_09_07_140815_create_cache_table',81);
+INSERT INTO `migrations` VALUES (746,'2022_09_07_165107_add_field_type_system_settings_table',81);
+INSERT INTO `migrations` VALUES (747,'2022_09_09_205338_update_task_template_from_default',81);
+INSERT INTO `migrations` VALUES (748,'2022_09_09_211513_remove_hard_coded_sales_unit_from_tasks_content',81);
+INSERT INTO `migrations` VALUES (749,'2022_09_20_114349_create_company_categories_table',81);
+INSERT INTO `migrations` VALUES (750,'2022_09_20_115507_create_category_company_table',81);
+INSERT INTO `migrations` VALUES (751,'2022_09_20_131108_seed_company_categories',81);
+INSERT INTO `migrations` VALUES (752,'2022_09_20_131118_migrate_category_to_category_company_table',81);
+INSERT INTO `migrations` VALUES (753,'2022_09_20_134948_add_categories_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (754,'2022_09_20_135349_drop_company_category_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (755,'2022_09_28_141624_add_flags_attachments_table',81);
+INSERT INTO `migrations` VALUES (756,'2022_10_04_170142_populate_sales_units_to_companies',81);
+INSERT INTO `migrations` VALUES (757,'2022_10_04_170428_populate_sales_units_to_opportunities',81);
+INSERT INTO `migrations` VALUES (758,'2022_10_04_170608_populate_sales_units_to_contacts',81);
+INSERT INTO `migrations` VALUES (759,'2022_10_05_112236_populate_pipeline_stage_to_opportunities',81);
+INSERT INTO `migrations` VALUES (760,'2022_10_05_113546_increase_message_length_notifications_table',81);
+INSERT INTO `migrations` VALUES (761,'2022_10_07_200113_add_archived_at_opportunities_table',81);
+INSERT INTO `migrations` VALUES (762,'2022_10_07_213429_add_contact_relations_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (763,'2022_10_09_160946_create_pipeliner_snapshots_table',81);
+INSERT INTO `migrations` VALUES (764,'2022_10_09_160956_create_pipeliner_snapshot_entries_table',81);
+INSERT INTO `migrations` VALUES (765,'2022_10_10_110240_update_task_template_from_default',81);
+INSERT INTO `migrations` VALUES (766,'2022_10_11_182427_add_entity_order_opportunity_suppliers_table',81);
+INSERT INTO `migrations` VALUES (767,'2022_10_11_202123_populate_entity_order_opportunity_suppliers_table',81);
+INSERT INTO `migrations` VALUES (768,'2022_10_12_101115_add_flags_opportunities_table',81);
+INSERT INTO `migrations` VALUES (769,'2022_10_12_103408_populate_sync_protected_flag_to_system_companies',81);
+INSERT INTO `migrations` VALUES (770,'2022_10_14_124923_add_picture_id_users_table',81);
+INSERT INTO `migrations` VALUES (771,'2022_10_14_125137_populate_image_id_users_table',81);
+INSERT INTO `migrations` VALUES (772,'2022_10_14_131045_add_unique_email_index_users_table',81);
+INSERT INTO `migrations` VALUES (773,'2022_10_18_110427_migrate_content_tasks_table',81);
+INSERT INTO `migrations` VALUES (774,'2022_10_18_124232_update_task_template_from_default',81);
+INSERT INTO `migrations` VALUES (775,'2022_10_22_122328_create_pipeliner_sync_errors_table',81);
+INSERT INTO `migrations` VALUES (776,'2022_10_22_234829_add_resolved_at_pipeliner_sync_errors_table',81);
+INSERT INTO `migrations` VALUES (777,'2022_10_23_130620_add_strategy_name_pipeliner_sync_errors_table',81);
+INSERT INTO `migrations` VALUES (778,'2022_10_24_140143_add_error_message_hash_pipeliner_sync_errors_table',81);
+INSERT INTO `migrations` VALUES (779,'2022_10_24_174458_add_payload_app_events_table',81);
+INSERT INTO `migrations` VALUES (780,'2022_11_01_160022_add_user_id_attachments_table',81);
+INSERT INTO `migrations` VALUES (781,'2022_11_19_102342_attach_worldwide_quote_notes_to_opportunity',81);
+INSERT INTO `migrations` VALUES (782,'2022_11_19_104237_attach_worldwide_quote_tasks_to_opportunity',81);
+INSERT INTO `migrations` VALUES (783,'2022_11_19_104809_attach_worldwide_quote_appointments_to_opportunity',81);
+INSERT INTO `migrations` VALUES (784,'2022_11_19_105449_attach_worldwide_quote_documents_to_opportunity',81);
+INSERT INTO `migrations` VALUES (785,'2022_11_23_112244_create_model_has_events_table',81);
+INSERT INTO `migrations` VALUES (786,'2022_11_23_135045_add_user_id_appointment_reminders_table',81);
+INSERT INTO `migrations` VALUES (787,'2022_11_25_064721_add_user_id_imported_companies_table',81);
+INSERT INTO `migrations` VALUES (788,'2022_12_14_123744_create_states_table',81);
+INSERT INTO `migrations` VALUES (789,'2022_12_14_125318_seed_states',81);
+INSERT INTO `migrations` VALUES (790,'2022_12_14_133009_add_validated_at_addresses_table',81);
+INSERT INTO `migrations` VALUES (791,'2022_12_19_125616_drop_worldwide_customers_table',81);
+INSERT INTO `migrations` VALUES (792,'2022_12_19_132457_rearrange_columns_companies_table',81);
+INSERT INTO `migrations` VALUES (793,'2022_12_19_133043_add_creation_date_companies_table',81);
+INSERT INTO `migrations` VALUES (794,'2022_12_19_133655_add_status_companies_table',81);
+INSERT INTO `migrations` VALUES (795,'2022_12_19_134646_add_registered_number_companies_table',81);
+INSERT INTO `migrations` VALUES (796,'2022_12_19_135400_add_employees_number_companies_table',81);
+INSERT INTO `migrations` VALUES (797,'2022_12_19_160005_create_industries_table',81);
+INSERT INTO `migrations` VALUES (798,'2022_12_19_161334_create_company_industry_table',81);
+INSERT INTO `migrations` VALUES (799,'2022_12_21_120848_create_company_aliases_table',81);

@@ -19,7 +19,6 @@ class AddPrimaryKeyCountryVendorTable extends Migration
         $indexes = $schemaManager->listTableIndexes('country_vendor');
 
         Schema::table('country_vendor', function (Blueprint $table) use ($indexes) {
-
             $table->dropForeign(['country_id']);
             $table->dropForeign(['vendor_id']);
 
@@ -28,7 +27,6 @@ class AddPrimaryKeyCountryVendorTable extends Migration
             }
 
             $table->primary(['country_id', 'vendor_id']);
-
         });
 
         Schema::table('country_vendor', function (Blueprint $table) {
@@ -45,14 +43,12 @@ class AddPrimaryKeyCountryVendorTable extends Migration
     public function down()
     {
         Schema::table('country_vendor', function (Blueprint $table) {
-
             $table->dropForeign(['country_id']);
             $table->dropForeign(['vendor_id']);
 
             $table->dropPrimary();
 
             $table->primary(['country_id', 'vendor_id']);
-
         });
 
         Schema::table('country_vendor', function (Blueprint $table) {

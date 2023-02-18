@@ -17,14 +17,14 @@ class DropUserIdImportedRowsTable extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
-        $newTableName = "imported_rows_".Str::random();
+        $newTableName = 'imported_rows_'.Str::random();
 
         Schema::create($newTableName, function (Blueprint $table) {
             $table->uuid('id')->primary();
-            
+
             $table->uuid('replicated_row_id')->nullable()->comment('Replicated row key');
             $table->foreignUuid('quote_file_id')->comment('Foreign key on quote files table')->constrained()->cascadeOnDelete()->cascadeOnDelete();
-            
+
             $table->integer('page')->nullable()->comment('Imported Page number');
 
             $table->boolean('is_selected')->default(false)->comment('Whether the row is selected');
@@ -39,13 +39,12 @@ class DropUserIdImportedRowsTable extends Migration
             $table->index('replicated_row_id');
         });
 
-        
         DB::table($newTableName)->insertUsing(
             $columns = ['id', 'replicated_row_id', 'quote_file_id', 'columns_data', 'page', 'is_selected', 'is_one_pay', 'created_at', 'updated_at', 'deleted_at'],
             DB::table('imported_rows')->select($columns)
         );
 
-        $oldTableName = "imported_rows_".Str::random();
+        $oldTableName = 'imported_rows_'.Str::random();
 
         Schema::rename('imported_rows', $oldTableName); // keep a dump of the old table
 

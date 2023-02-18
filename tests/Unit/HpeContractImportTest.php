@@ -2,11 +2,11 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\Services\HpeContractState;
-use App\DTO\HpeContract\HpeContractImportData;
-use App\Models\HpeContract;
-use App\Models\HpeContractFile;
-use App\Services\HpeContractFileService;
+use App\Domain\HpeContract\Contracts\HpeContractState;
+use App\Domain\HpeContract\DataTransferObjects\HpeContractImportData;
+use App\Domain\HpeContract\Models\HpeContract;
+use App\Domain\HpeContract\Models\HpeContractFile;
+use App\Domain\HpeContract\Services\HpeContractFileService;
 use Illuminate\Http\Testing\File as TestingFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -21,7 +21,7 @@ class HpeContractImportTest extends TestCase
      *
      * @return void
      */
-    public function test_imports_20201210130642_39516_gb_s4_txt()
+    public function testImports2020121013064239516GbS4Txt()
     {
         $filePath = static::contractFiles()['20201210130642_39516_GB_S4'];
 
@@ -30,11 +30,11 @@ class HpeContractImportTest extends TestCase
         /** @var HpeContractFileService $fileService */
         $fileService = app(HpeContractFileService::class);
 
-        /** @var HpeContractFile */
+        /** @var \App\Domain\HpeContract\Models\HpeContractFile */
         $hpeContractFile = $fileService->store($file);
 
         $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
-            'date_format' => 'm/d/Y'
+            'date_format' => 'm/d/Y',
         ]));
 
         $this->assertFalse($response->failed());
@@ -52,7 +52,7 @@ class HpeContractImportTest extends TestCase
         $data = $stateProcessor->retrieveContractData($hpeContract);
 
         $assets = $data->pluck('assets')->collapse()
-            ->map(fn($asset) => Arr::only($asset, [
+            ->map(fn ($asset) => Arr::only($asset, [
                 'product_quantity',
                 'product_number',
                 'product_description',
@@ -82,7 +82,7 @@ class HpeContractImportTest extends TestCase
      *
      * @return void
      */
-    public function test_imports_20200928124822_123534_gb_s4_txt()
+    public function testImports20200928124822123534GbS4Txt()
     {
         $this->authenticateApi();
 
@@ -90,19 +90,19 @@ class HpeContractImportTest extends TestCase
 
         $file = static::createUploadedFile($filePath);
 
-        /** @var HpeContractFileService $fileService */
+        /** @var \App\Domain\HpeContract\Services\HpeContractFileService $fileService */
         $fileService = app(HpeContractFileService::class);
 
-        /** @var HpeContractFile $hpeContractFile */
+        /** @var \App\Domain\HpeContract\Models\HpeContractFile $hpeContractFile */
         $hpeContractFile = $fileService->store($file);
 
         $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
-            'date_format' => 'm/d/Y'
+            'date_format' => 'm/d/Y',
         ]));
 
         $this->assertFalse($response->failed());
 
-        /** @var HpeContractState */
+        /** @var \App\Domain\HpeContract\Contracts\HpeContractState */
         $stateProcessor = app(HpeContractState::class);
 
         /** @var HpeContract */
@@ -114,8 +114,8 @@ class HpeContractImportTest extends TestCase
 
         $serviceDescription = $hpeContract->services->pluck('service_description_2');
 
-        $this->assertContains("HPE Software Updates SVC", $serviceDescription);
-        $this->assertContains("HPE Software Technical Unlimited Support", $serviceDescription);
+        $this->assertContains('HPE Software Updates SVC', $serviceDescription);
+        $this->assertContains('HPE Software Technical Unlimited Support', $serviceDescription);
     }
 
     /**
@@ -123,7 +123,7 @@ class HpeContractImportTest extends TestCase
      *
      * @return void
      */
-    public function test_imports_20201125122458_39516_gb_s4_txt()
+    public function testImports2020112512245839516GbS4Txt()
     {
         $this->authenticateApi();
 
@@ -131,22 +131,22 @@ class HpeContractImportTest extends TestCase
 
         $file = static::createUploadedFile($filePath);
 
-        /** @var HpeContractFileService $fileService */
+        /** @var \App\Domain\HpeContract\Services\HpeContractFileService $fileService */
         $fileService = app(HpeContractFileService::class);
 
-        /** @var HpeContractFile $hpeContractFile */
+        /** @var \App\Domain\HpeContract\Models\HpeContractFile $hpeContractFile */
         $hpeContractFile = $fileService->store($file);
 
         $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
-            'date_format' => 'm/d/Y'
+            'date_format' => 'm/d/Y',
         ]));
 
         $this->assertFalse($response->failed());
 
-        /** @var HpeContractState */
+        /** @var \App\Domain\HpeContract\Contracts\HpeContractState */
         $stateProcessor = app(HpeContractState::class);
 
-        /** @var HpeContract */
+        /** @var \App\Domain\HpeContract\Models\HpeContract */
         $hpeContract = factory(HpeContract::class)->create();
 
         $this->assertTrue(
@@ -156,7 +156,7 @@ class HpeContractImportTest extends TestCase
         $data = $stateProcessor->retrieveContractData($hpeContract);
 
         $assets = $data->pluck('assets')->collapse()
-            ->map(fn($asset) => Arr::only($asset, [
+            ->map(fn ($asset) => Arr::only($asset, [
                 'product_quantity',
                 'product_number',
                 'product_description',
@@ -170,36 +170,36 @@ class HpeContractImportTest extends TestCase
         $this->assertCount(3, $assets);
 
         $this->assertContainsEquals([
-            "product_quantity" => 1,
-            "product_number" => "J9821A",
-            "product_description" => "HP 5406R zl2 Switch",
-            "serial_number" => "SG05G490G3",
-            "support_start_date" => "28/10/2020",
-            "support_end_date" => "27/10/2025",
-            "support_account_reference" => "1000819644_00003",
-            "contract_number" => "4000024672",
+            'product_quantity' => 1,
+            'product_number' => 'J9821A',
+            'product_description' => 'HP 5406R zl2 Switch',
+            'serial_number' => 'SG05G490G3',
+            'support_start_date' => '28/10/2020',
+            'support_end_date' => '27/10/2025',
+            'support_account_reference' => '1000819644_00003',
+            'contract_number' => '4000024672',
         ], $assets);
 
         $this->assertContainsEquals([
-            "product_quantity" => 1,
-            "product_number" => "J9821A",
-            "product_description" => "HP 5406R zl2 Switch",
-            "serial_number" => "SG05G490G3",
-            "support_start_date" => "28/10/2020",
-            "support_end_date" => "27/10/2025",
-            "support_account_reference" => "1000819644_00003",
-            "contract_number" => "4000024672",
+            'product_quantity' => 1,
+            'product_number' => 'J9821A',
+            'product_description' => 'HP 5406R zl2 Switch',
+            'serial_number' => 'SG05G490G3',
+            'support_start_date' => '28/10/2020',
+            'support_end_date' => '27/10/2025',
+            'support_account_reference' => '1000819644_00003',
+            'contract_number' => '4000024672',
         ], $assets);
 
         $this->assertContainsEquals([
-            "product_quantity" => 1,
-            "product_number" => "J9821A",
-            "product_description" => "HP 5406R zl2 Switch",
-            "serial_number" => "SG05G490G3",
-            "support_start_date" => "28/10/2020",
-            "support_end_date" => "27/10/2025",
-            "support_account_reference" => "1000819644_00003",
-            "contract_number" => "4000024672",
+            'product_quantity' => 1,
+            'product_number' => 'J9821A',
+            'product_description' => 'HP 5406R zl2 Switch',
+            'serial_number' => 'SG05G490G3',
+            'support_start_date' => '28/10/2020',
+            'support_end_date' => '27/10/2025',
+            'support_account_reference' => '1000819644_00003',
+            'contract_number' => '4000024672',
         ], $assets);
     }
 
@@ -208,7 +208,7 @@ class HpeContractImportTest extends TestCase
      *
      * @return void
      */
-    public function test_imports_20200817083029_123286_gb_s4_txt()
+    public function testImports20200817083029123286GbS4Txt()
     {
         $this->authenticateApi();
 
@@ -216,19 +216,19 @@ class HpeContractImportTest extends TestCase
 
         $file = static::createUploadedFile($filePath);
 
-        /** @var HpeContractFileService $fileService */
+        /** @var \App\Domain\HpeContract\Services\HpeContractFileService $fileService */
         $fileService = app(HpeContractFileService::class);
 
-        /** @var HpeContractFile */
+        /** @var \App\Domain\HpeContract\Models\HpeContractFile */
         $hpeContractFile = $fileService->store($file);
 
         $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
-            'date_format' => 'm/d/Y'
+            'date_format' => 'm/d/Y',
         ]));
 
         $this->assertFalse($response->failed());
 
-        /** @var HpeContractState $stateProcessor */
+        /** @var \App\Domain\HpeContract\Contracts\HpeContractState $stateProcessor */
         $stateProcessor = app(HpeContractState::class);
 
         /** @var HpeContract */
@@ -273,7 +273,7 @@ class HpeContractImportTest extends TestCase
      *
      * @return void
      */
-    public function test_imports_20200623063555_123286_gb_s4_txt()
+    public function testImports20200623063555123286GbS4Txt()
     {
         $this->authenticateApi();
 
@@ -284,13 +284,13 @@ class HpeContractImportTest extends TestCase
 
         $file = static::createUploadedFile(Arr::get($contractFiles, '20200623063555_123286_GB_S4'));
 
-        /** @var HpeContractFile $hpeContractFile */
+        /** @var \App\Domain\HpeContract\Models\HpeContractFile $hpeContractFile */
         $hpeContractFile = $fileService->store($file);
 
         $this->assertInstanceOf(HpeContractFile::class, $hpeContractFile);
 
         $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
-            'date_format' => 'm/d/Y'
+            'date_format' => 'm/d/Y',
         ]));
 
         $this->assertFalse($response->failed());
@@ -405,25 +405,25 @@ class HpeContractImportTest extends TestCase
      *
      * @return void
      */
-    public function test_imports_20210622105121_39516_gb_s4_txt()
+    public function testImports2021062210512139516GbS4Txt()
     {
-        /** @var HpeContractFileService $fileService */
+        /** @var \App\Domain\HpeContract\Services\HpeContractFileService $fileService */
         $fileService = $this->app[HpeContractFileService::class];
 
-        /** @var HpeContractState $contractProcessor */
+        /** @var \App\Domain\HpeContract\Contracts\HpeContractState $contractProcessor */
         $contractProcessor = $this->app[HpeContractState::class];
 
         $filePath = base_path('tests/Unit/Data/hpe-contract-test/20210622105121_39516_GB_S4.txt');
 
         $uploadedFile = UploadedFile::fake()->createWithContent('20210622105121_39516_GB_S4.txt', file_get_contents($filePath));
 
-        /** @var HpeContractFile $hpeContractFile */
+        /** @var \App\Domain\HpeContract\Models\HpeContractFile $hpeContractFile */
         $hpeContractFile = $fileService->store($uploadedFile);
 
         $this->assertInstanceOf(HpeContractFile::class, $hpeContractFile);
 
         $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
-            'date_format' => 'm/d/Y'
+            'date_format' => 'm/d/Y',
         ]));
 
         $this->assertFalse($response->failed());
@@ -447,25 +447,25 @@ class HpeContractImportTest extends TestCase
      *
      * @return void
      */
-    public function test_imports_20210804110434_39516_gb_s4_txt()
+    public function testImports2021080411043439516GbS4Txt()
     {
-        /** @var HpeContractFileService $fileService */
+        /** @var \App\Domain\HpeContract\Services\HpeContractFileService $fileService */
         $fileService = $this->app[HpeContractFileService::class];
 
-        /** @var HpeContractState $contractProcessor */
+        /** @var \App\Domain\HpeContract\Contracts\HpeContractState $contractProcessor */
         $contractProcessor = $this->app[HpeContractState::class];
 
         $filePath = base_path('tests/Unit/Data/hpe-contract-test/20210804110434_39516_GB_S4.txt');
 
         $uploadedFile = UploadedFile::fake()->createWithContent('20210804110434_39516_GB_S4.txt', file_get_contents($filePath));
 
-        /** @var HpeContractFile $hpeContractFile */
+        /** @var \App\Domain\HpeContract\Models\HpeContractFile $hpeContractFile */
         $hpeContractFile = $fileService->store($uploadedFile);
 
         $this->assertInstanceOf(HpeContractFile::class, $hpeContractFile);
 
         $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
-            'date_format' => 'm/d/Y'
+            'date_format' => 'm/d/Y',
         ]));
 
         $this->assertFalse($response->failed());

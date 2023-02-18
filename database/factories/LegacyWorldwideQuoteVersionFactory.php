@@ -2,10 +2,10 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Company;
-use App\Models\Data\Currency;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\User;
+use App\Domain\Company\Models\Company;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
 use Faker\Generator as Faker;
 
 $factory->define(WorldwideQuoteVersion::class, function (Faker $faker) {

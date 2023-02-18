@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Contracts\Services\CsvParserInterface;
+use App\Domain\DocumentProcessing\Readers\Contracts\CsvParserInterface;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\File;
 use Tests\TestCase;
@@ -72,7 +72,7 @@ class CsvDelimiterDetectTest extends TestCase
     {
         $directory = $directory ?? $delimiter;
 
-        $files = File::files(base_path($this->filesDirectory . DIRECTORY_SEPARATOR . $directory));
+        $files = File::files(base_path($this->filesDirectory.DIRECTORY_SEPARATOR.$directory));
 
         collect($files)->each(function ($file) use ($delimiter) {
             $determinedDelimiter = $this->app->make(CsvParserInterface::class)->guessDelimiter($file->getPathname());

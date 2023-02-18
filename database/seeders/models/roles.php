@@ -5,11 +5,9 @@ $RW = 'Read & Write';
 $RWD = 'Read, Write and Delete';
 
 return [
-
     [
         'name' => 'Administrator',
-        'permissions' =>
-            [
+        'permissions' => [
                 // Settings permissions
                 'view_system_settings',
                 'update_system_settings',
@@ -85,6 +83,7 @@ return [
                 'create_companies',
                 'update_companies',
                 'delete_companies',
+                'change_companies_ownership',
 
                 // Vendor permissions
                 'view_vendors',
@@ -112,6 +111,7 @@ return [
                 'create_assets',
                 'update_assets',
                 'delete_assets',
+                'change_assets_ownership',
 
                 // Rescue quote permissions
                 'view_own_external_quotes',
@@ -180,12 +180,14 @@ return [
                 'update_own_ww_quote_files',
                 'handle_own_ww_quote_files',
                 'delete_own_ww_quote_files',
+                'change_ww_quotes_ownership',
 
                 // Opportunity permissions
                 'view_opportunities',
                 'create_opportunities',
                 'update_own_opportunities',
                 'delete_own_opportunities',
+                'change_opportunities_ownership',
 
                 // Team permissions
                 'view_teams',
@@ -193,8 +195,7 @@ return [
                 'update_teams',
                 'delete_teams',
             ],
-        'privileges' =>
-            [
+        'privileges' => [
                 'Addresses' => $RWD,
                 'Contacts' => $RWD,
                 'Assets' => $RWD,
@@ -214,9 +215,7 @@ return [
     ],
     [
         'name' => 'Sales Manager',
-        'permissions' =>
-            [
-
+        'permissions' => [
                 // Rescue quote permissions
                 'view_own_quotes',
                 'create_quotes',
@@ -287,8 +286,7 @@ return [
                 'create_contacts',
                 'update_contacts',
             ],
-        'privileges' =>
-            [
+        'privileges' => [
                 'Addresses' => $RW,
                 'Contacts' => $RW,
                 'Assets' => $RW,

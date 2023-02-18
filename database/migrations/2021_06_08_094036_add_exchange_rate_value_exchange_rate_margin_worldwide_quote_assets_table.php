@@ -29,7 +29,7 @@ class AddExchangeRateValueExchangeRateMarginWorldwideQuoteAssetsTable extends Mi
         Schema::table('worldwide_quote_assets', function (Blueprint $table) {
             $table->dropColumn([
                 'exchange_rate_value',
-                'exchange_rate_margin'
+                'exchange_rate_margin',
             ]);
         });
     }

@@ -19,7 +19,7 @@ trait CreatesApplication
         $app->make(Kernel::class)->bootstrap();
 
         if (!$app->environment('testing')) {
-            throw new \RuntimeException("Tests execution is supported only in the testing environment. Consider run: `php artisan config:clear`.");
+            throw new \RuntimeException('Tests execution is supported only in the testing environment. Consider run: `php artisan config:clear`.');
         }
 
         return $app;

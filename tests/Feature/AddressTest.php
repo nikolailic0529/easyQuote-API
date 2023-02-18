@@ -2,16 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Models\Address;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Data\Country;
-use App\Models\Role;
-use App\Models\User;
+use App\Domain\Address\Models\Address;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Country\Models\Country;
+use App\Domain\User\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class AddressTest extends TestCase
 {
     /**
@@ -79,7 +82,7 @@ class AddressTest extends TestCase
      */
     public function testCanViewOnlyOwnedAddressesWithoutSuperPermissions()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
@@ -141,8 +144,6 @@ class AddressTest extends TestCase
 
     /**
      * Test an ability to create a new address.
-     *
-     * @return string
      */
     public function testCanCreateNewAddress(): string
     {
@@ -193,8 +194,6 @@ class AddressTest extends TestCase
 
     /**
      * Test an ability to create a new address with company relations.
-     *
-     * @return string
      */
     public function testCanCreateNewAddressWithCompanyRelations(): string
     {
@@ -348,7 +347,7 @@ class AddressTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'updated_at'
+                'updated_at',
             ])
             ->json('updated_at');
 
@@ -398,7 +397,7 @@ class AddressTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'updated_at'
+                'updated_at',
             ]);
 
         $this->assertNotSame($companyUpdatedAt, $r->json('updated_at'));

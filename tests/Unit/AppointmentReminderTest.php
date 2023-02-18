@@ -2,17 +2,17 @@
 
 namespace Tests\Unit;
 
-use App\Enum\ReminderStatus;
-use App\Models\Appointment\Appointment;
-use App\Models\Appointment\AppointmentReminder;
-use App\Services\Appointment\PerformAppointmentReminderService;
+use App\Domain\Appointment\Models\Appointment;
+use App\Domain\Appointment\Models\AppointmentReminder;
+use App\Domain\Appointment\Services\PerformAppointmentReminderService;
+use App\Domain\Reminder\Enum\ReminderStatus;
 use Tests\TestCase;
 
 class AppointmentReminderTest extends TestCase
 {
     public function testScheduledReminderIsDue(): void
     {
-        /** @var AppointmentReminder $reminder */
+        /** @var \App\Domain\Appointment\Models\AppointmentReminder $reminder */
         $reminder = AppointmentReminder::factory()
             ->for(Appointment::factory([
                 'start_date' => now(),
@@ -37,7 +37,7 @@ class AppointmentReminderTest extends TestCase
 
     public function testScheduledReminderWithStartDateOffsetIsDue(): void
     {
-        /** @var AppointmentReminder $reminder */
+        /** @var \App\Domain\Appointment\Models\AppointmentReminder $reminder */
         $reminder = AppointmentReminder::factory()
             ->for(Appointment::factory([
                 'start_date' => now(),

@@ -2,20 +2,20 @@
 
 namespace Tests\Unit\Quote;
 
-use App\DTO\RowsGroup;
-use App\Models\Customer\Customer;
-use App\Models\Data\Country;
-use App\Models\Quote\Contract;
-use App\Models\Quote\Quote;
-use App\Models\QuoteFile\DataSelectSeparator;
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\ImportedRow;
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\QuoteFile\QuoteFileFormat;
-use App\Models\QuoteFile\ScheduleData;
-use App\Models\Template\ContractTemplate;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Template\TemplateField;
+use App\Domain\Country\Models\Country;
+use App\Domain\QuoteFile\Models\DataSelectSeparator;
+use App\Domain\QuoteFile\Models\ImportableColumn;
+use App\Domain\QuoteFile\Models\ImportedRow;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\QuoteFile\Models\QuoteFileFormat;
+use App\Domain\QuoteFile\Models\ScheduleData;
+use App\Domain\Rescue\DataTransferObjects\RowsGroup;
+use App\Domain\Rescue\Models\Contract;
+use App\Domain\Rescue\Models\ContractTemplate;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\Template\Models\TemplateField;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -160,7 +160,7 @@ class ContractTest extends TestCase
         tap($quote, function (Quote $quote) use ($rows) {
             $groups = collect([
                 new RowsGroup([
-                    'id' => (string)Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'name' => 'Group',
                     'search_text' => '1234',
                     'is_selected' => true,
@@ -181,9 +181,9 @@ class ContractTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
 
-        $contract = Contract::find($response->json('id'));
+        $contract = \App\Domain\Rescue\Models\Contract::find($response->json('id'));
 
-        $this->assertInstanceOf(Contract::class, $contract);
+        $this->assertInstanceOf(\App\Domain\Rescue\Models\Contract::class, $contract);
 
         /** @var \Illuminate\Support\Collection */
         $contractRows = $contract->rowsData()->pluck('imported_rows.id', 'imported_rows.replicated_row_id');
@@ -229,42 +229,42 @@ class ContractTest extends TestCase
     ): void {
         $this->authenticateApi();
 
-        /** @var QuoteFile $priceList */
+        /** @var \App\Domain\QuoteFile\Models\QuoteFile $priceList */
         $priceList = factory(QuoteFile::class)->state('rescue-price-list')->create();
 
         $templateFields = TemplateField::query()->where('is_system', true)->pluck('id', 'name');
         $importableColumns = ImportableColumn::query()->where('is_system', true)->pluck('id', 'name');
 
-        /** @var ImportedRow[]|Collection $importedRows */
+        /** @var \App\Domain\QuoteFile\Models\ImportedRow[]|Collection $importedRows */
         $importedRows = factory(ImportedRow::class, 2)->create([
             'quote_file_id' => $priceList->getKey(),
             'columns_data' => [
                 $templateFields->get('date_from') => ['value' => now()->format('d/m/Y'), 'header' => 'Coverage from', 'importable_column_id' => $importableColumns->get('date_from')],
                 $templateFields->get('date_to') => ['value' => now()->addYears(2)->format('d/m/Y'), 'header' => 'Coverage to', 'importable_column_id' => $importableColumns->get('date_to')],
-            ]
+            ],
         ]);
 
         /** @var QuoteFile $paymentSchedule */
         $paymentSchedule = factory(QuoteFile::class)->state('rescue-payment-schedule')->create();
 
-        /** @var ScheduleData $scheduleData */
+        /** @var \App\Domain\QuoteFile\Models\ScheduleData $scheduleData */
         $scheduleData = factory(ScheduleData::class)->create([
             'quote_file_id' => $paymentSchedule->getKey(),
         ]);
 
-        /** @var Contract $contract */
-        $contract = factory(Contract::class)->create([
+        /** @var \App\Domain\Rescue\Models\Contract $contract */
+        $contract = factory(\App\Domain\Rescue\Models\Contract::class)->create([
             'customer_id' => factory(Customer::class)->create($customerData = [
                 'support_start' => '2022-12-30',
                 'support_end' => '2023-12-31',
                 'valid_until' => '2022-12-30',
-               'country_id'=> Country::query()->where('iso_3166_2', $countryCode)->first()->getKey()
+               'country_id' => Country::query()->where('iso_3166_2', $countryCode)->first()->getKey(),
             ]),
             'distributor_file_id' => $priceList->getKey(),
             'schedule_file_id' => $paymentSchedule->getKey(),
             'group_description' => collect([
                 new RowsGroup([
-                    'id' => (string)Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'name' => Str::random(),
                     'search_text' => Str::random(),
                     'rows_ids' => $importedRows->modelKeys(),
@@ -301,7 +301,6 @@ class ContractTest extends TestCase
             }
         }
     }
-
 
     protected function previewDataProvider(): \Generator
     {
@@ -388,11 +387,9 @@ class ContractTest extends TestCase
      */
     public function testCanExportContract()
     {
-//        $this->markTestSkipped('wkhtmltopdf-amd64: error while loading shared libraries: libpng15.so.15');
-
         $this->authenticateApi();
 
-        /** @var QuoteFile $priceList */
+        /** @var \App\Domain\QuoteFile\Models\QuoteFile $priceList */
         $priceList = factory(QuoteFile::class)->state('rescue-price-list')->create();
 
         $importedRows = factory(ImportedRow::class, 2)->create([
@@ -403,7 +400,7 @@ class ContractTest extends TestCase
         /** @var QuoteFile $paymentSchedule */
         $paymentSchedule = factory(QuoteFile::class)->state('rescue-payment-schedule')->create();
 
-        /** @var ScheduleData $scheduleData */
+        /** @var \App\Domain\QuoteFile\Models\ScheduleData $scheduleData */
         $scheduleData = factory(ScheduleData::class)->create([
             'quote_file_id' => $paymentSchedule->getKey(),
         ]);
@@ -411,12 +408,12 @@ class ContractTest extends TestCase
         $contractTemplate = factory(ContractTemplate::class)->create();
 
         /** @var Contract $contract */
-        $contract = factory(Contract::class)->create([
+        $contract = factory(\App\Domain\Rescue\Models\Contract::class)->create([
             'distributor_file_id' => $priceList->getKey(),
             'schedule_file_id' => $paymentSchedule->getKey(),
             'group_description' => collect([
                 new RowsGroup([
-                    'id' => (string)Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'name' => Str::random(),
                     'search_text' => Str::random(),
                     'rows_ids' => $importedRows->modelKeys(),
@@ -436,7 +433,7 @@ class ContractTest extends TestCase
         $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
         $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
 
-        $map = $templateFields->flip()->map(fn($name, $id) => ['importable_column_id' => $importableColumns->get($name)]);
+        $map = $templateFields->flip()->map(fn ($name, $id) => ['importable_column_id' => $importableColumns->get($name)]);
 
         $contract->quote->activeVersionOrCurrent->templateFields()->sync($map->all());
 
@@ -574,10 +571,10 @@ class ContractTest extends TestCase
 
     protected function createFakeContract(): Contract
     {
-        /** @var \App\Models\Template\QuoteTemplate */
+        /** @var \App\Domain\Rescue\Models\QuoteTemplate */
         $quoteTemplate = factory(QuoteTemplate::class)->create();
 
-        /** @var \App\Models\Template\ContractTemplate */
+        /** @var \App\Domain\Rescue\Models\ContractTemplate */
         $contractTemplate = factory(ContractTemplate::class)->create();
 
         $attributes = ['contract_template_id' => $contractTemplate->getKey()];

@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Events\Pipeliner\AggregateSyncCompleted;
-use App\Events\Pipeliner\AggregateSyncFailed;
-use App\Events\Pipeliner\AggregateSyncProgress;
-use App\Events\Pipeliner\AggregateSyncStarting;
-use App\Integrations\Pipeliner\GraphQl\PipelinerDataIntegration;
-use App\Integrations\Pipeliner\GraphQl\PipelinerGraphQlClient;
-use App\Integrations\Pipeliner\GraphQl\PipelinerOpportunityIntegration;
-use App\Models\Opportunity;
+use App\Domain\Pipeliner\Events\AggregateSyncCompleted;
+use App\Domain\Pipeliner\Events\AggregateSyncFailed;
+use App\Domain\Pipeliner\Events\AggregateSyncProgress;
+use App\Domain\Pipeliner\Events\AggregateSyncStarting;
+use App\Domain\Pipeliner\Integration\GraphQl\PipelinerDataIntegration;
+use App\Domain\Pipeliner\Integration\GraphQl\PipelinerGraphQlClient;
+use App\Domain\Pipeliner\Integration\GraphQl\PipelinerOpportunityIntegration;
+use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Event;
@@ -36,9 +36,7 @@ class PipelinerTest extends TestCase
         ])
 //            ->dump()
             ->assertOk();
-
     }
-
 
     /**
      * Test an ability to queue opportunity sync job.
@@ -74,7 +72,7 @@ class PipelinerTest extends TestCase
             ->give(static function () use ($oppClient) {
                 return $oppClient;
             });
-//
+
         /** @var PipelinerGraphQlClient $dataClient */
         $dataClient = $this->app->make(PipelinerGraphQlClient::class);
 
@@ -167,7 +165,7 @@ class PipelinerTest extends TestCase
             ->give(static function () use ($oppClient) {
                 return $oppClient;
             });
-//
+
         /** @var PipelinerGraphQlClient $dataClient */
         $dataClient = $this->app->make(PipelinerGraphQlClient::class);
 
@@ -269,7 +267,7 @@ class PipelinerTest extends TestCase
 //            ->dump()
             ->assertJsonStructure([
                 'opportunities',
-                'companies'
+                'companies',
             ]);
     }
 }

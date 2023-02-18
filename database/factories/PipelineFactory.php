@@ -2,7 +2,7 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Pipeline\Pipeline;
+use App\Domain\Pipeline\Models\Pipeline;
 use Faker\Generator as Faker;
 
 $factory->define(Pipeline::class, function (Faker $faker) {

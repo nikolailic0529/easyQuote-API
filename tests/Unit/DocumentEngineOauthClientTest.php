@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use App\Services\DocumentEngine\Exceptions\ClientAuthException;
-use App\Services\DocumentEngine\OauthClient;
+use App\Domain\DocumentEngine\Exceptions\ClientAuthException;
+use App\Domain\DocumentEngine\OauthClient;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Http\Client\Factory as ClientFactory;
@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Class DocumentEngineOauthClientTest
+ * Class DocumentEngineOauthClientTest.
  *
  * @group document-engine-api
  */
@@ -22,10 +22,11 @@ class DocumentEngineOauthClientTest extends TestCase
      * Test client issues client access token.
      *
      * @return void
-     * @throws \App\Services\DocumentEngine\Exceptions\ClientAuthException
+     *
+     * @throws \App\Domain\DocumentEngine\Exceptions\ClientAuthException
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function test_client_issues_access_token()
+    public function testClientIssuesAccessToken()
     {
         $baseUrl = 'http://localhost:1337';
 
@@ -86,9 +87,10 @@ class DocumentEngineOauthClientTest extends TestCase
      * Test client throws an exception on server error.
      *
      * @return void
+     *
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function test_client_throws_exception_on_server_error()
+    public function testClientThrowsExceptionOnServerError()
     {
         $baseUrl = 'http://localhost:1337';
 
@@ -118,7 +120,6 @@ class DocumentEngineOauthClientTest extends TestCase
                 ->andReturn(Str::random(40));
         });
 
-
         /** @var OauthClient $oauthClient */
         $oauthClient = $this->app[OauthClient::class];
 
@@ -131,9 +132,10 @@ class DocumentEngineOauthClientTest extends TestCase
      * Test client throws an exception on missing payload in response.
      *
      * @return void
+     *
      * @throws \Psr\SimpleCache\InvalidArgumentException
      */
-    public function test_client_throws_exception_on_missing_payload_in_response()
+    public function testClientThrowsExceptionOnMissingPayloadInResponse()
     {
         $baseUrl = 'http://localhost:1337';
 
@@ -143,7 +145,7 @@ class DocumentEngineOauthClientTest extends TestCase
         $clientFactory->fakeSequence(
             OauthClient::ENDPOINT
         )->push(
-            body: ['expires_in' => $expiresInFromResponse = now()->addYear()->diffInSeconds(now()),],
+            body: ['expires_in' => $expiresInFromResponse = now()->addYear()->diffInSeconds(now())],
         );
 
         $this->app->instance('document-engine-api::client', $clientFactory);
@@ -161,7 +163,6 @@ class DocumentEngineOauthClientTest extends TestCase
                 ->withSomeOfArgs('services.document_api.client_secret')
                 ->andReturn(Str::random(40));
         });
-
 
         /** @var OauthClient $oauthClient */
         $oauthClient = $this->app[OauthClient::class];

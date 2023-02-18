@@ -20,6 +20,7 @@ return [
         'download_ww_quote_pdf',
         'download_ww_quote_distributor_file',
         'download_ww_quote_payment_schedule',
+        'change_ww_quotes_ownership',
 
         // Sales order
         'download_sales_order_pdf',
@@ -28,6 +29,15 @@ return [
         'unravel_sales_orders',
         'alter_active_status_of_sales_orders',
         'refresh_status_of_sales_orders',
+
+        // Opportunity
+        'change_opportunities_ownership',
+
+        // Company
+        'change_companies_ownership',
+
+        // Asset
+        'change_assets_ownership',
     ],
     'submodules' => [
         'Quotes' => [
@@ -467,19 +477,6 @@ return [
             $CRUD => [
                 'view_own_contracts',
                 'create_contracts', 'update_own_contracts', 'delete_own_contracts',
-            ],
-        ],
-        'Data Allocations' => [
-            $R => [
-                'view_own_data_allocations',
-            ],
-            $CRU => [
-                'view_own_data_allocations',
-                'create_data_allocations', 'update_own_data_allocations',
-            ],
-            $CRUD => [
-                'view_own_data_allocations',
-                'create_data_allocations', 'update_own_data_allocations', 'delete_own_data_allocations',
             ],
         ],
         'Templates' => [

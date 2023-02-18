@@ -19,6 +19,7 @@ class IndustrySeeder extends Seeder
 
         $seeds = collect($seeds)->map(static function (array $seed): array {
             $seed['id'] = Str::orderedUuid()->toString();
+
             return $seed;
         });
 

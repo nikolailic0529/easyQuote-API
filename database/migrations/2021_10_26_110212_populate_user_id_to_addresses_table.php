@@ -34,15 +34,12 @@ class PopulateUserIdToAddressesTable extends Migration
         }
 
         DB::transaction(function () use ($addressUserMap) {
-
             foreach ($addressUserMap as $addressID => $userID) {
                 DB::table('addresses')
                     ->where('id', $addressID)
                     ->update(['user_id' => $userID]);
             }
-
         });
-
     }
 
     /**
@@ -52,6 +49,5 @@ class PopulateUserIdToAddressesTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

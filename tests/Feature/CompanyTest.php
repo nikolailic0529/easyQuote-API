@@ -2,45 +2,56 @@
 
 namespace Tests\Feature;
 
-use App\Enum\CompanyType;
-use App\Enum\CustomerTypeEnum;
-use App\Models\Address;
-use App\Models\Asset;
-use App\Models\Attachment;
-use App\Models\Company;
-use App\Models\CompanyCategory;
-use App\Models\Contact;
-use App\Models\Customer\Customer;
-use App\Models\Industry;
-use App\Models\Note\Note;
-use App\Models\Opportunity;
-use App\Models\Quote\Quote;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Role;
-use App\Models\SalesOrder;
-use App\Models\SalesUnit;
-use App\Models\User;
-use App\Models\Vendor;
-use App\Models\WorldwideQuoteAsset;
+use App\Domain\Address\Models\Address;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Attachment\Models\Attachment;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Enum\CompanyType;
+use App\Domain\Company\Enum\CustomerTypeEnum;
+use App\Domain\Company\Models\Company;
+use App\Domain\Company\Models\CompanyCategory;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Industry\Models\Industry;
+use App\Domain\Note\Models\Note;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideQuoteAsset;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\{Arr, Facades\DB, Str};
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\Unit\Traits\{AssertsListing};
 
 /**
  * @group build
+ * @group company
  */
 class CompanyTest extends TestCase
 {
-    use WithFaker, AssertsListing, DatabaseTransactions;
+    use WithFaker;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->pruneUsing(Company::query()->whereNonSystem()->withoutGlobalScopes()->toBase());
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
     }
 
     /**
@@ -103,7 +114,6 @@ class CompanyTest extends TestCase
                 ],
             ]);
 
-
         $query = Arr::query([
             'search' => Str::random(10),
             'order_by_created_at' => 'asc',
@@ -129,15 +139,10 @@ class CompanyTest extends TestCase
      */
     public function testCanViewPaginatedCompaniesLimitedByScopeOfCurrentUser(): void
     {
-        $this->app['db.connection']
-            ->table('companies')
-            ->whereRaw('(flags & (1 << 0)) != (1 << 0)')
-            ->delete();
-
         $this->authenticateApi();
 
         /** @var Role $role */
-        $role = factory(Role::class)->create();
+        $role = Role::factory()->create();
 
         $role->syncPermissions('view_companies');
 
@@ -187,6 +192,46 @@ class CompanyTest extends TestCase
 
         $this->assertCount(1, $response->json('data'));
         $this->assertContains($company->getKey(), $response->json('data.*.id'));
+    }
+
+    public function testCanViewPaginatedCompaniesViaSharingUserRelations(): void
+    {
+        /** @var Role $role */
+        $role = Role::factory()->create();
+        $role->syncPermissions('view_companies');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+        $user->syncRoles($role);
+
+        $this->authenticateApi($user);
+
+        /** @var Company $company */
+        // Company of different owner, but has sharing relation with current user.
+        $company = Company::factory()
+            // The owner is another user.
+            ->for(User::factory())
+            // Current user has sharing user relation with the company.
+            ->hasAttached($user, relationship: 'sharingUsers')
+            ->for($user->salesUnits->first())
+            ->create([
+                'type' => CompanyType::EXTERNAL,
+            ]);
+
+        $response = $this->getJson('api/companies')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'user_id'],
+                ],
+            ]);
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertContains($company->getKey(), $response->json('data.*.id'));
+        $this->assertNotContains($user->getKey(), $response->json('data.*.user_id'));
     }
 
     /**
@@ -351,6 +396,7 @@ class CompanyTest extends TestCase
         $company = Company::factory()
             ->for(User::factory(), relationship: 'owner')
             ->hasAttached(Industry::query()->take(2)->get())
+            ->hasAttached(User::factory(), relationship: 'sharingUsers')
             ->create();
 
         $this->getJson('api/companies/'.$company->getKey())
@@ -384,6 +430,16 @@ class CompanyTest extends TestCase
                     'last_name',
                     'user_fullname',
                 ],
+                'sharing_users' => [
+                    '*' => [
+                        'id',
+                        'email',
+                        'first_name',
+                        'middle_name',
+                        'last_name',
+                        'user_fullname',
+                    ],
+                ],
                 'customer_type',
                 'addresses' => [
                     '*' => [
@@ -415,7 +471,8 @@ class CompanyTest extends TestCase
                 'updated_at',
                 'activated_at',
             ])
-            ->assertJsonCount(2, 'industries');
+            ->assertJsonCount(2, 'industries')
+            ->assertJsonCount(1, 'sharing_users');
     }
 
     /**
@@ -428,9 +485,9 @@ class CompanyTest extends TestCase
         $attributes = Company::factory()->raw();
 
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
-        $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id],
+        $attributes['addresses'] = array_map(fn (string $id) => ['id' => $id],
             factory(Address::class, 2)->create()->modelKeys());
-        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id],
+        $attributes['contacts'] = array_map(fn (string $id) => ['id' => $id],
             Contact::factory()->count(2)->create()->modelKeys());
         $attributes['categories'] = CompanyCategory::query()->take(2)->pluck('name')->all();
 
@@ -495,11 +552,10 @@ class CompanyTest extends TestCase
             'name' => $existingCompany->name,
         ]);
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
-        $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id],
+        $attributes['addresses'] = array_map(fn (string $id) => ['id' => $id],
             factory(Address::class, 2)->create()->modelKeys());
-        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id],
+        $attributes['contacts'] = array_map(fn (string $id) => ['id' => $id],
             Contact::factory()->count(2)->create()->modelKeys());
-
 
         $this->postJson('api/companies', $attributes)
 //            ->dump()
@@ -521,9 +577,9 @@ class CompanyTest extends TestCase
 
         $attributes['name'] = Str::random(40);
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
-        $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id],
+        $attributes['addresses'] = array_map(fn (string $id) => ['id' => $id],
             factory(Address::class, 2)->create()->modelKeys());
-        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id],
+        $attributes['contacts'] = array_map(fn (string $id) => ['id' => $id],
             Contact::factory()->count(2)->create()->modelKeys());
 
         $this->postJson('api/companies', $attributes)
@@ -573,13 +629,13 @@ class CompanyTest extends TestCase
         $newAttributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
 
         $newAttributes['addresses'] = [
-            ['id' => $machineAddress->getKey(), 'is_default' => "1"],
-            ['id' => $invoiceAddress->getKey(), 'is_default' => "0"],
+            ['id' => $machineAddress->getKey(), 'is_default' => '1'],
+            ['id' => $invoiceAddress->getKey(), 'is_default' => '0'],
         ];
 
         $newAttributes['contacts'] = [
-            ['id' => $contact1->getKey(), 'is_default' => "1"],
-            ['id' => $contact2->getKey(), 'is_default' => "0"],
+            ['id' => $contact1->getKey(), 'is_default' => '1'],
+            ['id' => $contact2->getKey(), 'is_default' => '0'],
         ];
 
         $newAttributes['categories'] = CompanyCategory::query()->take(2)->pluck('name')->all();
@@ -587,7 +643,7 @@ class CompanyTest extends TestCase
         $newAttributes['logo'] = UploadedFile::fake()
             ->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
 
-        $this->postJson("api/companies/".$company->getKey(), $newAttributes)
+        $this->postJson('api/companies/'.$company->getKey(), $newAttributes)
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -671,7 +727,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create([
             'flags' => Company::FROZEN_SOURCE,
             'source' => 'Pipeliner',
@@ -707,7 +763,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
         $newAttributes = Company::factory()->raw(['_method' => 'PATCH']);
@@ -733,19 +789,19 @@ class CompanyTest extends TestCase
         $newAttributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
 
         $newAttributes['addresses'] = [
-            ['id' => $machineAddress->getKey(), 'is_default' => "1"],
-            ['id' => $invoiceAddress->getKey(), 'is_default' => "0"],
+            ['id' => $machineAddress->getKey(), 'is_default' => '1'],
+            ['id' => $invoiceAddress->getKey(), 'is_default' => '0'],
         ];
 
         $newAttributes['contacts'] = [
-            ['id' => $contact1->getKey(), 'is_default' => "1"],
-            ['id' => $contact2->getKey(), 'is_default' => "0"],
+            ['id' => $contact1->getKey(), 'is_default' => '1'],
+            ['id' => $contact2->getKey(), 'is_default' => '0'],
         ];
 
         $newAttributes['logo'] = UploadedFile::fake()
             ->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
 
-        $response = $this->postJson("api/companies/".$company->getKey(), $newAttributes)
+        $response = $this->postJson('api/companies/'.$company->getKey(), $newAttributes)
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([
@@ -763,7 +819,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create([
             'name' => Str::random(100),
         ]);
@@ -786,19 +842,19 @@ class CompanyTest extends TestCase
         $contact2 = Contact::factory()->create();
 
         $newAttributes['addresses'] = [
-            ['id' => $machineAddress->getKey(), 'is_default' => "1"],
-            ['id' => $invoiceAddress->getKey(), 'is_default' => "0"],
+            ['id' => $machineAddress->getKey(), 'is_default' => '1'],
+            ['id' => $invoiceAddress->getKey(), 'is_default' => '0'],
         ];
 
         $newAttributes['contacts'] = [
-            ['id' => $contact1->getKey(), 'is_default' => "1"],
-            ['id' => $contact2->getKey(), 'is_default' => "0"],
+            ['id' => $contact1->getKey(), 'is_default' => '1'],
+            ['id' => $contact2->getKey(), 'is_default' => '0'],
         ];
 
         $newAttributes['logo'] = UploadedFile::fake()
             ->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
 
-        $this->postJson("api/companies/partial/".$company->getKey(), $newAttributes)
+        $this->postJson('api/companies/partial/'.$company->getKey(), $newAttributes)
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -844,10 +900,9 @@ class CompanyTest extends TestCase
             ]);
 
         $machineAddressFromResponse = Arr::first($response->json('addresses'),
-            fn(array $address) => $address['id'] === $machineAddress->getKey());
+            fn (array $address) => $address['id'] === $machineAddress->getKey());
         $contact1FromResponse = Arr::first($response->json('contacts'),
-            fn(array $contact) => $contact['id'] === $contact1->getKey());
-
+            fn (array $contact) => $contact['id'] === $contact1->getKey());
 
         $this->assertTrue($machineAddressFromResponse['is_default']);
         $this->assertTrue($contact1FromResponse['is_default']);
@@ -864,10 +919,10 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
-        /** @var Contact $contact */
+        /* @var Contact $contact */
 
         $company->contacts()->sync($contact = Contact::factory()->create());
 
@@ -917,7 +972,7 @@ class CompanyTest extends TestCase
             ->assertOk();
 
         $updatedContactData = Arr::first($response->json('contacts'),
-            fn(array $contactData) => $contactData['id'] === $contact->getKey());
+            fn (array $contactData) => $contactData['id'] === $contact->getKey());
 
         $this->assertIsArray($updatedContactData);
         $this->assertEquals($contactData['first_name'], $updatedContactData['first_name']);
@@ -931,14 +986,12 @@ class CompanyTest extends TestCase
 
     /**
      * Test an ability to attach address to company.
-     *
-     * @return void
      */
     public function testCanAttachAddressToCompany(): void
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()
             ->create();
 
@@ -982,7 +1035,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()
             ->hasAttached(Address::factory(2))
             ->create();
@@ -1022,14 +1075,12 @@ class CompanyTest extends TestCase
 
     /**
      * Test an ability to attach contact to company.
-     *
-     * @return void
      */
     public function testCanAttachContactToCompany(): void
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()
             ->create();
 
@@ -1073,7 +1124,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()
             ->hasAttached(Contact::factory(2))
             ->create();
@@ -1119,11 +1170,9 @@ class CompanyTest extends TestCase
         $this->authenticateApi();
 
         $company = tap(Company::factory()->create(), function (Company $company) {
-
             $company->activated_at = null;
 
             $company->save();
-
         });
 
         $response = $this->getJson('api/companies/'.$company->getKey())
@@ -1135,7 +1184,7 @@ class CompanyTest extends TestCase
 
         $this->assertEmpty($response->json('activated_at'));
 
-        $this->putJson("api/companies/activate/".$company->getKey(), [])
+        $this->putJson('api/companies/activate/'.$company->getKey(), [])
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -1161,11 +1210,9 @@ class CompanyTest extends TestCase
         $this->authenticateApi();
 
         $company = tap(Company::factory()->create(), function (Company $company) {
-
             $company->activated_at = now();
 
             $company->save();
-
         });
 
         $response = $this->getJson('api/companies/'.$company->getKey())
@@ -1177,7 +1224,7 @@ class CompanyTest extends TestCase
 
         $this->assertNotEmpty($response->json('activated_at'));
 
-        $this->putJson("api/companies/deactivate/".$company->getKey(), [])
+        $this->putJson('api/companies/deactivate/'.$company->getKey(), [])
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -1204,7 +1251,7 @@ class CompanyTest extends TestCase
 
         $company = Company::factory()->create();
 
-        $this->deleteJson("api/companies/".$company->getKey(), [])
+        $this->deleteJson('api/companies/'.$company->getKey(), [])
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -1222,7 +1269,7 @@ class CompanyTest extends TestCase
             'primary_account_id' => $company->getKey(),
         ]);
 
-        $response = $this->deleteJson("api/companies/".$company->getKey(), [])
+        $response = $this->deleteJson('api/companies/'.$company->getKey(), [])
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([
@@ -1241,7 +1288,7 @@ class CompanyTest extends TestCase
 
         $systemCompany = Company::factory()->create(['flags' => Company::SYSTEM]);
 
-        $this->deleteJson("api/companies/".$systemCompany->getKey(), [])
+        $this->deleteJson('api/companies/'.$systemCompany->getKey(), [])
             ->assertForbidden()
             ->assertJsonFragment([
                 'message' => CPSD_01,
@@ -1249,7 +1296,7 @@ class CompanyTest extends TestCase
     }
 
     /**
-     * Test Default Company Vendor assigning
+     * Test Default Company Vendor assigning.
      */
     public function testCanUpdateDefaultCompanyVendor(): void
     {
@@ -1295,7 +1342,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create([
             'short_code' => Str::random(3),
         ]);
@@ -1372,7 +1419,7 @@ class CompanyTest extends TestCase
 //            ->dump()
             ->assertOk();
 
-        $response = $this->getJson("api/companies/".$company->getKey())->assertOk();
+        $response = $this->getJson('api/companies/'.$company->getKey())->assertOk();
 
         $this->assertEquals($country->getKey(), $response->json('vendors.0.countries.0.id'));
 
@@ -1463,7 +1510,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
         /** @var Customer $rescueCustomer */
@@ -1551,7 +1598,7 @@ class CompanyTest extends TestCase
             'view_own_ww_quotes'
         );
 
-        /** @var User $user */
+        /** @var \App\Domain\User\Models\User $user */
         $user = User::factory()
             ->hasAttached(SalesUnit::factory())
             ->create();
@@ -1560,7 +1607,7 @@ class CompanyTest extends TestCase
 
         $this->actingAs($user, 'api');
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
         /** @var Customer $rescueCustomer */
@@ -1701,7 +1748,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
         /** @var Customer $rescueCustomer */
@@ -1710,7 +1757,7 @@ class CompanyTest extends TestCase
             'name' => $company->name,
         ]);
 
-        /** @var Quote $rescueQuote */
+        /** @var \App\Domain\Rescue\Models\Quote $rescueQuote */
         $rescueQuote = factory(Quote::class)->create([
             'customer_id' => $rescueCustomer->getKey(),
         ]);
@@ -1776,15 +1823,15 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
-        /** @var Asset $companyAsset */
-        $companyAsset = factory(Asset::class)->create();
+        /** @var \App\Domain\Asset\Models\Asset $companyAsset */
+        $companyAsset = Asset::factory()->for(User::factory())->create();
 
         $company->assets()->attach($companyAsset);
 
-        $anotherAsset = factory(Asset::class)->create();
+        $anotherAsset = Asset::factory()->for(User::factory())->create();
 
         $response = $this->getJson('api/companies/'.$company->getKey().'/assets')
 //            ->dump()
@@ -1802,6 +1849,7 @@ class CompanyTest extends TestCase
                         'active_warranty_start_date',
                         'active_warranty_end_date',
                         'created_at',
+                        'user_fullname',
                         'permissions' => [
                             'view',
                             'update',
@@ -1823,32 +1871,30 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
         $companyAttachments = factory(Attachment::class, 2)->create();
 
         $company->attachments()->sync($companyAttachments);
 
-        /** @var Customer $rescueCustomer */
+        /** @var \App\Domain\Rescue\Models\Customer $rescueCustomer */
         $rescueCustomer = factory(Customer::class)->create([
             'company_reference_id' => $company->getKey(),
             'name' => $company->name,
         ]);
 
-        /** @var Quote $rescueQuote */
+        /** @var \App\Domain\Rescue\Models\Quote $rescueQuote */
         $rescueQuote = factory(Quote::class)->create([
             'customer_id' => $rescueCustomer->getKey(),
         ]);
         $rescueQuoteAttachments = factory(Attachment::class, 2)->create();
         $rescueQuote->attachments()->sync($rescueQuoteAttachments);
 
-
-        /** @var Quote $anotherRescueQuote */
+        /** @var \App\Domain\Rescue\Models\Quote $anotherRescueQuote */
         $anotherRescueQuote = factory(Quote::class)->create();
         $anotherRescueQuoteAttachments = factory(Attachment::class, 2)->create();
         $anotherRescueQuote->attachments()->sync($anotherRescueQuoteAttachments);
-
 
         $worldwideOpportunity = Opportunity::factory()->create([
             'primary_account_id' => $company->getKey(),
@@ -1861,12 +1907,10 @@ class CompanyTest extends TestCase
         $worldwideQuoteAttachments = factory(Attachment::class, 2)->create();
         $worldwideQuote->attachments()->sync($worldwideQuoteAttachments);
 
-
         /** @var WorldwideQuote $anotherWorldwideQuote */
         $anotherWorldwideQuote = factory(WorldwideQuote::class)->create();
         $anotherWorldwideQuoteAttachments = factory(Attachment::class, 2)->create();
         $anotherWorldwideQuote->attachments()->sync($anotherWorldwideQuoteAttachments);
-
 
         $response = $this->getJson('api/companies/'.$company->getKey().'/attachments')
 //            ->dump()
@@ -1890,26 +1934,20 @@ class CompanyTest extends TestCase
 
         $response->assertJsonCount(6, 'data');
         $this->assertCount(2, array_filter($response->json('data'),
-            fn(array $attachment) => $attachment['parent_entity_type'] === 'Company'));
+            fn (array $attachment) => $attachment['parent_entity_type'] === 'Company'));
         $this->assertCount(4, array_filter($response->json('data'),
-            fn(array $attachment) => $attachment['parent_entity_type'] === 'Quote'));
+            fn (array $attachment) => $attachment['parent_entity_type'] === 'Quote'));
 
         foreach ($companyAttachments as $attachment) {
-
             $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
-
         }
 
         foreach ($rescueQuoteAttachments as $attachment) {
-
             $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
-
         }
 
         foreach ($worldwideQuoteAttachments as $attachment) {
-
             $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
-
         }
     }
 
@@ -1920,7 +1958,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
         $file = UploadedFile::fake()->create(Str::random(40).'.txt', 1_000);
@@ -1969,7 +2007,7 @@ class CompanyTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Company $company */
+        /** @var \App\Domain\Company\Models\Company $company */
         $company = Company::factory()->create();
 
         $attachment = factory(Attachment::class)->create();

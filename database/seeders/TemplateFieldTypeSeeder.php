@@ -10,6 +10,7 @@ class TemplateFieldTypeSeeder extends Seeder
      * Run the database seeders.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
@@ -19,18 +20,14 @@ class TemplateFieldTypeSeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         $connection->transaction(function () use ($connection, $fieldTypes) {
-
             foreach ($fieldTypes as $fieldType) {
-
                 $connection->table('template_field_types')
                     ->insertOrIgnore([
                         'id' => $fieldType['id'],
                         'title' => $fieldType['title'],
-                        'name' => $fieldType['name']
+                        'name' => $fieldType['name'],
                     ]);
             }
-
         });
-
     }
 }

@@ -36,7 +36,7 @@ class CreateAssetsTable extends Migration
             $table->timestamp('active_warranty_end_date')->nullable();
 
             $table->string('product_number')->nullable()->comment('Asset SKU');
-            $table->string('serial_number')->nullable()->comment('Asset serial number / type');            
+            $table->string('serial_number')->nullable()->comment('Asset serial number / type');
             $table->string('item_number')->nullable()->comment('Asset item number');
 
             $table->string('product_description')->nullable()->comment('Asset friendly name');

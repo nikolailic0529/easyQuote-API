@@ -20,7 +20,6 @@ class PipelineSeeder extends Seeder
 
         $seeds = collect($seeds)
             ->map(function (array $seed) {
-
                 $form = $seed['opportunity_form'];
 
                 $schemaPath = database_path('seeders/models/opportunity_form_schemas/'.$form['form_schema']);
@@ -32,7 +31,6 @@ class PipelineSeeder extends Seeder
             ->all();
 
         $defaultPipelineId = value(function () use ($seeds): ?string {
-
             foreach ($seeds as $pipelineSeed) {
                 if ($pipelineSeed['is_default']) {
                     return $pipelineSeed['id'];
@@ -40,13 +38,10 @@ class PipelineSeeder extends Seeder
             }
 
             return null;
-
         });
 
         $connection->transaction(function () use ($connection, $seeds) {
-
             foreach ($seeds as $pipelineSeed) {
-
                 $connection->table('pipelines')
                     ->insertOrIgnore([
                         'id' => $pipelineSeed['id'],
@@ -61,7 +56,6 @@ class PipelineSeeder extends Seeder
                 $stageCount = count($pipelineSeed['pipeline_stages']);
 
                 foreach ($pipelineSeed['pipeline_stages'] as $i => $stageSeed) {
-
                     $percentage = ($stageCount - ($stageCount - $i - 1)) / $stageCount * 100;
 
                     $connection->table('pipeline_stages')
@@ -74,7 +68,6 @@ class PipelineSeeder extends Seeder
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-
                 }
 
                 $connection->table('opportunity_form_schemas')
@@ -99,7 +92,6 @@ class PipelineSeeder extends Seeder
                         'is_system' => true,
                     ]);
             }
-
         });
 
         $defaultPipelineDoesntExist = $connection->table('pipelines')
@@ -108,15 +100,11 @@ class PipelineSeeder extends Seeder
             ->doesntExist();
 
         if ($defaultPipelineDoesntExist) {
-
             $connection->transaction(function () use ($connection, $defaultPipelineId) {
-
                 $connection->table('pipelines')
                     ->where('id', $defaultPipelineId)
                     ->update(['is_default' => true]);
-
             });
-
         }
     }
 }

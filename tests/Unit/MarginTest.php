@@ -2,23 +2,24 @@
 
 namespace Tests\Unit;
 
-use App\Models\Data\Country;
-use App\Models\Quote\Margin\CountryMargin;
-use App\Models\Vendor;
+use App\Domain\Country\Models\Country;
+use App\Domain\Margin\Models\CountryMargin;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing,};
+use Tests\Unit\Traits\{AssertsListing};
 
 /**
  * @group build
  */
 class MarginTest extends TestCase
 {
-    use AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     protected array $truncatableTables = [
-        'country_margins'
+        'country_margins',
     ];
 
     /**
@@ -38,10 +39,10 @@ class MarginTest extends TestCase
             'search' => Str::random(10),
             'order_by_created_at' => 'asc',
             'order_by_value' => 'asc',
-            'order_by_country' => 'asc'
+            'order_by_country' => 'asc',
         ]);
 
-        $this->getJson(url('api/margins?' . $query))->assertOk();
+        $this->getJson(url('api/margins?'.$query))->assertOk();
     }
 
     /**
@@ -76,7 +77,7 @@ class MarginTest extends TestCase
         $this->postJson(url('api/margins'), $attributes)
             ->assertStatus(422)
             ->assertJsonStructure([
-                'Error' => ['original' => ['value']]
+                'Error' => ['original' => ['value']],
             ]);
     }
 

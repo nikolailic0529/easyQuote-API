@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\API\V2\System\CustomFieldController;
+use App\Domain\CustomField\Controllers\V2\CustomFieldController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:api')->group(static function (): void {

@@ -21,7 +21,6 @@ class SystemSettingSeeder extends Seeder
         $seeds = collect($seeds)
             ->groupBy('section')
             ->map(function (Collection $section) {
-
                 return $section->map(function (array $seed, int $key) {
                     return [
                             'order' => $key + 1,
@@ -29,7 +28,6 @@ class SystemSettingSeeder extends Seeder
                         ] + $seed;
                 })
                     ->all();
-
             })
             ->collapse()
             ->all();
@@ -38,7 +36,6 @@ class SystemSettingSeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         foreach ($seeds as $seed) {
-
             $connection
                 ->table('system_settings')
                 ->upsert([
@@ -65,7 +62,6 @@ class SystemSettingSeeder extends Seeder
                     'label_format' => $seed['label_format'] ?? null,
                     'order' => $seed['order'],
                 ]);
-
         }
     }
 

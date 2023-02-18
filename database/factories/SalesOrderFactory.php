@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\Quote\WorldwideQuote;
-use App\Models\SalesOrder;
-use App\Models\Template\SalesOrderTemplate;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\SalesOrderTemplate;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -33,4 +33,3 @@ class SalesOrderFactory extends Factory
         ];
     }
 }
-

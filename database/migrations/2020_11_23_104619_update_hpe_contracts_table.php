@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class UpdateHpeContractsTable extends Migration
 {
@@ -18,7 +16,7 @@ class UpdateHpeContractsTable extends Migration
 
         try {
             $hpeId = DB::table('vendors')->whereNull('deleted_at')->where('short_code', 'HPE')->value('id');
-        
+
             DB::table('quote_templates')
                 ->where('type', 3)
                 ->whereNull('vendor_id')
@@ -39,6 +37,5 @@ class UpdateHpeContractsTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

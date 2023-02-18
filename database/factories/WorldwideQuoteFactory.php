@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
-use App\Models\Opportunity;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\User;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
 
@@ -36,4 +36,3 @@ class WorldwideQuoteFactory extends Factory
         ];
     }
 }
-

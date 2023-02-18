@@ -23,7 +23,7 @@ class MakeWorldwideQuoteIdAsMorphWorldwideQuoteAssetsTable extends Migration
 
         DB::transaction(function () {
             DB::table('worldwide_quote_assets')
-                ->update(['worldwide_quote_type' => \App\Models\Quote\WorldwideQuote::class]);
+                ->update(['worldwide_quote_type' => \App\Domain\Worldwide\Models\WorldwideQuote::class]);
         });
     }
 
@@ -39,7 +39,7 @@ class MakeWorldwideQuoteIdAsMorphWorldwideQuoteAssetsTable extends Migration
 
             $table->dropColumn('worldwide_quote_type');
 
-            $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();            //
+            $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();
         });
     }
 }

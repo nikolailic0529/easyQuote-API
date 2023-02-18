@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Pipeliner\PipelinerSyncError;
+use App\Domain\Pipeliner\Models\PipelinerSyncError;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class PipelinerSyncErrorTest extends TestCase
 {
     use DatabaseTransactions;
@@ -145,7 +148,7 @@ class PipelinerSyncErrorTest extends TestCase
 
         $errors = PipelinerSyncError::factory()->count(2)->create();
 
-        $this->patchJson("api/pipeliner/sync-errors/batch-archive", [
+        $this->patchJson('api/pipeliner/sync-errors/batch-archive', [
             'sync_errors' => $errors->map->only('id')->all(),
         ])
 //            ->dump()
@@ -180,7 +183,7 @@ class PipelinerSyncErrorTest extends TestCase
 
         $errors = PipelinerSyncError::factory()->count(2)->create();
 
-        $this->patchJson("api/pipeliner/sync-errors/all-archive")
+        $this->patchJson('api/pipeliner/sync-errors/all-archive')
 //            ->dump()
             ->assertNoContent();
 
@@ -244,7 +247,7 @@ class PipelinerSyncErrorTest extends TestCase
 
         $errors = PipelinerSyncError::factory()->count(2)->archived()->create();
 
-        $this->patchJson("api/pipeliner/sync-errors/batch-restore", [
+        $this->patchJson('api/pipeliner/sync-errors/batch-restore', [
             'sync_errors' => $errors->map->only('id')->all(),
         ])
 //            ->dump()
@@ -279,7 +282,7 @@ class PipelinerSyncErrorTest extends TestCase
 
         $errors = PipelinerSyncError::factory()->count(2)->archived()->create();
 
-        $this->patchJson("api/pipeliner/sync-errors/all-restore")
+        $this->patchJson('api/pipeliner/sync-errors/all-restore')
 //            ->dump()
             ->assertNoContent();
 

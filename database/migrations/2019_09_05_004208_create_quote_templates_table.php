@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateQuoteTemplatesTable extends Migration
 {
@@ -35,7 +35,7 @@ class CreateQuoteTemplatesTable extends Migration
             $table->json('form_data')->nullable();
             $table->json('form_values_data')->nullable();
             $table->json('data_headers')->nullable();
-            
+
             $table->boolean('is_system')->default(false);
 
             $table->timestamps();

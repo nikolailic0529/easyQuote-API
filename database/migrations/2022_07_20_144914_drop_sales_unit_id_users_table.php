@@ -5,8 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -40,7 +39,6 @@ return new class extends Migration
         DB::table('users')
             ->whereNull('sales_unit_id')
             ->update(['sales_unit_id' => '9e9ea3fc-e532-49f9-8b2b-e8bde016e149']);
-
 
         Schema::table('users', function (Blueprint $table) {
             $table->uuid('sales_unit_id')

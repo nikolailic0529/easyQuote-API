@@ -29,7 +29,7 @@ class AddStatusStatusReasonColumnsOpportunitiesTable extends Migration
         Schema::table('opportunities', function (Blueprint $table) {
             $table->dropColumn([
                 'status',
-                'status_reason'
+                'status_reason',
             ]);
         });
     }

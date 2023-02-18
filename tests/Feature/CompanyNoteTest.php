@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
-use App\Models\Note\Note;
+use App\Domain\Company\Models\Company;
+use App\Domain\Note\Models\Note;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -39,18 +39,16 @@ class CompanyNoteTest extends TestCase
                         'is_system',
                         'permissions' => [
                             'update',
-                            'delete'
+                            'delete',
                         ],
                         'created_at',
-                    ]
-                ]
+                    ],
+                ],
             ]);
     }
 
     /**
      * Test an ability to create a new company note.
-     *
-     * @return void
      */
     public function testCanCreateCompanyNote(): void
     {
@@ -74,8 +72,6 @@ class CompanyNoteTest extends TestCase
 
     /**
      * Test an ability to update an existing company note.
-     *
-     * @return void
      */
     public function testCanUpdateCompanyNote(): void
     {
@@ -128,8 +124,6 @@ class CompanyNoteTest extends TestCase
 
     /**
      * Test an ability to delete an existing company note.
-     *
-     * @return void
      */
     public function testCanDeleteCompanyNote(): void
     {

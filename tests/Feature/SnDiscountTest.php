@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Quote\Discount\SND;
-use App\Models\Quote\WorldwideQuote;
+use App\Domain\Discount\Models\SND;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class SnDiscountTest extends TestCase
 {
     use DatabaseTransactions;
@@ -22,7 +25,7 @@ class SnDiscountTest extends TestCase
 
         factory(SND::class, 30)->create();
 
-        $this->getJson("api/discounts/snd")
+        $this->getJson('api/discounts/snd')
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -63,7 +66,7 @@ class SnDiscountTest extends TestCase
 
         $attributes = factory(SND::class)->raw();
 
-        $this->postJson("api/discounts/snd", $attributes)
+        $this->postJson('api/discounts/snd', $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -93,7 +96,7 @@ class SnDiscountTest extends TestCase
 
         $attributes = factory(SND::class)->raw();
 
-        $this->patchJson("api/discounts/snd/".$discount->getKey(), $attributes)
+        $this->patchJson('api/discounts/snd/'.$discount->getKey(), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -121,7 +124,7 @@ class SnDiscountTest extends TestCase
 
         $discount = factory(SND::class)->create();
 
-        $this->deleteJson("api/discounts/snd/".$discount->getKey())
+        $this->deleteJson('api/discounts/snd/'.$discount->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -140,7 +143,7 @@ class SnDiscountTest extends TestCase
 
         $discount = factory(SND::class)->create();
 
-        /** @var WorldwideQuote $quote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'submitted_at' => now(),
         ]);
@@ -149,7 +152,7 @@ class SnDiscountTest extends TestCase
 
         $this->authenticateApi();
 
-        $response = $this->deleteJson("api/discounts/snd/".$discount->getKey())
+        $response = $this->deleteJson('api/discounts/snd/'.$discount->getKey())
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([

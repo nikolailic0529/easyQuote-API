@@ -1,0 +1,272 @@
+deptrac:
+  paths:
+    - ./app
+  exclude_files:
+    - '#.*test.*#'
+  layers:
+    - name: Activity
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Activity\\.*
+    - name: Address
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Address\\..*
+    - name: App
+      collectors:
+        - type: className
+          value: .*App\\Domain\\App\\.*
+    - name: AppEvent
+      collectors:
+        - type: className
+          value: .*App\\Domain\\AppEvent\\.*
+    - name: Appointment
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Appointment\\.*
+    - name: Asset
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Asset\\.*
+    - name: Attachment
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Attachment\\.*
+    - name: Authentication
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Authentication\\.*
+    - name: Authorization
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Authorization\\.*
+    - name: Build
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Build\\.*
+    - name: BusinessDivision
+      collectors:
+        - type: className
+          value: .*App\\Domain\\BusinessDivision\\.*
+    - name: Company
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Company\\.*
+    - name: Contact
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Contact\\.*
+    - name: ContractType
+      collectors:
+        - type: className
+          value: .*App\\Domain\\ContractType\\.*
+    - name: Country
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Country\\.*
+    - name: Currency
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Currency\\.*
+    - name: CustomField
+      collectors:
+        - type: className
+          value: .*App\\Domain\\CustomField\\.*
+    - name: DataAllocation
+      collectors:
+        - type: className
+          value: .*App\\Domain\\DataAllocation\\.*
+    - name: Date
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Date\\.*
+    - name: Discount
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Discount\\.*
+    - name: DocumentEngine
+      collectors:
+        - type: className
+          value: .*App\\Domain\\DocumentEngine\\.*
+    - name: DocumentMapping
+      collectors:
+        - type: className
+          value: .*App\\Domain\\DocumentMapping\\.*
+    - name: DocumentProcessing
+      collectors:
+        - type: className
+          value: .*App\\Domain\\DocumentProcessing\\.*
+    - name: ExchangeRate
+      collectors:
+        - type: className
+          value: .*App\\Domain\\ExchangeRate\\.*
+    - name: FailureReport
+      collectors:
+        - type: className
+          value: .*App\\Domain\\FailureReport\\.*
+    - name: File
+      collectors:
+        - type: className
+          value: .*App\\Domain\\File\\.*
+    - name: Formatting
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Formatting\\.*
+    - name: Geocoding
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Geocoding\\.*
+    - name: HpeContract
+      collectors:
+        - type: className
+          value: .*App\\Domain\\HpeContract\\.*
+    - name: Image
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Image\\.*
+    - name: ImportableColumn
+      collectors:
+        - type: className
+          value: .*App\\Domain\\ImportableColumn\\.*
+    - name: Industry
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Industry\\.*
+    - name: Invitation
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Invitation\\.*
+    - name: Language
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Language\\.*
+    - name: Location
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Location\\.*
+    - name: Log
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Log\\.*
+    - name: Maintenance
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Maintenance\\.*
+    - name: Margin
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Margin\\.*
+    - name: Note
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Note\\.*
+    - name: Notification
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Notification\\.*
+    - name: Pipeline
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Pipeline\\.*
+    - name: Pipeliner
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Pipeliner\\.*
+    - name: QuoteFile
+      collectors:
+        - type: className
+          value: .*App\\Domain\\QuoteFile\\.*
+    - name: Recaptcha
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Recaptcha\\.*
+    - name: Recurrence
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Recurrence\\.*
+    - name: Reminder
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Reminder\\.*
+    - name: Rescue
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Rescue\\.*
+    - name: SalesUnit
+      collectors:
+        - type: className
+          value: .*App\\Domain\\SalesUnit\\.*
+    - name: Search
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Search\\.*
+    - name: Settings
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Settings\\.*
+    - name: Slack
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Slack\\.*
+    - name: Space
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Space\\.*
+    - name: Stats
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Stats\\.*
+    - name: Sync
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Sync\\.*
+    - name: Task
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Task\\.*
+    - name: Team
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Team\\.*
+    - name: Template
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Template\\.*
+    - name: Timezone
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Timezone\\.*
+    - name: UnifiedContract
+      collectors:
+        - type: className
+          value: .*App\\Domain\\UnifiedContract\\.*
+    - name: UnifiedQuote
+      collectors:
+        - type: className
+          value: .*App\\Domain\\UnifiedQuote\\.*
+    - name: User
+      collectors:
+        - type: className
+          value: .*App\\Domain\\User\\.*
+    - name: UserInterface
+      collectors:
+        - type: className
+          value: .*App\\Domain\\UserInterface\\.*
+    - name: Vendor
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Vendor\\.*
+    - name: VendorServices
+      collectors:
+        - type: className
+          value: .*App\\Domain\\VendorServices\\.*
+    - name: Warranty
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Warranty\\.*
+    - name: Worldwide
+      collectors:
+        - type: className
+          value: .*App\\Domain\\Worldwide\\.*
+  ruleset: 
+    Asset: [Address]

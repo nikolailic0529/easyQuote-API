@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
-return new class extends Migration {
+return new class() extends Migration {
     /**
      * Run the migrations.
      *
@@ -39,13 +39,11 @@ return new class extends Migration {
         }
 
         DB::transaction(static function () use ($seeds): void {
-
             foreach ($seeds as $seed) {
                 DB::table('sales_orders')
                     ->where('id', $seed['id'])
                     ->update(['assets_count' => $seed['assets_count']]);
             }
-
         });
     }
 
@@ -61,7 +59,6 @@ return new class extends Migration {
                     ->get();
 
                 foreach ($distributorQuotes as $quote) {
-
                     if ($quote->use_groups) {
                         $count += DB::table('distribution_rows_groups')
                             ->where('worldwide_distribution_id', $quote->id)
@@ -74,7 +71,6 @@ return new class extends Migration {
                             ->where('mapped_rows.is_selected', true)
                             ->count();
                     }
-
                 }
 
                 return $count;
@@ -107,6 +103,5 @@ return new class extends Migration {
      */
     public function down()
     {
-        //
     }
 };

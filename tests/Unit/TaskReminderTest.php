@@ -2,9 +2,9 @@
 
 namespace Tests\Unit;
 
-use App\Enum\ReminderStatus;
-use App\Models\Task\TaskReminder;
-use App\Services\Task\PerformTaskReminderService;
+use App\Domain\Reminder\Enum\ReminderStatus;
+use App\Domain\Task\Models\TaskReminder;
+use App\Domain\Task\Services\PerformTaskReminderService;
 use Tests\TestCase;
 
 /**
@@ -14,7 +14,7 @@ class TaskReminderTest extends TestCase
 {
     public function testScheduledReminderIsDue(): void
     {
-        /** @var TaskReminder $reminder */
+        /** @var \App\Domain\Task\Models\TaskReminder $reminder */
         $reminder = TaskReminder::factory()->make([
             'set_date' => now(),
             'status' => ReminderStatus::Scheduled,

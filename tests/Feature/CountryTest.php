@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Data\Country;
+use App\Domain\Country\Models\Country;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -24,7 +24,7 @@ class CountryTest extends TestCase
 
         $attributes = factory(Country::class)->raw();
 
-        $this->postJson("api/countries/", $attributes)
+        $this->postJson('api/countries/', $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -50,7 +50,7 @@ class CountryTest extends TestCase
 
         $attributes = factory(Country::class)->raw();
 
-        $this->patchJson("api/countries/".$country->getKey(), $attributes)
+        $this->patchJson('api/countries/'.$country->getKey(), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -76,7 +76,7 @@ class CountryTest extends TestCase
 
         $attributes = factory(Country::class)->raw();
 
-        $this->patchJson("api/countries/".$country->getKey(), $attributes)
+        $this->patchJson('api/countries/'.$country->getKey(), $attributes)
             ->assertForbidden();
     }
 
@@ -91,16 +91,16 @@ class CountryTest extends TestCase
 
         $country = factory(Country::class)->create();
 
-        $this->deleteJson("api/countries/".$country->getKey())
+        $this->deleteJson('api/countries/'.$country->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
-        $this->getJson("api/countries/".$country->getKey())
+        $this->getJson('api/countries/'.$country->getKey())
             ->assertNotFound();
     }
 
     /**
-     * Test can activate an existing country
+     * Test can activate an existing country.
      *
      * @return void
      */
@@ -113,7 +113,7 @@ class CountryTest extends TestCase
         $country->activated_at = null;
         $country->save();
 
-        $this->putJson("api/countries/activate/".$country->getKey())
+        $this->putJson('api/countries/activate/'.$country->getKey())
             ->assertOk()->assertExactJson([true]);
 
         $this->assertNotNull($country->refresh()->activated_at);
@@ -133,7 +133,7 @@ class CountryTest extends TestCase
         $country->activated_at = now();
         $country->save();
 
-        $this->putJson("api/countries/deactivate/".$country->getKey())
+        $this->putJson('api/countries/deactivate/'.$country->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 

@@ -15,7 +15,7 @@ class CreateQuoteNotesTable extends Migration
     {
         Schema::create('quote_notes', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            
+
             $table->uuid('quote_id');
             $table->uuid('user_id');
 

@@ -20,12 +20,10 @@ class CreateBusinessDivisionsTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('business_divisions')->insert([
                 ['id' => '45fc3384-27c1-4a44-a111-2e52b072791e', 'division_name' => 'Rescue'],
-                ['id' => 'f911cb0b-a1b0-4943-91e7-0a1c796984a1', 'division_name' => 'Worldwide']
+                ['id' => 'f911cb0b-a1b0-4943-91e7-0a1c796984a1', 'division_name' => 'Worldwide'],
             ]);
-
         });
     }
 

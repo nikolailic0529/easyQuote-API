@@ -2,14 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Models\System\CustomFieldValue;
+use App\Domain\CustomField\Models\CustomFieldValue;
 use Database\Seeders\CustomFieldSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class CustomFieldTest extends TestCase
 {
     use DatabaseTransactions;
@@ -349,8 +351,6 @@ class CustomFieldTest extends TestCase
 
     /**
      * Test an ability to update values of custom fields.
-     *
-     * @return void
      */
     public function testCanUpdateValuesOfOpportunityDistributor1CustomField(): void
     {
@@ -405,7 +405,6 @@ class CustomFieldTest extends TestCase
             ]);
 
         $parentFieldValuesIds = $responseOfParentFieldValues->json('data.field_values.*.id');
-
 
         $data = collect()->times(10, static function (int $i) use ($parentFieldValuesIds) {
             return [
@@ -477,7 +476,6 @@ class CustomFieldTest extends TestCase
 
         $parentFieldValuesIds = $responseOfParentFieldValues->json('data.field_values.*.id');
 
-
         $data = collect()->times(2, static function (int $i) use ($parentFieldValuesIds) {
             return [
                 'id' => null,
@@ -547,7 +545,7 @@ class CustomFieldTest extends TestCase
             'variables' => [
                 'customer_order_date' => null,
                 'personal_rating' => '2',
-            ]
+            ],
         ])
 //            ->dump()
             ->assertOk()

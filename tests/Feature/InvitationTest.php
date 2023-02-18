@@ -2,13 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Enum\CompanyType;
-use App\Models\{Collaboration\Invitation, Company, Role, SalesUnit, User};
+use App\Domain\Authorization\Models\{Role};
+use App\Domain\Company\Enum\CompanyType;
+use App\Domain\Company\Models\Company;
+use App\Domain\Invitation\Models\Invitation;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Facades\Auth, Str};
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Tests\TestCase;
-use function factory;
-use const IE_01;
 
 /**
  * @group build
@@ -47,15 +50,13 @@ class InvitationTest extends TestCase
 
     /**
      * Test an ability to create a new invitation.
-     *
-     * @return void
      */
     public function testCanCreateNewInvitation(): void
     {
         $this->authenticateApi();
 
         $r = $this->postJson('api/users', $data = [
-            'role_id' => factory(Role::class)->create()->getKey(),
+            'role_id' => \factory(Role::class)->create()->getKey(),
             'host' => 'http://localhost',
             'email' => Str::random(40).'@email.com',
             'sales_units' => SalesUnit::factory(2)->create()->map->only('id'),
@@ -102,9 +103,9 @@ class InvitationTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var Invitation $invitation */
-        $invitation = factory(Invitation::class)->create([
-            'role_id' => factory(Role::class)->create()->getKey(),
+        /** @var \App\Domain\Invitation\Models\Invitation $invitation */
+        $invitation = \factory(Invitation::class)->create([
+            'role_id' => \factory(Role::class)->create()->getKey(),
         ]);
 
         $this->assertInstanceOf(Invitation::class, $invitation);
@@ -165,8 +166,8 @@ class InvitationTest extends TestCase
     {
         $this->authenticateApi();
 
-        $invitation = factory(Invitation::class)->create([
-            'role_id' => factory(Role::class)->create()->getKey(),
+        $invitation = \factory(Invitation::class)->create([
+            'role_id' => \factory(Role::class)->create()->getKey(),
         ]);
 
         $this->putJson("api/invitations/cancel/{$invitation->getKey()}")
@@ -181,8 +182,8 @@ class InvitationTest extends TestCase
             ->assertNotFound()
             ->assertExactJson([
                 'ErrorCode' => 'IE_01',
-                'ErrorDetails' => IE_01,
-                'message' => IE_01,
+                'ErrorDetails' => \IE_01,
+                'message' => \IE_01,
             ]);
     }
 
@@ -195,8 +196,8 @@ class InvitationTest extends TestCase
     {
         $this->authenticateApi();
 
-        $invitation = factory(Invitation::class)->create([
-            'role_id' => factory(Role::class)->create()->getKey(),
+        $invitation = \factory(Invitation::class)->create([
+            'role_id' => \factory(Role::class)->create()->getKey(),
         ]);
 
         $this->deleteJson("api/invitations/{$invitation->getKey()}")

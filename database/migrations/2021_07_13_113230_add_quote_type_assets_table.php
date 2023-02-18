@@ -19,13 +19,11 @@ class AddQuoteTypeAssetsTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('assets')
                 ->whereNotNull('quote_id')
                 ->update([
                     'quote_type' => '6c0f3f29-2d00-4174-9ef8-55aa5889a812',
                 ]);
-
         });
     }
 

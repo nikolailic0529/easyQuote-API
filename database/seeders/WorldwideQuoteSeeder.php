@@ -2,19 +2,18 @@
 
 namespace Database\Seeders;
 
-use App\Models\Customer\WorldwideCustomer;
-use App\Models\Data\Country;
-use App\Models\Quote\WorldwideDistribution;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\QuoteFile\DistributionRowsGroup;
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\MappedRow;
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\QuoteFile\ScheduleData;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Template\TemplateField;
+use App\Domain\Country\Models\Country;
+use App\Domain\DocumentMapping\Models\MappedRow;
+use App\Domain\QuoteFile\Models\ImportableColumn;
+use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\QuoteFile\Models\ScheduleData;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\Template\Models\TemplateField;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\DistributionRowsGroup;
+use App\Domain\Worldwide\Models\WorldwideDistribution;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Faker\Generator as Faker;
-use App\Models\Vendor;
 use Illuminate\Database\Seeder;
 
 class WorldwideQuoteSeeder extends Seeder
@@ -41,12 +40,12 @@ TEMPLATE;
 
         $wwQuote = factory(WorldwideQuote::class)->create(['quote_template_id' => $template->getKey(), 'submitted_at' => now()]);
 
-        /** @var WorldwideCustomer $customer */
+        /** @var \App\Domain\Worldwide\Models\WorldwideCustomer $customer */
         $customer = $wwQuote->worldwideCustomer;
 
-        $customer->hardwareAddress()->associate(factory(\App\Models\Address::class)
+        $customer->hardwareAddress()->associate(factory(\App\Domain\Address\Models\Address::class)
             ->create(['address_type' => 'Hardware']));
-        $customer->softwareAddress()->associate(factory(\App\Models\Address::class)
+        $customer->softwareAddress()->associate(factory(\App\Domain\Address\Models\Address::class)
             ->create(['address_type' => 'Software']));
 
         $customer->save();
@@ -64,7 +63,7 @@ TEMPLATE;
                 'sort_rows_groups_direction' => 'asc',
                 'margin_value' => 10,
                 'buy_price' => mt_rand(500, 2000),
-                'additional_details' => $faker->text
+                'additional_details' => $faker->text,
             ]
         );
 
@@ -110,10 +109,9 @@ TEMPLATE;
         $wwDistributions[0]->use_groups = true;
         $wwDistributions[0]->save();
 
-
         $rowsGroup = factory(DistributionRowsGroup::class)->create([
             'worldwide_distribution_id' => $wwDistributions[0]->getKey(),
-            'is_selected' => true
+            'is_selected' => true,
         ]);
 
         $rowsGroup->rows()->sync($wwDistributions[0]->mappedRows);

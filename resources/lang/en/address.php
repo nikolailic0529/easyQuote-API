@@ -2,6 +2,6 @@
 
 return [
     'types' => [
-        'Machine Address', 'Invoice Address', 'Client Address'
-    ]
+        'Machine Address', 'Invoice Address', 'Client Address',
+    ],
 ];

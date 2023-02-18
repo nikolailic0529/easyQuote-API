@@ -2,20 +2,20 @@
 
 namespace Tests\Feature;
 
-use App\Events\Task\TaskCreated;
-use App\Events\Task\TaskDeleted;
-use App\Events\Task\TaskUpdated;
-use App\Listeners\TaskEventSubscriber;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Task\Task;
-use App\Models\User;
+use App\Domain\Task\Events\TaskCreated;
+use App\Domain\Task\Events\TaskDeleted;
+use App\Domain\Task\Events\TaskUpdated;
+use App\Domain\Task\Listeners\TaskEventSubscriber;
+use App\Domain\Task\Models\Task;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 /**
- * Class WorldwideQuoteTaskTest
  * @group worldwide
+ * @group build
  */
 class WorldwideQuoteTaskTest extends TestCase
 {
@@ -30,7 +30,7 @@ class WorldwideQuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var WorldwideQuote $wwQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create();
 
         $wwQuoteTasks = Task::factory()->count(30)->create();
@@ -45,24 +45,23 @@ class WorldwideQuoteTaskTest extends TestCase
                         'id',
                         'user_id',
                         'user' => [
-                            'id', 'email', 'first_name', 'middle_name', 'last_name'
+                            'id', 'email', 'first_name', 'middle_name', 'last_name',
                         ],
                         'name',
                         'content',
                         'expiry_date',
                         'priority',
                         'users' => [
-                            '*' => ['id', 'email', 'first_name', 'middle_name', 'last_name']
+                            '*' => ['id', 'email', 'first_name', 'middle_name', 'last_name'],
                         ],
                         'attachments' => [
                             '*' => [
-                                'id', 'type', 'filepath', 'filename', 'extension', 'size', 'created_at'
-                            ]
+                                'id', 'type', 'filepath', 'filename', 'extension', 'size', 'created_at',
+                            ],
                         ],
                         'created_at',
-                        'updated_at'
-
-                    ]
+                        'updated_at',
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -74,7 +73,7 @@ class WorldwideQuoteTaskTest extends TestCase
                 'per_page',
                 'prev_page_url',
                 'to',
-                'total'
+                'total',
             ]);
     }
 
@@ -103,7 +102,7 @@ class WorldwideQuoteTaskTest extends TestCase
 
         $id = $response->json('id');
 
-        Event::assertDispatched(TaskCreated::class, fn(TaskCreated $event) => $event->task->getKey() === $id);
+        Event::assertDispatched(TaskCreated::class, fn (TaskCreated $event) => $event->task->getKey() === $id);
     }
 
     /**
@@ -133,7 +132,7 @@ class WorldwideQuoteTaskTest extends TestCase
             ->assertJsonStructure(['id', 'name', 'content', 'user_id'])
             ->assertJsonFragment(['content' => $attributes['content']]);
 
-        Event::assertDispatched(TaskUpdated::class, fn(TaskUpdated $event) => $event->task->getKey() === $task->getKey());
+        Event::assertDispatched(TaskUpdated::class, fn (TaskUpdated $event) => $event->task->getKey() === $task->getKey());
     }
 
     /**
@@ -145,7 +144,7 @@ class WorldwideQuoteTaskTest extends TestCase
     {
         $this->authenticateApi();
 
-        /** @var WorldwideQuote $wwQuote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create();
 
         Event::fake(TaskDeleted::class);
@@ -162,6 +161,6 @@ class WorldwideQuoteTaskTest extends TestCase
 
         $this->assertSoftDeleted($task);
 
-        Event::assertDispatched(TaskDeleted::class, fn(TaskDeleted $event) => $event->task->getKey() === $task->getKey());
+        Event::assertDispatched(TaskDeleted::class, fn (TaskDeleted $event) => $event->task->getKey() === $task->getKey());
     }
 }

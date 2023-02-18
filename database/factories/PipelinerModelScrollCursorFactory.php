@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\Opportunity;
-use App\Models\PipelinerModelScrollCursor;
+use App\Domain\Pipeliner\Models\PipelinerModelScrollCursor;
+use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class PipelinerModelScrollCursorFactory extends Factory
@@ -20,4 +20,3 @@ class PipelinerModelScrollCursorFactory extends Factory
         ];
     }
 }
-

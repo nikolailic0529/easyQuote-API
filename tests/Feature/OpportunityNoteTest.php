@@ -2,18 +2,27 @@
 
 namespace Tests\Feature;
 
-use App\Models\Note\Note;
-use App\Models\Opportunity;
+use App\Domain\Note\Models\Note;
+use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 /**
  * @group opportunity
+ * @group build
  */
 class OpportunityNoteTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions;
+    use WithFaker;
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        unset($this->faker);
+    }
 
     /**
      * Test an ability to view paginated notes of opportunity.
@@ -130,7 +139,6 @@ class OpportunityNoteTest extends TestCase
         $this->assertNotSame($this->app['auth']->id(), $response->json('user_id'));
         $this->assertSame($data['text'], $response->json('text'));
     }
-
 
     /**
      * Test an ability to delete an existing opportunity note.

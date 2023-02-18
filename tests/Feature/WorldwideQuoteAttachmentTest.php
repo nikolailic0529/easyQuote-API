@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attachment;
-use App\Models\Quote\WorldwideQuote;
+use App\Domain\Attachment\Models\Attachment;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -50,9 +50,7 @@ class WorldwideQuoteAttachmentTest extends TestCase
         $response->assertJsonCount(2, 'data');
 
         foreach ($attachments as $attachment) {
-
             $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
-
         }
     }
 
@@ -112,7 +110,7 @@ class WorldwideQuoteAttachmentTest extends TestCase
      */
     public function testCanDeleteAttachmentOfQuote()
     {
-        /** @var WorldwideQuote $quote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create();
 
         $attachment = factory(Attachment::class)->create();

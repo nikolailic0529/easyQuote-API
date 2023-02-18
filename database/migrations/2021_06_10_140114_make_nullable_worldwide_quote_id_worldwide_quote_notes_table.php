@@ -18,11 +18,11 @@ class MakeNullableWorldwideQuoteIdWorldwideQuoteNotesTable extends Migration
         });
 
         Schema::table('worldwide_quote_notes', function (Blueprint $table) {
-           $table->uuid('worldwide_quote_id')->nullable(true)->change();
+            $table->uuid('worldwide_quote_id')->nullable(true)->change();
         });
 
         Schema::table('worldwide_quote_notes', function (Blueprint $table) {
-           $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreign('worldwide_quote_id')->references('id')->on('worldwide_quotes')->cascadeOnDelete()->cascadeOnUpdate();
         });
     }
 
