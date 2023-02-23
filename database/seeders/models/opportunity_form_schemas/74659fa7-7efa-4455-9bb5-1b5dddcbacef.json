@@ -1,5 +1,5 @@
 {
-  "id": "74659fa7-7efa-4455-9bb5-1b5dddcbacef",
+  "id": "72d4aa51-dac0-449a-a50d-da7b5b9ddb1d",
   "form_data": [
     {
       "id": "18f89b63-9353-47fe-9cc3-808bab2d69c2",
@@ -1054,12 +1054,12 @@
       "decoration": "4"
     },
     {
-      "id": "a1c405fb-f941-43c5-9903-9150b923a1b3",
+      "id": "ae84a319-57c8-4e34-92d9-86fadad78878",
       "name": "Single Column",
       "child": [
         {
-          "id": "417b9a93-d52e-4571-88cc-6045f191efba",
-          "class": "col",
+          "id": "34e7195a-7a71-4703-a949-9c918c100e23",
+          "class": "col-lg-6",
           "controls": [
             {
               "id": "c739ea00-4ed5-452f-a647-aa17dc043117",
@@ -1076,8 +1076,8 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "417b9a93-d52e-4571-88cc-6045f191efba",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
+              "attached_child_id": "34e7195a-7a71-4703-a949-9c918c100e23",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             },
             {
               "id": "35e1623b-2320-428e-bd12-71598e20732c",
@@ -1097,14 +1097,14 @@
               "placeholder": null,
               "field_required": false,
               "possibel_values": null,
-              "attached_child_id": "417b9a93-d52e-4571-88cc-6045f191efba",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
+              "attached_child_id": "34e7195a-7a71-4703-a949-9c918c100e23",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             }
           ],
           "position": 1
         },
         {
-          "id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
+          "id": "969a1f62-98f2-4d17-b8e8-d1802e2b5aa0",
           "class": "col",
           "controls": [
             {
@@ -1122,8 +1122,8 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
+              "attached_child_id": "969a1f62-98f2-4d17-b8e8-d1802e2b5aa0",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             },
             {
               "id": "c2b0a596-1eac-4f8e-a30b-2d95da34a3d8",
@@ -1144,59 +1144,14 @@
               "field_required": false,
               "possibel_values": null,
               "possible_values": "1 - Need not confirmed,2 - Need is confirmed,3 - Good chance,4 - Strong selling signals,5 - Will be ordered",
-              "attached_child_id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
+              "attached_child_id": "969a1f62-98f2-4d17-b8e8-d1802e2b5aa0",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             }
           ],
           "position": 1
         },
         {
-          "id": "178804b3-bfda-475f-b564-11139cae6636",
-          "class": "col",
-          "controls": [
-            {
-              "id": "c739ea00-4ed5-452f-a647-aa17dc043117",
-              "css": null,
-              "src": null,
-              "name": "l-1",
-              "show": false,
-              "type": "label",
-              "class": null,
-              "label": "Label",
-              "value": "Closing Date",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "178804b3-bfda-475f-b564-11139cae6636",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
-            },
-            {
-              "id": "d9cbf283-aa54-4146-af3f-b754978a450b",
-              "css": null,
-              "src": null,
-              "name": "opportunity_closing_date",
-              "show": false,
-              "type": "date",
-              "class": "form-control",
-              "label": "Opportunity closing date",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "placeholder": null,
-              "field_required": true,
-              "attached_child_id": "178804b3-bfda-475f-b564-11139cae6636",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
-            }
-          ],
-          "position": 1
-        },
-        {
-          "id": "b6d32b06-c2c9-401f-ae8b-20efce2e63ef",
+          "id": "08cbbf51-d776-41c4-93f3-d363f9392da7",
           "class": "col border-right",
           "controls": [
             {
@@ -1214,8 +1169,8 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "b6d32b06-c2c9-401f-ae8b-20efce2e63ef",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
+              "attached_child_id": "08cbbf51-d776-41c4-93f3-d363f9392da7",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             },
             {
               "id": "0fd59077-70fa-4887-b2fb-848896f5bac9",
@@ -1234,8 +1189,8 @@
               "is_required": false,
               "placeholder": null,
               "field_required": false,
-              "attached_child_id": "b6d32b06-c2c9-401f-ae8b-20efce2e63ef",
-              "attached_element_id": "a1c405fb-f941-43c5-9903-9150b923a1b3"
+              "attached_child_id": "08cbbf51-d776-41c4-93f3-d363f9392da7",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             }
           ],
           "position": 1
@@ -2255,7 +2210,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "attached_child_id": "c69a000e-1f33-44a0-bc4a-f3a462612591",
               "attached_element_id": "3d3aae08-3bad-4b03-b803-75e98a57ff84"
             }
@@ -2349,7 +2304,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "attached_child_id": "c69a000e-1f33-44a0-bc4a-f3a462612591",
               "attached_element_id": "6388a807-6cd5-4b81-a213-b0b103697bcc"
             }
@@ -2443,7 +2398,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "c69a000e-1f33-44a0-bc4a-f3a462612591",
               "attached_element_id": "881a2953-2189-4953-80e0-94dba79e1485"

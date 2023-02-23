@@ -90,7 +90,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('settings/public', [SystemSettingController::class, 'showPublicSettings']);
 
-Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function () {
+Route::group(['prefix' => 'auth'], static function (): void {
     Route::get('attempts/{email}', [AuthController::class, 'showAttempts']);
 
     Route::post('signin', [AuthController::class, 'signin'])->name('signin');
@@ -102,7 +102,7 @@ Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function ()
     Route::get('reset-password/{reset}', [AuthController::class, 'verifyPasswordReset']);
     Route::post('reset-password/{reset}', [AuthController::class, 'resetPassword']);
 
-    Route::group(['middleware' => 'auth:api'], function () {
+    Route::group(['middleware' => 'auth:api'], static function (): void {
         Route::get('logout', [AuthController::class, 'logout'])->name('account.logout');
         Route::match(['get', 'put'], 'user', [AuthController::class, 'showCurrentUser'])->name('account.show');
         Route::post('user', [AuthController::class, 'updateCurrentUser'])->name('account.update');
@@ -111,13 +111,13 @@ Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function ()
 
 /* Maintenance. */
 Route::get('maintenance', [MaintenanceController::class, 'show']);
-Route::group(['middleware' => ['auth:api', 'role:Administrator']], function () {
+Route::group(['middleware' => ['auth:api', 'role:Administrator']], static function (): void {
     Route::post('maintenance', [MaintenanceController::class, 'start']);
     Route::put('maintenance', [MaintenanceController::class, 'stop']);
 });
 
-Route::group(['prefix' => 'data'], function () {
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+Route::group(['prefix' => 'data'], static function (): void {
+    Route::group([], static function (): void {
         Route::get('timezones', TimezoneController::class);
         Route::get('languages', LanguageController::class);
         Route::get('currencies', CurrencyController::class);
@@ -132,7 +132,7 @@ Route::group(['prefix' => 'data'], function () {
 Route::patch('exchange-rates/refresh', [ExchangeRateController::class, 'refreshExchangeRates']);
 Route::post('exchange-rates/convert', [ExchangeRateController::class, 'convertCurrencies']);
 
-Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => [THROTTLE_RATE_01]], function () {
+Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => [THROTTLE_RATE_01]], static function (): void {
     Route::get('quotes/{rfq}', [S4QuoteController::class, 'showQuoteByRfqNumber'])->name('quote');
     Route::post('quotes', [S4QuoteController::class, 'storeS4Customer'])->name('store');
     Route::get('quotes/{rfq}/price', [S4QuoteController::class, 'downloadPriceListFile'])->name('price');
@@ -140,16 +140,16 @@ Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => [THROTTLE_RATE_01
     Route::get('quotes/{rfq}/pdf', [S4QuoteController::class, 'exportToPdf'])->name('pdf');
 });
 
-Route::group(['prefix' => 'document-engine'], function () {
+Route::group(['prefix' => 'document-engine'], static function (): void {
     Route::post('events', [DocumentEngineEventController::class, 'handleDocumentEngineEvent']);
     Route::get('document-headers/linked', [DocumentEngineDataController::class, 'showLinkedDocumentHeaders']);
 });
 
-Route::group(['middleware' => 'auth:api'], function () {
+Route::group(['middleware' => 'auth:api'], static function (): void {
     Route::get('business-divisions', BusinessDivisionController::class);
     Route::get('contract-types', ContractTypeController::class);
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::match(['get', 'post'], 'stats', [StatsController::class, 'showSummaryOfQuotes']);
         Route::match(['get', 'post'], 'stats/customers', [StatsController::class, 'showSummaryOfCustomers']);
         Route::post('stats/customers/map', [StatsController::class, 'showCustomerLocations']);
@@ -167,7 +167,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::patch('assets/{asset}/ownership', [AssetOwnershipController::class, 'changeAssetOwnership']);
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::get('countries/vendor/{vendor}', [CountryController::class, 'filterCountriesByVendor']);
         Route::get('countries/company/{company}', [CountryController::class, 'filterCountriesByCompany']);
         Route::apiResource('countries', CountryController::class);
@@ -177,7 +177,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('currencies/rate', [CurrencyController::class, 'targetRate']);
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::apiResource('addresses', AddressController::class);
         Route::put('addresses/activate/{address}', [AddressController::class, 'activate']);
         Route::put('addresses/deactivate/{address}', [AddressController::class, 'deactivate']);
@@ -190,7 +190,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::put('contacts/{contact}/address/{address}', [ContactController::class, 'associateContactWithAddress']);
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::apiResource('notifications', NotificationController::class, ['only' => ['index', 'destroy']]);
         Route::get('notifications/latest', [NotificationController::class, 'latest']);
         Route::delete('notifications', [NotificationController::class, 'destroyAll']);
@@ -242,7 +242,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         );
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::get('users/list', [UserController::class, 'list']);
         Route::get('users/exlist', [UserController::class, 'exclusiveList']);
         Route::post('users/roles', [UserController::class, 'listByRoles']);
@@ -283,7 +283,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::delete('teams/{team}', [TeamController::class, 'deleteTeam']);
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::get('templates/designer/{template}', [QuoteTemplateController::class, 'showTemplateForm']);
         Route::get('templates/country/{country}', [QuoteTemplateController::class, 'filterTemplatesByCountry']);
         Route::apiResource('templates', QuoteTemplateController::class);
@@ -393,7 +393,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         );
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::get('notes/rel-company/{related}', [NoteController::class, 'paginateCompanyNotes']);
         Route::get('notes/rel-quote/{related}', [NoteController::class, 'paginateRescueQuoteNotes']);
         Route::get('notes/rel-ww-quote/{related}', [NoteController::class, 'paginateWorldwideQuoteNotes']);
@@ -409,7 +409,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::delete('notes/{note}', [NoteController::class, 'deleteNote']);
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::get('companies/external', [CompanyController::class, 'getExternal']);
         Route::get('companies/internal', [CompanyController::class, 'showListOfInternalCompanies']);
         Route::get('companies/countries', [CompanyController::class, 'showInternalCompaniesWithCountries']);
@@ -470,7 +470,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('companies/{company}/appointments', [CompanyController::class, 'showAppointmentsOfCompany']);
     });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::get('vendors/list', [VendorController::class, 'showVendorsList']);
         Route::apiResource('vendors', VendorController::class);
         Route::put('vendors/activate/{vendor}', [VendorController::class, 'activate']);
@@ -478,13 +478,13 @@ Route::group(['middleware' => 'auth:api'], function () {
     });
     Route::get('vendors/country/{country}', [VendorController::class, 'country']);
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
+    Route::group([], static function (): void {
         Route::apiResource('margins', CountryMarginController::class);
         Route::put('margins/activate/{margin}', [CountryMarginController::class, 'activate']);
         Route::put('margins/deactivate/{margin}', [CountryMarginController::class, 'deactivate']);
     });
 
-    Route::group(['prefix' => 'discounts', 'middleware' => THROTTLE_RATE_01], function () {
+    Route::group(['prefix' => 'discounts'], static function (): void {
         Route::apiResource('multi_year', MultiYearDiscountController::class);
         Route::put('multi_year/activate/{multi_year}', [MultiYearDiscountController::class, 'activate']);
         Route::put('multi_year/deactivate/{multi_year}', [MultiYearDiscountController::class, 'deactivate']);
@@ -521,7 +521,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('hpe-contracts/{hpe_contract}/export', [HpeContractController::class, 'exportHpeContract']);
     Route::apiResource('hpe-contracts', HpeContractController::class);
 
-    Route::group(['prefix' => 'contracts', 'as' => 'contracts.'], function () {
+    Route::group(['prefix' => 'contracts', 'as' => 'contracts.'], static function (): void {
         Route::get('drafted/users', [UnifiedContractController::class, 'showUserNamesOfDraftedContracts']);
         Route::get('submitted/users', [UnifiedContractController::class, 'showUserNamesOfSubmittedContracts']);
 
@@ -559,7 +559,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('submitted/unsubmit/{submitted}', [ContractSubmittedController::class, 'unsubmit']);
     });
 
-    Route::group(['prefix' => 'quotes', 'as' => 'quotes.'], function () {
+    Route::group(['prefix' => 'quotes', 'as' => 'quotes.'], static function (): void {
         Route::post('handle', [QuoteFileController::class, 'processQuoteFile']);
         Route::put('/get/{quote}', [QuoteController::class, 'quote']);
         Route::get('/get/{quote}/quote-files/{file_type}', [QuoteController::class, 'downloadQuoteFile'])
@@ -592,7 +592,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
         Route::get('{quote}/appointments', [QuoteController::class, 'showAppointmentsOfQuote']);
 
-        Route::group(['middleware' => THROTTLE_RATE_01], function () {
+        Route::group([], static function (): void {
             Route::get('/discounts/{quote}', [QuoteController::class, 'discounts']);
             Route::post('/try-discounts/{quote}', [QuoteController::class, 'tryDiscounts']);
             Route::get('/review/{quote}', [QuoteController::class, 'review']);
@@ -637,7 +637,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
             Route::get('customers/number/{company}/{customer?}', [CustomerController::class, 'giveCustomerNumber']);
 
-            Route::group(['prefix' => 'step'], function () {
+            Route::group(['prefix' => 'step'], static function (): void {
                 Route::get('1', [QuoteController::class, 'step1']);
                 Route::post('1', [QuoteController::class, 'templates']);
                 Route::post('2', [QuoteController::class, 'step2']);

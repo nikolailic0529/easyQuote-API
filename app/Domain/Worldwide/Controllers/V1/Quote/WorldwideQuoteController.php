@@ -75,7 +75,8 @@ class WorldwideQuoteController extends Controller
 
         return response()->json(
             $resource,
-            Response::HTTP_CREATED
+            status: Response::HTTP_CREATED,
+            options: JSON_PRESERVE_ZERO_FRACTION
         );
     }
 
@@ -346,7 +347,8 @@ class WorldwideQuoteController extends Controller
 
                 $request->includeModelAttributes($worldwideQuote);
             }),
-            Response::HTTP_OK
+            status: Response::HTTP_OK,
+            options: JSON_PRESERVE_ZERO_FRACTION
         );
     }
 

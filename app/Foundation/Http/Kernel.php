@@ -40,7 +40,7 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            'throttle:600,1',
+            'throttle:api',
             'bindings',
             \App\Domain\User\Middleware\PerformUserActivity::class,
             \App\Domain\User\Middleware\EnforceChangePassword::class,

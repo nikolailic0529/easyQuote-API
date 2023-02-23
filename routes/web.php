@@ -4,6 +4,7 @@ use App\Domain\HpeContract\Controllers\V1\HpeContractController;
 use App\Domain\Rescue\Controllers\V1\QuoteSubmittedController;
 use App\Domain\Worldwide\Controllers\V1\Quote\WorldwideQuoteController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\View;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,11 +17,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
+Route::get('/', static function (): View {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
+Route::get('/dashboard', static function (): View {
     return view('dashboard');
 })->middleware(['auth'])->name('dashboard');
 

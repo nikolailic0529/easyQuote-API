@@ -36,7 +36,7 @@ class ExchangeRateController extends Controller
             'amount' => $request->getAmount(),
             'exchange_date' => $request->getExchangeDate(),
             'result' => $result,
-        ]));
+        ]), options: JSON_PRESERVE_ZERO_FRACTION);
     }
 
     /**

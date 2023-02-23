@@ -11,7 +11,7 @@ class PipelineSeeder extends Seeder
      *
      * @return void
      */
-    public function run()
+    public function run(): void
     {
         $seeds = json_decode(file_get_contents(database_path('seeders/models/pipelines.json')), true);
 
@@ -19,7 +19,7 @@ class PipelineSeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         $seeds = collect($seeds)
-            ->map(function (array $seed) {
+            ->map(static function (array $seed) {
                 $form = $seed['opportunity_form'];
 
                 $schemaPath = database_path('seeders/models/opportunity_form_schemas/'.$form['form_schema']);
@@ -30,7 +30,7 @@ class PipelineSeeder extends Seeder
             })
             ->all();
 
-        $defaultPipelineId = value(function () use ($seeds): ?string {
+        $defaultPipelineId = value(static function () use ($seeds): ?string {
             foreach ($seeds as $pipelineSeed) {
                 if ($pipelineSeed['is_default']) {
                     return $pipelineSeed['id'];
@@ -40,7 +40,7 @@ class PipelineSeeder extends Seeder
             return null;
         });
 
-        $connection->transaction(function () use ($connection, $seeds) {
+        $connection->transaction(static function () use ($connection, $seeds): void {
             foreach ($seeds as $pipelineSeed) {
                 $connection->table('pipelines')
                     ->insertOrIgnore([
@@ -74,10 +74,12 @@ class PipelineSeeder extends Seeder
                     ->upsert([
                         'id' => $pipelineSeed['opportunity_form']['form_schema']['id'],
                         'form_data' => json_encode($pipelineSeed['opportunity_form']['form_schema']['form_data']),
+                        'sidebar_0' => json_encode($pipelineSeed['opportunity_form']['form_schema']['sidebar_0']),
                         'created_at' => now(),
                         'updated_at' => now(),
                     ], null, [
                         'form_data' => json_encode($pipelineSeed['opportunity_form']['form_schema']['form_data']),
+                        'sidebar_0' => json_encode($pipelineSeed['opportunity_form']['form_schema']['sidebar_0']),
                     ]);
 
                 $connection->table('opportunity_forms')
@@ -100,7 +102,7 @@ class PipelineSeeder extends Seeder
             ->doesntExist();
 
         if ($defaultPipelineDoesntExist) {
-            $connection->transaction(function () use ($connection, $defaultPipelineId) {
+            $connection->transaction(static function () use ($connection, $defaultPipelineId): void {
                 $connection->table('pipelines')
                     ->where('id', $defaultPipelineId)
                     ->update(['is_default' => true]);

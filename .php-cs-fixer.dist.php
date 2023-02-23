@@ -21,5 +21,8 @@ return (new PhpCsFixer\Config())
         '@Symfony' => true,
         'yoda_style' => false,
         'visibility_required' => ['elements' => ['method', 'property']],
+        'void_return' => true,
+        'static_lambda' => true,
     ])
+    ->setRiskyAllowed(true)
     ->setFinder($finder);

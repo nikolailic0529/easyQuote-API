@@ -45,12 +45,15 @@ use App\Domain\Worldwide\Models\WorldwideDistribution;
 use App\Domain\Worldwide\Models\WorldwideQuote;
 use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
 use App\Domain\Worldwide\Notifications\WorldwideQuoteOwnershipChangedNotification;
+use App\Domain\Worldwide\Notifications\WorldwideQuoteSubmittedNotification;
+use App\Domain\Worldwide\Notifications\WorldwideQuoteUnraveledNotification;
 use App\Domain\Worldwide\Services\WorldwideQuote\WorldwideQuoteAttachmentService;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Str;
 
-class WorldwideQuoteEventAuditor
+class WorldwideQuoteEventAuditor implements ShouldQueue
 {
     public function __construct(
         protected readonly Config $config,
@@ -75,61 +78,63 @@ class WorldwideQuoteEventAuditor
                 static::createNoteForSubmittedQuote(...),
                 static::createAttachmentFromSubmittedQuote(...),
                 static::createAttachmentFromDistributorFiles(...),
+                static::notifyAboutQuoteSubmitted(...),
             ],
             WorldwideQuoteUnraveled::class => [
-                static::handleUnraveledEvent(...),
+                static::auditUnraveledEvent(...),
+                static::notifyAboutQuoteUnraveled(...),
             ],
             WorldwideQuoteDrafted::class => [
-                static::handleDraftedEvent(...),
+                static::auditDraftedEvent(...),
             ],
             WorldwideQuoteDeleted::class => [
-                static::handleDeletedEvent(...),
+                static::auditDeletedEvent(...),
             ],
             WorldwideQuoteOwnershipChanged::class => [
                 static::auditOwnershipChangedEvent(...),
                 static::notifyAboutOwnershipChanged(...),
             ],
             NewVersionOfWorldwideQuoteCreated::class => [
-                static::handleNewVersionCreatedEvent(...),
+                static::auditNewVersionCreatedEvent(...),
             ],
             WorldwideQuoteVersionDeleted::class => [
-                static::handleVersionDeletedEvent(...),
+                static::auditVersionDeletedEvent(...),
             ],
             WorldwideContractQuoteDetailsStepProcessed::class => [
-                static::handleContractQuoteDetailsStepProcessedEvent(...),
+                static::auditContractQuoteDetailsStepProcessedEvent(...),
             ],
             WorldwideContractQuoteDiscountStepProcessed::class => [
-                static::handleContractQuoteDiscountStepProcessedEvent(...),
+                static::auditContractQuoteDiscountStepProcessedEvent(...),
             ],
             WorldwideContractQuoteImportStepProcessed::class => [
-                static::handleContractQuoteImportStepProcessedEvent(...),
+                static::auditContractQuoteImportStepProcessedEvent(...),
             ],
             WorldwideContractQuoteMappingStepProcessed::class => [
-                static::handleContractQuoteMappingStepProcessedEvent(...),
+                static::auditContractQuoteMappingStepProcessedEvent(...),
             ],
             WorldwideContractQuoteMappingReviewStepProcessed::class => [
-                static::handleContractQuoteMappingReviewStepProcessedEvent(...),
+                static::auditContractQuoteMappingReviewStepProcessedEvent(...),
             ],
             WorldwidePackQuoteAssetsCreationStepProcessed::class => [
-                static::handlePackQuoteAssetsCreationStepProcessedEvent(...),
+                static::auditPackQuoteAssetsCreationStepProcessedEvent(...),
             ],
             WorldwidePackQuoteAssetsReviewStepProcessed::class => [
-                static::handlePackQuoteAssetsReviewStepProcessedEvent(...),
+                static::auditPackQuoteAssetsReviewStepProcessedEvent(...),
             ],
             WorldwidePackQuoteContactsStepProcessed::class => [
-                static::handlePackQuoteContactsStepProcessedEvent(...),
+                static::auditPackQuoteContactsStepProcessedEvent(...),
             ],
             WorldwidePackQuoteDetailsStepProcessed::class => [
-                static::handlePackQuoteDetailsStepProcessedEvent(...),
+                static::auditPackQuoteDetailsStepProcessedEvent(...),
             ],
             WorldwidePackQuoteDiscountStepProcessed::class => [
-                static::handlePackQuoteDiscountStepProcessedEvent(...),
+                static::auditPackQuoteDiscountStepProcessedEvent(...),
             ],
             WorldwidePackQuoteMarginStepProcessed::class => [
-                static::handlePackQuoteMarginStepProcessedEvent(...),
+                static::auditPackQuoteMarginStepProcessedEvent(...),
             ],
             WorldwideQuoteFilesExported::class => [
-                static::handleFileExportedEvent(...),
+                static::auditFileExportedEvent(...),
             ],
         ];
     }
@@ -143,7 +148,7 @@ class WorldwideQuoteEventAuditor
         };
     }
 
-    public function handleVersionDeletedEvent(WorldwideQuoteVersionDeleted $event): void
+    public function auditVersionDeletedEvent(WorldwideQuoteVersionDeleted $event): void
     {
         $quote = $event->getQuote();
         $version = $event->getQuoteVersion();
@@ -161,7 +166,7 @@ class WorldwideQuoteEventAuditor
             ->log('deleted_version');
     }
 
-    public function handleNewVersionCreatedEvent(NewVersionOfWorldwideQuoteCreated $event): void
+    public function auditNewVersionCreatedEvent(NewVersionOfWorldwideQuoteCreated $event): void
     {
         $newVersion = $event->getNewQuoteVersion();
         $previousVersion = $event->getPreviousQuoteVersion();
@@ -251,7 +256,16 @@ class WorldwideQuoteEventAuditor
             ->createAttachmentFromDistributorFiles($event->getQuote());
     }
 
-    public function handleUnraveledEvent(WorldwideQuoteUnraveled $event): void
+    public function notifyAboutQuoteSubmitted(WorldwideQuoteSubmitted $event): void
+    {
+        $quote = $event->getQuote();
+
+        if ($quote->user) {
+            $quote->user->notify(new WorldwideQuoteSubmittedNotification($quote));
+        }
+    }
+
+    public function auditUnraveledEvent(WorldwideQuoteUnraveled $event): void
     {
         $quote = $event->getQuote();
 
@@ -271,7 +285,16 @@ class WorldwideQuoteEventAuditor
             ->log('unravel');
     }
 
-    public function handleDraftedEvent(WorldwideQuoteDrafted $event): void
+    public function notifyAboutQuoteUnraveled(WorldwideQuoteUnraveled $event): void
+    {
+        $quote = $event->getQuote();
+
+        if ($quote->user) {
+            $quote->user->notify(new WorldwideQuoteUnraveledNotification($quote));
+        }
+    }
+
+    public function auditDraftedEvent(WorldwideQuoteDrafted $event): void
     {
         $quote = $event->getQuote();
         $oldQuote = $event->getOldQuote();
@@ -311,7 +334,7 @@ class WorldwideQuoteEventAuditor
             );
     }
 
-    public function handleDeletedEvent(WorldwideQuoteDeleted $event): void
+    public function auditDeletedEvent(WorldwideQuoteDeleted $event): void
     {
         $quote = $event->getQuote();
 
@@ -346,7 +369,7 @@ class WorldwideQuoteEventAuditor
         $event->quote->user->notify(new WorldwideQuoteOwnershipChangedNotification($event->quote));
     }
 
-    public function handleContractQuoteDetailsStepProcessedEvent(WorldwideContractQuoteDetailsStepProcessed $event
+    public function auditContractQuoteDetailsStepProcessedEvent(WorldwideContractQuoteDetailsStepProcessed $event
     ): void {
         $this->activityLogger
             ->performedOn($event->getQuote())
@@ -364,7 +387,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handleContractQuoteDiscountStepProcessedEvent(WorldwideContractQuoteDiscountStepProcessed $event
+    public function auditContractQuoteDiscountStepProcessedEvent(WorldwideContractQuoteDiscountStepProcessed $event
     ): void {
         $distributorQuoteDiscountsMapper = function (WorldwideQuoteVersion $quote) {
             $discountsData = [
@@ -426,7 +449,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handleContractQuoteImportStepProcessedEvent(WorldwideContractQuoteImportStepProcessed $event): void
+    public function auditContractQuoteImportStepProcessedEvent(WorldwideContractQuoteImportStepProcessed $event): void
     {
         $addressToString = function (Address $address) {
             return implode(', ', array_filter([
@@ -532,7 +555,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handleContractQuoteMappingStepProcessedEvent(WorldwideContractQuoteMappingStepProcessed $event
+    public function auditContractQuoteMappingStepProcessedEvent(WorldwideContractQuoteMappingStepProcessed $event
     ): void {
         $distributorQuoteMappingToString = function (WorldwideDistribution $distributorQuote): string {
             $mappingData = array_map(function (DistributionFieldColumn $field) {
@@ -593,7 +616,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handleContractQuoteMappingReviewStepProcessedEvent(
+    public function auditContractQuoteMappingReviewStepProcessedEvent(
         WorldwideContractQuoteMappingReviewStepProcessed $event
     ): void {
         $this->activityLogger
@@ -612,7 +635,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handlePackQuoteAssetsCreationStepProcessedEvent(WorldwidePackQuoteAssetsCreationStepProcessed $event
+    public function auditPackQuoteAssetsCreationStepProcessedEvent(WorldwidePackQuoteAssetsCreationStepProcessed $event
     ): void {
         $this->activityLogger
             ->performedOn($event->getQuote())
@@ -630,7 +653,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handlePackQuoteAssetsReviewStepProcessedEvent(WorldwidePackQuoteAssetsReviewStepProcessed $event
+    public function auditPackQuoteAssetsReviewStepProcessedEvent(WorldwidePackQuoteAssetsReviewStepProcessed $event
     ): void {
         $quote = $event->getQuote();
         $oldQuote = $event->getOldQuote();
@@ -657,7 +680,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handlePackQuoteContactsStepProcessedEvent(WorldwidePackQuoteContactsStepProcessed $event): void
+    public function auditPackQuoteContactsStepProcessedEvent(WorldwidePackQuoteContactsStepProcessed $event): void
     {
         $quote = $event->getQuote();
         $oldQuote = $event->getOldQuote();
@@ -700,7 +723,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handlePackQuoteDetailsStepProcessedEvent(WorldwidePackQuoteDetailsStepProcessed $event): void
+    public function auditPackQuoteDetailsStepProcessedEvent(WorldwidePackQuoteDetailsStepProcessed $event): void
     {
         $quote = $event->getQuote();
         $oldQuote = $event->getOldQuote();
@@ -729,7 +752,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handlePackQuoteDiscountStepProcessedEvent(WorldwidePackQuoteDiscountStepProcessed $event): void
+    public function auditPackQuoteDiscountStepProcessedEvent(WorldwidePackQuoteDiscountStepProcessed $event): void
     {
         $quote = $event->getQuote();
         $oldQuote = $event->getOldQuote();
@@ -768,7 +791,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handlePackQuoteMarginStepProcessedEvent(WorldwidePackQuoteMarginStepProcessed $event): void
+    public function auditPackQuoteMarginStepProcessedEvent(WorldwidePackQuoteMarginStepProcessed $event): void
     {
         $quote = $event->getQuote();
         $oldQuote = $event->getOldQuote();
@@ -797,7 +820,7 @@ class WorldwideQuoteEventAuditor
             ->log('updated');
     }
 
-    public function handleFileExportedEvent(WorldwideQuoteFilesExported $event): void
+    public function auditFileExportedEvent(WorldwideQuoteFilesExported $event): void
     {
         $quote = $event->getQuote();
         $quoteFiles = $event->getExportedFiles();
