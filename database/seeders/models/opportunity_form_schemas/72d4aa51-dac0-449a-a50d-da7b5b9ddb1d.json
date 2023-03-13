@@ -147,7 +147,7 @@
               "type": "label",
               "class": null,
               "label": "Label",
-              "value": null,
+              "value": "Currency",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -341,7 +341,7 @@
               "type": "label",
               "class": null,
               "label": "Label",
-              "value": null,
+              "value": "Currency",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -1512,7 +1512,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "096db4e3-839c-4699-8c33-e558aa1985d1",
               "attached_element_id": "80697fb2-b612-483f-9751-fd8d53cd04f4"
@@ -1570,7 +1570,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "f202b56d-1751-437b-8836-f1e27cde392c",
               "attached_element_id": "0e7318ac-e865-4316-98b0-439cbd7aa79d"
@@ -1965,7 +1965,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "attached_child_id": "634cebd6-ddef-4d29-8165-14efd16509eb",
               "attached_element_id": "5ac7f8a6-c548-4b8d-a608-1cebc640b339"
             }
@@ -2010,7 +2010,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "8c12ff21-c054-4cef-9698-d69b8836f7c1",
               "attached_element_id": "5ac7f8a6-c548-4b8d-a608-1cebc640b339"
@@ -2068,7 +2068,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "b9e9ede2-95db-40e6-803d-21c9f7c1474c",
               "attached_element_id": "0248133d-cfcd-455c-a3fa-7e5d8b907bc7"
@@ -2115,7 +2115,7 @@
               "is_required": false,
               "placeholder": null,
               "contract_type": null,
-              "field_required": false,
+              "field_required": true,
               "possibel_values": null,
               "attached_child_id": "49ebaf0d-bc9f-4980-94d4-ca681b3f8531",
               "attached_element_id": "0248133d-cfcd-455c-a3fa-7e5d8b907bc7"

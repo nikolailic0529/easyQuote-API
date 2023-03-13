@@ -44,6 +44,6 @@ class QuoteUnravelledNotification extends Notification
 
     protected function getMessage(): string
     {
-        return sprintf('Quote [%s] has been has been moved to drafted.', $this->quote->customer->rfq);
+        return sprintf('Quote [%s] has been moved to drafted.', $this->quote->customer->rfq);
     }
 }

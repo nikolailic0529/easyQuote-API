@@ -54,6 +54,6 @@ class WorldwideQuoteUnraveledNotification extends Notification
 
     protected function getMessage(): string
     {
-        return sprintf('Quote [%s] has been has been moved to drafted.', $this->quote->quote_number);
+        return sprintf('Quote [%s] has been moved to drafted.', $this->quote->quote_number);
     }
 }

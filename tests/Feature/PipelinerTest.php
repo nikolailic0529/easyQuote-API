@@ -116,7 +116,7 @@ class PipelinerTest extends TestCase
         $this->patchJson('api/opportunities/queue-pipeliner-sync', [
             'strategies' => ['PullTaskStrategy'],
         ])
-            ->dump()
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure(['queued'])
             ->assertJson(['queued' => true]);

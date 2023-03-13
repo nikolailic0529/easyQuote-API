@@ -2356,7 +2356,7 @@ class OpportunityTest extends TestCase
         $this->assertSame('AT Company 5', $response->json('primary_account.name'));
         $this->assertCount(1, $response->json('suppliers_grid'));
         $this->assertSame('Orion', $response->json('suppliers_grid.0.supplier_name'));
-        $this->assertSame('United Kingdom', $response->json('suppliers_grid.0.country_name'));
+        $this->assertSame('UK', $response->json('suppliers_grid.0.country_name'));
         $this->assertSame('John Bricknell, Solid Systems', $response->json('suppliers_grid.0.contact_name'));
         $this->assertSame('john.bricknell@solid-global.com', $response->json('suppliers_grid.0.contact_email'));
     }

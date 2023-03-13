@@ -67,12 +67,16 @@ return [
                 \App\Domain\Rescue\Notifications\ContractDeletedNotification::class,
                 \App\Domain\Rescue\Notifications\ContractSubmittedNotification::class,
 
+                \App\Domain\Worldwide\Notifications\WorldwideQuoteSubmittedNotification::class,
+                \App\Domain\Worldwide\Notifications\WorldwideQuoteUnraveledNotification::class,
                 \App\Domain\Worldwide\Notifications\WorldwideQuoteOwnershipChangedNotification::class,
             ],
             'status_change' => [
                 \App\Domain\Rescue\Notifications\QuoteSubmittedNotification::class,
                 \App\Domain\Rescue\Notifications\QuoteUnravelledNotification::class,
                 \App\Domain\Rescue\Notifications\ContractSubmittedNotification::class,
+                \App\Domain\Worldwide\Notifications\WorldwideQuoteSubmittedNotification::class,
+                \App\Domain\Worldwide\Notifications\WorldwideQuoteUnraveledNotification::class,
             ],
             'permissions_change' => [
                 \App\Domain\Rescue\Notifications\QuoteAccessGrantedNotification::class,

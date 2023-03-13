@@ -55,6 +55,11 @@ class PrePayDiscountTest extends TestCase
                     ],
                 ],
             ]);
+
+        $this->getJson('api/discounts/pre_pay?order_by_durations_value=asc');
+        $this->getJson('api/discounts/pre_pay?order_by_durations_value=desc');
+        $this->getJson('api/discounts/pre_pay?order_by_durations_duration=asc');
+        $this->getJson('api/discounts/pre_pay?order_by_durations_duration=desc');
     }
 
     /**

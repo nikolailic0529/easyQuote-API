@@ -44,6 +44,6 @@ class ContractSubmittedNotification extends Notification
 
     protected function getMessage(): string
     {
-        return sprintf('Contract [%s] has been has been submitted.', $this->contract->contract_number);
+        return sprintf('Contract [%s] has been submitted.', $this->contract->contract_number);
     }
 }

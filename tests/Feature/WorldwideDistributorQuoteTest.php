@@ -394,7 +394,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         ])->all();
 
         $this->postJson('api/ww-distributions/mapping', ['worldwide_distributions' => $distributorQuotesMapping, 'stage' => 'Mapping'])
-            ->dump()
+//            ->dump()
             ->assertNoContent();
 
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?'.Arr::query([

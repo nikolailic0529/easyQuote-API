@@ -32,12 +32,7 @@ class CreateOpportunityRequest extends FormRequest
 
     protected ?CreateOpportunityData $createOpportunityData = null;
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
             'pipeline_id' => [
@@ -275,7 +270,7 @@ class CreateOpportunityRequest extends FormRequest
 
     public function getOpportunityData(): CreateOpportunityData
     {
-        /** @var \App\Domain\User\Models\User $user */
+        /** @var User $user */
         $user = $this->user();
         $timezone = $user->timezone->utc ?? config('app.timezone');
 
@@ -298,7 +293,7 @@ class CreateOpportunityRequest extends FormRequest
                     'week' => DateWeekEnum::tryFrom($this->input('recurrence.week')),
                     'day_of_week' => (int) $this->input('recurrence.day_of_week'),
                 ]);
-            }, fn () => null),
+            }, static fn () => null),
 
             'sales_unit_id' => $this->input('sales_unit_id'),
             'pipeline_id' => $this->input('pipeline_id', function (): string {
@@ -321,32 +316,44 @@ class CreateOpportunityRequest extends FormRequest
             'end_user_name' => $this->input('end_user_name'),
             'hardware_status' => $this->input('hardware_status'),
             'region_name' => $this->input('region_name'),
-            'opportunity_start_date' => transform($this->input('opportunity_start_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'opportunity_start_date' => transform($this->input('opportunity_start_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'is_opportunity_start_date_assumed' => $this->boolean('is_opportunity_start_date_assumed'),
-            'opportunity_end_date' => transform($this->input('opportunity_end_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'opportunity_end_date' => transform($this->input('opportunity_end_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'is_opportunity_end_date_assumed' => $this->boolean('is_opportunity_end_date_assumed'),
-            'opportunity_closing_date' => transform($this->input('opportunity_closing_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'opportunity_closing_date' => transform($this->input('opportunity_closing_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
 
             'is_contract_duration_checked' => $this->boolean('is_contract_duration_checked'),
-            'contract_duration_months' => transform($this->input('contract_duration_months'), fn (mixed $months) => (int) $months),
+            'contract_duration_months' => transform($this->input('contract_duration_months'),
+                static fn (mixed $months) => (int) $months),
 
-            'expected_order_date' => transform($this->input('expected_order_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'customer_order_date' => transform($this->input('customer_order_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'purchase_order_date' => transform($this->input('purchase_order_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'supplier_order_date' => transform($this->input('supplier_order_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'supplier_order_transaction_date' => transform($this->input('supplier_order_transaction_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'supplier_order_confirmation_date' => transform($this->input('supplier_order_confirmation_date'), fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'opportunity_amount' => transform($this->input('opportunity_amount'), fn ($value) => (float) $value),
+            'expected_order_date' => transform($this->input('expected_order_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'customer_order_date' => transform($this->input('customer_order_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'purchase_order_date' => transform($this->input('purchase_order_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'supplier_order_date' => transform($this->input('supplier_order_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'supplier_order_transaction_date' => transform($this->input('supplier_order_transaction_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'supplier_order_confirmation_date' => transform($this->input('supplier_order_confirmation_date'),
+                static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'opportunity_amount' => transform($this->input('opportunity_amount'), static fn ($value) => (float) $value),
             'opportunity_amount_currency_code' => $this->input('opportunity_amount_currency_code'),
-            'purchase_price' => transform($this->input('purchase_price'), fn ($value) => (float) $value),
+            'purchase_price' => transform($this->input('purchase_price'), static fn ($value) => (float) $value),
             'purchase_price_currency_code' => $this->input('purchase_price_currency_code'),
-            'list_price' => transform($this->input('list_price'), fn ($value) => (float) $value),
+            'list_price' => transform($this->input('list_price'), static fn ($value) => (float) $value),
             'list_price_currency_code' => $this->input('list_price_currency_code'),
-            'estimated_upsell_amount' => transform($this->input('estimated_upsell_amount'), fn ($value) => (float) $value),
+            'estimated_upsell_amount' => transform($this->input('estimated_upsell_amount'),
+                static fn ($value) => (float) $value),
             'estimated_upsell_amount_currency_code' => $this->input('estimated_upsell_amount_currency_code'),
-            'personal_rating' => transform($this->input('personal_rating'), static fn (mixed $v): string => (string) $v),
+            'personal_rating' => transform($this->input('personal_rating'),
+                static fn (mixed $v): string => (string) $v),
             'ranking' => transform($this->input('ranking'), static fn (mixed $v): int => (int) $v),
-            'margin_value' => transform($this->input('margin_value'), fn ($value) => (float) $value),
+            'margin_value' => transform($this->input('margin_value'), static fn ($value) => (float) $value),
             'service_level_agreement_id' => $this->input('service_level_agreement_id'),
             'sale_unit_name' => $this->input('sale_unit_name'),
             'competition_name' => $this->input('competition_name'),
@@ -359,14 +366,13 @@ class CreateOpportunityRequest extends FormRequest
             'remarks' => $this->input('remarks'),
             'notes' => $this->input('notes'),
             'campaign_name' => $this->input('campaign_name'),
-            'create_suppliers' => transform($this->input('suppliers_grid'), function (array $suppliers) {
-                return array_map(fn (array $supplier) => [
+            'create_suppliers' => $this->collect('suppliers_grid')
+                ->map(static fn (array $supplier): array => [
                     'supplier_name' => $supplier['supplier_name'] ?? null,
                     'country_name' => $supplier['country_name'] ?? null,
                     'contact_name' => $supplier['contact_name'] ?? null,
                     'contact_email' => $supplier['contact_email'] ?? null,
-                ], $suppliers);
-            }),
+                ])->all(),
         ]);
     }
 }

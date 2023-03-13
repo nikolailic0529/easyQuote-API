@@ -100,9 +100,9 @@ class OpportunityDataMapper implements CauserAware
         $suppliersData = (array) self::coalesceMap($row, PipelinerOppMap::SUPPLIERS, []);
 
         return collect($suppliersData)
-            ->map(fn (array $supplier): array => [
+            ->map(static fn (array $supplier): array => [
                 'supplier_name' => $supplier['supplier'] ?? null,
-                'country_name' => $this->normalizeCountryNameOfSupplier($supplier['country'] ?? null),
+                'country_name' => $supplier['country'] ?? null,
                 'contact_name' => $supplier['contact_name'] ?? null,
                 'contact_email' => $supplier['email_address'] ?? null,
             ])
@@ -230,7 +230,7 @@ class OpportunityDataMapper implements CauserAware
             static function (string $primaryContactName) use ($accountData): ImportedContact {
                 $primaryContactName = trim($primaryContactName);
 
-                [$contactFirstName, $contactLastName] = value(function () use ($primaryContactName): array {
+                [$contactFirstName, $contactLastName] = value(static function () use ($primaryContactName): array {
                     if (str_contains($primaryContactName, ' ')) {
                         return explode(' ', $primaryContactName, 2);
                     }
@@ -334,7 +334,7 @@ class OpportunityDataMapper implements CauserAware
 
     private function mapImportedContactFromArray(array $array): ImportedContact
     {
-        return tap(new ImportedContact(), static function (ImportedContact $contact) use ($array) {
+        return tap(new ImportedContact(), static function (ImportedContact $contact) use ($array): void {
             $contact->{$contact->getKeyName()} = (string) Uuid::generate(4);
             $contact->pl_reference = null;
             $contact->contact_type = ContactType::HARDWARE;
@@ -454,7 +454,7 @@ class OpportunityDataMapper implements CauserAware
     }
 
     /**
-     * @param  list<OpportunitySharingClientRelationEntity>  $sharingClients
+     * @param list<OpportunitySharingClientRelationEntity> $sharingClients
      */
     public function mapOpportunityFromOpportunityEntity(
         OpportunityEntity $entity,
@@ -718,15 +718,15 @@ class OpportunityDataMapper implements CauserAware
 
         $newSuppliers = $another->opportunitySuppliers
             ->sortBy('entity_order')
-            ->map(function (OpportunitySupplier $anotherSupplier) use (
+            ->map(static function (OpportunitySupplier $anotherSupplier) use (
                 $opportunity,
                 $existingSuppliers
             ): OpportunitySupplier {
                 return tap($existingSuppliers->shift() ?? $anotherSupplier->replicate(),
-                    function (OpportunitySupplier $supplier) use (
+                    static function (OpportunitySupplier $supplier) use (
                         $anotherSupplier,
                         $opportunity
-                    ) {
+                    ): void {
                         $supplier->opportunity()->associate($opportunity);
                         $supplier->unsetRelation('opportunity');
                         $supplier->country_name = $anotherSupplier->country_name;
@@ -738,7 +738,7 @@ class OpportunityDataMapper implements CauserAware
             });
 
         // The left suppliers needs to be deleted.
-        $existingSuppliers->each(function (OpportunitySupplier $supplier): void {
+        $existingSuppliers->each(static function (OpportunitySupplier $supplier): void {
             $supplier->{$supplier->getDeletedAtColumn()} = $supplier->freshTimestamp();
         });
 
@@ -881,7 +881,7 @@ class OpportunityDataMapper implements CauserAware
             ->map(fn (string $apiName, string $path): ?DataEntity => $this->resolveDataEntityByOptionName(
                 entityName: 'Opportunity',
                 apiName: $apiName,
-                optionName: transform(data_get($opportunity, $path), fn (mixed $v): string => (string) $v),
+                optionName: transform(data_get($opportunity, $path), static fn (mixed $v): string => (string) $v),
             ));
 
         $purchasePriceCurrencyEntity = ($this->pipelinerCurrencyResolver)($opportunity->purchase_price_currency_code ?? setting('base_currency'));
@@ -1171,7 +1171,7 @@ class OpportunityDataMapper implements CauserAware
             ->whereNotNull('pl_reference')
             ->unique('pl_reference')
             ->values()
-            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+            ->map(static function (Attachment $attachment): CreateCloudObjectRelationInput {
                 return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
             })
             ->whenNotEmpty(
@@ -1203,7 +1203,7 @@ class OpportunityDataMapper implements CauserAware
     }
 
     /**
-     * @param  list<OpportunitySharingClientRelationEntity>  $sharingClientRelations
+     * @param list<OpportunitySharingClientRelationEntity> $sharingClientRelations
      */
     public function mapPipelinerUpdateOpportunityInput(
         Opportunity $opportunity,
@@ -1250,7 +1250,7 @@ class OpportunityDataMapper implements CauserAware
         $customFields = array_merge($customFields, $this->projectOpportunityAttrsToCustomFields($opportunity));
         $customFieldsJson = json_encode($customFields);
 
-        $customFieldsDiff = array_udiff_assoc($customFields, $oppEntity->customFields, function (
+        $customFieldsDiff = array_udiff_assoc($customFields, $oppEntity->customFields, static function (
             mixed $a,
             mixed $b
         ): int {
@@ -1349,7 +1349,7 @@ class OpportunityDataMapper implements CauserAware
 //            );
 //        }
 
-        $contactRelationsDiff = array_udiff_assoc($contactRelations, $existingContactRelationMap, function (
+        $contactRelationsDiff = array_udiff_assoc($contactRelations, $existingContactRelationMap, static function (
             mixed $a,
             mixed $b
         ): int {
@@ -1368,7 +1368,7 @@ class OpportunityDataMapper implements CauserAware
             ->whereNotNull('pl_reference')
             ->unique('pl_reference')
             ->values()
-            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+            ->map(static function (Attachment $attachment): CreateCloudObjectRelationInput {
                 return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
             })
             ->whenNotEmpty(
@@ -1405,7 +1405,7 @@ class OpportunityDataMapper implements CauserAware
     }
 
     /**
-     * @param  list<OpportunitySharingClientRelationEntity>  $sharingClients
+     * @param list<OpportunitySharingClientRelationEntity> $sharingClients
      */
     private function mapPipelinerCreateOpportunitySharingClientRelationInputCollection(
         Opportunity $opportunity,

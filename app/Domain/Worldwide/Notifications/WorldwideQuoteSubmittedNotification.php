@@ -54,6 +54,6 @@ class WorldwideQuoteSubmittedNotification extends Notification
 
     protected function getMessage(): string
     {
-        return sprintf('Quote [%s] has been has been submitted.', $this->quote->quote_number);
+        return sprintf('Quote [%s] has been submitted.', $this->quote->quote_number);
     }
 }

@@ -44,6 +44,6 @@ class QuoteSubmittedNotification extends Notification
 
     protected function getMessage(): string
     {
-        return sprintf('Quote [%s] has been has been submitted.', $this->quote->customer->rfq);
+        return sprintf('Quote [%s] has been submitted.', $this->quote->customer->rfq);
     }
 }

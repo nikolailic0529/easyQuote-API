@@ -9,6 +9,8 @@ use App\Domain\Timezone\Models\Timezone;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule as BaseRule;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
+use Spatie\LaravelData\Attributes\Validation\CurrentPassword;
+use Spatie\LaravelData\Attributes\Validation\Different;
 use Spatie\LaravelData\Attributes\Validation\Image;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;
@@ -41,9 +43,15 @@ final class UpdateCurrentUserData extends Data
         public UploadedFile|Optional $picture,
         public bool|Optional $delete_picture,
         public bool|Optional $change_password,
-        #[RequiredIf('change_password', true)]
+        #[
+            RequiredIf('change_password', true),
+            Different('current_password')
+        ]
         public string|Optional|null $password,
-        #[RequiredIf('change_password', true)]
+        #[
+            RequiredIf('change_password', true),
+            CurrentPassword('api')
+        ]
         public string|Optional|null $current_password,
         public string|Optional|null $default_route,
         #[Min(1), Max(30)]
@@ -66,6 +74,14 @@ final class UpdateCurrentUserData extends Data
                 'nullable',
                 BaseRule::exists(HpeContractTemplate::class, 'id')->withoutTrashed(),
             ],
+        ];
+    }
+
+    public static function messages(...$args): array
+    {
+        return [
+            'current_password.current_password' => 'The current password is invalid.',
+            'password.different' => 'The new password must be different from the current one.',
         ];
     }
 }

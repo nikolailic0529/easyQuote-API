@@ -8,6 +8,6 @@ class OrderByDurationsDuration extends Query
 {
     public function applyQuery($builder, string $table)
     {
-        return $builder->orderByRaw("json_unquote(json_extract(`durations`, '$**.\"duration\"')) {$this->value}");
+        return $builder->orderByRaw("cast(json_unquote(json_extract(`durations`, '$.\"duration\".\"duration\"')) as float) $this->value");
     }
 }
