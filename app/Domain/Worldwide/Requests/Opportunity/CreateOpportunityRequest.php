@@ -81,25 +81,25 @@ class CreateOpportunityRequest extends FormRequest
                     ->withoutTrashed(),
             ],
             'nature_of_service' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'renewal_month' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'renewal_year' => [
                 'bail', 'integer', 'max:9999',
             ],
             'customer_status' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'end_user_name' => [
                 'bail', 'nullable', 'string', 'max:191',
             ],
             'hardware_status' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'region_name' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'opportunity_start_date' => [
                 'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')),
@@ -191,10 +191,10 @@ class CreateOpportunityRequest extends FormRequest
                 'bail', 'nullable', 'string', 'max:191',
             ],
             'drop_in' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'lead_source_name' => [
-                'bail', 'string', 'max:191',
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'has_higher_sla' => [
                 'bail', 'boolean',
