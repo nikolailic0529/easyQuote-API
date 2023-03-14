@@ -20,8 +20,9 @@ class MappedRows extends Collection
         }
 
         return $this->each(function (object $row) use ($symbol) {
-            if (isset($row->price)) {
+            if (isset($row->price) && !isset($row->currency_symbol)) {
                 $row->price = $symbol.' '.number_format((float) $row->price, 2);
+                $row->currency_symbol = $symbol;
             }
         });
     }
