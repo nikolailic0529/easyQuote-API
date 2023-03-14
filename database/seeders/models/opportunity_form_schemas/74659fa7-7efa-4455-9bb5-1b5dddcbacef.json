@@ -10,7 +10,7 @@
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "2e5412c6-63ee-4756-8d9c-fe8bb943bbd6",
+              "id": "3341afa3-a6db-4b07-a7d5-6a76c06be781",
               "css": null,
               "src": null,
               "name": "t-1",
@@ -18,6 +18,7 @@
               "type": "title",
               "class": null,
               "label": "Title",
+              "trans": [],
               "value": "General Information",
               "is_field": true,
               "is_image": false,
@@ -47,7 +48,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "dd46c89f-387b-4194-ab65-eb52a47e328c",
+              "id": "6872ab25-4235-4c69-b23c-06145269bb83",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -55,6 +56,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Aard van de dienstverlening",
+                "en": "Nature Of Service",
+                "fr": "Nature du service"
+              },
               "value": "Nature Of Service",
               "is_field": true,
               "is_image": false,
@@ -93,7 +99,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
+              "id": "1e943da3-8776-41fa-9036-61eb5e8e3976",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -101,6 +107,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Aankoopprijs",
+                "en": "Purchase Price",
+                "fr": "Prix \u200b\u200bd'achat"
+              },
               "value": "Purchase Price",
               "is_field": true,
               "is_image": false,
@@ -139,7 +150,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "25a8e20a-af70-44df-94c6-1ab025760f44",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -147,7 +158,12 @@
               "type": "label",
               "class": null,
               "label": "Label",
-              "value": null,
+              "trans": {
+                "de": "Munteenheid",
+                "en": "Currency",
+                "fr": "Monnaie"
+              },
+              "value": "Currency",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -240,7 +256,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "dd46c89f-387b-4194-ab65-eb52a47e328c",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -248,6 +264,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Verlengingsmaand",
+                "en": "Ren Month",
+                "fr": "Mois de renouvellement"
+              },
               "value": "Ren Month",
               "is_field": true,
               "is_image": false,
@@ -287,7 +308,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -295,6 +316,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Catalogusprijs",
+                "en": "List Price",
+                "fr": "Liste des prix"
+              },
               "value": "List Price",
               "is_field": true,
               "is_image": false,
@@ -333,7 +359,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "25a8e20a-af70-44df-94c6-1ab025760f44",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -341,7 +367,12 @@
               "type": "label",
               "class": null,
               "label": "Label",
-              "value": null,
+              "trans": {
+                "de": "Munteenheid",
+                "en": "Currency",
+                "fr": "Monnaie"
+              },
+              "value": "Currency",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -434,7 +465,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "dd46c89f-387b-4194-ab65-eb52a47e328c",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -442,6 +473,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Verlengingsjaar",
+                "en": "Ren Year",
+                "fr": "Ann\u00e9e de renouvellement"
+              },
               "value": "Ren Year",
               "is_field": true,
               "is_image": false,
@@ -481,7 +517,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "b5c0589d-a55c-40c9-8abe-da722927d396",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -489,6 +525,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Geschat upsell-bedrag",
+                "en": "Estimated upsell amount",
+                "fr": "Montant estim\u00e9 de la vente incitative"
+              },
               "value": "Estimated upsell amount",
               "is_field": true,
               "is_image": false,
@@ -527,7 +568,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "dd46c89f-387b-4194-ab65-eb52a47e328c",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -535,6 +576,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Eindgebruiker",
+                "en": "End User",
+                "fr": "Utilisateur final"
+              },
               "value": "End User",
               "is_field": true,
               "is_image": false,
@@ -573,7 +619,7 @@
           "class": "col border-right",
           "controls": [
             {
-              "id": "dd46c89f-387b-4194-ab65-eb52a47e328c",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -581,6 +627,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Betaalvoorwaarden",
+                "en": "Payment Terms",
+                "fr": "Modalit\u00e9s de paiement"
+              },
               "value": "Payment Terms",
               "is_field": true,
               "is_image": false,
@@ -631,7 +682,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "dd46c89f-387b-4194-ab65-eb52a47e328c",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -639,6 +690,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "HW-status",
+                "en": "HW Status",
+                "fr": "\u00c9tat du mat\u00e9riel"
+              },
               "value": "HW Status",
               "is_field": true,
               "is_image": false,
@@ -677,7 +733,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "dd46c89f-387b-4194-ab65-eb52a47e328c",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -685,6 +741,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Regio",
+                "en": "Region",
+                "fr": "R\u00e9gion"
+              },
               "value": "Region",
               "is_field": true,
               "is_image": false,
@@ -724,7 +785,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "124a196a-f868-4401-b207-657547762062",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -732,6 +793,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Campagne",
+                "en": "Campaign",
+                "fr": "Campagne"
+              },
               "value": "Campaign",
               "is_field": true,
               "is_image": false,
@@ -771,7 +837,7 @@
           "class": "col border-right",
           "controls": [
             {
-              "id": "124a196a-f868-4401-b207-657547762062",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -779,6 +845,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Concurrentie",
+                "en": "Competition",
+                "fr": "Concours"
+              },
               "value": "Competition",
               "is_field": true,
               "is_image": false,
@@ -866,7 +937,7 @@
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "124a196a-f868-4401-b207-657547762062",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -874,6 +945,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Binnenvallen",
+                "en": "Drop In",
+                "fr": "Drop In"
+              },
               "value": "Drop In",
               "is_field": true,
               "is_image": false,
@@ -912,7 +988,7 @@
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "c739ea00-4ed5-452f-a647-aa17dc043117",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -920,6 +996,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Account Manager",
+                "en": "Account Manager",
+                "fr": "Gestionnaire de compte"
+              },
               "value": "Account Manager",
               "is_field": true,
               "is_image": false,
@@ -958,7 +1039,7 @@
           "class": "col-lg-3",
           "controls": [
             {
-              "id": "c739ea00-4ed5-452f-a647-aa17dc043117",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -966,6 +1047,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "SLA",
+                "en": "SLA",
+                "fr": "SLA"
+              },
               "value": "SLA",
               "is_field": true,
               "is_image": false,
@@ -1004,7 +1090,7 @@
           "class": "col-lg-3 border-right",
           "controls": [
             {
-              "id": "b5c0589d-a55c-40c9-8abe-da722927d396",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1012,6 +1098,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Leadbron",
+                "en": "Lead Source",
+                "fr": "Source principale"
+              },
               "value": "Lead Source",
               "is_field": true,
               "is_image": false,
@@ -1054,15 +1145,15 @@
       "decoration": "4"
     },
     {
-      "id": "21d4f11d-34c3-481a-9dea-875a3f61d599",
+      "id": "ae84a319-57c8-4e34-92d9-86fadad78878",
       "name": "Single Column",
       "child": [
         {
-          "id": "ff199c57-f1ba-4c7e-934c-2a48ede8dd69",
+          "id": "34e7195a-7a71-4703-a949-9c918c100e23",
           "class": "col-lg-6",
           "controls": [
             {
-              "id": "c739ea00-4ed5-452f-a647-aa17dc043117",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1070,14 +1161,19 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Rangschikking",
+                "en": "Ranking",
+                "fr": "Classement"
+              },
               "value": "Ranking",
               "is_field": true,
               "is_image": false,
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "ff199c57-f1ba-4c7e-934c-2a48ede8dd69",
-              "attached_element_id": "21d4f11d-34c3-481a-9dea-875a3f61d599"
+              "attached_child_id": "34e7195a-7a71-4703-a949-9c918c100e23",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             },
             {
               "id": "35e1623b-2320-428e-bd12-71598e20732c",
@@ -1097,18 +1193,18 @@
               "placeholder": null,
               "field_required": false,
               "possibel_values": null,
-              "attached_child_id": "ff199c57-f1ba-4c7e-934c-2a48ede8dd69",
-              "attached_element_id": "21d4f11d-34c3-481a-9dea-875a3f61d599"
+              "attached_child_id": "34e7195a-7a71-4703-a949-9c918c100e23",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             }
           ],
           "position": 1
         },
         {
-          "id": "8217b17a-6e6d-4a99-937f-1cab52d5c1a9",
+          "id": "969a1f62-98f2-4d17-b8e8-d1802e2b5aa0",
           "class": "col",
           "controls": [
             {
-              "id": "c739ea00-4ed5-452f-a647-aa17dc043117",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1116,14 +1212,19 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Persoonlijke beoordeling",
+                "en": "Personal Rating",
+                "fr": "\u00c9valuation personnelle"
+              },
               "value": "Personal Rating",
               "is_field": true,
               "is_image": false,
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "8217b17a-6e6d-4a99-937f-1cab52d5c1a9",
-              "attached_element_id": "21d4f11d-34c3-481a-9dea-875a3f61d599"
+              "attached_child_id": "969a1f62-98f2-4d17-b8e8-d1802e2b5aa0",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             },
             {
               "id": "c2b0a596-1eac-4f8e-a30b-2d95da34a3d8",
@@ -1144,16 +1245,39 @@
               "field_required": true,
               "possibel_values": null,
               "possible_values": "1 - Need not confirmed,2 - Need is confirmed,3 - Good chance,4 - Strong selling signals,5 - Will be ordered",
-              "attached_child_id": "8217b17a-6e6d-4a99-937f-1cab52d5c1a9",
-              "attached_element_id": "21d4f11d-34c3-481a-9dea-875a3f61d599"
+              "attached_child_id": "969a1f62-98f2-4d17-b8e8-d1802e2b5aa0",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             }
           ],
           "position": 1
         },
         {
-          "id": "b39f3d2e-60c0-48cd-87a9-2b215db2496d",
+          "id": "08cbbf51-d776-41c4-93f3-d363f9392da7",
           "class": "col border-right",
           "controls": [
+            {
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Vertraagd - Verwachte bestelling",
+                "en": "Delayed - Expected order",
+                "fr": "Retard\u00e9 - Commande attendue"
+              },
+              "value": "Delayed - Expected order",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "08cbbf51-d776-41c4-93f3-d363f9392da7",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
+            },
             {
               "id": "0fd59077-70fa-4887-b2fb-848896f5bac9",
               "css": null,
@@ -1171,26 +1295,8 @@
               "is_required": false,
               "placeholder": null,
               "field_required": false,
-              "attached_child_id": "b39f3d2e-60c0-48cd-87a9-2b215db2496d",
-              "attached_element_id": "21d4f11d-34c3-481a-9dea-875a3f61d599"
-            },
-            {
-              "id": "b5c0589d-a55c-40c9-8abe-da722927d396",
-              "css": null,
-              "src": null,
-              "name": "l-1",
-              "show": false,
-              "type": "label",
-              "class": null,
-              "label": "Label",
-              "value": "Delayed - Expected order",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "b39f3d2e-60c0-48cd-87a9-2b215db2496d",
-              "attached_element_id": "21d4f11d-34c3-481a-9dea-875a3f61d599"
+              "attached_child_id": "08cbbf51-d776-41c4-93f3-d363f9392da7",
+              "attached_element_id": "ae84a319-57c8-4e34-92d9-86fadad78878"
             }
           ],
           "position": 1
@@ -1212,7 +1318,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "b5c0589d-a55c-40c9-8abe-da722927d396",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1220,6 +1326,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Notities",
+                "en": "Notes",
+                "fr": "Remarques"
+              },
               "value": "Notes",
               "is_field": true,
               "is_image": false,
@@ -1257,7 +1368,7 @@
           "class": "col border-right",
           "controls": [
             {
-              "id": "b5c0589d-a55c-40c9-8abe-da722927d396",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1265,6 +1376,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Opmerkingen",
+                "en": "Remarks",
+                "fr": "Remarques"
+              },
               "value": "Remarks",
               "is_field": true,
               "is_image": false,
@@ -1314,7 +1430,7 @@
           "class": "col",
           "controls": [
             {
-              "id": "be0e6a08-56a4-4652-899c-73aebccd45a7",
+              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1322,6 +1438,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Verkoop Actie",
+                "en": "Sale Action",
+                "fr": "Action de vente"
+              },
               "value": "Sale Action",
               "is_field": true,
               "is_image": false,
@@ -1378,7 +1499,30 @@
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             },
             {
-              "id": "055aaab8-f018-403a-8fd5-cc4099114e95",
+              "id": "6a04671e-0311-446c-8291-62b6317540e3",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Heeft een hogere SLA",
+                "en": "Has higher SLA",
+                "fr": "A un SLA plus \u00e9lev\u00e9"
+              },
+              "value": "Has higher SLA",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "f80bf8e9-b96a-455c-8e10-67de601bc46b",
               "css": null,
               "src": null,
               "name": "has_higher_sla",
@@ -1398,7 +1542,48 @@
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             },
             {
-              "id": "b67c8f40-772b-41bb-875d-19cfbb8a9038",
+              "id": "188f68f4-8a81-405c-aefb-f9dd94b90119",
+              "css": null,
+              "src": null,
+              "name": "h-1",
+              "show": false,
+              "type": "hr",
+              "class": null,
+              "label": "Line",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "6a04671e-0311-446c-8291-62b6317540e3",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Heeft extra hardware",
+                "en": "Has additional hardware",
+                "fr": "A du mat\u00e9riel suppl\u00e9mentaire"
+              },
+              "value": "Has additional hardware",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "a3822138-41d4-4165-8c9d-1d7d0da7e14c",
               "css": null,
               "src": null,
               "name": "has_additional_hardware",
@@ -1418,7 +1603,48 @@
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             },
             {
-              "id": "42d025b4-28bd-45da-9369-7b5082c840c0",
+              "id": "188f68f4-8a81-405c-aefb-f9dd94b90119",
+              "css": null,
+              "src": null,
+              "name": "h-1",
+              "show": false,
+              "type": "hr",
+              "class": null,
+              "label": "Line",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "6a04671e-0311-446c-8291-62b6317540e3",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Is meerjarig",
+                "en": "Is multi year",
+                "fr": "Est pluriannuel"
+              },
+              "value": "Is multi year",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "9c60c15c-469f-455c-9f5f-b3117b00b043",
               "css": null,
               "src": null,
               "name": "is_multi_year",
@@ -1438,7 +1664,48 @@
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             },
             {
-              "id": "93270412-1326-4ff1-83b0-b1331c86c8dc",
+              "id": "188f68f4-8a81-405c-aefb-f9dd94b90119",
+              "css": null,
+              "src": null,
+              "name": "h-1",
+              "show": false,
+              "type": "hr",
+              "class": null,
+              "label": "Line",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "6a04671e-0311-446c-8291-62b6317540e3",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Heb servicetegoeden",
+                "en": "Have service credits",
+                "fr": "Avoir des cr\u00e9dits de service"
+              },
+              "value": "Have service credits",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "8dd7c2e9-e38e-49d6-a6cd-92630ba4bba3",
               "css": null,
               "src": null,
               "name": "has_service_credits",
@@ -1479,7 +1746,7 @@
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "cca269ea-6e60-48da-b6c2-268e89bb7794",
+              "id": "6872ab25-4235-4c69-b23c-06145269bb83",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1487,6 +1754,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Opportunity naam",
+                "en": "Opportunity Name",
+                "fr": "Nom de l'opportunit\u00e9"
+              },
               "value": "Opportunity Name",
               "is_field": true,
               "is_image": false,
@@ -1497,7 +1769,7 @@
               "attached_element_id": "80697fb2-b612-483f-9751-fd8d53cd04f4"
             },
             {
-              "id": "7179d727-f8a3-407e-95a2-b475446ccbf6",
+              "id": "e83f60bf-aaa7-4aff-98f8-66c2aabecb03",
               "css": null,
               "src": null,
               "name": "project_name",
@@ -1537,7 +1809,7 @@
           "class": "col-lg-6",
           "controls": [
             {
-              "id": "cca269ea-6e60-48da-b6c2-268e89bb7794",
+              "id": "6b0c84da-1d00-4e7b-8b2e-8ad95041201f",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1545,6 +1817,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Waarde",
+                "en": "Value",
+                "fr": "Valeur"
+              },
               "value": "Value",
               "is_field": true,
               "is_image": false,
@@ -1684,6 +1961,29 @@
           "class": "col-lg-12 border-right",
           "controls": [
             {
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Ondersteuningsduur",
+                "en": "Support Duration",
+                "fr": "Dur\u00e9e de l'assistance"
+              },
+              "value": "Support Duration",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "2865df00-d97c-4bc7-945c-ddbb408fdb8b",
+              "attached_element_id": "47d0bf65-1ce1-4d9e-9ad7-f9f2a508bab3"
+            },
+            {
               "id": "f68e3e9b-9bcc-4ff5-b78c-aad607c8da65",
               "css": null,
               "src": null,
@@ -1704,7 +2004,7 @@
               "attached_element_id": "47d0bf65-1ce1-4d9e-9ad7-f9f2a508bab3"
             },
             {
-              "id": "83ccba02-398e-4fbd-953c-c65f4bdd253f",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1712,6 +2012,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Maanden",
+                "en": "Months",
+                "fr": "Mois"
+              },
               "value": "Months",
               "is_field": true,
               "is_image": false,
@@ -1764,6 +2069,29 @@
           "class": "col-lg-6",
           "controls": [
             {
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Uitgegaan van",
+                "en": "Assumed",
+                "fr": "Assum\u00e9"
+              },
+              "value": "Assumed",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "68eed9e8-47e5-4e16-95c4-6cfa25b1b61f",
+              "attached_element_id": "dbd9df83-6896-495c-a38a-acb81727da5f"
+            },
+            {
               "id": "b7cbd33d-c3ae-4ab0-9fdd-7fe9b921e833",
               "css": null,
               "src": null,
@@ -1790,6 +2118,29 @@
           "id": "73031a78-7097-484e-ab3d-984ae902829a",
           "class": "col-lg-6 border-right",
           "controls": [
+            {
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Uitgegaan van",
+                "en": "Assumed",
+                "fr": "Assum\u00e9"
+              },
+              "value": "Assumed",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "73031a78-7097-484e-ab3d-984ae902829a",
+              "attached_element_id": "dbd9df83-6896-495c-a38a-acb81727da5f"
+            },
             {
               "id": "8fdc194e-f2eb-46fb-8a40-a392e3deea89",
               "css": null,
@@ -1830,7 +2181,7 @@
           "class": "col-lg-6",
           "controls": [
             {
-              "id": "cca269ea-6e60-48da-b6c2-268e89bb7794",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1838,6 +2189,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Begin datum",
+                "en": "Start Date",
+                "fr": "Date de d\u00e9but"
+              },
               "value": "Start Date",
               "is_field": true,
               "is_image": false,
@@ -1875,7 +2231,7 @@
           "class": "col-lg-6 border-right",
           "controls": [
             {
-              "id": "cca269ea-6e60-48da-b6c2-268e89bb7794",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1883,6 +2239,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Einddatum",
+                "en": "End Date",
+                "fr": "Date de fin"
+              },
               "value": "End Date",
               "is_field": true,
               "is_image": false,
@@ -1932,7 +2293,7 @@
           "class": "col-lg-6",
           "controls": [
             {
-              "id": "6de51600-a7db-45d6-b72e-7304588ee3b8",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1940,6 +2301,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Sluitingsdatum",
+                "en": "Closing Date",
+                "fr": "Date de cl\u00f4ture"
+              },
               "value": "Closing Date",
               "is_field": true,
               "is_image": false,
@@ -1977,7 +2343,7 @@
           "class": "col-lg-6 border-right",
           "controls": [
             {
-              "id": "6de51600-a7db-45d6-b72e-7304588ee3b8",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1985,6 +2351,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Marge",
+                "en": "Margin",
+                "fr": "Marge"
+              },
               "value": "Margin",
               "is_field": true,
               "is_image": false,
@@ -2035,7 +2406,7 @@
           "class": "col-lg-6",
           "controls": [
             {
-              "id": "6de51600-a7db-45d6-b72e-7304588ee3b8",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -2043,6 +2414,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Verkoop eenheid",
+                "en": "Sales Unit",
+                "fr": "Unit\u00e9 de vente"
+              },
               "value": "Sales Unit",
               "is_field": true,
               "is_image": false,
@@ -2081,7 +2457,7 @@
           "class": "col-lg-6 border-right",
           "controls": [
             {
-              "id": "cca269ea-6e60-48da-b6c2-268e89bb7794",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -2089,6 +2465,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Type",
+                "en": "Type",
+                "fr": "Taper"
+              },
               "value": "Type",
               "is_field": true,
               "is_image": false,
@@ -2177,7 +2558,7 @@
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "6de51600-a7db-45d6-b72e-7304588ee3b8",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -2185,6 +2566,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Belangrijkste account",
+                "en": "Primary Account",
+                "fr": "Compte principal"
+              },
               "value": "Primary Account",
               "is_field": true,
               "is_image": false,
@@ -2271,7 +2657,7 @@
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "6de51600-a7db-45d6-b72e-7304588ee3b8",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -2279,6 +2665,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Primaire contactpersoon",
+                "en": "Primary Contact",
+                "fr": "Premier contact"
+              },
               "value": "Primary Contact",
               "is_field": true,
               "is_image": false,
@@ -2365,7 +2756,7 @@
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "6de51600-a7db-45d6-b72e-7304588ee3b8",
+              "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -2373,6 +2764,11 @@
               "type": "label",
               "class": null,
               "label": "Label",
+              "trans": {
+                "de": "Eindgebruiker",
+                "en": "End customer",
+                "fr": "Client final"
+              },
               "value": "End customer",
               "is_field": true,
               "is_image": false,
