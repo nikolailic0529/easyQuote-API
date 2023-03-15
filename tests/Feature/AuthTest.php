@@ -124,7 +124,7 @@ class AuthTest extends TestCase
     {
         $this->authenticateApi();
 
-        $this->getJson('api/auth/user')
+        $r = $this->getJson('api/auth/user')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -162,6 +162,18 @@ class AuthTest extends TestCase
                     ],
                 ],
             ]);
+
+        $this->assertSame('Activities', $r->json('notification_settings.0.label'));
+
+        $r = $this->getJson('api/auth/user', headers: ['X-User-Lang' => 'fr'])
+            ->assertOk();
+
+        $this->assertSame('Activité', $r->json('notification_settings.0.label'));
+
+        $r = $this->getJson('api/auth/user', headers: ['X-User-Lang' => 'de'])
+            ->assertOk();
+
+        $this->assertSame('Aktivitäten', $r->json('notification_settings.0.label'));
     }
 
     public function testCanDeleteCurrentUserPicture(): void

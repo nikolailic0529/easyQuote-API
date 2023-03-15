@@ -1430,6 +1430,25 @@
           "class": "col",
           "controls": [
             {
+              "id": "10bc2e99-9f77-42d1-a247-2e7bcbd7e9ce",
+              "css": null,
+              "src": null,
+              "name": "opportunity_recurrence",
+              "show": false,
+              "type": "modal",
+              "class": "form-control",
+              "label": "Opportunity Recurrence",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "placeholder": null,
+              "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
               "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
               "css": null,
               "src": null,
@@ -1479,25 +1498,6 @@
           "id": "d87c37e0-e100-48f3-a940-d46573447f8e",
           "class": "col border-right",
           "controls": [
-            {
-              "id": "2946d90b-0f65-4816-a08a-45f3e4f0148b",
-              "css": null,
-              "src": null,
-              "name": "opportunity_recurrence",
-              "show": false,
-              "type": "modal",
-              "class": "form-control",
-              "label": "Opportunity Recurrence",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "placeholder": null,
-              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
-              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
-            },
             {
               "id": "6a04671e-0311-446c-8291-62b6317540e3",
               "css": null,
