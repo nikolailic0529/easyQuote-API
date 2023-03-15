@@ -93,7 +93,7 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         $company = $matchedCompanies->first();
 
         /* @var Company $company */
-        $company ??= tap(new Company(), function (Company $company) use ($importedCompany) {
+        $company ??= tap(new Company(), function (Company $company) use ($importedCompany): void {
             $company->name = $importedCompany->company_name;
             $company->type = CompanyType::EXTERNAL;
             $company->customer_type = $importedCompany->customer_type;
@@ -122,7 +122,7 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
 
         // when the email, phone, or website fields are blank in the company entity,
         // we'll populate their values from the imported company.
-        with($company, function (Company $company) use ($importedCompany) {
+        with($company, function (Company $company) use ($importedCompany): void {
             if (is_null($company->vat_type)) {
                 $company->vat_type = $importedCompany->vat_type ?? VAT::NO_VAT;
             }
@@ -185,9 +185,10 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
                     return $company->addresses->containsStrict('pl_reference', $importedAddress->pl_reference);
                 });
 
-        $importedAddressesHaveRelThroughPlRef->each(static function (ImportedAddress $importedAddress) use ($company) {
+        $importedAddressesHaveRelThroughPlRef->each(static function (ImportedAddress $importedAddress) use ($company
+        ): void {
             $company->addresses->whereStrict('pl_reference', $importedAddress->pl_reference)
-                ->each(static function (Address $address) use ($importedAddress) {
+                ->each(static function (Address $address) use ($importedAddress): void {
                     $address->address_type = $importedAddress->address_type;
                     $address->address_1 = $importedAddress->address_1;
                     $address->address_2 = $importedAddress->address_2;
@@ -211,9 +212,10 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
                     return $company->contacts->containsStrict('pl_reference', $importedContact->pl_reference);
                 });
 
-        $importedContactsHaveRelThroughPlRef->each(static function (ImportedContact $importedContact) use ($company) {
+        $importedContactsHaveRelThroughPlRef->each(static function (ImportedContact $importedContact) use ($company
+        ): void {
             $company->contacts->whereStrict('pl_reference', $importedContact->pl_reference)
-                ->each(static function (Contact $contact) use ($importedContact) {
+                ->each(static function (Contact $contact) use ($importedContact): void {
                     $contact->contact_type = $importedContact->contact_type;
                     $contact->salesUnit()->associate($importedContact->salesUnit ?? $contact->salesUnit);
                     $contact->gender = $importedContact->gender;
@@ -256,24 +258,23 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
             ->sortByDesc('pivot.is_default')
             ->firstWhere('address_type', '===', AddressType::INVOICE);
 
-        $defaultInvoiceAddress = tap($defaultInvoiceAddress ?? new Address(), static function (Address $address) use (
-            $importedCompany
-        ): void {
-            if (!$importedCompany->getFlag(ImportedCompany::COMPANY_DATA_EXISTS)) {
-                return;
-            }
-
-            $address->address_type = AddressType::INVOICE;
-            $address->address_1 = $importedCompany->address_1;
-            $address->address_2 = $importedCompany->address_2;
-            $address->city = $importedCompany->city;
-            $address->post_code = $importedCompany->post_code;
-            $address->state = $importedCompany->state;
-            $address->state_code = $importedCompany->state_code;
-            $address->country()->associate(
-                Country::query()->where('name', $importedCompany->country_name)->first()
-            );
-        });
+        if ($importedCompany->getFlag(ImportedCompany::COMPANY_DATA_EXISTS)) {
+            $defaultInvoiceAddress = tap($defaultInvoiceAddress ?? new Address(),
+                static function (Address $address) use (
+                    $importedCompany
+                ): void {
+                    $address->address_type = AddressType::INVOICE;
+                    $address->address_1 = $importedCompany->address_1;
+                    $address->address_2 = $importedCompany->address_2;
+                    $address->city = $importedCompany->city;
+                    $address->post_code = $importedCompany->post_code;
+                    $address->state = $importedCompany->state;
+                    $address->state_code = $importedCompany->state_code;
+                    $address->country()->associate(
+                        Country::query()->where('name', $importedCompany->country_name)->first()
+                    );
+                });
+        }
 
         $hwSwCountryMap = [
             AddressType::HARDWARE => isset($importedCompany->hw_country_code)
@@ -300,9 +301,12 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
 
         $this->connection->transaction(static function () use ($newAddresses, $defaultInvoiceAddress, $company): void {
             $company->addresses->each->push();
-            $defaultInvoiceAddress->save();
 
-            $company->addresses()->syncWithoutDetaching([$defaultInvoiceAddress->getKey() => ['is_default' => true]]);
+            if ($defaultInvoiceAddress) {
+                $defaultInvoiceAddress->save();
+                $company->addresses()
+                    ->syncWithoutDetaching([$defaultInvoiceAddress->getKey() => ['is_default' => true]]);
+            }
 
             if ($newAddresses->isNotEmpty()) {
                 $newAddresses->each->push();

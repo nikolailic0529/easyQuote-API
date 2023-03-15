@@ -439,6 +439,8 @@ class CompanyDataMapper
                     $account->flags |= ImportedCompany::IS_END_USER;
                 }
 
+                $account->flags |= ImportedCompany::COMPANY_DATA_EXISTS;
+
                 [$addresses, $contacts] = $this->mapImportedAddressesContactsFromContactRelations(...$contactRelations);
 
                 $account->setRelation('addresses', $addresses);
