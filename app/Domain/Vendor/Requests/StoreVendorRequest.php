@@ -2,39 +2,26 @@
 
 namespace App\Domain\Vendor\Requests;
 
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreVendorRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
             'name' => [
                 'required',
                 'string',
                 'min:3',
+                Rule::unique(Vendor::class)->withoutTrashed(),
             ],
             'short_code' => [
                 'required',
                 'string',
                 'min:2',
-                Rule::unique('vendors')->whereNull('deleted_at'),
+                Rule::unique(Vendor::class)->withoutTrashed(),
             ],
             'logo' => [
                 'image',
@@ -52,7 +39,7 @@ class StoreVendorRequest extends FormRequest
         ];
     }
 
-    public function validated()
+    public function validated(): array
     {
         $validated = parent::validated();
 

@@ -2,37 +2,28 @@
 
 namespace App\Domain\Vendor\Requests;
 
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateVendorRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
             'name' => [
                 'string',
                 'min:3',
+                Rule::unique(Vendor::class)
+                    ->ignore($this->route('vendor'))
+                    ->withoutTrashed(),
             ],
             'short_code' => [
                 'string',
                 'min:2',
-                Rule::unique('vendors')->whereNull('deleted_at')->ignore($this->vendor),
+                Rule::unique('vendors')
+                    ->ignore($this->route('vendor'))
+                    ->withoutTrashed(),
             ],
             'logo' => [
                 'image',
@@ -48,7 +39,7 @@ class UpdateVendorRequest extends FormRequest
         ];
     }
 
-    public function validated()
+    public function validated(): array
     {
         $validated = parent::validated();
 

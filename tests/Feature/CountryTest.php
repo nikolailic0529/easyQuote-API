@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Country\Models\Country;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -15,14 +16,12 @@ class CountryTest extends TestCase
 
     /**
      * Test an ability to create a new country.
-     *
-     * @return void
      */
-    public function testCanCreateCountry()
+    public function testCanCreateCountry(): void
     {
         $this->authenticateApi();
 
-        $attributes = factory(Country::class)->raw();
+        $attributes = factory(Country::class)->raw(['name' => Str::random(100)]);
 
         $this->postJson('api/countries/', $attributes)
             ->assertOk()
@@ -39,18 +38,17 @@ class CountryTest extends TestCase
 
     /**
      * Test an ability to update an existing country.
-     *
-     * @return void
      */
-    public function testCanUpdateCountry()
+    public function testCanUpdateCountry(): void
     {
         $this->authenticateApi();
 
         $country = factory(Country::class)->create();
 
-        $attributes = factory(Country::class)->raw();
+        $attributes = factory(Country::class)->raw(['name' => Str::random(100)]);
 
         $this->patchJson('api/countries/'.$country->getKey(), $attributes)
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -65,10 +63,8 @@ class CountryTest extends TestCase
 
     /**
      * Test can not update system country.
-     *
-     * @return void
      */
-    public function testCanNotUpdateSystemCountry()
+    public function testCanNotUpdateSystemCountry(): void
     {
         $this->authenticateApi();
 
@@ -82,10 +78,8 @@ class CountryTest extends TestCase
 
     /**
      * Test can delete an existing country.
-     *
-     * @return void
      */
-    public function testCanDeleteCountry()
+    public function testCanDeleteCountry(): void
     {
         $this->authenticateApi();
 
@@ -100,11 +94,9 @@ class CountryTest extends TestCase
     }
 
     /**
-     * Test can activate an existing country.
-     *
-     * @return void
+     * Test an ability to mark an existing country as active.
      */
-    public function testCanActivateCountry()
+    public function testCanMarkCountryAsActive(): void
     {
         $this->authenticateApi();
 
@@ -120,11 +112,9 @@ class CountryTest extends TestCase
     }
 
     /**
-     * Test activating a newly created Country.
-     *
-     * @return void
+     * Test an ability to mark an existing country as inactive.
      */
-    public function testCanDeactivateCountry()
+    public function testCanMarkCountryAsInactive(): void
     {
         $this->authenticateApi();
 
