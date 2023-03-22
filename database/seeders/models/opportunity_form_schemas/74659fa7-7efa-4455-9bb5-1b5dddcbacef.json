@@ -691,57 +691,6 @@
               "class": null,
               "label": "Label",
               "trans": {
-                "de": "HW-status",
-                "en": "HW Status",
-                "fr": "\u00c9tat du mat\u00e9riel"
-              },
-              "value": "HW Status",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "417b9a93-d52e-4571-88cc-6045f191efba",
-              "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
-            },
-            {
-              "id": "16f07d01-bbc2-4fcc-86da-2299055ef1de",
-              "css": null,
-              "src": null,
-              "name": "hardware_status",
-              "show": false,
-              "type": "dropdown",
-              "class": "form-control custom-select",
-              "label": "Hardware Status",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "placeholder": null,
-              "field_required": false,
-              "possible_values": "Installed Hardware,New Hardware",
-              "attached_child_id": "417b9a93-d52e-4571-88cc-6045f191efba",
-              "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
-            }
-          ],
-          "position": 1
-        },
-        {
-          "id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
-          "class": "col",
-          "controls": [
-            {
-              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
-              "css": null,
-              "src": null,
-              "name": "l-1",
-              "show": false,
-              "type": "label",
-              "class": null,
-              "label": "Label",
-              "trans": {
                 "de": "Regio",
                 "en": "Region",
                 "fr": "R\u00e9gion"
@@ -752,7 +701,7 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
+              "attached_child_id": "417b9a93-d52e-4571-88cc-6045f191efba",
               "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
             },
             {
@@ -774,14 +723,14 @@
               "field_required": false,
               "possibel_values": null,
               "possible_values": "Africa,Asia,Asia Pacific,Canada,EMEA,Mix,Mix Inc Germany,South America,UKI,USA",
-              "attached_child_id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
+              "attached_child_id": "417b9a93-d52e-4571-88cc-6045f191efba",
               "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
             }
           ],
           "position": 1
         },
         {
-          "id": "178804b3-bfda-475f-b564-11139cae6636",
+          "id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
           "class": "col",
           "controls": [
             {
@@ -804,7 +753,7 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "178804b3-bfda-475f-b564-11139cae6636",
+              "attached_child_id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
               "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
             },
             {
@@ -826,15 +775,15 @@
               "field_required": false,
               "possibel_values": null,
               "possible_values": "None,Discount 5%,General",
-              "attached_child_id": "178804b3-bfda-475f-b564-11139cae6636",
+              "attached_child_id": "ef1f0839-ccdd-41ee-a413-04f61ebf5b20",
               "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
             }
           ],
           "position": 1
         },
         {
-          "id": "b6d32b06-c2c9-401f-ae8b-20efce2e63ef",
-          "class": "col border-right",
+          "id": "178804b3-bfda-475f-b564-11139cae6636",
+          "class": "col",
           "controls": [
             {
               "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
@@ -856,7 +805,7 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "b6d32b06-c2c9-401f-ae8b-20efce2e63ef",
+              "attached_child_id": "178804b3-bfda-475f-b564-11139cae6636",
               "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
             },
             {
@@ -877,10 +826,16 @@
               "placeholder": null,
               "field_required": false,
               "possibel_values": null,
-              "attached_child_id": "b6d32b06-c2c9-401f-ae8b-20efce2e63ef",
+              "attached_child_id": "178804b3-bfda-475f-b564-11139cae6636",
               "attached_element_id": "c152b38b-4766-4404-a782-806c961ee1c4"
             }
           ],
+          "position": 1
+        },
+        {
+          "id": "b6d32b06-c2c9-401f-ae8b-20efce2e63ef",
+          "class": "col border-right",
+          "controls": [],
           "position": 1
         }
       ],
@@ -1430,14 +1385,37 @@
           "class": "col",
           "controls": [
             {
-              "id": "10bc2e99-9f77-42d1-a247-2e7bcbd7e9ce",
+              "id": "ad2b6692-881d-41d6-8f45-7c718a570750",
               "css": null,
               "src": null,
-              "name": "opportunity_recurrence",
+              "name": "l-1",
               "show": false,
-              "type": "modal",
-              "class": "form-control",
-              "label": "Opportunity Recurrence",
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Heeft een hogere SLA",
+                "en": "Has higher SLA",
+                "fr": "A un SLA plus \u00e9lev\u00e9"
+              },
+              "value": "Has higher SLA",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "a202a6e7-1115-44a3-adb1-58d681c102ba",
+              "css": null,
+              "src": null,
+              "name": "has_higher_sla",
+              "show": false,
+              "type": "checkbox",
+              "class": null,
+              "label": "Has higher SLA",
               "value": null,
               "is_field": true,
               "is_image": false,
@@ -1445,11 +1423,91 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
+              "field_required": false,
               "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             },
             {
-              "id": "81a6eb0f-1f7b-473e-be3d-8d6b2c13c155",
+              "id": "6eb5a210-631f-4737-b857-d2ef4b2da575",
+              "css": null,
+              "src": null,
+              "name": "h-1",
+              "show": false,
+              "type": "hr",
+              "class": null,
+              "label": "Line",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "ad2b6692-881d-41d6-8f45-7c718a570750",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Heeft extra hardware",
+                "en": "Has additional hardware",
+                "fr": "A du mat\u00e9riel suppl\u00e9mentaire"
+              },
+              "value": "Has additional hardware",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "a8973f53-b9ed-401b-89b5-8c5ccd7ac2e9",
+              "css": null,
+              "src": null,
+              "name": "has_additional_hardware",
+              "show": false,
+              "type": "checkbox",
+              "class": null,
+              "label": "Has additional hardware",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "placeholder": null,
+              "field_required": false,
+              "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "6eb5a210-631f-4737-b857-d2ef4b2da575",
+              "css": null,
+              "src": null,
+              "name": "h-1",
+              "show": false,
+              "type": "hr",
+              "class": null,
+              "label": "Line",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "ad2b6692-881d-41d6-8f45-7c718a570750",
               "css": null,
               "src": null,
               "name": "l-1",
@@ -1472,7 +1530,7 @@
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             },
             {
-              "id": "6efcd7ce-9687-4cab-822f-4b4d14cc65c6",
+              "id": "e3329bed-82fe-440b-b132-912b62a3f777",
               "css": null,
               "src": null,
               "name": "pipeline_stage_id",
@@ -1487,7 +1545,7 @@
               "is_system": false,
               "is_required": false,
               "placeholder": null,
-              "field_required": false,
+              "field_required": true,
               "attached_child_id": "fa35a891-4c26-4c76-a2d9-338a9ad4bcc6",
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             }
@@ -1498,128 +1556,6 @@
           "id": "d87c37e0-e100-48f3-a940-d46573447f8e",
           "class": "col border-right",
           "controls": [
-            {
-              "id": "6a04671e-0311-446c-8291-62b6317540e3",
-              "css": null,
-              "src": null,
-              "name": "l-1",
-              "show": false,
-              "type": "label",
-              "class": null,
-              "label": "Label",
-              "trans": {
-                "de": "Heeft een hogere SLA",
-                "en": "Has higher SLA",
-                "fr": "A un SLA plus \u00e9lev\u00e9"
-              },
-              "value": "Has higher SLA",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
-              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
-            },
-            {
-              "id": "f80bf8e9-b96a-455c-8e10-67de601bc46b",
-              "css": null,
-              "src": null,
-              "name": "has_higher_sla",
-              "show": false,
-              "type": "checkbox",
-              "class": null,
-              "label": "Has higher SLA",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "placeholder": null,
-              "field_required": false,
-              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
-              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
-            },
-            {
-              "id": "188f68f4-8a81-405c-aefb-f9dd94b90119",
-              "css": null,
-              "src": null,
-              "name": "h-1",
-              "show": false,
-              "type": "hr",
-              "class": null,
-              "label": "Line",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
-              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
-            },
-            {
-              "id": "6a04671e-0311-446c-8291-62b6317540e3",
-              "css": null,
-              "src": null,
-              "name": "l-1",
-              "show": false,
-              "type": "label",
-              "class": null,
-              "label": "Label",
-              "trans": {
-                "de": "Heeft extra hardware",
-                "en": "Has additional hardware",
-                "fr": "A du mat\u00e9riel suppl\u00e9mentaire"
-              },
-              "value": "Has additional hardware",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
-              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
-            },
-            {
-              "id": "a3822138-41d4-4165-8c9d-1d7d0da7e14c",
-              "css": null,
-              "src": null,
-              "name": "has_additional_hardware",
-              "show": false,
-              "type": "checkbox",
-              "class": null,
-              "label": "Has additional hardware",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "placeholder": null,
-              "field_required": false,
-              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
-              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
-            },
-            {
-              "id": "188f68f4-8a81-405c-aefb-f9dd94b90119",
-              "css": null,
-              "src": null,
-              "name": "h-1",
-              "show": false,
-              "type": "hr",
-              "class": null,
-              "label": "Line",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
-              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
-            },
             {
               "id": "6a04671e-0311-446c-8291-62b6317540e3",
               "css": null,
@@ -1721,6 +1657,43 @@
               "is_required": false,
               "placeholder": null,
               "field_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "f8075d4a-271c-42ad-9458-d7bc18b1ea54",
+              "css": null,
+              "src": null,
+              "name": "h-1",
+              "show": false,
+              "type": "hr",
+              "class": null,
+              "label": "Line",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
+              "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
+            },
+            {
+              "id": "a24c4e13-bc97-48b9-a38f-d5de50a651c9",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": [],
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
               "attached_child_id": "d87c37e0-e100-48f3-a940-d46573447f8e",
               "attached_element_id": "05ce0513-a1ea-4e72-b3b2-14caf058f4ce"
             }
@@ -2343,6 +2316,63 @@
           "class": "col-lg-6 border-right",
           "controls": [
             {
+              "id": "5b0c959c-428d-469c-a276-d3baedaa0b34",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": [],
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "8c12ff21-c054-4cef-9698-d69b8836f7c1",
+              "attached_element_id": "5ac7f8a6-c548-4b8d-a608-1cebc640b339"
+            },
+            {
+              "id": "13011d0a-9aa1-4218-aec0-d295dcae5575",
+              "css": null,
+              "src": null,
+              "name": "opportunity_recurrence",
+              "show": false,
+              "type": "modal",
+              "class": "form-control",
+              "label": "Opportunity Recurrence",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "placeholder": null,
+              "attached_child_id": "8c12ff21-c054-4cef-9698-d69b8836f7c1",
+              "attached_element_id": "5ac7f8a6-c548-4b8d-a608-1cebc640b339"
+            }
+          ],
+          "position": 2
+        }
+      ],
+      "class": "two-column field-dragger",
+      "order": 2,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "2"
+    },
+    {
+      "id": "a4cf5da8-4c34-40e0-9230-5c788407a24c",
+      "name": "Single Column",
+      "child": [
+        {
+          "id": "ef852949-0047-4cb1-99f9-849f91652701",
+          "class": "col",
+          "controls": [
+            {
               "id": "27b41ac5-69f2-461a-8180-269e2394fd69",
               "css": null,
               "src": null,
@@ -2362,8 +2392,8 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "8c12ff21-c054-4cef-9698-d69b8836f7c1",
-              "attached_element_id": "5ac7f8a6-c548-4b8d-a608-1cebc640b339"
+              "attached_child_id": "ef852949-0047-4cb1-99f9-849f91652701",
+              "attached_element_id": "a4cf5da8-4c34-40e0-9230-5c788407a24c"
             },
             {
               "id": "fc346943-6631-4979-aa8f-ed9afa629e6e",
@@ -2383,19 +2413,69 @@
               "placeholder": null,
               "field_required": true,
               "possibel_values": null,
-              "attached_child_id": "8c12ff21-c054-4cef-9698-d69b8836f7c1",
-              "attached_element_id": "5ac7f8a6-c548-4b8d-a608-1cebc640b339"
+              "attached_child_id": "ef852949-0047-4cb1-99f9-849f91652701",
+              "attached_element_id": "a4cf5da8-4c34-40e0-9230-5c788407a24c"
             }
           ],
-          "position": 2
+          "position": 1
+        },
+        {
+          "id": "d66d6ae6-bc66-4b19-80a7-05c0f66d877d",
+          "class": "col border-right",
+          "controls": [
+            {
+              "id": "5b0c959c-428d-469c-a276-d3baedaa0b34",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "trans": {
+                "de": "Hardwarestatus",
+                "en": "Hardware Status",
+                "fr": "\u00c9tat du mat\u00e9riel"
+              },
+              "value": "Hardware Status",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d66d6ae6-bc66-4b19-80a7-05c0f66d877d",
+              "attached_element_id": "a4cf5da8-4c34-40e0-9230-5c788407a24c"
+            },
+            {
+              "id": "ed5d1b40-4040-410f-8323-d824199501b6",
+              "css": null,
+              "src": null,
+              "name": "hardware_status",
+              "show": false,
+              "type": "dropdown",
+              "class": "form-control",
+              "label": "Hardware Status",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "placeholder": null,
+              "field_required": false,
+              "attached_child_id": "d66d6ae6-bc66-4b19-80a7-05c0f66d877d",
+              "attached_element_id": "a4cf5da8-4c34-40e0-9230-5c788407a24c"
+            }
+          ],
+          "position": 1
         }
       ],
-      "class": "two-column field-dragger",
-      "order": 2,
+      "class": "single-column field-dragger",
+      "order": 1,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "2"
+      "decoration": "1"
     },
     {
       "id": "0248133d-cfcd-455c-a3fa-7e5d8b907bc7",
