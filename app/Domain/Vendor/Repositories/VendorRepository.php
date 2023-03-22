@@ -2,9 +2,9 @@
 
 namespace App\Domain\Vendor\Repositories;
 
+use App\Domain\Shared\Eloquent\Repository\SearchableRepository;
 use App\Domain\Vendor\Models\Vendor;
 use App\Domain\Vendor\Requests\UpdateVendorRequest;
-use App\Domain\Shared\Eloquent\Repository\SearchableRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -82,7 +82,7 @@ class VendorRepository extends SearchableRepository implements \App\Domain\Vendo
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        return tap($this->vendor->create($request), function (Vendor $vendor) use ($request) {
+        return tap($this->vendor->create($request), static function (Vendor $vendor) use ($request): void {
             $vendor->createLogo(data_get($request, 'logo'));
             $vendor->syncCountries(data_get($request, 'countries'));
             $vendor->load('countries');
@@ -120,9 +120,7 @@ class VendorRepository extends SearchableRepository implements \App\Domain\Vendo
 
     public function country(string $id): Collection
     {
-        return cache()->tags('vendors')->sear("vendors-country:{$id}", function () use ($id) {
-            return $this->userQuery()->country($id)->activated()->get();
-        });
+        return $this->userQuery()->country($id)->activated()->get();
     }
 
     protected function filterQueryThrough(): array

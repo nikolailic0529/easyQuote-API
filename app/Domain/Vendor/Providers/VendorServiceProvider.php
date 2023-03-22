@@ -3,8 +3,6 @@
 namespace App\Domain\Vendor\Providers;
 
 use App\Domain\Vendor\Contracts\VendorRepositoryInterface;
-use App\Domain\Vendor\Models\Vendor;
-use App\Domain\Vendor\Observers\VendorObserver;
 use App\Domain\Vendor\Repositories\VendorRepository;
 use Illuminate\Support\ServiceProvider;
 
@@ -19,10 +17,10 @@ class VendorServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Vendor::observe(VendorObserver::class);
+        //
     }
 
-    public function provides()
+    public function provides(): array
     {
         return [
             VendorRepositoryInterface::class,
