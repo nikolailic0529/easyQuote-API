@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Authorization\Models\{Role};
+use App\Domain\Authorization\Models\Role;
 use App\Domain\Company\Enum\CompanyType;
 use App\Domain\Company\Models\Company;
 use App\Domain\Invitation\Models\Invitation;
@@ -23,10 +23,8 @@ class InvitationTest extends TestCase
 
     /**
      * Test an ability to view listing of invitations.
-     *
-     * @return void
      */
-    public function testCanViewListingOfInvitations()
+    public function testCanViewListingOfInvitations(): void
     {
         $this->authenticateApi();
 
@@ -96,10 +94,8 @@ class InvitationTest extends TestCase
 
     /**
      * Test an ability to register as a new user by the invitation.
-     *
-     * @return void
      */
-    public function testCanRegisterAsUserUserByInvitation()
+    public function testCanRegisterAsUserUserByInvitation(): void
     {
         $this->authenticateApi();
 
@@ -159,10 +155,8 @@ class InvitationTest extends TestCase
 
     /**
      * Test an ability to cancel an existing invitation.
-     *
-     * @return void
      */
-    public function testCanCancelInvitation()
+    public function testCanCancelInvitation(): void
     {
         $this->authenticateApi();
 
@@ -189,10 +183,8 @@ class InvitationTest extends TestCase
 
     /**
      * Test an ability to delete an existing invitation.
-     *
-     * @return void
      */
-    public function testCanDeleteInvitation()
+    public function testCanDeleteInvitation(): void
     {
         $this->authenticateApi();
 
