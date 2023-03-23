@@ -103,6 +103,7 @@ final class TemplateForm
 
                 // Account Manager
                 ['id' => 'account_manager_name', 'label' => 'Account Manager Name'],
+                ['id' => 'account_manager_email', 'label' => 'Account Manager Email'],
             ],
             'data_pages' => [
                 ['id' => 'pricing_document', 'label' => 'Pricing Document'],

@@ -3,7 +3,6 @@
 namespace App\Domain\Worldwide\DataTransferObjects\Quote\Export;
 
 use Spatie\DataTransferObject\DataTransferObject;
-use Symfony\Component\Validator\Constraints;
 
 final class QuoteSummary extends DataTransferObject
 {
@@ -76,6 +75,7 @@ final class QuoteSummary extends DataTransferObject
     public string $end_user_inv_post_code;
 
     public string $account_manager_name;
+    public string $account_manager_email;
 
     /**
      * @var \App\Domain\Worldwide\DataTransferObjects\Quote\Export\AggregationField[]

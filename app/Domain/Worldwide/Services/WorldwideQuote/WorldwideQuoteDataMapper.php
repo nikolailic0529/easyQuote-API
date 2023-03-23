@@ -61,8 +61,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Support\MessageBag;
 
-use function optional;
-
 class WorldwideQuoteDataMapper
 {
     /** @var bool[]|null */
@@ -1545,6 +1543,7 @@ class WorldwideQuoteDataMapper
             'end_user_inv_post_code' => $endUserInvoiceAddress?->post_code ?? ND_02,
 
             'account_manager_name' => $opportunity->accountManager?->user_fullname ?? ND_02,
+            'account_manager_email' => $opportunity->accountManager?->email ?? ND_02,
 
             'quote_data_aggregation_fields' => $this->getQuoteDataAggregationFields($activeVersion->quoteTemplate),
             'quote_data_aggregation' => $quoteDataAggregation,
