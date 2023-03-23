@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Country\Models\Country;
 use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Settings\Models\SystemSetting;
 use App\Domain\Timezone\Models\Timezone;
 use App\Domain\User\Middleware\PerformUserActivity;
 use App\Domain\User\Models\User;
@@ -24,6 +25,15 @@ class AuthTest extends TestCase
 {
     use WithFaker;
     use DatabaseTransactions;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        SystemSetting::query()
+            ->where('key', 'google_recaptcha_enabled')
+            ->update(['value' => false]);
+    }
 
     protected function tearDown(): void
     {
