@@ -448,6 +448,19 @@ class OpportunityQueries
                         $worldwideQuote->qualifyColumn('submitted_at'),
                     ]);
                 },
+                'worldwideQuotes.salesOrder' => static function (Relation $builder): void {
+                    $order = new SalesOrder();
+
+                    $builder->select([
+                        $order->getQualifiedKeyName(),
+                        $order->worldwideQuote()->getQualifiedForeignKeyName(),
+                        ...$order->qualifyColumns([
+                            'order_number',
+                            'order_date',
+                            'submitted_at',
+                        ]),
+                    ]);
+                },
                 'worldwideQuotes.salesUnit' => static function (Relation $builder): void {
                     $salesUnit = new SalesUnit();
 
