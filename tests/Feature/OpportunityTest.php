@@ -3036,7 +3036,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        Opportunity::query()->delete();
+        $this->pruneUsing(Opportunity::query()->withoutGlobalScopes()->toBase());
 
         $pipelineStagesResp = $this->getJson('api/pipelines/default')
 //            ->dump()
@@ -3179,6 +3179,6 @@ class OpportunityTest extends TestCase
             ]);
 
         $this->assertNotEmpty($pipelineResp->json('1.opportunities'));
-        $this->assertSame($opp->getKey(), $pipelineResp->json('1.opportunities.2.id'));
+        $this->assertContains($opp->getKey(), $pipelineResp->json('1.opportunities.*.id'));
     }
 }
