@@ -153,7 +153,7 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token', 'roles', 'updated_at', 'deleted_at', 'image',
+        'password', 'remember_token', 'roles', 'updated_at', 'deleted_at', 'image', 'notification_settings',
     ];
 
     /**

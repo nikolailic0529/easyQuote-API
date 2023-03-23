@@ -12,6 +12,7 @@ use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\Task\Models\Task;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -300,6 +301,93 @@ class OpportunityOwnershipTest extends TestCase
             $this->assertSame($newOwner->getKey(), $userId);
             $this->assertSame($newUnit->getKey(), $unitId);
         }
+    }
+
+    public function testCanChangeOwnershipOfOpportunityAttachedQuotes(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Opportunity $opp */
+        $opp = Opportunity::factory()
+            ->for(User::factory(), 'owner')
+            ->for(Company::factory()->for(User::factory()), 'primaryAccount')
+            ->for(Company::factory()->for(User::factory()), 'endUser')
+            ->for(Contact::factory(), 'primaryAccountContact')
+            ->has(WorldwideQuote::factory())
+            ->create();
+
+        $opp->primaryAccount->load('owner');
+        $opp->endUser->load('owner');
+
+        // Another opportunity having the same linked account.
+        /** @var Opportunity $opp2 */
+        $opp2 = Opportunity::factory()
+            ->for(User::factory(), 'owner')
+            ->for($opp->primaryAccount, 'primaryAccount')
+            ->create();
+
+        $newOwner = User::factory()->create();
+        $newUnit = SalesUnit::factory()->create();
+
+        $opp2UpdatedAt = $this->getJson('api/opportunities/'.$opp2->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at',
+            ])
+            ->json('updated_at');
+        $this->assertNotEmpty($opp2UpdatedAt);
+
+        $this->travelTo(now()->addDay());
+
+        $this->patchJson('api/opportunities/'.$opp->getKey().'/ownership', $data = [
+            'owner_id' => $newOwner->getKey(),
+            'sales_unit_id' => $newUnit->getKey(),
+            'transfer_attached_quote_to_new_owner' => true,
+        ])
+//            ->dump()
+            ->assertNoContent();
+
+        $opp2UpdatedAtAfter = $this->getJson('api/opportunities/'.$opp2->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at',
+            ])
+            ->json('updated_at');
+        $this->assertEquals($opp2UpdatedAt, $opp2UpdatedAtAfter);
+
+        $r = $this->getJson('api/opportunities/'.$opp->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'user_id',
+                'sales_unit_id',
+                'primary_account' => [
+                    'id',
+                    'user_id',
+                ],
+                'end_user' => [
+                    'id',
+                    'user_id',
+                ],
+                'quotes_exist',
+                'quote' => [
+                    'id',
+                    'user' => [
+                        'id',
+                    ],
+                ],
+            ])
+            ->assertJsonPath('user_id', $data['owner_id'])
+            ->assertJsonPath('sales_unit_id', $data['sales_unit_id'])
+            ->assertJsonPath('quotes_exist', true)
+            ->assertJsonPath('quote.user.id', $data['owner_id'])
+            ->assertJsonPath('primary_account.user_id', $opp->primaryAccount->owner->getKey())
+            ->assertJsonPath('primary_account.sales_unit_id', $opp->primaryAccount->salesUnit->getKey())
+            ->assertJsonPath('end_user.user_id', $opp->endUser->owner->getKey())
+            ->assertJsonPath('end_user.sales_unit_id', $opp->endUser->salesUnit->getKey());
     }
 
     /**

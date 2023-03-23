@@ -23,7 +23,13 @@ class OpportunityOwnershipController extends Controller
         $this->authorize('changeOwnership', $opportunity);
 
         $service->setCauser($request->user())
-            ->changeOwnership($opportunity, $data->toChangeOwnershipData());
+            ->changeOwnership($opportunity, $ownershipData = $data->toChangeOwnershipData());
+
+        if ($data->transfer_attached_quote_to_new_owner) {
+            foreach ($opportunity->worldwideQuotes as $quote) {
+                $service->changeOwnership($quote, $ownershipData);
+            }
+        }
 
         return response()->noContent();
     }

@@ -15,6 +15,7 @@ final class ChangeOpportunityOwnershipData extends Data
         public readonly string $sales_unit_id,
         public readonly bool $keep_original_owner_as_editor = false,
         public readonly bool $transfer_linked_records_to_new_owner = false,
+        public readonly bool $transfer_attached_quote_to_new_owner = false,
     ) {
     }
 
