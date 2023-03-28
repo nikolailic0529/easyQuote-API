@@ -25,6 +25,7 @@ class AuthenticatedUserResource extends JsonResource
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
             'phone' => $this->phone,
+            'language' => $this->language,
 
             'timezone_id' => $this->timezone()->getParentKey(),
             'timezone' => $this->timezone,

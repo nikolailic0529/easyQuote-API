@@ -6,17 +6,20 @@ use App\Domain\Country\Models\Country;
 use App\Domain\HpeContract\Models\HpeContractTemplate;
 use App\Domain\Notification\DataTransferObjects\UpdateNotificationSettingsGroupData;
 use App\Domain\Timezone\Models\Timezone;
+use App\Domain\User\Enum\UserLanguageEnum;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule as BaseRule;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Attributes\Validation\CurrentPassword;
 use Spatie\LaravelData\Attributes\Validation\Different;
+use Spatie\LaravelData\Attributes\Validation\Enum;
 use Spatie\LaravelData\Attributes\Validation\Image;
 use Spatie\LaravelData\Attributes\Validation\Max;
 use Spatie\LaravelData\Attributes\Validation\Min;
 use Spatie\LaravelData\Attributes\Validation\Nullable;
 use Spatie\LaravelData\Attributes\Validation\RequiredIf;
 use Spatie\LaravelData\Attributes\Validation\Rule;
+use Spatie\LaravelData\Attributes\Validation\StringType;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
 use Spatie\LaravelData\Optional;
@@ -33,6 +36,8 @@ final class UpdateCurrentUserData extends Data
         public string|Optional $last_name,
         #[Min(4), Rule('phone'), Nullable]
         public string|Optional|null $phone,
+        #[StringType, Enum(UserLanguageEnum::class)]
+        public UserLanguageEnum|Optional $language,
         #[Uuid]
         public string|Optional $timezone_id,
         #[Uuid]
