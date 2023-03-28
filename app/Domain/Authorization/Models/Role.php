@@ -19,14 +19,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Contracts\Role as RoleContract;
 use Spatie\Permission\Exceptions\GuardDoesNotMatch;
 use Spatie\Permission\Exceptions\RoleAlreadyExists;
 use Spatie\Permission\Exceptions\RoleDoesNotExist;
 use Spatie\Permission\Guard;
-use Spatie\Permission\PermissionRegistrar;
 use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Permission\Traits\RefreshesPermissionCache;
 
@@ -62,8 +60,6 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         'is_system' => 'boolean',
     ];
 
-    protected ?array $permissionsCache = null;
-
     protected static $logAttributes = [
         'name', 'modules_privileges',
     ];
@@ -83,8 +79,6 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
 
     public static function create(array $attributes = [])
     {
-        $attributes['guard_name'] ??= 'web';
-
         if (!app()->runningInConsole()) {
             $attributes['user_id'] ??= auth()->id();
         }
@@ -93,7 +87,7 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
             static::where('name', $attributes['name'])
                 ->where('guard_name', $attributes['guard_name'])
                 ->where(
-                    fn ($query) => $query->where('user_id', optional($attributes)['user_id'])
+                    static fn ($query) => $query->where('user_id', optional($attributes)['user_id'])
                         ->orWhere('is_system', true)
                 )
                 ->first()
@@ -174,7 +168,7 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
     /**
      * Find or create role by its name (and optionally guardName).
      *
-     * @param string|null $guardName
+     * @param null $guard_name
      */
     public static function findOrCreate(string $name, $guard_name = null): RoleContract
     {
@@ -215,16 +209,6 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         return $this->permissions->contains('id', $permission->id);
     }
 
-    /**
-     * Forget the cached permissions.
-     */
-    public function forgetCachedPermissions()
-    {
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-        $this->permissionsCache = null;
-    }
-
     public function getPropertiesAttribute(): Collection
     {
         return PermissionHelper::roleProperties($this);
@@ -243,28 +227,6 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
     public function getItemNameAttribute()
     {
         return $this->name;
-    }
-
-    public function roleCachedPermissions(): array
-    {
-        if (isset($this->permissionsCache)) {
-            return $this->permissionsCache;
-        }
-
-        return $this->permissionsCache = PermissionHelper::roleCachedPermissions($this);
-    }
-
-    public function hasCachedPermissionTo(string ...$permissions): bool
-    {
-        $cachedPermissionsKeys = array_flip($this->roleCachedPermissions());
-
-        foreach ($permissions as $name) {
-            if (!Arr::has($cachedPermissionsKeys, $name)) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     public static function administrator()

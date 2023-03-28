@@ -52,7 +52,7 @@ class PermissionHelper
         /** @var \Illuminate\Database\Eloquent\Collection */
         $permissions = app(PermissionRegistrar::class)->getPermissions();
 
-        return $permissions->reduce(function (array $rolePermissions, Permission $permission) use ($role) {
+        return $permissions->reduce(static function (array $rolePermissions, Permission $permission) use ($role) {
             if ($permission->roles->contains('id', $role->getKey())) {
                 $rolePermissions[$permission->getKey()] = $permission->name;
             }
@@ -64,10 +64,9 @@ class PermissionHelper
     public static function rolePrivileges(Role $role): Collection
     {
         return Collection::wrap(config('role.modules'))
-            ->map(function ($module, $moduleName) use ($role) {
-                $privilege = static::findRelevantRolePrivilege($role, $module);
-
-                $subModules = static::retrieveRoleModuleSubmodules($role, $moduleName);
+            ->map(static function (array $modulePrivileges, string $moduleName) use ($role): array {
+                $privilege = static::resolveMostSignificantPrivilege($role, $modulePrivileges);
+                $subModules = static::resolveSubmodules($role, $moduleName);
 
                 return [
                     'module' => $moduleName,
@@ -83,36 +82,36 @@ class PermissionHelper
     public static function roleProperties(Role $role): Collection
     {
         return Collection::wrap(config('role.properties'))
-            ->mapWithKeys(fn ($value) => [$value => $role->hasCachedPermissionTo($value)]);
+            ->mapWithKeys(static fn ($value) => [$value => $role->hasPermissionTo($value)]);
     }
 
-    protected static function retrieveRoleModuleSubmodules(Role $role, string $module)
+    protected static function resolveSubmodules(Role $role, string $module): Collection
     {
         return Collection::wrap(config('role.submodules')[$module] ?? [])
-            ->map(fn ($privileges, $submodule) => [
+            ->map(static fn (array $privileges, string $submodule): array => [
                 'submodule' => $submodule,
-                'privilege' => static::findRelevantRolePrivilege($role, $privileges),
+                'privilege' => static::resolveMostSignificantPrivilege($role, $privileges),
             ])
             ->whereNotNull('privilege')
             ->values();
     }
 
-    protected static function findRelevantRolePrivilege(Role $role, array $privileges)
+    protected static function resolveMostSignificantPrivilege(Role $role, array $privileges)
     {
-        $privilege = null;
+        $mostSignificantPrivilege = null;
 
         if ($role->name === R_SUPER) {
             return last(array_keys($privileges));
         }
 
-        foreach ($privileges as $key => $permissions) {
-            if ($role->hasCachedPermissionTo(...$permissions)) {
-                $privilege = $key;
+        foreach ($privileges as $privilege => $permissions) {
+            if ($role->hasAllPermissions($permissions)) {
+                $mostSignificantPrivilege = $privilege;
             } else {
-                break;
+                return $mostSignificantPrivilege;
             }
         }
 
-        return $privilege;
+        return $mostSignificantPrivilege;
     }
 }

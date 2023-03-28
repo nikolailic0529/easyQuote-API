@@ -7,7 +7,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing};
+use Tests\Unit\Traits\AssertsListing;
 
 /**
  * @group build
@@ -19,10 +19,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to view a listing of existing roles.
-     *
-     * @return void
      */
-    public function testCanViewListingOfRoles()
+    public function testCanViewListingOfRoles(): void
     {
         $this->authenticateApi();
 
@@ -42,10 +40,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to create a new role with valid attributes.
-     *
-     * @return void
      */
-    public function testCanCreateNewRole()
+    public function testCanCreateNewRole(): void
     {
         $this->authenticateApi();
 
@@ -60,10 +56,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to create a new role with invalid attributes.
-     *
-     * @return void
      */
-    public function testCanNotCreateNewRoleWithInvalidAttributes()
+    public function testCanNotCreateNewRoleWithInvalidAttributes(): void
     {
         $this->authenticateApi();
 
@@ -79,10 +73,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to update an existing role.
-     *
-     * @return void
      */
-    public function testCanUpdateExistingRole()
+    public function testCanUpdateExistingRole(): void
     {
         $this->authenticateApi();
 
@@ -112,10 +104,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to update direct permissions of an existing role.
-     *
-     * @return void
      */
-    public function testCanUpdateDirectPermissionsOfExistingRole()
+    public function testCanUpdateDirectPermissionsOfExistingRole(): void
     {
         $this->authenticateApi();
 
@@ -213,10 +203,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to update a system defined role.
-     *
-     * @return void
      */
-    public function testCanNotUpdateSystemDefinedRole()
+    public function testCanNotUpdateSystemDefinedRole(): void
     {
         $this->authenticateApi();
 
@@ -233,10 +221,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to delete an existing role.
-     *
-     * @return void
      */
-    public function testCanDeleteExistingRole()
+    public function testCanDeleteExistingRole(): void
     {
         $this->authenticateApi();
 
@@ -249,10 +235,8 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to delete a system defined role.
-     *
-     * @return void
      */
-    public function testCanNotDeleteSystemDefinedRole()
+    public function testCanNotDeleteSystemDefinedRole(): void
     {
         $this->authenticateApi();
 
@@ -265,14 +249,12 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to mark a role as active.
-     *
-     * @return void
      */
-    public function testCanMarkRoleAsActive()
+    public function testCanMarkRoleAsActive(): void
     {
         $this->authenticateApi();
 
-        $role = \tap(\factory(Role::class)->create(), function (Role $role) {
+        $role = \tap(\factory(Role::class)->create(), static function (Role $role): void {
             $role->activated_at = null;
 
             $role->save();
@@ -285,14 +267,12 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to mark a role as inactive.
-     *
-     * @return void
      */
-    public function testCanMarkRoleAsInactive()
+    public function testCanMarkRoleAsInactive(): void
     {
         $this->authenticateApi();
 
-        $role = \tap(\factory(Role::class)->create(), function (Role $role) {
+        $role = \tap(\factory(Role::class)->create(), static function (Role $role): void {
             $role->activated_at = now();
 
             $role->save();

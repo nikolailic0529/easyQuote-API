@@ -49,7 +49,8 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         return $this->role->query()
             ->when($scope, $scope)
             ->orderBy('name')
-            ->whereHas('permissions', fn (Builder $query) => $query->whereIn('name', ["view_{$module}", "view_own_{$module}"]))
+            ->whereHas('permissions',
+                static fn (Builder $query) => $query->whereIn('name', ["view_{$module}", "view_own_{$module}"]))
             ->get();
     }
 
@@ -60,15 +61,19 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function create(array $attributes): Role
     {
-        return DB::transaction(
-            fn () => tap($this->role->query()->make($attributes), function (Role $role) use ($attributes) {
+        return tap(new Role($attributes), static function (Role $role) use ($attributes): void {
+            $permissions = $attributes['permissions'] ?? [];
+
+            DB::transaction(static function () use ($permissions, $role): void {
                 $role->save();
 
-                $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
+                if ($permissions) {
+                    $role->permissions()->sync($permissions);
+                }
+            });
 
-                $role->forgetCachedPermissions();
-            })
-        );
+            $role->forgetCachedPermissions();
+        });
     }
 
     public function update(string $id, array $attributes): Role
@@ -76,7 +81,7 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         $role = $this->find($id);
 
         return DB::transaction(
-            fn () => tap($role->fill($attributes), function (Role $role) use ($attributes) {
+            static fn () => tap($role->fill($attributes), static function (Role $role) use ($attributes): void {
                 $role->save();
 
                 $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
