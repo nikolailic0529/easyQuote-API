@@ -326,7 +326,7 @@ class AuthTest extends TestCase
     protected function currentUserDataProvider(): \Generator
     {
         yield 'update first_name & last_name' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [
@@ -337,7 +337,7 @@ class AuthTest extends TestCase
         ];
 
         yield 'update middle_name' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [
@@ -347,7 +347,7 @@ class AuthTest extends TestCase
         ];
 
         yield 'update phone' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [
@@ -356,8 +356,18 @@ class AuthTest extends TestCase
             },
         ];
 
+        foreach (['en', 'fr', 'de'] as $lang) {
+            yield "update language: $lang" => [
+                static function () use ($lang) {
+                    return [
+                        'language' => $lang,
+                    ];
+                },
+            ];
+        }
+
         yield 'update timezone_id' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [
@@ -367,7 +377,7 @@ class AuthTest extends TestCase
         ];
 
         yield 'update country_id' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [
@@ -377,7 +387,7 @@ class AuthTest extends TestCase
         ];
 
         yield 'update hpe_contract_template_id' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [
@@ -387,7 +397,7 @@ class AuthTest extends TestCase
         ];
 
         yield 'set null hpe_contract_template_id' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [
@@ -397,7 +407,7 @@ class AuthTest extends TestCase
         ];
 
         yield 'delete picture' => [
-            function () {
+            static function () {
                 return [
                     'delete_picture' => true,
                 ];
@@ -405,7 +415,7 @@ class AuthTest extends TestCase
         ];
 
         yield 'change password' => [
-            function () {
+            static function () {
                 $faker = app(Generator::class);
 
                 return [

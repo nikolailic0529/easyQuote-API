@@ -36,6 +36,7 @@ use App\Domain\User\Concerns\EnforceableChangePassword;
 use App\Domain\User\Concerns\Loginable;
 use App\Domain\User\Concerns\Notifiable;
 use App\Domain\User\Concerns\PerformsActivity;
+use App\Domain\User\Enum\UserLanguageEnum;
 use App\Domain\Vendor\Concerns\HasVendors;
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
 use Database\Factories\UserFactory;
@@ -68,19 +69,20 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null                                                                $middle_name
  * @property string|null                                                                $last_name
  * @property string|null                                                                $email
- * @property string|null $timezone_id
- * @property string|null $password
- * @property string|null $phone
- * @property int|null $failed_attempts
- * @property mixed $activated_at
- * @property string|null $user_fullname
- * @property \App\Domain\Team\Models\Team|null $team
- * @property Collection<int, \App\Domain\SalesUnit\Models\SalesUnit> $salesUnits
- * @property Collection<int, Company> $companies
+ * @property string|null                                                                $timezone_id
+ * @property string|null                                                                $password
+ * @property string|null                                                                $phone
+ * @property string|null                                                                $language
+ * @property int|null                                                                   $failed_attempts
+ * @property mixed                                                                      $activated_at
+ * @property string|null                                                                $user_fullname
+ * @property \App\Domain\Team\Models\Team|null                                          $team
+ * @property Collection<int, \App\Domain\SalesUnit\Models\SalesUnit>                    $salesUnits
+ * @property Collection<int, Company>                                                   $companies
  * @property Collection<int, \App\Domain\Authorization\Facades\Permission>|Permission[] $permissions
- * @property Timezone $timezone
- * @property \App\Domain\Image\Models\Image|null $image
- * @property \App\Domain\Image\Models\Image|null $picture
+ * @property Timezone                                                                   $timezone
+ * @property \App\Domain\Image\Models\Image|null                                        $image
+ * @property \App\Domain\Image\Models\Image|null                                        $picture
  * @property Collection<int, User> $ledTeamUsers
  * @property Collection<int, \App\Domain\Authorization\Models\Role> $roles
  * @property Collection<int, \App\Domain\Team\Models\Team> $ledTeams
@@ -164,6 +166,7 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
     protected $casts = [
         'email_verified_at' => 'datetime',
         'notification_settings' => NotificationSettingsData::class,
+        'language' => UserLanguageEnum::class,
     ];
 
     protected static $logAttributes = [
@@ -179,6 +182,11 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
     protected static function newFactory(): UserFactory
     {
         return UserFactory::new();
+    }
+
+    public function guardName(): string
+    {
+        return 'api';
     }
 
     public function team(): BelongsTo
@@ -264,7 +272,7 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
 
     public function scopeNonAdministrators(Builder $query): Builder
     {
-        return $query->whereDoesntHave('roles', fn ($query) => $query->whereName('Administrator'));
+        return $query->whereDoesntHave('roles', static fn ($query) => $query->whereName('Administrator'));
     }
 
     public function scopeEmail(Builder $query, string $email): Builder
