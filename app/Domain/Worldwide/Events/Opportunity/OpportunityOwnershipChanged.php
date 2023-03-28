@@ -4,12 +4,9 @@ namespace App\Domain\Worldwide\Events\Opportunity;
 
 use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Queue\SerializesModels;
 
 final class OpportunityOwnershipChanged
 {
-    use SerializesModels;
-
     public bool $afterCommit = true;
 
     public function __construct(
