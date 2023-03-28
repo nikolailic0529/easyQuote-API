@@ -463,6 +463,23 @@
               "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
             },
             {
+              "id": "account_manager_email",
+              "css": null,
+              "name": "account_manager_email",
+              "show": false,
+              "type": "tag",
+              "class": "s4-form-control",
+              "label": "Account Manager Email",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": true,
+              "is_required": false,
+              "attached_child_id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
+            },
+            {
               "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
               "css": null,
               "src": null,
@@ -471,7 +488,7 @@
               "type": "p",
               "class": "blue",
               "label": "Paragraph",
-              "value": "enquiriesww@europlusdirect.com<br/>\neuroplusdirect.com",
+              "value": "europlusdirect.com",
               "is_field": true,
               "is_image": false,
               "droppable": false,
