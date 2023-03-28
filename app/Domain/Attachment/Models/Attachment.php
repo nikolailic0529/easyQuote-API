@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null                       $pl_reference
  * @property string|null                       $filepath
  * @property string|null                       $filename
+ * @property string|null                       $md5_hash
  * @property string|null                       $extension
  * @property int|null                          $size
  * @property AttachmentType|null               $type

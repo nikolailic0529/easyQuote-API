@@ -3,5 +3,6 @@
     "EQ": "easyQuote",
     "Sales Unit": "Verkaufseinheit",
     "Source": "Quelle",
-    "Customer Name": "Name des Kunden"
+    "Customer Name": "Name des Kunden",
+    "An attachment with the same content already exists.": "Ein Anhang mit demselben Inhalt ist bereits vorhanden."
 }

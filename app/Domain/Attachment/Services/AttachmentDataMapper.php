@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attachment\Services;
 
+use App\Domain\Attachment\Contracts\AttachmentHasher;
 use App\Domain\Attachment\Enum\AttachmentType;
 use App\Domain\Attachment\Models\Attachment;
 use App\Domain\Pipeliner\Integration\Enum\CloudObjectTypeEnum;
@@ -17,6 +18,7 @@ class AttachmentDataMapper
 {
     public function __construct(
         protected readonly FilesystemAdapter $filesystem,
+        protected readonly AttachmentHasher $hasher,
         protected readonly PipelinerClientEntityToUserProjector $clientProjector,
         protected readonly ApplicationUserResolver $applicationUserResolver,
     ) {
@@ -69,6 +71,7 @@ class AttachmentDataMapper
             $attachment->extension = pathinfo($metadata['path'], PATHINFO_EXTENSION);
             $attachment->size = $metadata['size'];
             $attachment->type = $type;
+            $attachment->md5_hash = $this->hasher->hash($this->filesystem->path($metadata['path']));
             if ($isDeleteProtected) {
                 $attachment->flags |= Attachment::IS_DELETE_PROTECTED;
             }

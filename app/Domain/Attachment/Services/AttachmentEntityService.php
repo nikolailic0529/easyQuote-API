@@ -28,7 +28,7 @@ class AttachmentEntityService implements CauserAware
         protected readonly FilesystemAdapter $filesystem,
         protected readonly ConnectionInterface $connection,
         protected readonly AttachmentDataMapper $dataMapper,
-        protected readonly Dispatcher $eventDispatcher
+        protected readonly Dispatcher $eventDispatcher,
     ) {
     }
 

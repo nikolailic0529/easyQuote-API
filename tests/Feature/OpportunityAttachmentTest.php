@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Domain\Attachment\Models\Attachment;
 use App\Domain\Worldwide\Models\Opportunity;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -14,6 +15,8 @@ use Tests\TestCase;
  */
 class OpportunityAttachmentTest extends TestCase
 {
+    use DatabaseTransactions;
+
     /**
      * Test an ability to view a list of the existing attachments of opportunity.
      */
@@ -106,6 +109,30 @@ class OpportunityAttachmentTest extends TestCase
             ]);
 
         $this->assertContains($attachmentID, $response->json('data.*.id'));
+    }
+
+    public function testCanNotCreateAnAttachmentWithTheSameContentForOpportunity(): void
+    {
+        /** @var Opportunity $opp */
+        $opp = Opportunity::factory()->create();
+
+        $file = UploadedFile::fake()->create(Str::random(40).'.txt', 1_000);
+
+        $this->authenticateApi();
+
+        $this->postJson('api/opportunities/'.$opp->getKey().'/attachments', [
+            'type' => 'Maintenance Contract',
+            'file' => $file,
+        ])
+//            ->dump()
+            ->assertCreated();
+
+        $this->postJson('api/opportunities/'.$opp->getKey().'/attachments', [
+            'type' => 'Maintenance Contract',
+            'file' => $file,
+        ])
+//            ->dump()
+            ->assertInvalid('file', responseKey: 'Error.original');
     }
 
     /**

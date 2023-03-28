@@ -44,6 +44,8 @@ class RescueQuoteAttachmentController extends Controller
         $this->authorize('view', $quote);
         $this->authorize('create', Attachment::class);
 
+        $request->validateFileHash($quote);
+
         $resource = $entityService
             ->setCauser($request->user())
             ->createAttachmentForEntity(

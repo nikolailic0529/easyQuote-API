@@ -44,6 +44,8 @@ class WorldwideQuoteAttachmentController extends Controller
         $this->authorize('view', $worldwideQuote);
         $this->authorize('create', Attachment::class);
 
+        $request->validateFileHash($worldwideQuote);
+
         $resource = $entityService
             ->setCauser($request->user())
             ->createAttachmentForEntity(

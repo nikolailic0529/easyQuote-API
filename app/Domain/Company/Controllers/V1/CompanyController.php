@@ -442,6 +442,8 @@ class CompanyController extends Controller
     ): JsonResponse {
         $this->authorize('view', $company);
 
+        $request->validateFileHash($company);
+
         $resource = $entityService
             ->setCauser($request->user())
             ->createAttachmentForEntity(
