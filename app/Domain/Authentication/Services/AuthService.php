@@ -3,104 +3,102 @@
 namespace App\Domain\Authentication\Services;
 
 use App\Domain\Authentication\Contracts\AuthServiceInterface;
-use App\Domain\Authentication\Models\{AccessAttempt};
 use App\Domain\Authentication\Notifications\AttemptsExceeded;
 use App\Domain\Sync\Enum\Lock;
-use App\Domain\User\Contracts\UserRepositoryInterface as UserRepositoryInterfaceAlias;
 use App\Domain\User\Models\User;
 use App\Domain\User\Services\UserActivityService;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
+use Laravel\Passport\PersonalAccessTokenFactory;
 use Laravel\Passport\PersonalAccessTokenResult;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AuthService implements AuthServiceInterface
 {
     protected int $maxAttempts = 15;
 
-    protected ?AccessAttempt $currentAttempt = null;
-
-    public function __construct(protected UserRepositoryInterfaceAlias $users,
-                                protected UserActivityService $activityService,
-                                protected LockProvider $lockProvider)
-    {
+    public function __construct(
+        protected readonly UserActivityService $activityService,
+        protected readonly LockProvider $lockProvider,
+        protected readonly UserProvider $userProvider,
+        protected readonly PersonalAccessTokenFactory $accessTokenFactory,
+    ) {
     }
 
-    public function authenticate(array $request)
+    /**
+     * @throws \Exception
+     */
+    public function authenticate(array $credentials): array
     {
-        $this->checkCredentials(Arr::only($request, ['email', 'password']));
+        $credentials = Arr::only($credentials, ['email', 'password']);
 
-        $token = $this->generateToken($request);
+        $user = $this->userProvider->retrieveByCredentials($credentials);
 
-        return $this->response($token);
+        $this->mustValidateCredentials($user, $credentials);
+
+        $token = $this->generateToken($user);
+
+        return $this->tokenToResponse($token);
     }
 
-    public function checkCredentials(array $credentials)
+    /**
+     * @throws \Exception
+     */
+    public function mustValidateCredentials(?Authenticatable $user, array $credentials): void
     {
-        if (!Auth::attempt($credentials)) {
-            $this->handleFailedAttempt($credentials);
-
-            return;
+        if ($user && $this->userProvider->validateCredentials($user, $credentials)) {
+            /* @noinspection PhpParamsInspection */
+            $this->handleSuccessfulAttempt($user);
+        } else {
+            $this->handleFailedAttempt($user);
         }
-
-        $this->handleSuccessfulAttempt($credentials);
     }
 
-    protected function handleFailedAttempt(array $credentials)
+    /**
+     * @throws \Exception
+     */
+    protected function handleFailedAttempt(?Authenticatable $user): void
     {
-        $user = $this->retrieveUserFromCredentials($credentials);
+        if ($user instanceof User) {
+            $lock = $this->lockProvider->lock(Lock::UPDATE_USER($user->getAuthIdentifier()), 10);
 
-        if (!is_null($user)) {
-            $lock = $this->lockProvider->lock(Lock::UPDATE_USER($user->getKey()), 10);
-
-            $lock->block(30, function () use ($user) {
+            $lock->block(30, function () use ($user): void {
                 $this->incrementUserFailedAttempts($user);
                 $this->deactivateUserWhenAttemptsExceeded($user);
             });
         }
 
-        abort(403, __('auth.failed'));
+        throw new HttpException(403, __('auth.failed'));
     }
 
-    protected function retrieveUserFromCredentials(array $credentials): ?User
+    protected function incrementUserFailedAttempts(User $user): void
     {
-        $email = Arr::get($credentials, 'email');
+        User::query()
+            ->whereKey($user->getKey())
+            ->toBase()
+            ->increment('failed_attempts');
 
-        return $this->users->findByEmail($email);
-    }
-
-    protected function incrementUserFailedAttempts(?User $user): void
-    {
-        if (!$user instanceof User) {
-            return;
-        }
-
-        $this->users->increment($user->id, 'failed_attempts', ['events' => false, 'timestamps' => false]);
         $user->refresh();
     }
 
-    protected function deactivateUserWhenAttemptsExceeded(?User $user): void
+    protected function deactivateUserWhenAttemptsExceeded(User $user): void
     {
-        if (!$user instanceof User) {
-            return;
-        }
-
         if ($user->failed_attempts < $this->maxAttempts) {
             return;
         }
 
+        $user->activated_at = null;
+        $user->save();
         $user->notify(new AttemptsExceeded());
-        $this->users->deactivate($user->getKey());
     }
 
-    protected function handleSuccessfulAttempt(): void
+    protected function handleSuccessfulAttempt(User $user): void
     {
-        /** @var User $user */
-        $user = request()->user();
-
         $lock = $this->lockProvider->lock(Lock::UPDATE_USER($user->getKey()), 10);
 
-        $lock->block(30, function () use ($user) {
+        $lock->block(30, function () use ($user): void {
             /*
              * If the User has expired tokens the System will mark the User as Logged Out.
              */
@@ -124,31 +122,30 @@ class AuthService implements AuthServiceInterface
         activity()->on($user)->by($user)->queue('authenticated');
     }
 
-    protected function resetUserFailedAttempts(?User $user): void
+    protected function resetUserFailedAttempts(User $user): void
     {
-        if (!$user instanceof User) {
-            return;
-        }
-
-        $this->users->update($user->getKey(), ['failed_attempts' => 0], ['events' => false, 'timestamps' => false]);
+        User::query()
+            ->whereKey($user->getKey())
+            ->toBase()
+            ->update(['failed_attempts' => 0]);
     }
 
-    public function generateToken(array $attributes): PersonalAccessTokenResult
+    public function generateToken(Authenticatable $user): PersonalAccessTokenResult
     {
-        $tokenResult = request()->user()->createToken('Personal Access Token');
+        $tokenResult = $this->accessTokenFactory->make($user->getAuthIdentifier(), 'Personal Access Token');
         $token = $tokenResult->token;
         $token->save();
 
         return $tokenResult;
     }
 
-    public function response(PersonalAccessTokenResult $token): array
+    public function tokenToResponse(PersonalAccessTokenResult $token): array
     {
-        $token_type = 'Bearer';
-        $access_token = $token->accessToken;
-        $expires_at = optional($token->token->expires_at)->toDateTimeString();
-
-        return compact('access_token', 'token_type', 'expires_at');
+        return [
+            'token_type' => 'Bearer',
+            'access_token' => $token->accessToken,
+            'expires_at' => $token->token->expires_at?->toDateTimeString(),
+        ];
     }
 
     public function logout(?User $user = null): bool
@@ -158,7 +155,7 @@ class AuthService implements AuthServiceInterface
 
         $lock = $this->lockProvider->lock(Lock::UPDATE_USER($user->getKey()), 10);
 
-        $lock->block(30, function () use ($user) {
+        $lock->block(30, static function () use ($user): void {
             $user->revokeTokens();
             $user->markAsLoggedOut();
         });

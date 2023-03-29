@@ -3,6 +3,7 @@
 namespace App\Domain\Authentication\Contracts;
 
 use App\Domain\User\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Laravel\Passport\PersonalAccessTokenResult;
 
 interface AuthServiceInterface
@@ -12,12 +13,12 @@ interface AuthServiceInterface
      *
      * @return void
      */
-    public function checkCredentials(array $credentials);
+    public function mustValidateCredentials(Authenticatable $user, array $credentials): void;
 
     /**
      * Generate and return token for authenticated user.
      */
-    public function generateToken(array $attributes): PersonalAccessTokenResult;
+    public function generateToken(Authenticatable $user): PersonalAccessTokenResult;
 
     /**
      * Authenticate User and generate the Personal Access Token.
@@ -25,7 +26,7 @@ interface AuthServiceInterface
      *
      * @return mixed
      */
-    public function authenticate(array $request);
+    public function authenticate(array $credentials);
 
     /**
      * Revoke the Personal Access Token of the Current Authenticated User.
@@ -40,5 +41,5 @@ interface AuthServiceInterface
     /**
      * Response when Successful Authentication.
      */
-    public function response(PersonalAccessTokenResult $token): array;
+    public function tokenToResponse(PersonalAccessTokenResult $token): array;
 }
