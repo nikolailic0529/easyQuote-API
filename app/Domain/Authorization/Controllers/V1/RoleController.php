@@ -4,46 +4,46 @@ namespace App\Domain\Authorization\Controllers\V1;
 
 use App\Domain\Authorization\Contracts\RoleRepositoryInterface as Roles;
 use App\Domain\Authorization\Models\Role;
+use App\Domain\Authorization\Queries\RoleQueries;
 use App\Domain\Authorization\Requests\ShowFormRequest;
 use App\Domain\Authorization\Requests\StoreRoleBaseRequest;
 use App\Domain\Authorization\Requests\UpdateRoleBaseRequest;
 use App\Domain\Authorization\Resources\V1\Role as RoleResource;
 use App\Domain\Authorization\Resources\V1\RoleListing;
 use App\Foundation\Http\Controller;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
-    protected Roles $roles;
-
-    public function __construct(Roles $roles)
-    {
-        $this->roles = $roles;
+    public function __construct(
+        protected readonly Roles $roles
+    ) {
         $this->authorizeResource(Role::class, 'role');
     }
 
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Paginate roles.
      */
-    public function index()
+    public function index(Request $request, RoleQueries $queries): JsonResponse
     {
         return response()->json(
-            request()->filled('search')
-                ? $this->roles->search(request('search'))
-                : $this->roles->all()
+            $queries->paginateRolesQuery($request)->apiPaginate()
         );
     }
 
     /**
-     * Display the roles having minimal access to the module.
+     * Show the roles having access to the module.
      *
-     * @return void
+     * @param string $module
+     * @return JsonResponse
      */
-    public function module(string $module)
+    public function module(string $module): JsonResponse
     {
-        $resource = $this->roles->findByModule($module, fn (Builder $builder) => $builder->withCount('users'));
+        $resource = $this->roles->findByModule($module,
+            static fn (Builder $builder) => $builder->withCount('users'));
 
         return response()->json(
             RoleListing::collection($resource)
@@ -51,11 +51,12 @@ class RoleController extends Controller
     }
 
     /**
-     * Data for creating a new Role.
+     * Show form data.
      *
-     * @return \Illuminate\Http\Response
+     * @param ShowFormRequest $request
+     * @return JsonResponse
      */
-    public function create(ShowFormRequest $request)
+    public function create(ShowFormRequest $request): JsonResponse
     {
         return response()->json(
             $request->data()
@@ -63,11 +64,12 @@ class RoleController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create role.
      *
-     * @return \Illuminate\Http\Response
+     * @param StoreRoleBaseRequest $request
+     * @return JsonResponse
      */
-    public function store(StoreRoleBaseRequest $request)
+    public function store(StoreRoleBaseRequest $request): JsonResponse
     {
         return response()->json(
             RoleResource::make(
@@ -77,11 +79,12 @@ class RoleController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Show role.
      *
-     * @return \Illuminate\Http\Response
+     * @param Role $role
+     * @return JsonResponse
      */
-    public function show(Role $role)
+    public function show(Role $role): JsonResponse
     {
         return response()->json(
             RoleResource::make($role)
@@ -89,11 +92,13 @@ class RoleController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update role.
      *
-     * @return \Illuminate\Http\Response
+     * @param UpdateRoleBaseRequest $request
+     * @param Role                  $role
+     * @return JsonResponse
      */
-    public function update(UpdateRoleBaseRequest $request, Role $role)
+    public function update(UpdateRoleBaseRequest $request, Role $role): JsonResponse
     {
         $resource = $this->roles->update($role->getKey(), $request->validated());
 
@@ -103,42 +108,47 @@ class RoleController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Delete role.
      *
-     * @return \Illuminate\Http\Response
+     * @param Role $role
+     * @return JsonResponse
      */
-    public function destroy(Role $role)
+    public function destroy(Role $role): JsonResponse
     {
         return response()->json(
-            $this->roles->delete($role->id)
+            $this->roles->delete($role->getKey())
         );
     }
 
     /**
-     * Activate the specified Role from storage.
+     * Mark role as active.
      *
-     * @return \Illuminate\Http\Response
+     * @param Role $role
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function activate(Role $role)
+    public function activate(Role $role): JsonResponse
     {
         $this->authorize('update', $role);
 
         return response()->json(
-            $this->roles->activate($role->id)
+            $this->roles->activate($role->getKey())
         );
     }
 
     /**
-     * Deactivate the specified Role from storage.
+     * Mark role as inactive.
      *
-     * @return \Illuminate\Http\Response
+     * @param Role $role
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function deactivate(Role $role)
+    public function deactivate(Role $role): JsonResponse
     {
         $this->authorize('update', $role);
 
         return response()->json(
-            $this->roles->deactivate($role->id)
+            $this->roles->deactivate($role->getKey())
         );
     }
 }
