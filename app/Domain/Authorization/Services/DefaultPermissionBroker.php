@@ -32,9 +32,9 @@ class DefaultPermissionBroker implements BrokerContract
             return R_RUD;
         }
 
-        $pattern = implode('.', [$module, '*', 'user', $provider->id]);
+        $pattern = implode('.', [$module, '*', 'user', $provider->getKey()]);
 
-        $permission = $user->getPermissionNames()->first(fn ($permission) => Str::is($pattern, $permission));
+        $permission = $user->getPermissionNames()->first(static fn ($permission) => Str::is($pattern, $permission));
 
         if (!is_null($permission)) {
             return (string) Str::of($permission)->after($module.'.')->before('.user');
@@ -51,7 +51,7 @@ class DefaultPermissionBroker implements BrokerContract
         /** @var \App\Domain\User\Models\User $provider */
         $provider = auth()->user();
 
-        $users = array_filter($users, fn ($id) => $id !== $provider->id);
+        $users = array_filter($users, static fn ($id) => $id !== $provider->getKey());
 
         $permission = static::getModulePermission($module, $level, $provider);
         $pattern = Str::of(static::modulePermissionPattern($module, $provider));
@@ -60,25 +60,25 @@ class DefaultPermissionBroker implements BrokerContract
          * Revoke target level permissions from non-passed users having target permission level.
          */
         $revokePermissionUsers = User::query()->whereKeyNot($users)
-            ->whereHas('permissions', fn ($q) => $q->whereKey($permission->id))
+            ->whereHas('permissions', static fn ($q) => $q->whereKey($permission->id))
             ->get();
 
-        $revokePermissionUsers->each(fn (User $user) => $user->revokePermissionTo($permission));
+        $revokePermissionUsers->each(static fn (User $user) => $user->revokePermissionTo($permission));
 
         /**
          * Grant permission level to the target users.
          */
         $targetUsers = User::query()->whereKey($users)
             ->with([
-                'permissions' => fn ($q) => $q->where('name', 'like', $pattern->replace('*', '%'))
+                'permissions' => static fn ($q) => $q->where('name', 'like', $pattern->replace('*', '%'))
                     ->whereKeyNot($permission->getKey()),
             ])
-            ->whereDoesntHave('permissions', fn ($q) => $q->whereKey($permission->getKey()))
+            ->whereDoesntHave('permissions', static fn ($q) => $q->whereKey($permission->getKey()))
             ->get();
 
-        $targetUsers->each(function (User $user) use ($permission) {
+        $targetUsers->each(static function (User $user) use ($permission): void {
             /* Revoke different levels permission if exists. */
-            $user->permissions->each(fn (Permission $permission) => $user->revokePermissionTo($permission));
+            $user->permissions->each(static fn (Permission $permission) => $user->revokePermissionTo($permission));
 
             /* Grant target level permission */
             $user->givePermissionTo($permission);
@@ -103,11 +103,11 @@ class DefaultPermissionBroker implements BrokerContract
         ])
             ->first();
 
-        $permission ??= tap(new Permission(), function (Permission $permission) use ($guard, $name) {
+        $permission ??= tap(new Permission(), function (Permission $permission) use ($guard, $name): void {
             $permission->name = $name;
             $permission->guard_name = $guard;
 
-            $this->connection->transaction(fn () => $permission->save());
+            $this->connection->transaction(static fn () => $permission->save());
         });
 
         $user->givePermissionTo($permission);
@@ -125,15 +125,15 @@ class DefaultPermissionBroker implements BrokerContract
 
     public function getDefaultGuard(): string
     {
-        return 'web';
+        return 'api';
     }
 
     protected static function getModulePermission(string $module, string $level, User $provider): Permission
     {
-        $name = implode('.', [$module, $level, 'user', $provider->id]);
+        $name = implode('.', [$module, $level, 'user', $provider->getKey()]);
 
         /* @noinspection PhpIncompatibleReturnTypeInspection */
-        return Permission::findOrCreate($name, 'web');
+        return Permission::findOrCreate($name, 'api');
     }
 
     protected static function modulePermissionPattern(string $module, User $provider): string
