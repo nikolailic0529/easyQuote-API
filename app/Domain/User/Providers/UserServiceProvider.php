@@ -8,17 +8,11 @@ use App\Domain\User\Middleware\EnforceChangePassword;
 use App\Domain\User\Repositories\UserForm as RepositoriesUserForm;
 use App\Domain\User\Repositories\UserRepository;
 use Illuminate\Contracts\Container\Container;
-use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 
-class UserServiceProvider extends ServiceProvider implements DeferrableProvider
+class UserServiceProvider extends ServiceProvider
 {
-    /**
-     * Register services.
-     *
-     * @return void
-     */
-    public function register()
+    public function register(): void
     {
         $this->app->singleton(UserRepositoryInterface::class, UserRepository::class);
 
@@ -26,19 +20,10 @@ class UserServiceProvider extends ServiceProvider implements DeferrableProvider
 
         $this->app->alias(UserRepositoryInterface::class, 'user.repository');
 
-        $this->app->bind(EnforceChangePassword::class, static function (Container $container): EnforceChangePassword {
+        $this->app->scoped(EnforceChangePassword::class, static function (Container $container): EnforceChangePassword {
             return new EnforceChangePassword(
                 config: $container['config']['user.password_expiration'] ?? []
             );
         });
-    }
-
-    public function provides()
-    {
-        return [
-            UserRepositoryInterface::class,
-            UserForm::class,
-            'user.repository',
-        ];
     }
 }
