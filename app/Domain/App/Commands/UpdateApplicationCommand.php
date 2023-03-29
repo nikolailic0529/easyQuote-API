@@ -31,6 +31,7 @@ use Database\Seeders\DateWeekSeeder;
 use Database\Seeders\DocumentProcessorDriverSeeder;
 use Database\Seeders\HpeContractTemplatesSeeder;
 use Database\Seeders\IndustrySeeder;
+use Database\Seeders\LanguageSeeder;
 use Database\Seeders\MySQLSeeder;
 use Database\Seeders\PipelineSeeder;
 use Database\Seeders\RecurrenceTypeSeeder;
@@ -132,6 +133,11 @@ class UpdateApplicationCommand extends Command
 
         $this->call(SeedCommand::class, [
             '--class' => CurrencySeeder::class,
+            '--force' => true,
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => LanguageSeeder::class,
             '--force' => true,
         ]);
 

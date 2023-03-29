@@ -120,6 +120,7 @@ Route::group(['prefix' => 'data'], static function (): void {
     Route::group([], static function (): void {
         Route::get('timezones', TimezoneController::class);
         Route::get('languages', LanguageController::class);
+        Route::get('languages/contact', [LanguageController::class, 'listContactLanguages']);
         Route::get('currencies', CurrencyController::class);
         Route::get('currencies/xr', [CurrencyController::class, 'showAllHavingExrate']);
         Route::get('fileformats', FileFormatsController::class);
