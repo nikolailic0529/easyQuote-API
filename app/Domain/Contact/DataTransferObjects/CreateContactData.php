@@ -13,6 +13,7 @@ final class CreateContactData extends Data
 {
     public function __construct(
         public readonly string $sales_unit_id,
+        public readonly string|Optional $language_id,
         public readonly string|Optional $address_id,
         public readonly string $contact_type,
         public readonly string $first_name,

@@ -7,6 +7,7 @@ use App\Domain\Authorization\Models\Role;
 use App\Domain\Company\Models\Company;
 use App\Domain\Contact\Enum\GenderEnum;
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Language\Models\ContactLanguage;
 use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -152,8 +153,9 @@ class ContactTest extends TestCase
         $performContactCreation = function (string $contactType, string $firstName, string $lastName): string {
             $image = UploadedFile::fake()->image('contact.jpg');
 
-            $response = $this->postJson('api/contacts', [
+            $response = $this->postJson('api/contacts', $data = [
                 'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
+                'language_id' => ContactLanguage::query()->get()->random()->getKey(),
                 'contact_type' => $contactType,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
@@ -185,7 +187,7 @@ class ContactTest extends TestCase
             $this->assertNotEmpty($contactModelKey);
 
             $this->getJson('api/contacts/'.$contactModelKey)
-//            ->dump()
+//                ->dump()
                 ->assertJsonStructure([
                     'id',
                     'sales_unit_id',
@@ -199,6 +201,8 @@ class ContactTest extends TestCase
                     'created_at',
                 ])
                 ->assertJson([
+                    'language_id' => $data['language_id'],
+                    'sales_unit_id' => $data['sales_unit_id'],
                     'contact_type' => $contactType,
                     'first_name' => $firstName,
                     'last_name' => $lastName,
@@ -415,11 +419,12 @@ class ContactTest extends TestCase
             string $contactType,
             string $firstName,
             string $lastName
-        ) {
+        ): void {
             $image = UploadedFile::fake()->image('contact.jpg');
 
-            $response = $this->patchJson('api/contacts/'.$contactKey, [
+            $response = $this->patchJson('api/contacts/'.$contactKey, $data = [
                 'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
+                'language_id' => ContactLanguage::query()->get()->random()->getKey(),
                 'contact_type' => $contactType,
                 'gender' => $gender,
                 'first_name' => $firstName,
@@ -460,6 +465,8 @@ class ContactTest extends TestCase
                     'created_at',
                 ])
                 ->assertJson([
+                    'sales_unit_id' => $data['sales_unit_id'],
+                    'language_id' => $data['language_id'],
                     'contact_type' => $contactType,
                     'gender' => $gender,
                     'first_name' => $firstName,

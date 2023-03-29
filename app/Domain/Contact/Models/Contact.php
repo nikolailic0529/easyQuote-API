@@ -12,10 +12,13 @@ use App\Domain\Contact\Enum\GenderEnum;
 use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Image\Contracts\HasImagesDirectory;
 use App\Domain\Image\Models\Image;
+use App\Domain\Language\Models\Language;
 use App\Domain\SalesUnit\Contracts\HasSalesUnit;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\Shared\Eloquent\Concerns\{Activatable};
 use App\Domain\Shared\Eloquent\Concerns\Searchable;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
+use App\Domain\User\Models\User;
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
 use Database\Factories\ContactFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,22 +35,23 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic;
 
 /**
- * @property string|null                                 $pl_reference
- * @property string|null                                 $contact_type
- * @property \App\Domain\Contact\Enum\GenderEnum|null    $gender
- * @property string|null                                 $contact_name
- * @property string|null                                 $first_name
- * @property string|null                                 $last_name
- * @property string|null                                 $email
- * @property string|null                                 $mobile
- * @property string|null                                 $phone
- * @property string|null                                 $job_title
- * @property bool|null                                   $is_verified
- * @property bool|null                                   $is_default
- * @property Address|null                                $address
- * @property string                                      $contact_representation
- * @property \App\Domain\User\Models\User|null           $user
- * @property \App\Domain\SalesUnit\Models\SalesUnit|null $salesUnit
+ * @property string|null     $pl_reference
+ * @property string|null     $contact_type
+ * @property GenderEnum|null $gender
+ * @property string|null     $contact_name
+ * @property string|null     $first_name
+ * @property string|null     $last_name
+ * @property string|null     $email
+ * @property string|null     $mobile
+ * @property string|null     $phone
+ * @property string|null     $job_title
+ * @property bool|null       $is_verified
+ * @property bool|null       $is_default
+ * @property Address|null    $address
+ * @property string          $contact_representation
+ * @property User|null       $user
+ * @property SalesUnit|null  $salesUnit
+ * @property Language|null   $language
  */
 class Contact extends Model implements HasImagesDirectory, SearchableEntity, LinkedToAppointments, HasOwnAppointments, ProvidesIdForHumans, HasSalesUnit
 {
@@ -77,12 +81,17 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity, Lin
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\User\Models\User::class);
+        return $this->belongsTo(User::class);
     }
 
     public function salesUnit(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\SalesUnit\Models\SalesUnit::class);
+        return $this->belongsTo(SalesUnit::class);
+    }
+
+    public function language(): BelongsTo
+    {
+        return $this->belongsTo(Language::class);
     }
 
     public function image()
@@ -158,7 +167,7 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity, Lin
         $image = ImageManagerStatic::make($file->get());
 
         if (filled($properties) && isset($properties['width']) && isset($properties['height'])) {
-            $image->resize($properties['width'], $properties['height'], function ($constraint) {
+            $image->resize($properties['width'], $properties['height'], static function ($constraint): void {
                 $constraint->aspectRatio();
                 $constraint->upsize();
             });

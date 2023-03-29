@@ -4,6 +4,7 @@ namespace App\Domain\Contact\Requests;
 
 use App\Domain\Address\Models\Address;
 use App\Domain\Company\Models\Company;
+use App\Domain\Contact\DataTransferObjects\UpdateContactData;
 use App\Domain\Contact\Enum\ContactType;
 use App\Domain\Contact\Enum\GenderEnum;
 use App\Domain\SalesUnit\Models\SalesUnit;
@@ -13,15 +14,16 @@ use Illuminate\Validation\Rules\Enum;
 
 class UpdateContactRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
         return [
             'sales_unit_id' => [
                 'bail', 'required', 'uuid',
                 Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed(),
+            ],
+            'language_id' => [
+                'bail', 'nullable', 'uuid',
+                Rule::exists('contact_languages'),
             ],
             'address_id' => [
                 'bail', 'nullable', 'uuid',
@@ -61,7 +63,7 @@ class UpdateContactRequest extends FormRequest
         return ['phone', 'mobile', 'job_title', 'email', 'picture'];
     }
 
-    public function getUpdateContactData(): \App\Domain\Contact\DataTransferObjects\UpdateContactData
+    public function getUpdateContactData(): UpdateContactData
     {
         $payload = $this->all();
 
@@ -70,7 +72,12 @@ class UpdateContactRequest extends FormRequest
             $this->offsetUnset('address_id');
         }
 
-        return \App\Domain\Contact\DataTransferObjects\UpdateContactData::from($this);
+        if ($this->isNotFilled('language_id')) {
+            unset($payload['language_id']);
+            $this->offsetUnset('language_id');
+        }
+
+        return UpdateContactData::from($this);
     }
 
     protected function prepareNullValues(): void
@@ -79,7 +86,8 @@ class UpdateContactRequest extends FormRequest
             return;
         }
 
-        $nullValues = array_map(fn ($value) => ($value === 'null') ? null : $value, $this->only($this->nullValues()));
+        $nullValues = array_map(static fn ($value) => ($value === 'null') ? null : $value,
+            $this->only($this->nullValues()));
 
         $this->merge($nullValues);
     }

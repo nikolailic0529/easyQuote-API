@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic;
 use JetBrains\PhpStorm\ArrayShape;
 use Spatie\LaravelData\DataCollection;
-use Webpatser\Uuid\Uuid;
 
 class ContactEntityService implements CauserAware
 {
@@ -36,7 +35,7 @@ class ContactEntityService implements CauserAware
     public function createContact(CreateContactData $data): Contact
     {
         return tap(new Contact(), function (Contact $contact) use ($data) {
-            $contact->{$contact->getKeyName()} = (string) Uuid::generate(4);
+            $contact->setId();
             $contact->user()->associate($this->causer);
 
             $contact->forceFill(

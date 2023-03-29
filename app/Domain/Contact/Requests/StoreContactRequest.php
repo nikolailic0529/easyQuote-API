@@ -14,15 +14,16 @@ use Illuminate\Validation\Rules\Enum;
 
 class StoreContactRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
         return [
             'sales_unit_id' => [
                 'bail', 'required', 'uuid',
                 Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed(),
+            ],
+            'language_id' => [
+                'bail', 'nullable', 'uuid',
+                Rule::exists('contact_languages'),
             ],
             'address_id' => [
                 'bail', 'nullable', 'uuid',
@@ -69,6 +70,11 @@ class StoreContactRequest extends FormRequest
         if ($this->isNotFilled('address_id')) {
             unset($payload['address_id']);
             $this->offsetUnset('address_id');
+        }
+
+        if ($this->isNotFilled('language_id')) {
+            unset($payload['language_id']);
+            $this->offsetUnset('language_id');
         }
 
         return CreateContactData::from($this);
