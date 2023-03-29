@@ -5,10 +5,11 @@ namespace App\Domain\Authorization\Services;
 use App\Domain\Authorization\Models\Permission;
 use App\Domain\Authorization\Models\Role;
 use Illuminate\Support\Collection;
-use Spatie\Permission\PermissionRegistrar;
 
 class PermissionHelper
 {
+    protected static ?\WeakMap $rolePermissionsCache = null;
+
     /**
      * Retrieve Module Privilege Permissions.
      *
@@ -47,20 +48,6 @@ class PermissionHelper
         return Permission::query()->whereIn('name', $names)->pluck('id')->toArray();
     }
 
-    public static function roleCachedPermissions(Role $role): array
-    {
-        /** @var \Illuminate\Database\Eloquent\Collection */
-        $permissions = app(PermissionRegistrar::class)->getPermissions();
-
-        return $permissions->reduce(static function (array $rolePermissions, Permission $permission) use ($role) {
-            if ($permission->roles->contains('id', $role->getKey())) {
-                $rolePermissions[$permission->getKey()] = $permission->name;
-            }
-
-            return $rolePermissions;
-        }, []);
-    }
-
     public static function rolePrivileges(Role $role): Collection
     {
         return Collection::wrap(config('role.modules'))
@@ -81,8 +68,10 @@ class PermissionHelper
 
     public static function roleProperties(Role $role): Collection
     {
+        $permissionMap = static::getPermissionsMap($role);
+
         return Collection::wrap(config('role.properties'))
-            ->mapWithKeys(static fn ($value) => [$value => $role->hasPermissionTo($value)]);
+            ->mapWithKeys(static fn ($value) => [$value => key_exists($value, $permissionMap)]);
     }
 
     protected static function resolveSubmodules(Role $role, string $module): Collection
@@ -104,14 +93,25 @@ class PermissionHelper
             return last(array_keys($privileges));
         }
 
+        $permissionMap = static::getPermissionsMap($role);
+
         foreach ($privileges as $privilege => $permissions) {
-            if ($role->hasAllPermissions($permissions)) {
-                $mostSignificantPrivilege = $privilege;
-            } else {
-                return $mostSignificantPrivilege;
+            foreach ($permissions as $permission) {
+                if (!key_exists($permission, $permissionMap)) {
+                    return $mostSignificantPrivilege;
+                }
             }
+
+            $mostSignificantPrivilege = $privilege;
         }
 
         return $mostSignificantPrivilege;
+    }
+
+    protected static function getPermissionsMap(Role $role): array
+    {
+        static::$rolePermissionsCache ??= new \WeakMap();
+
+        return static::$rolePermissionsCache[$role] ??= $role->permissions->pluck('id', 'name')->all();
     }
 }

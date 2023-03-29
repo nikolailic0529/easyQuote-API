@@ -2,19 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Authorization\Models\Permission;
 use App\Domain\Authorization\Models\Role;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\AssertsListing;
 
 /**
  * @group build
  */
 class RoleTest extends TestCase
 {
-    use AssertsListing;
     use DatabaseTransactions;
 
     /**
@@ -24,9 +23,28 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $response = $this->getJson('api/roles');
-
-        $this->assertListing($response);
+        $this->getJson('api/roles')
+//        ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'created_at',
+                        'updated_at',
+                        'activated_at',
+                        'users_count',
+                    ],
+                ],
+                'current_page',
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+            ]);
 
         $query = http_build_query([
             'search' => Str::random(10),
@@ -35,7 +53,38 @@ class RoleTest extends TestCase
             'order_by_role' => 'asc',
         ]);
 
-        $this->getJson(\url('api/roles?'.$query))->assertOk();
+        $this->getJson('api/roles?'.$query)->assertOk();
+    }
+
+    public function testCanViewRole(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Role $role */
+        $role = Role::factory()->create();
+        $allPermissions = Permission::query()->where('guard_name', 'api')->get();
+        $role->syncPermissions($allPermissions);
+
+        $this->getJson('api/roles/'.$role->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'user_id',
+                'name',
+                'privileges' => [
+                    '*' => [
+                        'module',
+                        'privilege',
+                        'submodules' => [
+                            '*' => [
+                                'submodule',
+                                'privilege',
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
     }
 
     /**

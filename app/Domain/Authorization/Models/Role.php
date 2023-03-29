@@ -29,9 +29,10 @@ use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Permission\Traits\RefreshesPermissionCache;
 
 /**
- * @property string|null $name
- * @property string|null $guard_name
- * @property bool|null   $is_system
+ * @property string|null                              $name
+ * @property string|null                              $guard_name
+ * @property bool|null                                $is_system
+ * @property \Illuminate\Database\Eloquent\Collection $permissions
  */
 class Role extends Model implements RoleContract, ActivatableInterface, SearchableEntity
 {
