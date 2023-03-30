@@ -21,7 +21,7 @@ class PermissionSeeder extends Seeder
             foreach ($seeds as $seed) {
                 Permission::query()->updateOrCreate(
                     ['name' => $seed],
-                    ['guard_name' => config('auth.defaults.guard')]
+                    ['guard_name' => 'api']
                 );
             }
         });

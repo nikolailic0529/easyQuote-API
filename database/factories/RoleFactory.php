@@ -14,7 +14,7 @@ class RoleFactory extends Factory
     {
         return [
             'name' => Str::random(20),
-            'guard_name' => 'web',
+            'guard_name' => 'api',
         ];
     }
 }

@@ -52,7 +52,7 @@ class DatabaseSeeder extends Seeder
         $this->call(TimezoneSeeder::class);
         $this->command->info('Seeded the timezones');
 
-        $this->call(LanguagesSeeder::class);
+        $this->call(LanguageSeeder::class);
         $this->command->info('Seeded the languages');
 
         $this->call(CurrencySeeder::class);

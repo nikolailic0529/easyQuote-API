@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 $factory->define(Role::class, function (Faker $faker) {
     return [
         'name' => Str::random(40),
-        'guard_name' => 'web',
+        'guard_name' => 'api',
     ];
 });
 
