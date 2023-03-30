@@ -115,11 +115,6 @@ class OpportunityEntityValidator
                 'exclude_without:end_user', 'bail', 'required',
                 (new Count())
                     ->where('pivot.is_default', true)
-                    ->where('address_type', AddressType::INVOICE)
-                    ->exactly(1)
-                    ->setExactMessage('End Customer must have exactly :limit default invoice address.'),
-                (new Count())
-                    ->where('pivot.is_default', true)
                     ->whereIn('address_type', [AddressType::HARDWARE, AddressType::SOFTWARE])
                     ->min(1)
                     ->setMinMessage('End Customer must have at least :limit software/hardware address.'),
