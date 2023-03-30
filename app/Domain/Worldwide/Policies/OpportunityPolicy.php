@@ -115,7 +115,8 @@ class OpportunityPolicy
         }
 
         if ($user->salesUnits->contains($opportunity->salesUnit)) {
-            if ($opportunity->owner()->is($user) || $opportunity->accountManager()->is($user)) {
+            if ($opportunity->owner()->is($user) || $opportunity->accountManager()
+                    ->is($user) || $this->userInSharingUsers($opportunity, $user)) {
                 return $this->allow();
             }
 

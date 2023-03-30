@@ -6,27 +6,34 @@ use App\Domain\Address\Models\Address;
 use App\Domain\Company\Models\Company;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\User\Resources\V1\UserRelationResource;
+use App\Domain\Worldwide\Models\Opportunity;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\Intl\Currencies;
 
+/**
+ * @mixin Opportunity
+ */
 class OpportunityWithIncludesResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return array
+     * @param Request $request
      */
-    public function toArray($request)
-
-    /* @var \App\Domain\Worldwide\Models\Opportunity|OpportunityWithIncludesResource $this */
+    public function toArray($request): array
     {
+        $user = $request->user();
+
         return [
             'id' => $this->getKey(),
             'user_id' => $this->owner()->getParentKey(),
             'user' => UserRelationResource::make($this->owner),
             'sharing_users' => UserRelationResource::collection($this->sharingUsers),
+
+            'permissions' => [
+                'view' => $user->can('view', $this->resource),
+                'update' => $user->can('update', $this->resource),
+                'delete' => $user->can('delete', $this->resource),
+            ],
 
             'sales_unit_id' => $this->salesUnit()->getParentKey(),
             'sales_unit' => $this->salesUnit,
@@ -44,11 +51,11 @@ class OpportunityWithIncludesResource extends JsonResource
             'primary_account' => transform($this->primaryAccount, static function (Company $primaryAccount): Company {
                 $primaryAccount->loadMissing(['addresses.country', 'contacts']);
 
-                $primaryAccount->addresses->each(function (Address $address): void {
+                $primaryAccount->addresses->each(static function (Address $address): void {
                     $address->setAttribute('is_default', (bool) $address->pivot->is_default);
                 });
 
-                $primaryAccount->contacts->each(function (Contact $contact): void {
+                $primaryAccount->contacts->each(static function (Contact $contact): void {
                     $contact->setAttribute('is_default', (bool) $contact->pivot->is_default);
                 });
 
@@ -62,11 +69,11 @@ class OpportunityWithIncludesResource extends JsonResource
             'end_user' => transform($this->endUser, static function (Company $endUser): Company {
                 $endUser->loadMissing(['addresses.country', 'contacts']);
 
-                $endUser->addresses->each(function (Address $address) {
+                $endUser->addresses->each(static function (Address $address): void {
                     $address->setAttribute('is_default', (bool) $address->pivot->is_default);
                 });
 
-                $endUser->contacts->each(function (Contact $contact) {
+                $endUser->contacts->each(static function (Contact $contact): void {
                     $contact->setAttribute('is_default', (bool) $contact->pivot->is_default);
                 });
 

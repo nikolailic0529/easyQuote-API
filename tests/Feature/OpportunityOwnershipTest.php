@@ -397,14 +397,27 @@ class OpportunityOwnershipTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var User $originalOwner */
+        $originalOwner = User::factory()->create();
+        /** @var Role $originalOwnerRole */
+        $originalOwnerRole = Role::factory()->create();
+        $originalOwnerRole->syncPermissions(
+            'view_opportunities',
+            'create_opportunities',
+            'update_own_opportunities',
+            'delete_own_opportunities',
+        );
+        $originalOwner->syncRoles($originalOwnerRole);
+
         /** @var Opportunity $opp */
         $opp = Opportunity::factory()
-            ->for(User::factory(), 'owner')
+            ->for($originalOwner, 'owner')
             ->create();
-        $originalOwner = $opp->owner;
 
         $newOwner = User::factory()->create();
         $newUnit = SalesUnit::factory()->create();
+
+        $originalOwner->salesUnits()->attach($newUnit);
 
         $this->patchJson('api/opportunities/'.$opp->getKey().'/ownership', $data = [
             'owner_id' => $newOwner->getKey(),
@@ -416,6 +429,7 @@ class OpportunityOwnershipTest extends TestCase
             ->assertNoContent();
 
         $this->getJson('api/opportunities/'.$opp->getKey())
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -429,5 +443,22 @@ class OpportunityOwnershipTest extends TestCase
             ])
             ->assertJsonCount(1, 'sharing_users')
             ->assertJsonPath('sharing_users.0.id', $originalOwner->getKey());
+
+        $this->actingAs($originalOwner, 'api');
+
+        $this->getJson('api/opportunities/'.$opp->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                ],
+            ])
+            ->assertJsonPath('permissions.view', true)
+            ->assertJsonPath('permissions.update', true)
+            ->assertJsonPath('permissions.delete', true);
     }
 }
