@@ -22,7 +22,7 @@ class PipelinerSyncErrorEntityService
         string $strategy,
         string $message
     ): PipelinerSyncError {
-        return $this->lockProvider->lock($this->getLockKeyFor($model), 10)
+        return $this->lockProvider->lock($this->getLockKeyFor($model->getKey()), 10)
             ->block(30, function () use ($model, $message, $strategy) {
                 $error = \App\Domain\Pipeliner\Models\PipelinerSyncError::query()
                     ->whereNull('resolved_at')
@@ -52,7 +52,7 @@ class PipelinerSyncErrorEntityService
         string $strategy,
         string $message
     ): PipelinerSyncError {
-        return $this->lockProvider->lock($this->getLockKeyFor($model), 10)
+        return $this->lockProvider->lock($this->getLockKeyFor($model->getKey()), 10)
             ->block(30, function () use ($strategy, $message, $model): \App\Domain\Pipeliner\Models\PipelinerSyncError {
                 return tap(new \App\Domain\Pipeliner\Models\PipelinerSyncError(),
                     function (PipelinerSyncError $error) use ($strategy, $message, $model) {
@@ -82,7 +82,7 @@ class PipelinerSyncErrorEntityService
     {
         $error->resolved_at = now();
 
-        $this->lockProvider->lock($this->getLockKeyFor($error->entity), 10)
+        $this->lockProvider->lock($this->getLockKeyFor($error->entity()->getParentKey()), 10)
             ->block(30, function () use ($error) {
                 $this->connectionResolver->connection()
                     ->transaction(static function () use ($error): void {
@@ -95,7 +95,7 @@ class PipelinerSyncErrorEntityService
     {
         $error->archived_at = now();
 
-        $this->lockProvider->lock($this->getLockKeyFor($error->entity), 10)
+        $this->lockProvider->lock($this->getLockKeyFor($error->entity()->getParentKey()), 10)
             ->block(30, function () use ($error) {
                 $this->connectionResolver->connection()
                     ->transaction(static function () use ($error): void {
@@ -140,7 +140,7 @@ class PipelinerSyncErrorEntityService
     {
         $error->archived_at = null;
 
-        $this->lockProvider->lock($this->getLockKeyFor($error->entity), 10)
+        $this->lockProvider->lock($this->getLockKeyFor($error->entity()->getParentKey()), 10)
             ->block(30, function () use ($error) {
                 $this->connectionResolver->connection()
                     ->transaction(static function () use ($error): void {
@@ -159,8 +159,8 @@ class PipelinerSyncErrorEntityService
             });
     }
 
-    protected function getLockKeyFor(Model $related): string
+    protected function getLockKeyFor(string $related): string
     {
-        return static::class.$related->getKey();
+        return static::class.$related;
     }
 }
