@@ -26,6 +26,7 @@ class ContactEventAuditor implements ShouldQueue
         'phone',
         'email',
         'is_verified',
+        'language.name',
     ];
 
     public function __construct(
