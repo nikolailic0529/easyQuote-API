@@ -167,9 +167,19 @@ class AssetOwnershipTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var User $originalOwner */
+        $originalOwner = User::factory()->create();
+        /** @var Role $originalOwnerRole */
+        $originalOwnerRole = Role::factory()->create();
+        $originalOwnerRole->syncPermissions(
+            'view_assets',
+            'create_assets', 'update_assets', 'delete_assets',
+        );
+        $originalOwner->syncRoles($originalOwnerRole);
+
         /** @var Asset $asset */
         $asset = Asset::factory()
-            ->for(User::factory(), 'user')
+            ->for($originalOwner, 'user')
             ->create();
         $originalOwner = $asset->user;
 
@@ -196,5 +206,21 @@ class AssetOwnershipTest extends TestCase
             ])
             ->assertJsonCount(1, 'sharing_users')
             ->assertJsonPath('sharing_users.0.id', $originalOwner->getKey());
+
+        $this->actingAs($originalOwner, 'api');
+
+        $this->getJson('api/assets/'.$asset->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                ],
+            ])
+            ->assertJsonPath('permissions.view', true)
+            ->assertJsonPath('permissions.update', true)
+            ->assertJsonPath('permissions.delete', true);
     }
 }

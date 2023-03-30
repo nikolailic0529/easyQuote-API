@@ -6,6 +6,7 @@ use App\Domain\Asset\Models\Asset;
 use App\Domain\Rescue\Models\Quote;
 use App\Domain\User\Resources\V1\UserRelationResource;
 use App\Domain\Worldwide\Models\WorldwideQuote;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -14,15 +15,20 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class AssetWithIncludes extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
+     * @param Request $request
      */
     public function toArray($request): array
     {
+        $user = $request->user();
+
         return [
             'id' => $this->getKey(),
+
+            'permissions' => [
+                'view' => $user->can('view', $this->resource),
+                'update' => $user->can('update', $this->resource),
+                'delete' => $user->can('delete', $this->resource),
+            ],
 
             'asset_category_id' => $this->assetCategory()->getParentKey(),
             'user_id' => $this->user()->getParentKey(),
