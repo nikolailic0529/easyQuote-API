@@ -333,14 +333,25 @@ class CompanyOwnershipTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var User $originalOwner */
+        $originalOwner = User::factory()->create();
+        /** @var Role $originalOwnerRole */
+        $originalOwnerRole = Role::factory()->create();
+        $originalOwnerRole->syncPermissions(
+            'view_companies',
+            'create_companies', 'update_companies', 'delete_companies',
+        );
+        $originalOwner->syncRoles($originalOwnerRole);
+
         /** @var Company $c */
         $c = Company::factory()
-            ->for(User::factory(), 'owner')
+            ->for($originalOwner, 'owner')
             ->create();
-        $originalOwner = $c->owner;
 
         $newOwner = User::factory()->create();
         $newUnit = SalesUnit::factory()->create();
+
+        $originalOwner->salesUnits()->attach($newUnit);
 
         $this->patchJson('api/companies/'.$c->getKey().'/ownership', $data = [
             'owner_id' => $newOwner->getKey(),
@@ -365,5 +376,21 @@ class CompanyOwnershipTest extends TestCase
             ])
             ->assertJsonCount(1, 'sharing_users')
             ->assertJsonPath('sharing_users.0.id', $originalOwner->getKey());
+
+        $this->actingAs($originalOwner, 'api');
+
+        $this->getJson('api/companies/'.$c->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                ],
+            ])
+            ->assertJsonPath('permissions.view', true)
+            ->assertJsonPath('permissions.update', true)
+            ->assertJsonPath('permissions.delete', true);
     }
 }
