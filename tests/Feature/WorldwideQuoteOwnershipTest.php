@@ -251,11 +251,24 @@ class WorldwideQuoteOwnershipTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var User $originalOwner */
+        $originalOwner = User::factory()->create();
+        /** @var Role $originalOwnerRole */
+        $originalOwnerRole = Role::factory()->create();
+        $originalOwnerRole->syncPermissions(
+            'view_own_ww_quotes', 'view_own_ww_quote_files',
+            'create_ww_quotes', 'update_own_ww_quotes',
+            'create_ww_quote_files', 'update_own_ww_quote_files', 'handle_own_ww_quote_files',
+            'delete_own_ww_quotes', 'delete_own_ww_quote_files',
+        );
+        $originalOwner->syncRoles($originalOwnerRole);
+
         /** @var WorldwideQuote $quote */
         $quote = WorldwideQuote::factory()
-            ->for(User::factory(), 'user')
+            ->for($originalOwner, 'user')
             ->create();
-        $originalOwner = $quote->user;
+
+        $originalOwner->salesUnits()->attach($quote->salesUnit);
 
         $newOwner = User::factory()->create();
 
@@ -280,6 +293,23 @@ class WorldwideQuoteOwnershipTest extends TestCase
             ])
             ->assertJsonCount(1, 'sharing_users')
             ->assertJsonPath('sharing_users.0.id', $originalOwner->getKey());
+
+        $this->actingAs($originalOwner, 'api');
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey().'?include[]=sharing_users')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                ],
+            ])
+            ->assertJsonPath('permissions.view', true)
+            ->assertJsonPath('permissions.update', true)
+            ->assertJsonPath('permissions.delete', true);
     }
 
     /**

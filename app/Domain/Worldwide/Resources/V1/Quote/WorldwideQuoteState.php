@@ -7,6 +7,7 @@ use App\Domain\User\Resources\V1\UserRelationResource;
 use App\Domain\Worldwide\Enum\ContractQuoteStage;
 use App\Domain\Worldwide\Enum\PackQuoteStage;
 use App\Domain\Worldwide\Models\WorldwideQuote;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\MissingValue;
 
@@ -115,13 +116,9 @@ class WorldwideQuoteState extends JsonResource
     protected ?float $actualExchangeRate = null;
 
     /**
-     * Transform the resource into an array.
-     *
-     * @param \Illuminate\Http\Request $request
-     *
-     * @return array
+     * @param Request $request
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         /** @var User $user */
         $user = $request->user();
@@ -134,6 +131,12 @@ class WorldwideQuoteState extends JsonResource
             'active_version_id' => $this->active_version_id,
             'active_version_user_id' => $this->activeVersion->user_id,
             'user_version_sequence_number' => $this->activeVersion->user_version_sequence_number,
+
+            'permissions' => [
+                'view' => $user->can('view', $this->resource),
+                'update' => $user->can('update', $this->resource),
+                'delete' => $user->can('delete', $this->resource),
+            ],
 
             'versions' => $this->whenLoaded('versions'),
 
@@ -151,21 +154,21 @@ class WorldwideQuoteState extends JsonResource
                 function () {
                     /* @var WorldwideQuote|WorldwideQuoteState $this */
 
-                    return tap(QuoteOpportunity::make($this->opportunity), function (QuoteOpportunity $resource) {
+                    return tap(QuoteOpportunity::make($this->opportunity), function (QuoteOpportunity $resource): void {
                         /** @var WorldwideQuote|WorldwideQuoteState $this */
                         $additionalData = [];
 
-                    if ($this->activeVersion->relationLoaded('addresses')) {
-                        $additionalData['addresses'] = $this->activeVersion->addresses;
-                    }
+                        if ($this->activeVersion->relationLoaded('addresses')) {
+                            $additionalData['addresses'] = $this->activeVersion->addresses;
+                        }
 
-                    if ($this->activeVersion->relationLoaded('contacts')) {
-                        $additionalData['contacts'] = $this->activeVersion->contacts;
-                    }
+                        if ($this->activeVersion->relationLoaded('contacts')) {
+                            $additionalData['contacts'] = $this->activeVersion->contacts;
+                        }
 
-                    $resource->additional($additionalData);
-                });
-            }),
+                        $resource->additional($additionalData);
+                    });
+                }),
 
             'company_id' => $this->activeVersion->company_id,
             'company' => $this->whenLoaded('company'),
