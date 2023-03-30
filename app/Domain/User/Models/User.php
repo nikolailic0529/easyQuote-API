@@ -206,7 +206,13 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
 
     public function latestLogin(): MorphOne
     {
-        return $this->morphOne(Activity::class, 'causer')->latestOfMany('created_at');
+        $related = new Activity();
+
+        return $this->morphOne($related::class, 'causer')
+            ->where($related->qualifyColumn('description'), 'authenticated')
+            ->ofMany([$related->getCreatedAtColumn() => 'MAX'], static function (Builder $subQuery): void {
+                $subQuery->where($subQuery->qualifyColumn('description'), 'authenticated');
+            });
     }
 
     public function salesUnits(): MorphToMany
