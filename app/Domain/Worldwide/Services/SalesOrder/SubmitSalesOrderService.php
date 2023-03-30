@@ -2,6 +2,7 @@
 
 namespace App\Domain\Worldwide\Services\SalesOrder;
 
+use App\Domain\Address\Enum\AddressType;
 use App\Domain\VendorServices\Services\CachingOauthClient;
 use App\Domain\Worldwide\DataTransferObjects\SalesOrder\Submit\SubmitOrderAddressData;
 use App\Domain\Worldwide\DataTransferObjects\SalesOrder\Submit\SubmitOrderLineData;
@@ -21,11 +22,12 @@ class SubmitSalesOrderService
 
     const BUSINESS_DIVISION = 'Worldwide';
 
-    public function __construct(protected Config $config,
-                                protected ValidatorInterface $validator,
-                                protected CachingOauthClient $oauthClient,
-                                protected HttpFactory $http)
-    {
+    public function __construct(
+        protected Config $config,
+        protected ValidatorInterface $validator,
+        protected CachingOauthClient $oauthClient,
+        protected HttpFactory $http
+    ) {
     }
 
     public function processSalesOrderDataSubmission(SubmitSalesOrderData $data): SubmitSalesOrderResult
@@ -103,15 +105,10 @@ class SubmitSalesOrderService
     protected function mapSubmitSalesOrderDataToPostData(SubmitSalesOrderData $salesOrderData): array
     {
         /** @var SubmitOrderAddressData|null $invoiceAddress */
-        $invoiceAddress = value(function () use ($salesOrderData): ?SubmitOrderAddressData {
-            foreach ($salesOrderData->addresses_data as $addressData) {
-                if ($addressData->address_type === 'Invoice') {
-                    return $addressData;
-                }
-            }
-
-            return null;
-        });
+        $invoiceAddress = collect($salesOrderData->addresses_data)
+            ->lazy()
+            ->whereStrict('address_type', AddressType::INVOICE)
+            ->first();
 
         return [
             'data' => [
@@ -123,7 +120,7 @@ class SubmitSalesOrderService
                 'address_1' => $invoiceAddress->address_1 ?? null,
                 'address_2' => $invoiceAddress->address_2 ?? null,
                 'city' => $invoiceAddress->city ?? null,
-                'county' => $invoiceAddress->state ?? null,
+                'state' => $invoiceAddress->state ?? null,
                 'post_code' => $invoiceAddress->post_code ?? null,
                 'country_code' => $invoiceAddress->country_code ?? null,
                 'phone_no' => $salesOrderData->customer_data->phone_no,
@@ -137,11 +134,13 @@ class SubmitSalesOrderService
                 'currency_code' => $salesOrderData->customer_data->currency_code,
                 'exchange_rate' => $salesOrderData->exchange_rate,
                 'customer_po' => $salesOrderData->customer_po,
-                'name' => $salesOrderData->customer_data->customer_name,
+                'customer_name' => $salesOrderData->customer_data->customer_name,
                 'sales_person_name' => $salesOrderData->sales_person_name,
-                'nav_company' => $salesOrderData->bc_company_name,
+                'company_name' => $salesOrderData->bc_company_name,
                 'vendor' => $salesOrderData->vendor_short_code,
-                'sales_line' => array_map(fn (SubmitOrderLineData $lineData): array => [
+                'sales_lines' => collect($salesOrderData->order_lines_data)->map(static fn (
+                    SubmitOrderLineData $lineData
+                ): array => [
                     'service_sku' => $lineData->service_sku,
                     'service_description' => $lineData->service_description,
                     'serial_number' => $lineData->serial_number,
@@ -150,8 +149,8 @@ class SubmitSalesOrderService
                     'unit_price' => $lineData->buy_price,
                     'machine_country_code' => $lineData->machine_country_code,
                     'sales_group' => sprintf('%s %s', self::BUSINESS_DIVISION, $salesOrderData->contract_type),
-                    'short_name' => $lineData->vendor_short_code,
-                ], $salesOrderData->order_lines_data),
+                    'vendor_name' => $lineData->vendor_short_code,
+                ]),
             ],
         ];
     }
