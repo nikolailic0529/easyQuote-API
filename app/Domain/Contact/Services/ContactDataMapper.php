@@ -17,9 +17,10 @@ use App\Foundation\Support\Enum\EnumResolver;
 
 class ContactDataMapper
 {
-    public function __construct(protected PipelinerClientLookupService $pipelinerClientLookupService,
-                                protected CachedFieldEntityResolver $pipelinerFieldResolver)
-    {
+    public function __construct(
+        protected PipelinerClientLookupService $pipelinerClientLookupService,
+        protected CachedFieldEntityResolver $pipelinerFieldResolver
+    ) {
     }
 
     public function mapPipelinerCreateContactInput(Contact $contact): CreateContactInput
@@ -115,13 +116,21 @@ class ContactDataMapper
 
         $typeId = $this->resolveDataEntityByOptionName('Contact', 'cf_type1_id', $contact->contact_type)?->id;
 
-        if (null !== $typeId) {
+        if ($typeId) {
             $customFields['cfType1Id'] = $typeId;
         }
 
         $customFields['cfAddressTwo'] = $contact->address?->address_2;
         $customFields['cfStateCode1'] = $contact->address?->state_code;
         $customFields['cfJobTitle'] = $contact->job_title;
+
+        $languageId = $contact->language
+            ? $this->resolveDataEntityByOptionName('Contact', 'cf_language1n_id', $contact->language->name)?->id
+            : null;
+
+        if ($languageId) {
+            $customFields['cfLanguage1nId'] = $languageId;
+        }
 
         return $customFields;
     }

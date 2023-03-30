@@ -22,6 +22,7 @@ use App\Domain\Contact\Services\ContactHashResolver;
 use App\Domain\Contact\Services\ImportedContactToContactProjector;
 use App\Domain\Country\Models\Country;
 use App\Domain\Image\Services\ThumbnailService;
+use App\Domain\Language\Models\Language;
 use App\Domain\User\Models\User;
 use App\Domain\Vendor\Models\Vendor;
 use App\Foundation\Filesystem\TemporaryDirectory;
@@ -226,6 +227,14 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
                     $contact->mobile = $importedContact->phone_2;
                     $contact->job_title = $importedContact->job_title;
                     $contact->contact_name = $importedContact->contact_name;
+
+                    if ($importedContact->language_name) {
+                        $contact->language()->associate(
+                            Language::query()
+                                ->where('name', $importedContact->language_name)
+                                ->first()
+                        );
+                    }
                 });
         });
 

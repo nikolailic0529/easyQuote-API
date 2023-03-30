@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property false|mixed                              $is_verified
  * @property mixed|string                             $contact_name
  * @property SalesUnit|null                           $salesUnit
+ * @property string|null                              $language_name
  */
 class ImportedContact extends Model implements HasOwner
 {

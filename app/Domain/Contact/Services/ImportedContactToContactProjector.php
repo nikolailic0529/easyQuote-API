@@ -5,14 +5,14 @@ namespace App\Domain\Contact\Services;
 use App\Domain\Address\Models\Address;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Models\ImportedContact;
-use Webpatser\Uuid\Uuid;
+use App\Domain\Language\Models\Language;
 
 class ImportedContactToContactProjector
 {
     public function __invoke(ImportedContact $importedContact, ?Address $relatedAddress): Contact
     {
-        return tap(new Contact(), function (Contact $contact) use ($relatedAddress, $importedContact): void {
-            $contact->{$contact->getKeyName()} = (string) Uuid::generate(4);
+        return tap(new Contact(), static function (Contact $contact) use ($relatedAddress, $importedContact): void {
+            $contact->setId();
             $contact->pl_reference = $importedContact->pl_reference;
             $contact->user()->associate($importedContact->owner);
             $contact->address()->associate($relatedAddress);
@@ -26,6 +26,14 @@ class ImportedContactToContactProjector
             $contact->mobile = $importedContact->phone_2;
             $contact->job_title = $importedContact->job_title;
             $contact->contact_name = $importedContact->contact_name;
+
+            if ($importedContact->language_name) {
+                $contact->language()->associate(
+                    Language::query()
+                        ->where('name', $importedContact->language_name)
+                        ->first()
+                );
+            }
 
             $contact->updateTimestamps();
         });

@@ -22,6 +22,8 @@ use App\Domain\Contact\Models\ImportedContact;
 use App\Domain\Contact\Services\ContactHashResolver;
 use App\Domain\Contact\Services\ImportedContactToContactProjector;
 use App\Domain\Country\Models\Country;
+use App\Domain\Language\Models\Language;
+use App\Domain\Pipeliner\Integration\CustomFieldName;
 use App\Domain\Pipeliner\Integration\Enum\CloudObjectTypeEnum;
 use App\Domain\Pipeliner\Integration\Enum\InputValueEnum;
 use App\Domain\Pipeliner\Integration\Enum\SharingRoleEnum;
@@ -76,10 +78,6 @@ class CompanyDataMapper
             ->filter(static fn (Address $address): bool => (bool) $address->pivot?->is_default)
             ->first(static fn (Address $address): bool => AddressType::INVOICE === $address->address_type);
 
-        if (null === $defaultAddress) {
-            throw CompanyDataMappingException::defaultInvoiceAddressMissing($company);
-        }
-
         $picture = InputValueEnum::Miss;
 
         if (null !== $company->image) {
@@ -90,7 +88,7 @@ class CompanyDataMapper
             ->attachments
             ->whereNotNull('pl_reference')
             ->values()
-            ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+            ->map(static function (Attachment $attachment): CreateCloudObjectRelationInput {
                 return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
             })
             ->whenNotEmpty(
@@ -111,28 +109,29 @@ class CompanyDataMapper
             $customerTypeId ??= InputValueEnum::Miss;
         }
 
+        $companyFields = [
+            'name' => $company->name,
+            'ownerId' => (string) $company->owner?->pl_reference,
+            'customerTypeId' => $customerTypeId,
+            'customFields' => json_encode($this->projectCompanyAttrsToCustomFields($company)),
+            'email1' => (string) $company->email,
+            'phone1' => (string) $company->phone,
+            'homePage' => (string) $company->website,
+            'unitId' => $company->salesUnit?->pl_reference ?? InputValueEnum::Miss,
+            'picture' => $picture,
+            'documents' => $documents,
+            'sharingClients' => $sharingClients,
+        ];
+
+        $addressFields = $this->mapDefaultAddressFields($defaultAddress);
+
         return new CreateAccountInput(
-            name: $company->name,
-            ownerId: (string) $company->owner?->pl_reference,
-            address: (string) $defaultAddress?->address_1,
-            city: (string) $defaultAddress?->city,
-            country: (string) $defaultAddress?->country?->name,
-            customerTypeId: $customerTypeId,
-            customFields: json_encode($this->projectCompanyAttrsToCustomFields($company)),
-            email1: (string) $company->email,
-            phone1: (string) $company->phone,
-            homePage: (string) $company->website,
-            stateProvince: (string) $defaultAddress?->state,
-            unitId: $company->salesUnit?->pl_reference ?? InputValueEnum::Miss,
-            zipCode: (string) $defaultAddress?->post_code,
-            picture: $picture,
-            documents: $documents,
-            sharingClients: $sharingClients,
+            ...array_merge($companyFields, $addressFields),
         );
     }
 
     /**
-     * @param  list<AccountSharingClientRelationEntity>  $sharingClients
+     * @param list<AccountSharingClientRelationEntity> $sharingClients
      *
      * @throws CompanyDataMappingException
      */
@@ -146,10 +145,6 @@ class CompanyDataMapper
             ->lazy()
             ->filter(static fn (Address $address): bool => (bool) $address->pivot?->is_default)
             ->first(static fn (Address $address): bool => AddressType::INVOICE === $address->address_type);
-
-        if (null === $defaultAddress) {
-            throw CompanyDataMappingException::defaultInvoiceAddressMissing($company);
-        }
 
         $oldFields = [
             'ownerId' => $accountEntity->owner?->id,
@@ -170,14 +165,9 @@ class CompanyDataMapper
         $newFields = [
             'ownerId' => $company->owner?->pl_reference ?? InputValueEnum::Miss,
             'name' => $company->name,
-            'address' => (string) $defaultAddress?->address_1,
-            'city' => (string) $defaultAddress?->city,
-            'country' => (string) $defaultAddress?->country?->name,
             'email1' => (string) $company->email,
             'phone1' => (string) $company->phone,
             'homePage' => (string) $company->website,
-            'stateProvince' => (string) $defaultAddress?->state,
-            'zipCode' => (string) $defaultAddress?->post_code,
             'unitId' => $company->salesUnit?->pl_reference ?? InputValueEnum::Miss,
             'customerTypeId' => isset($company->customer_type)
                 ? $this->resolveDataEntityByOptionName('Account', 'customer_type_id', $company->customer_type->value)?->id ?? InputValueEnum::Miss
@@ -187,7 +177,7 @@ class CompanyDataMapper
                 ->attachments
                 ->whereNotNull('pl_reference')
                 ->values()
-                ->map(function (Attachment $attachment): CreateCloudObjectRelationInput {
+                ->map(static function (Attachment $attachment): CreateCloudObjectRelationInput {
                     return new CreateCloudObjectRelationInput(cloudObjectId: $attachment->pl_reference);
                 })
                 ->whenNotEmpty(
@@ -201,7 +191,11 @@ class CompanyDataMapper
             ),
         ];
 
-        $changedFields = array_udiff_assoc($newFields, $oldFields, function (mixed $a, mixed $b): int {
+        $newAddressFields = $this->mapDefaultAddressFields($defaultAddress);
+
+        $newFields = array_merge($newFields, $newAddressFields);
+
+        $changedFields = array_udiff_assoc($newFields, $oldFields, static function (mixed $a, mixed $b): int {
             if ($a === null || $b === null) {
                 return $a === $b ? 0 : 1;
             }
@@ -227,8 +221,29 @@ class CompanyDataMapper
         );
     }
 
+    private function mapDefaultAddressFields(?Address $address): array
+    {
+        if ($address) {
+            return [
+                'address' => (string) $address?->address_1,
+                'city' => (string) $address?->city,
+                'country' => (string) $address?->country?->name,
+                'stateProvince' => (string) $address?->state,
+                'zipCode' => (string) $address?->post_code,
+            ];
+        }
+
+        return [
+            'address' => InputValueEnum::Miss,
+            'city' => InputValueEnum::Miss,
+            'country' => InputValueEnum::Miss,
+            'stateProvince' => InputValueEnum::Miss,
+            'zipCode' => InputValueEnum::Miss,
+        ];
+    }
+
     /**
-     * @param  list<AccountSharingClientRelationEntity>  $sharingClients
+     * @param list<AccountSharingClientRelationEntity> $sharingClients
      */
     private function mapPipelinerCreateAccountSharingClientRelationInputCollection(
         Company $company,
@@ -380,8 +395,8 @@ class CompanyDataMapper
     }
 
     /**
-     * @param  array<string, ContactRelationEntity>  $contactRelations
-     * @param  list<AccountSharingClientRelationEntity>  $sharingClients
+     * @param array<string, ContactRelationEntity>     $contactRelations
+     * @param list<AccountSharingClientRelationEntity> $sharingClients
      *
      * @throws \Exception
      */
@@ -512,9 +527,10 @@ class CompanyDataMapper
                     return $company->addresses->containsStrict('pl_reference', $importedAddress->pl_reference);
                 });
 
-        $importedAddressesHaveRelThroughPlRef->each(static function (ImportedAddress $importedAddress) use ($company) {
+        $importedAddressesHaveRelThroughPlRef->each(static function (ImportedAddress $importedAddress) use ($company
+        ): void {
             $company->addresses->whereStrict('pl_reference', $importedAddress->pl_reference)
-                ->each(static function (Address $address) use ($importedAddress) {
+                ->each(static function (Address $address) use ($importedAddress): void {
                     $address->address_type = $importedAddress->address_type;
                     $address->address_1 = $importedAddress->address_1;
                     $address->address_2 = $importedAddress->address_2;
@@ -534,9 +550,10 @@ class CompanyDataMapper
                     return $company->contacts->containsStrict('pl_reference', $importedAddress->pl_reference);
                 });
 
-        $importedContactsHaveRelThroughPlRef->each(static function (ImportedContact $importedContact) use ($company) {
+        $importedContactsHaveRelThroughPlRef->each(static function (ImportedContact $importedContact) use ($company
+        ): void {
             $company->contacts->whereStrict('pl_reference', $importedContact->pl_reference)
-                ->each(static function (Contact $contact) use ($importedContact) {
+                ->each(static function (Contact $contact) use ($importedContact): void {
                     $contact->contact_type = $importedContact->contact_type;
                     $contact->salesUnit()->associate($importedContact->salesUnit ?? $contact->salesUnit);
                     $contact->gender = $importedContact->gender;
@@ -547,6 +564,14 @@ class CompanyDataMapper
                     $contact->mobile = $importedContact->phone_2;
                     $contact->job_title = $importedContact->job_title;
                     $contact->contact_name = $importedContact->contact_name;
+
+                    if ($importedContact->language_name) {
+                        $contact->language()->associate(
+                            Language::query()
+                                ->where('name', $importedContact->language_name)
+                                ->first()
+                        );
+                    }
                 });
         });
 
@@ -713,7 +738,7 @@ class CompanyDataMapper
                                                                  User $owner): ImportedContact
     {
         return tap(new ImportedContact(), function (ImportedContact $contact) use ($entity, $owner): void {
-            $contact->{$contact->getKeyName()} = (string) Uuid::generate(4);
+            $contact->setId();
             $contact->pl_reference = $entity->contact->id;
             $contact->owner()->associate($owner);
 
@@ -723,11 +748,13 @@ class CompanyDataMapper
                 );
             }
 
-            $type = ($this->pipelinerDataResolver)($entity->contact->customFields['cfType1Id'] ?? null)?->optionName ?? '';
+            $type = ($this->pipelinerDataResolver)($entity->contact->customFields[CustomFieldName::CONTACT_TYPE_ID] ?? null)?->optionName ?? '';
             $contact->contact_type = match (trim(strtolower($type))) {
                 'software' => ContactType::SOFTWARE,
                 default => ContactType::HARDWARE
             };
+
+            $contact->language_name = ($this->pipelinerDataResolver)($entity->contact->customFields[CustomFieldName::CONTACT_LANGUAGE_ID] ?? null)?->optionName ?? '';
 
             $contact->gender = GenderEnum::tryFrom($entity->contact->gender->name) ?? GenderEnum::Unknown;
             $contact->first_name = $entity->contact->firstName;
@@ -835,7 +862,7 @@ class CompanyDataMapper
 
     public function cloneCompany(Company $company): Company
     {
-        return tap(new Company(), function (Company $oldCompany) use ($company): void {
+        return tap(new Company(), static function (Company $oldCompany) use ($company): void {
             $oldCompany->setRawAttributes($company->getRawOriginal());
             $oldCompany->load(['addresses', 'contacts', 'vendors', 'aliases']);
         });
