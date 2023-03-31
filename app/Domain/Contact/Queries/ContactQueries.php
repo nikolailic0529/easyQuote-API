@@ -10,6 +10,7 @@ use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 
 class ContactQueries
@@ -23,13 +24,35 @@ class ContactQueries
     {
         $request ??= new Request();
 
-        /** @var \App\Domain\User\Models\User $user */
+        /** @var User $user */
         $user = $request->user() ?? new User();
 
         $contactModel = new Contact();
+        $userModel = new User();
 
         $query = $contactModel
             ->newQuery()
+            ->select([
+                $contactModel->qualifyColumn('*'),
+            ])
+            ->with([
+                'user' => static function (Relation $relation): void {
+                    $model = new User();
+
+                    $relation->select([
+                        $model->getQualifiedKeyName(),
+                        ...$model->qualifyColumns([
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture_id',
+                        ]),
+                    ]);
+                },
+            ])
+            ->leftJoin($userModel->getTable(), $userModel->getQualifiedKeyName(),
+                $contactModel->user()->getQualifiedForeignKeyName())
             ->tap(CurrentUserScope::from($request, $this->gate));
 
         return RequestQueryBuilder::for(
@@ -39,7 +62,7 @@ class ContactQueries
             ->addCustomBuildQueryPipe(
                 new PerformElasticsearchSearch($this->elasticsearch),
             )
-            ->allowOrderFields(...[
+            ->allowOrderFields(
                 'created_at',
                 'email',
                 'first_name',
@@ -48,7 +71,19 @@ class ContactQueries
                 'job_title',
                 'mobile',
                 'phone',
-            ])
+                'user_fullname'
+            )
+            ->qualifyOrderFields(
+                created_at: $contactModel->qualifyColumn('created_at'),
+                email: $contactModel->qualifyColumn('email'),
+                first_name: $contactModel->qualifyColumn('first_name'),
+                last_name: $contactModel->qualifyColumn('last_name'),
+                is_verified: $contactModel->qualifyColumn('is_verified'),
+                job_title: $contactModel->qualifyColumn('job_title'),
+                mobile: $contactModel->qualifyColumn('mobile'),
+                phone: $contactModel->qualifyColumn('phone'),
+                user_fullname: $userModel->qualifyColumn('user_fullname'),
+            )
             ->enforceOrderBy($contactModel->getQualifiedCreatedAtColumn(), 'desc')
             ->process();
     }

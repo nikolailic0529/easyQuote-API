@@ -7,11 +7,13 @@ use App\Domain\Appointment\Queries\AppointmentQueries;
 use App\Domain\Appointment\Resources\V1\AppointmentListResource;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Contact\Queries\ContactQueries;
-use App\Domain\Contact\Requests\StoreContactRequest;
 use App\Domain\Contact\Requests\{UpdateContactRequest};
+use App\Domain\Contact\Requests\StoreContactRequest;
+use App\Domain\Contact\Resources\V1\ContactListResource;
 use App\Domain\Contact\Services\ContactEntityService;
 use App\Foundation\Http\Controller;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,11 +29,23 @@ class ContactController extends Controller
     /**
      * Display a listing of available contacts.
      */
-    public function index(Request $request, ContactQueries $queries): JsonResponse
+    public function index(Request $request, ContactQueries $queries): AnonymousResourceCollection
     {
-        return response()->json(
-            $queries->listOfContactsQuery($request)->apiPaginate()
-        );
+        /** @var LengthAwarePaginator $pagination */
+        $pagination = $queries->listOfContactsQuery($request)->apiPaginate();
+
+        return tap(ContactListResource::collection($pagination),
+            static function (AnonymousResourceCollection $resourceCollection) use ($pagination): void {
+                $resourceCollection->additional([
+                    'current_page' => $pagination->currentPage(),
+                    'from' => $pagination->firstItem(),
+                    'to' => $pagination->lastItem(),
+                    'last_page' => $pagination->lastPage(),
+                    'path' => $pagination->path(),
+                    'per_page' => $pagination->perPage(),
+                    'total' => $pagination->total(),
+                ]);
+            });
     }
 
     /**
