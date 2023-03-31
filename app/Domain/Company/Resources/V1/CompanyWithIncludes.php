@@ -7,6 +7,7 @@ use App\Domain\Company\Models\Company;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\User\Resources\V1\UserRelationResource;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -18,10 +19,8 @@ class CompanyWithIncludes extends JsonResource
      * Transform the resource into an array.
      *
      * @param \Illuminate\Http\Request $request
-     *
-     * @return array
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         return [
             'id' => $this->getKey(),
@@ -75,27 +74,28 @@ class CompanyWithIncludes extends JsonResource
             'default_template' => $this->defaultTemplate,
             'sales_unit' => $this->salesUnit,
 
-            'addresses' => with($this->addresses, function (Collection $addresses) {
-                return $addresses
+            'addresses' => with($this->addresses, function (Collection $addresses): AnonymousResourceCollection {
+                $collection = $addresses
+                    ->loadMissing(['country', 'user'])
                     ->sortBy('created_at')
-                    ->values()
                     ->each(function (Address $address): void {
-                        $address->setAttribute('is_default', (bool) $address->pivot->is_default);
-                        $address->loadMissing('country');
                         $address->setAttribute('contact_id',
                             $this->contacts
                                 ->first(static fn (Contact $contact): bool => $contact->address()->is($address))
                                 ?->getKey()
                         );
-                    });
+                    })
+                    ->values();
+
+                return CompanyAddressResource::collection($collection);
             }),
-            'contacts' => with($this->contacts, function (Collection $contacts) {
-                return $contacts
+            'contacts' => with($this->contacts, static function (Collection $contacts): AnonymousResourceCollection {
+                $collection = $contacts
+                    ->loadMissing(['user'])
                     ->sortBy('created_at')
-                    ->values()
-                    ->each(function (Contact $contact) {
-                        $contact->setAttribute('is_default', (bool) $contact->pivot->is_default);
-                    });
+                    ->values();
+
+                return CompanyContactResource::collection($collection);
             }),
 
             'permissions' => [

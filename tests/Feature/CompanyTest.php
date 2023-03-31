@@ -28,7 +28,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing};
+use Tests\Unit\Traits\AssertsListing;
 
 /**
  * @group build
@@ -397,6 +397,8 @@ class CompanyTest extends TestCase
             ->for(User::factory(), relationship: 'owner')
             ->hasAttached(Industry::query()->take(2)->get())
             ->hasAttached(User::factory(), relationship: 'sharingUsers')
+            ->hasAttached(Address::factory()->for(User::factory()))
+            ->hasAttached(Contact::factory()->for(User::factory()))
             ->create();
 
         $this->getJson('api/companies/'.$company->getKey())
@@ -445,12 +447,30 @@ class CompanyTest extends TestCase
                     '*' => [
                         'id',
                         'is_default',
+                        'user' => [
+                            'id',
+                            'email',
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
                     ],
                 ],
                 'contacts' => [
                     '*' => [
                         'id',
                         'is_default',
+                        'user' => [
+                            'id',
+                            'email',
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
                     ],
                 ],
                 'categories',
@@ -915,7 +935,7 @@ class CompanyTest extends TestCase
     /**
      * Test an ability to update the specified contact of a company.
      */
-    public function testCanUpdateCompanyContact()
+    public function testCanUpdateCompanyContact(): void
     {
         $this->authenticateApi();
 
@@ -982,6 +1002,116 @@ class CompanyTest extends TestCase
         $this->assertEquals($contactData['email'], $updatedContactData['email']);
         $this->assertEquals($contactData['job_title'], $updatedContactData['job_title']);
         $this->assertEquals($contactData['is_verified'], $updatedContactData['is_verified']);
+    }
+
+    /**
+     * Test an ability to set company address flags.
+     */
+    public function testCanSetCompanyAddressFlags(): void
+    {
+        $this->authenticateApi();
+
+        $address = Address::factory()->create();
+
+        $company = Company::factory()
+            ->hasAttached($address, ['is_default' => false])
+            ->create();
+
+        $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'addresses' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'addresses')
+            ->assertJsonPath('addresses.0.is_default', false);
+
+        $this->patchJson('api/addresses/'.$address->getKey(), [
+            'company_relations' => [
+                [
+                    'id' => $company->getKey(),
+                    'is_default' => true,
+                ],
+            ],
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'addresses' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'addresses')
+            ->assertJsonPath('addresses.0.is_default', true);
+    }
+
+    /**
+     * Test an ability to set company contact flags.
+     */
+    public function testCanSetCompanyContactFlags(): void
+    {
+        $this->authenticateApi();
+
+        $contact = Contact::factory()->create();
+
+        $company = Company::factory()
+            ->hasAttached($contact, ['is_default' => false])
+            ->create();
+
+        $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'contacts')
+            ->assertJsonPath('contacts.0.is_default', false);
+
+        $this->patchJson('api/contacts/'.$contact->getKey(), [
+            'company_relations' => [
+                [
+                    'id' => $company->getKey(),
+                    'is_default' => true,
+                ],
+            ],
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'contacts')
+            ->assertJsonPath('contacts.0.is_default', true);
     }
 
     /**
