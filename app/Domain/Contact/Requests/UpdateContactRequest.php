@@ -18,7 +18,7 @@ class UpdateContactRequest extends FormRequest
     {
         return [
             'sales_unit_id' => [
-                'bail', 'required', 'uuid',
+                'bail', 'uuid',
                 Rule::exists(SalesUnit::class, (new SalesUnit())->getKeyName())->withoutTrashed(),
             ],
             'language_id' => [
@@ -29,10 +29,10 @@ class UpdateContactRequest extends FormRequest
                 'bail', 'nullable', 'uuid',
                 Rule::exists(Address::class, (new Address())->getKeyName())->withoutTrashed(),
             ],
-            'contact_type' => ['required', 'string', Rule::in(ContactType::getValues())],
+            'contact_type' => ['string', Rule::in(ContactType::getValues())],
             'gender' => ['nullable', 'string', new Enum(GenderEnum::class)],
-            'first_name' => ['required', 'string', 'filled', 'max:100'],
-            'last_name' => ['required', 'string', 'filled', 'max:100'],
+            'first_name' => ['string', 'filled', 'max:100'],
+            'last_name' => ['string', 'filled', 'max:100'],
             'phone' => ['nullable', 'string', 'phone', 'max:50'],
             'mobile' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'string', 'email', 'max:100'],
@@ -41,7 +41,7 @@ class UpdateContactRequest extends FormRequest
             'is_verified' => ['nullable', 'boolean'],
             'company_relations' => ['bail', 'nullable', 'array'],
             'company_relations.*.id' => [
-                'bail', 'uuid', 'distinct', Rule::exists(Company::class, 'id')->withoutTrashed(),
+                'bail', 'required', 'uuid', 'distinct', Rule::exists(Company::class, 'id')->withoutTrashed(),
             ],
             'company_relations.*.is_default' => [
                 'bail', 'boolean',

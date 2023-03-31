@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic;
 use JetBrains\PhpStorm\ArrayShape;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Optional;
 
 class ContactEntityService implements CauserAware
 {
@@ -85,7 +86,7 @@ class ContactEntityService implements CauserAware
                 $contact->companies()->syncWithoutDetaching($companyRelations->all());
             });
 
-            if (false === is_null($data->picture)) {
+            if ($data->picture && !$data->picture instanceof Optional) {
                 $contact->image()->delete();
                 $this->createImageForContact($contact, $data->picture);
                 $contact->image()->flushQueryCache();

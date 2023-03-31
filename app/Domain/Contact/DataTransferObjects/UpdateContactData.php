@@ -12,21 +12,21 @@ use Spatie\LaravelData\Optional;
 final class UpdateContactData extends Data
 {
     public function __construct(
-        public readonly string $sales_unit_id,
+        public readonly string|Optional $sales_unit_id,
         public readonly string|Optional $language_id,
         public readonly string|Optional $address_id,
-        public readonly string $contact_type,
-        public readonly string $first_name,
-        public readonly string $last_name,
-        public readonly ?string $phone,
-        public readonly ?string $mobile,
-        public readonly ?string $email,
-        public readonly ?string $job_title,
-        public readonly ?UploadedFile $picture,
-        public readonly bool $is_verified,
+        public readonly string|Optional $contact_type,
+        public readonly string|Optional $first_name,
+        public readonly string|Optional $last_name,
+        public readonly string|null|Optional $phone,
+        public readonly string|null|Optional $mobile,
+        public readonly string|null|Optional $email,
+        public readonly string|null|Optional $job_title,
+        public readonly UploadedFile|null|Optional $picture,
+        public readonly bool|Optional $is_verified,
         #[DataCollectionOf(CreateContactCompanyRelationNoBackrefData::class)]
         public readonly DataCollection|Optional $company_relations,
-        public readonly GenderEnum|Optional $gender = GenderEnum::Unknown,
+        public readonly GenderEnum|Optional $gender,
     ) {
     }
 }
