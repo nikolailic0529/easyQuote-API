@@ -39,7 +39,8 @@ class LanguageSeeder extends Seeder
         });
 
         $contactLanguageSeeds = collect($contactLanguageSeeds)
-            ->map(static function (string $code): array {
+            ->values()
+            ->map(static function (string $code, int $i): array {
                 $lang = DB::table('languages')
                     ->where('code', $code)
                     ->first();
@@ -48,7 +49,10 @@ class LanguageSeeder extends Seeder
                     throw new \LogicException("Could not find language [$code].");
                 }
 
-                return ['language_id' => $lang->id];
+                return [
+                    'language_id' => $lang->id,
+                    'entity_order' => $i,
+                ];
             })
             ->all();
 

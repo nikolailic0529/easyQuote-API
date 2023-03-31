@@ -37,7 +37,11 @@ class ContactTest extends TestCase
     {
         $this->authenticateApi();
 
-        Contact::factory()->create();
+        $this->pruneUsing(Contact::query()->toBase());
+
+        Contact::factory()
+            ->for(User::factory())
+            ->create();
 
         $this->getJson('api/contacts')
 //            ->dump()
@@ -45,31 +49,60 @@ class ContactTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'contact_type', 'gender', 'phone', 'first_name', 'last_name', 'mobile', 'job_title',
-                        'image_id', 'is_verified', 'email', 'created_at', 'activated_at',
+                        'id',
+                        'contact_type',
+                        'gender',
+                        'phone',
+                        'first_name',
+                        'last_name',
+                        'mobile',
+                        'job_title',
+                        'is_verified',
+                        'email',
+                        'created_at',
+                        'activated_at',
+                        'user' => [
+                            'id',
+                            'first_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
                     ],
+                ],
+                'meta' => [
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
                 ],
                 'current_page',
-                'first_page_url',
                 'from',
                 'last_page',
-                'last_page_url',
-                'links' => [
-                    '*' => [
-                        'url', 'label', 'active',
-                    ],
-                ],
-                'next_page_url',
                 'path',
                 'per_page',
-                'prev_page_url',
                 'to',
                 'total',
             ]);
 
         $orderFields = [
-            'created_at', 'email', 'first_name', 'last_name', 'is_verified', 'job_title', 'mobile',
+            'created_at',
+            'email',
+            'first_name',
+            'last_name',
+            'is_verified',
+            'job_title',
+            'mobile',
             'phone',
+            'user_fullname',
         ];
 
         foreach ($orderFields as $field) {
@@ -108,24 +141,46 @@ class ContactTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'contact_type', 'gender', 'phone', 'first_name', 'last_name', 'mobile', 'job_title',
-                        'image_id', 'is_verified', 'email', 'created_at', 'activated_at',
+                        'id',
+                        'contact_type',
+                        'gender',
+                        'phone',
+                        'first_name',
+                        'last_name',
+                        'mobile',
+                        'job_title',
+                        'is_verified',
+                        'email',
+                        'created_at',
+                        'activated_at',
+                        'user' => [
+                            'id',
+                            'first_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
                     ],
+                ],
+                'meta' => [
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active',
+                        ],
+                    ],
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
                 ],
                 'current_page',
-                'first_page_url',
                 'from',
                 'last_page',
-                'last_page_url',
-                'links' => [
-                    '*' => [
-                        'url', 'label', 'active',
-                    ],
-                ],
-                'next_page_url',
                 'path',
                 'per_page',
-                'prev_page_url',
                 'to',
                 'total',
             ]);

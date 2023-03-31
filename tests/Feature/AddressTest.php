@@ -19,12 +19,17 @@ class AddressTest extends TestCase
 {
     /**
      * Test an ability to view a list of available addresses.
-     *
-     * @return void
      */
-    public function testCanViewListOfAddresses()
+    public function testCanViewListOfAddresses(): void
     {
         $this->authenticateApi();
+
+        $this->pruneUsing(Address::query()->toBase());
+
+        Address::factory(2)
+            ->for(User::factory())
+            ->for(Country::query()->first())
+            ->create();
 
         $this->getJson('api/addresses')
 //            ->dump()
@@ -32,28 +37,46 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code',
-                        'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at',
-                        'updated_at', 'activated_at',
+                        'id',
+                        'address_type',
+                        'address_1',
+                        'city',
+                        'state',
+                        'state_code',
+                        'post_code',
+                        'address_2',
+                        'country_id',
+                        'created_at',
+                        'updated_at',
+                        'activated_at',
                         'country' => [
-//                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
+                            'id',
+                            'iso_3166_2',
+                            'name',
+                        ],
+                        'user_id',
+                        'user' => [
+                            'id',
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
+                    ],
+                ],
+                'meta' => [
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active',
                         ],
                     ],
                 ],
                 'current_page',
-                'first_page_url',
                 'from',
                 'last_page',
-                'last_page_url',
-                'links' => [
-                    '*' => [
-                        'url', 'label', 'active',
-                    ],
-                ],
-                'next_page_url',
                 'path',
                 'per_page',
-                'prev_page_url',
                 'to',
                 'total',
             ]);
@@ -66,6 +89,7 @@ class AddressTest extends TestCase
             'post_code',
             'state',
             'street_address',
+            'user_fullname',
         ];
 
         foreach ($orderFields as $field) {
@@ -80,7 +104,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewOnlyOwnedAddressesWithoutSuperPermissions()
+    public function testCanViewOnlyOwnedAddressesWithoutSuperPermissions(): void
     {
         /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
@@ -104,28 +128,46 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code',
-                        'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at',
-                        'updated_at', 'activated_at',
+                        'id',
+                        'address_type',
+                        'address_1',
+                        'city',
+                        'state',
+                        'state_code',
+                        'post_code',
+                        'address_2',
+                        'country_id',
+                        'created_at',
+                        'updated_at',
+                        'activated_at',
                         'country' => [
-//                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
+                            'id',
+                            'iso_3166_2',
+                            'name',
+                        ],
+                        'user_id',
+                        'user' => [
+                            'id',
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
+                    ],
+                ],
+                'meta' => [
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active',
                         ],
                     ],
                 ],
                 'current_page',
-                'first_page_url',
                 'from',
                 'last_page',
-                'last_page_url',
-                'links' => [
-                    '*' => [
-                        'url', 'label', 'active',
-                    ],
-                ],
-                'next_page_url',
                 'path',
                 'per_page',
-                'prev_page_url',
                 'to',
                 'total',
             ]);
@@ -264,7 +306,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewAddress()
+    public function testCanViewAddress(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -298,7 +340,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanUpdateAddress()
+    public function testCanUpdateAddress(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -408,7 +450,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanDeleteAddress()
+    public function testCanDeleteAddress(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -426,7 +468,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanMarkAddressAsActive()
+    public function testCanMarkAddressAsActive(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -454,7 +496,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanMarkAddressAsInactive()
+    public function testCanMarkAddressAsInactive(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 

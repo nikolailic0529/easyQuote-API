@@ -22,6 +22,6 @@ class LanguageQueries
         return $model->newQuery()
             ->select([$model->qualifyColumn('*')])
             ->join('contact_languages', 'contact_languages.language_id', $model->getQualifiedKeyName())
-            ->orderBy($model->qualifyColumn('name'));
+            ->orderBy('contact_languages.entity_order');
     }
 }
