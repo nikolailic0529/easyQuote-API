@@ -542,6 +542,45 @@
         "droppable": false,
         "decoration": "1+3",
         "visibility": true
+      },
+      {
+        "id": "3709f237-7ee1-4759-92f3-ba302d0b2b70",
+        "name": "Single Column",
+        "child": [
+          {
+            "id": "f423cfa1-a07d-4d90-89e1-169488c260ca",
+            "class": "col-lg-12 border-right",
+            "controls": [
+              {
+                "id": "4591ac35-cb48-47dd-b3d1-1887141097a7",
+                "css": null,
+                "src": null,
+                "name": "quote_assets",
+                "show": false,
+                "type": "quote_assets",
+                "class": null,
+                "label": "Quote Assets",
+                "value": null,
+                "is_field": true,
+                "is_image": false,
+                "droppable": false,
+                "is_system": false,
+                "is_required": false,
+                "attached_child_id": "f423cfa1-a07d-4d90-89e1-169488c260ca",
+                "attached_element_id": "3709f237-7ee1-4759-92f3-ba302d0b2b70"
+              }
+            ],
+            "position": 1
+          }
+        ],
+        "class": "single-column field-dragger",
+        "order": 1,
+        "toggle": false,
+        "controls": [],
+        "is_field": false,
+        "droppable": false,
+        "decoration": "1",
+        "visibility": false
       }
     ],
     "first_page": [
@@ -1349,7 +1388,7 @@
                 "type": "label",
                 "class": "bold",
                 "label": "Label",
-                "value": "Email:",
+                "value": "Account Manager Email:",
                 "is_field": true,
                 "is_image": false,
                 "droppable": false,
@@ -1359,19 +1398,18 @@
                 "attached_element_id": "1773b9b0-ffe0-4a87-b5af-3190ac293214"
               },
               {
-                "id": "6491c8f7-abfa-45d4-9919-ade6e30467ba",
+                "id": "account_manager_email",
                 "css": null,
-                "src": null,
-                "name": "l-1",
+                "name": "account_manager_email",
                 "show": false,
-                "type": "label",
-                "class": "blue",
-                "label": "Label",
-                "value": "enquiriesww@europlusdirect.com",
+                "type": "tag",
+                "class": "s4-form-control",
+                "label": "Account Manager Email",
+                "value": null,
                 "is_field": true,
                 "is_image": false,
                 "droppable": false,
-                "is_system": false,
+                "is_system": true,
                 "is_required": false,
                 "attached_child_id": "f4694516-8961-4f9e-81c9-f824ef946b49",
                 "attached_element_id": "1773b9b0-ffe0-4a87-b5af-3190ac293214"
