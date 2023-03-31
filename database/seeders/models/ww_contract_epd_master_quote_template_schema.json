@@ -258,15 +258,15 @@
       "visibility": true
     },
     {
-      "id": "c042959a-e620-4018-bb6f-3d805910cdef",
+      "id": "9f1e6967-0d22-4d97-988a-431a0605e3ae",
       "name": "Single Column",
       "child": [
         {
-          "id": "21dcbf45-a1c8-4496-b86c-520bd8ac2733",
+          "id": "57a8440f-a11a-4ab2-ba19-4b4e7cb6dbac",
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "0f02f7f9-2e9f-4c02-9fa6-5f2f27c7015d",
+              "id": "fb0eda6d-3d58-469d-8601-0ed194ab68ec",
               "css": null,
               "src": null,
               "name": "quote_assets",
@@ -280,128 +280,8 @@
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "21dcbf45-a1c8-4496-b86c-520bd8ac2733",
-              "attached_element_id": "c042959a-e620-4018-bb6f-3d805910cdef"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "toggle": false,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1",
-      "visibility": false
-    },
-    {
-      "id": "25cf9304-1235-4cc4-86c6-3a1ac3fa07e6",
-      "css": "footer-html",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "7edc456c-e9a1-46af-9952-1241919c2dd0",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "4d178f4a-8e42-4846-bf17-a37eb086a316",
-              "css": null,
-              "src": null,
-              "name": "p-1",
-              "show": false,
-              "type": "p",
-              "class": null,
-              "label": "Paragraph",
-              "value": "Please note that all pricing is correct at the time of providing this quotation but may be subject to change by the vendor.",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "7edc456c-e9a1-46af-9952-1241919c2dd0",
-              "attached_element_id": "25cf9304-1235-4cc4-86c6-3a1ac3fa07e6"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "toggle": false,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1",
-      "visibility": false
-    },
-    {
-      "id": "6de10513-910b-4cf0-bcf0-65267e98277e",
-      "css": "footer-html",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "7edc456c-e9a1-46af-9952-1241919c2dd0",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "4d178f4a-8e42-4846-bf17-a37eb086a316",
-              "css": null,
-              "src": null,
-              "name": "p-1",
-              "show": false,
-              "type": "p",
-              "class": null,
-              "label": "Paragraph",
-              "value": "Pricing will be valid until the end of the month only due to fluctuations in the currency exchange rate.",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "7edc456c-e9a1-46af-9952-1241919c2dd0",
-              "attached_element_id": "6de10513-910b-4cf0-bcf0-65267e98277e"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "toggle": false,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1",
-      "visibility": false
-    },
-    {
-      "id": "0b339f29-67ad-4dca-ac44-7c3a4ed26fb2",
-      "css": "footer-html",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "7edc456c-e9a1-46af-9952-1241919c2dd0",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "4d178f4a-8e42-4846-bf17-a37eb086a316",
-              "css": null,
-              "src": null,
-              "name": "p-1",
-              "show": false,
-              "type": "p",
-              "class": null,
-              "label": "Paragraph",
-              "value": "The pricing on the quote provided without the serial numbers is budgetary and is subjected to change during fulfillment.",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "7edc456c-e9a1-46af-9952-1241919c2dd0",
-              "attached_element_id": "0b339f29-67ad-4dca-ac44-7c3a4ed26fb2"
+              "attached_child_id": "57a8440f-a11a-4ab2-ba19-4b4e7cb6dbac",
+              "attached_element_id": "9f1e6967-0d22-4d97-988a-431a0605e3ae"
             }
           ],
           "position": 1
@@ -476,17 +356,35 @@
               "droppable": false,
               "is_system": true,
               "is_required": false,
-              "attached_child_id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
-              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
+              "attached_child_id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
+              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
             },
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
+              "id": "ccd1ab5b-8ca3-497e-a019-8781b68abdd1",
               "css": null,
               "src": null,
               "name": "p-1",
               "show": false,
               "type": "p",
-              "class": "blue",
+              "class": null,
+              "label": "Paragraph",
+              "value": "enquiriesww@europlusdirect.com<br/>",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
+              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+            },
+            {
+              "id": "68592f53-518b-4f68-8536-d6f49b492ed4",
+              "css": null,
+              "src": null,
+              "name": "p-1",
+              "show": false,
+              "type": "p",
+              "class": null,
               "label": "Paragraph",
               "value": "europlusdirect.com",
               "is_field": true,
@@ -507,7 +405,7 @@
             {
               "id": "company_logo_x3",
               "css": null,
-              "src": "http://172.22.100.31/easyQuote-API/public/storage/images/companies/b86170d9-ceca-4f58-8a04-99ed2b0acb87@x3.png",
+              "src": "{{company_logo_x3}}",
               "name": "company_logo_x3",
               "show": false,
               "type": "img",
@@ -1357,7 +1255,7 @@
       "decoration": "1"
     },
     {
-      "id": "92f3440e-bb38-4937-a46f-bc361766062f",
+      "id": "4514442f-2b63-4cee-be54-7d86c6ae0336",
       "css": "footer-html",
       "name": "Single Column",
       "child": [
@@ -1366,87 +1264,7 @@
           "class": "col-lg-12 border-right",
           "controls": [
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
-              "css": null,
-              "src": null,
-              "name": "p-1",
-              "show": false,
-              "type": "p",
-              "class": "font-sm",
-              "label": "Paragraph",
-              "value": "Please note that all pricing is correct at the time of providing this quotation but may be subject to change by the vendor.",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-              "attached_element_id": "92f3440e-bb38-4937-a46f-bc361766062f"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "toggle": false,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1",
-      "visibility": false
-    },
-    {
-      "id": "65706765-8c1b-4f17-9207-bedae86f2cdd",
-      "css": "footer-html",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "69fc3a0b-6f7e-4f79-bf6e-0a8da890792f",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
-              "css": null,
-              "src": null,
-              "name": "p-1",
-              "show": false,
-              "type": "p",
-              "class": "font-sm",
-              "label": "Paragraph",
-              "value": "Pricing will be valid until the end of the month only due to fluctuations in the currency exchange rate.",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "69fc3a0b-6f7e-4f79-bf6e-0a8da890792f",
-              "attached_element_id": "65706765-8c1b-4f17-9207-bedae86f2cdd"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "toggle": false,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1",
-      "visibility": false
-    },
-    {
-      "id": "daa3ef76-1c3b-4af2-98a8-68597353f9a2",
-      "css": "footer-html",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "69fc3a0b-6f7e-4f79-bf6e-0a8da890792f",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "7fcec163-1c82-4455-9359-56c97784fb63",
+              "id": "016794b0-2a1b-4209-b14d-0085c9135bb7",
               "css": null,
               "src": null,
               "name": "p-1",
@@ -1454,14 +1272,31 @@
               "type": "p",
               "class": null,
               "label": "Paragraph",
-              "value": "The pricing on the quote provided without the serial numbers is budgetary and is subjected to change during fulfilment.",
+              "value": "Please note that all pricing is correct at the time of providing this quotation but may be subject to change by the vendor.\nPricing will be valid until the end of the month due to fluctuation in the currency exchange rate.\nThe pricing on the quote provided without the serial numbers is budgetary and is subjected to change during fulfilment.",
               "is_field": true,
               "is_image": false,
               "droppable": false,
               "is_system": false,
               "is_required": false,
-              "attached_child_id": "69fc3a0b-6f7e-4f79-bf6e-0a8da890792f",
-              "attached_element_id": "daa3ef76-1c3b-4af2-98a8-68597353f9a2"
+              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
+              "attached_element_id": "4514442f-2b63-4cee-be54-7d86c6ae0336"
+            },
+            {
+              "id": "footer_notes",
+              "css": null,
+              "name": "footer_notes",
+              "show": false,
+              "type": "tag",
+              "class": "s4-form-control",
+              "label": "Footer notes",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": true,
+              "is_required": false,
+              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
+              "attached_element_id": "4514442f-2b63-4cee-be54-7d86c6ae0336"
             }
           ],
           "position": 1
