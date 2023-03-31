@@ -18,7 +18,7 @@ class UpdateAddressRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'address_type' => ['required', 'string', Rule::in(AddressType::getValues())],
+            'address_type' => ['string', Rule::in(AddressType::getValues())],
             'address_1' => ['nullable', 'string', 'min:2', 'max:191'],
             'address_2' => ['nullable', 'string', 'max:191'],
             'city' => ['nullable', 'string', 'max:191'],
@@ -26,12 +26,12 @@ class UpdateAddressRequest extends FormRequest
             'state_code' => ['nullable', 'string', 'max:191'],
             'post_code' => ['nullable', 'string', 'max:191'],
             'country_id' => [
-                'required_without:country_code', 'string', 'uuid', Rule::exists(Country::class, 'id')->withoutTrashed(),
+                'string', 'uuid', Rule::exists(Country::class, 'id')->withoutTrashed(),
             ],
             'contact_id' => ['nullable', 'uuid', Rule::exists(Contact::class, 'id')->withoutTrashed()],
             'company_relations' => ['bail', 'nullable', 'array'],
             'company_relations.*.id' => [
-                'bail', 'uuid', 'distinct', Rule::exists(Company::class, 'id')->withoutTrashed(),
+                'bail', 'required', 'uuid', 'distinct', Rule::exists(Company::class, 'id')->withoutTrashed(),
             ],
             'company_relations.*.is_default' => [
                 'bail', 'boolean',
