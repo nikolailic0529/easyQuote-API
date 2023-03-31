@@ -6,11 +6,14 @@ use App\Domain\Address\Models\Address;
 use App\Domain\Address\Queries\AddressQueries;
 use App\Domain\Address\Requests\StoreAddressRequest;
 use App\Domain\Address\Requests\UpdateAddressRequest;
+use App\Domain\Address\Resources\V1\AddressListResource;
 use App\Domain\Address\Services\AddressEntityService;
 use App\Foundation\Http\Controller;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
 class AddressController extends Controller
@@ -21,13 +24,25 @@ class AddressController extends Controller
     }
 
     /**
-     * Display a listing of the address.
+     * Paginate addresses.
      */
-    public function index(Request $request, AddressQueries $queries): JsonResponse
+    public function index(Request $request, AddressQueries $queries): AnonymousResourceCollection
     {
-        return response()->json(
-            $queries->listOfAddressesQuery($request)->apiPaginate(),
-        );
+        /** @var LengthAwarePaginator $pagination */
+        $pagination = $queries->listOfAddressesQuery($request)->apiPaginate();
+
+        return tap(AddressListResource::collection($pagination),
+            static function (AnonymousResourceCollection $resourceCollection) use ($pagination): void {
+                $resourceCollection->additional([
+                    'current_page' => $pagination->currentPage(),
+                    'from' => $pagination->firstItem(),
+                    'to' => $pagination->lastItem(),
+                    'last_page' => $pagination->lastPage(),
+                    'path' => $pagination->path(),
+                    'per_page' => $pagination->perPage(),
+                    'total' => $pagination->total(),
+                ]);
+            });
     }
 
     /**
