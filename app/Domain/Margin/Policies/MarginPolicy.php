@@ -2,11 +2,11 @@
 
 namespace App\Domain\Margin\Policies;
 
-use App\Domain\Margin\Models\Margin;
-use App\Domain\User\Models\{
-    User
-};
+use App\Domain\Margin\Models\CountryMargin;
+use App\Domain\User\Models\User;
+use App\Foundation\Auth\Access\Response\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 class MarginPolicy
 {
@@ -14,97 +14,103 @@ class MarginPolicy
 
     /**
      * Determine whether the user can view any margins.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function viewAny(User $user)
+    public function viewAny(User $user): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->can('view_margins')) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can view the margin.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function view(User $user, Margin $margin)
+    public function view(User $user, CountryMargin $margin): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->can('view_margins')) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can create margins.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function create(User $user)
+    public function create(User $user): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->can('create_margins')) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can update the margin.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function update(User $user, Margin $margin)
+    public function update(User $user, CountryMargin $margin): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if (
-            $user->can('update_margins') &&
-            $user->getKey() === $margin->{$margin->user()->getForeignKeyName()}
-        ) {
-            return true;
+        if ($user->cant('update_margins')) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('margin')
+                ->toResponse();
         }
+
+        if ($margin->user()->is($user)) {
+            return $this->allow();
+        }
+
+        return ResponseBuilder::deny()
+            ->action('update')
+            ->item('margin')
+            ->reason('You must be an owner')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can delete the margin.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function delete(User $user, Margin $margin)
+    public function delete(User $user, CountryMargin $margin): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if (
-            $user->can('delete_margins') &&
-            $user->getKey() === $margin->{$margin->user()->getForeignKeyName()}
-        ) {
-            return true;
+        if ($user->cant('delete_margins')) {
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('margin')
+                ->toResponse();
         }
+
+        if ($margin->user()->is($user)) {
+            return $this->allow();
+        }
+
+        return ResponseBuilder::deny()
+            ->action('delete')
+            ->item('margin')
+            ->reason('You must be an owner')
+            ->toResponse();
     }
 }

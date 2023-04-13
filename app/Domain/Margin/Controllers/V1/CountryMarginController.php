@@ -7,100 +7,94 @@ use App\Domain\Margin\Models\CountryMargin;
 use App\Domain\Margin\Requests\StoreCountryMarginRequest;
 use App\Domain\Margin\Requests\UpdateCountryMarginRequest;
 use App\Foundation\Http\Controller;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
 
 class CountryMarginController extends Controller
 {
-    protected $margin;
-
-    public function __construct(MarginRepository $margin)
+    public function __construct()
     {
-        $this->margin = $margin;
-        // $this->authorizeResource(Margin::class, 'margin');
+        $this->authorizeResource(CountryMargin::class, 'margin');
     }
 
     /**
-     * Display a listing of the Country Margins.
-     *
-     * @return \Illuminate\Http\Response
+     * Paginate margins.
      */
-    public function index()
+    public function index(MarginRepository $repository): JsonResponse
     {
         return response()->json(
             request()->filled('search')
-                ? $this->margin->search(request('search'))
-                : $this->margin->all()
+                ? $repository->search(request('search'))
+                : $repository->all()
         );
     }
 
     /**
-     * Display specified Country Margin.
-     *
-     * @return \Illuminate\Http\Response
+     * Show margin.
      */
-    public function show(CountryMargin $margin)
+    public function show(CountryMargin $margin): JsonResponse
+    {
+        return response()->json($margin);
+    }
+
+    /**
+     * Create margin.
+     */
+    public function store(StoreCountryMarginRequest $request, MarginRepository $repository): JsonResponse
     {
         return response()->json(
-            $this->margin->find($margin->id)
+            $repository->create($request)
         );
     }
 
     /**
-     * Store User's Country Margin.
-     *
-     * @return \Illuminate\Http\Response
+     * Update margin.
      */
-    public function store(StoreCountryMarginRequest $request)
-    {
+    public function update(
+        UpdateCountryMarginRequest $request,
+        MarginRepository $repository,
+        CountryMargin $margin
+    ): JsonResponse {
         return response()->json(
-            $this->margin->create($request)
+            $repository->update($request, $margin->getKey())
         );
     }
 
     /**
-     * Update specified User's Country Margin.
-     *
-     * @return \Illuminate\Http\Response
+     * Delete margin.
      */
-    public function update(UpdateCountryMarginRequest $request, CountryMargin $margin)
+    public function destroy(MarginRepository $repository, CountryMargin $margin): JsonResponse
     {
         return response()->json(
-            $this->margin->update($request, $margin->id)
+            $repository->delete($margin->getKey())
         );
     }
 
     /**
-     * Delete specified User's Country Margin.
+     * Mark margin as active.
      *
-     * @return \Illuminate\Http\Response
+     * @throws AuthorizationException
      */
-    public function destroy(CountryMargin $margin)
+    public function activate(MarginRepository $repository, CountryMargin $margin): JsonResponse
     {
+        $this->authorize('update', $margin);
+
         return response()->json(
-            $this->margin->delete($margin->id)
+            $repository->activate($margin->getKey())
         );
     }
 
     /**
-     * Activate the specified Country Margin.
+     * Mark margin as inactive.
      *
-     * @return \Illuminate\Http\Response
+     * @throws AuthorizationException
      */
-    public function activate(string $margin)
+    public function deactivate(MarginRepository $repository, CountryMargin $margin): JsonResponse
     {
-        return response()->json(
-            $this->margin->activate($margin)
-        );
-    }
+        $this->authorize('update', $margin);
 
-    /**
-     * Deactivate the specified Country Margin.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function deactivate(string $margin)
-    {
         return response()->json(
-            $this->margin->deactivate($margin)
+            $repository->deactivate($margin->getKey())
         );
     }
 }
