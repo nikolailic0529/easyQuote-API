@@ -2,6 +2,8 @@
 
 namespace App\Domain\User\Queries;
 
+use App\Domain\Activity\Models\Activity;
+use App\Domain\Team\Models\Team;
 use App\Domain\User\Models\User;
 use App\Foundation\Database\Eloquent\QueryFilter\Pipeline\FilterFieldPipe;
 use App\Foundation\Database\Eloquent\QueryFilter\Pipeline\FilterRelationPipe;
@@ -24,7 +26,7 @@ class UserQueries
     public function userListQuery(Request $request = new Request()): Builder
     {
         $model = new User();
-        /** @var \App\Domain\Team\Models\Team $teamModel */
+        /** @var Team $teamModel */
         $teamModel = $model->team()->getModel();
         $divisionModel = $teamModel->businessDivision()->getModel();
 
@@ -85,22 +87,48 @@ class UserQueries
         $request ??= new Request();
 
         $model = new User();
+        $countryModel = $model->country()->getModel();
+        $activityModel = new Activity();
 
-        $query = $model
-            ->newQuery()
+        /** @var \Staudenmeir\LaravelCte\Query\Builder&Builder $query */
+        $query = $model->newQuery();
+
+        $latestUserLoginsTable = 'latest_user_logins';
+        $query->withExpression('latest_user_logins',
+            $activityModel->newQuery()
+                ->select([
+                    $activityModel->causer()->getQualifiedForeignKeyName(),
+                ])
+                ->selectRaw(
+                    'max('.$activityModel->getQualifiedCreatedAtColumn().') as last_login_at'
+                )
+                ->where('description', 'authenticated')
+                ->groupBy($activityModel->causer()->getQualifiedForeignKeyName())
+                ->toBase()
+        );
+
+        $query->select([
+            $model->qualifyColumn('*'),
+            "{$countryModel->qualifyColumn('name')} as country_name",
+            "{$countryModel->qualifyColumn('iso_3166_2')} as country_code",
+            "$latestUserLoginsTable.last_login_at",
+            'teams.team_name as team_name',
+            'roles.name as role_name',
+        ])
             ->with(['roles', 'salesUnits', 'image'])
-            ->leftJoin('teams', function (JoinClause $join) {
+            ->leftJoin($countryModel->getTable(), $countryModel->getQualifiedKeyName(), $model->country()->getQualifiedForeignKeyName())
+            ->leftJoin($latestUserLoginsTable, "$latestUserLoginsTable.causer_id", $model->getQualifiedKeyName())
+            ->leftJoin('teams', static function (JoinClause $join): void {
                 $join->on('teams.id', 'users.team_id');
             })
-            ->leftJoin('roles', function (JoinClause $join) {
-                $join->where('roles.id', function (BaseBuilder $builder) {
+            ->leftJoin('roles', static function (JoinClause $join): void {
+                $join->where('roles.id', static function (BaseBuilder $builder): void {
                     $builder->select('role_id')
                         ->from('model_has_roles')
                         ->whereColumn('model_has_roles.model_id', 'users.id')
                         ->limit(1);
                 });
             })
-            ->select(['users.*', 'teams.team_name as team_name', 'roles.name as role_name'])
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -110,7 +138,7 @@ class UserQueries
             ->addCustomBuildQueryPipe(
                 new PerformElasticsearchSearch($this->elasticsearch)
             )
-            ->allowOrderFields(...[
+            ->allowOrderFields(
                 'created_at',
                 'email',
                 'name',
@@ -118,13 +146,20 @@ class UserQueries
                 'last_name',
                 'role',
                 'team_name',
-            ])
+                'country_name',
+                'country_code',
+                'language',
+                'last_login_at',
+            )
             ->qualifyOrderFields(
                 created_at: $model->getQualifiedCreatedAtColumn(),
                 name: $model->qualifyColumn('user_fullname'),
                 email: $model->qualifyColumn('email'),
                 first_name: $model->qualifyColumn('first_name'),
                 last_name: $model->qualifyColumn('last_name'),
+                country_name: $countryModel->qualifyColumn('name'),
+                country_code: $countryModel->qualifyColumn('iso_3166_2'),
+                last_login_at: "$latestUserLoginsTable.last_login_at",
                 role: 'roles.name',
                 team_name: 'teams.team_name',
             )

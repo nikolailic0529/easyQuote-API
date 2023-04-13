@@ -34,10 +34,8 @@ class UserTest extends TestCase
 
     /**
      * Test an ability to view paginated users.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedUsers()
+    public function testCanViewPaginatedUsers(): void
     {
         $this->authenticateApi();
 
@@ -54,7 +52,11 @@ class UserTest extends TestCase
                         'middle_name',
                         'last_name',
                         'role_name',
+                        'language',
+                        'country_name',
+                        'country_code',
                         'activated_at',
+                        'last_login_at',
                     ],
                 ],
                 'current_page',
@@ -70,24 +72,34 @@ class UserTest extends TestCase
                 'total',
             ]);
 
-        $query = http_build_query([
-            'search' => Str::random(10),
-            'order_by_created_at' => 'asc',
-            'order_by_name' => 'asc',
-            'order_by_role' => 'asc',
-            'order_by_firstname' => 'asc',
-            'order_by_lastname' => 'asc',
-        ]);
+        $this->getJson('api/users?'.http_build_query(['search' => Str::random(10)]))
+            ->assertOk();
 
-        $this->getJson('api/users?'.$query)->assertOk();
+        $orderCols = [
+            'name',
+            'role',
+            'first_name',
+            'last_name',
+            'country_name',
+            'country_code',
+            'language',
+            'last_login_at',
+            'created_at',
+        ];
+
+        foreach ($orderCols as $col) {
+            $this->getJson('api/users?'.http_build_query(['order_by_'.$col => 'asc']))
+                ->assertOk();
+
+            $this->getJson('api/users?'.http_build_query(['order_by_'.$col => 'desc']))
+                ->assertOk();
+        }
     }
 
     /**
      * Test an ability to view an existing user.
-     *
-     * @return void
      */
-    public function testCanViewUser()
+    public function testCanViewUser(): void
     {
         $this->authenticateApi();
         $user = User::factory()->create();
@@ -176,10 +188,8 @@ class UserTest extends TestCase
 
     /**
      * Test an ability to activate an existing user.
-     *
-     * @return void
      */
-    public function testCanActivateUser()
+    public function testCanActivateUser(): void
     {
         $this->authenticateApi();
 
@@ -210,10 +220,8 @@ class UserTest extends TestCase
 
     /**
      * Test an ability to deactivate an existing user.
-     *
-     * @return void
      */
-    public function testCanDeactivateUser()
+    public function testCanDeactivateUser(): void
     {
         $this->authenticateApi();
 
@@ -244,10 +252,8 @@ class UserTest extends TestCase
 
     /**
      * Test an ability to delete own account.
-     *
-     * @return void
      */
-    public function testCanNotDeleteOwnAccount()
+    public function testCanNotDeleteOwnAccount(): void
     {
         $this->authenticateApi();
 
@@ -258,10 +264,8 @@ class UserTest extends TestCase
 
     /**
      * Test an ability to delete other existing user.
-     *
-     * @return void
      */
-    public function testCanDeleteOtherUser()
+    public function testCanDeleteOtherUser(): void
     {
         $this->authenticateApi();
 
@@ -277,10 +281,8 @@ class UserTest extends TestCase
 
     /**
      * Test an ability to view the data for user profile form.
-     *
-     * @return void
      */
-    public function testCanViewDataForUserProfileForm()
+    public function testCanViewDataForUserProfileForm(): void
     {
         $this->authenticateApi();
 
