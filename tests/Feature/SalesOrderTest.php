@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Domain\Address\Models\Address;
+use App\Domain\Authorization\Enum\AccessEntityDirection;
 use App\Domain\Authorization\Models\Role;
 use App\Domain\Company\Models\Company;
 use App\Domain\Country\Models\Country;
@@ -109,6 +110,62 @@ class SalesOrderTest extends TestCase
                     'current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total',
                 ],
             ]);
+    }
+
+    /**
+     * Test an ability to view drafted sales orders related to the assigned units.
+     */
+    public function testCanViewDraftedSalesOrdersFromCurrentUnits(): void
+    {
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+        /** @var Role $role */
+        $role = Role::factory()->create();
+        $role->syncPermissions('view_own_sales_orders');
+        $role->access = [
+            'access_sales_order_direction' => AccessEntityDirection::CurrentUnits,
+        ];
+        $role->save();
+
+        $orderForAssignedUnitButDifferentOwner = SalesOrder::factory()
+            ->for(User::factory())
+            ->for(
+                WorldwideQuote::factory()
+                    ->for(
+                        Opportunity::factory()
+                            ->for($user->salesUnits->first())
+                    )
+            )
+            ->create();
+
+        $orderForDifferentUnitAndDifferentOwner = SalesOrder::factory()
+            ->for(User::factory())
+            ->for(
+                WorldwideQuote::factory()
+                    ->for(
+                        Opportunity::factory()
+                            ->for(SalesUnit::factory())
+                    )
+            );
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('api/sales-orders/drafted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'sales_unit_id',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $orderForAssignedUnitButDifferentOwner->getKey());
     }
 
     /**
@@ -803,7 +860,7 @@ class SalesOrderTest extends TestCase
             ]),
         ]);
 
-        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn () => $oauthFactory);
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(static fn () => $oauthFactory);
 
         /** @var HttpFactory $oauthFactory */
         $httpFactory = $this->app[HttpFactory::class];
@@ -813,7 +870,7 @@ class SalesOrderTest extends TestCase
         ]);
 
         $this->app->when(SubmitSalesOrderService::class)->needs(HttpFactory::class)
-            ->give(fn () => $httpFactory);
+            ->give(static fn () => $httpFactory);
 
         $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')
 //                        ->dump()
@@ -905,7 +962,7 @@ class SalesOrderTest extends TestCase
         ]);
 
         $this->app->when(SubmitSalesOrderService::class)->needs(ClientInterface::class)
-            ->give(function () {
+            ->give(static function () {
                 $mock = new MockHandler([
                     new \GuzzleHttp\Psr7\Response(200, [],
                         json_encode(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234'])),
@@ -955,7 +1012,7 @@ class SalesOrderTest extends TestCase
             ]),
         ]);
 
-        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(function () use ($oauthFactory) {
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(static function () use ($oauthFactory) {
             return $oauthFactory;
         });
 
@@ -974,7 +1031,7 @@ class SalesOrderTest extends TestCase
             '*' => ['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'],
         ]);
 
-        $this->app->when(CancelSalesOrderService::class)->needs(HttpFactory::class)->give(function () use ($factory) {
+        $this->app->when(CancelSalesOrderService::class)->needs(HttpFactory::class)->give(static function () use ($factory) {
             return $factory;
         });
 
@@ -1229,7 +1286,7 @@ class SalesOrderTest extends TestCase
             ];
         }
 
-        $wwDistributions->each(function (WorldwideDistribution $distribution) use ($mapping, $vendor) {
+        $wwDistributions->each(static function (WorldwideDistribution $distribution) use ($mapping, $vendor): void {
             $distribution->vendors()->sync($vendor);
 
             $distributorFile = factory(QuoteFile::class)->create([
@@ -1311,7 +1368,7 @@ class SalesOrderTest extends TestCase
             ]),
         ]);
 
-        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn () => $oauthFactory);
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(static fn () => $oauthFactory);
 
         /** @var HttpFactory $factory */
         $factory = $this->app[HttpFactory::class];
@@ -1364,7 +1421,7 @@ class SalesOrderTest extends TestCase
 
         $this->app->when(CheckSalesOrderService::class)
             ->needs(HttpFactory::class)
-            ->give(fn () => $factory);
+            ->give(static fn () => $factory);
 
         $this->authenticateApi();
 

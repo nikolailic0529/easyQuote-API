@@ -2,9 +2,9 @@
 
 namespace App\Domain\Worldwide\Queries;
 
-use App\Domain\Authorization\Queries\Scopes\CurrentUserScope;
 use App\Domain\Company\Models\Company;
 use App\Domain\ContractType\Models\ContractType;
+use App\Domain\Pipeline\Models\Pipeline;
 use App\Domain\Pipeline\Models\PipelineStage;
 use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\Models\User;
@@ -12,6 +12,7 @@ use App\Domain\Worldwide\Enum\OpportunityStatus;
 use App\Domain\Worldwide\Models\Opportunity;
 use App\Domain\Worldwide\Models\SalesOrder;
 use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Queries\Scopes\OpportunityScope;
 use App\Foundation\Database\Eloquent\QueryFilter\Enum\OperatorEnum;
 use App\Foundation\Database\Eloquent\QueryFilter\Enum\PipeBooleanEnum;
 use App\Foundation\Database\Eloquent\QueryFilter\Pipeline\FilterFieldPipe;
@@ -141,7 +142,7 @@ class OpportunityQueries
 
     public function listOpportunitiesOfCompanyQuery(Company $company, Request $request): Builder
     {
-        return tap($this->baseOpportunitiesQuery($request), function (Builder $builder) use ($company) {
+        return tap($this->baseOpportunitiesQuery($request), static function (Builder $builder) use ($company): void {
             $builder
                 ->with([
                     'salesUnit' => static function (Relation $relation): void {
@@ -212,6 +213,7 @@ class OpportunityQueries
     {
         $opportunityModel = new Opportunity();
         $pipelineStageModel = new PipelineStage();
+        $pipelineModel = new Pipeline();
         $contractTypeModel = new ContractType();
         $userModel = new User();
         $companyModel = new Company();
@@ -221,6 +223,7 @@ class OpportunityQueries
             ->select([
                 $opportunityModel->getQualifiedKeyName(),
                 $opportunityModel->salesUnit()->getQualifiedForeignKeyName(),
+                $opportunityModel->pipeline()->getQualifiedForeignKeyName(),
                 $opportunityModel->owner()->getQualifiedForeignKeyName(),
                 $opportunityModel->accountManager()->getQualifiedForeignKeyName(),
                 $opportunityModel->primaryAccount()->getQualifiedForeignKeyName(),
@@ -236,7 +239,6 @@ class OpportunityQueries
                     'status_reason',
                     'archived_at',
                 ]),
-
                 "{$pipelineStageModel->qualifyColumn('stage_name')} as sale_action_name",
                 "{$userModel->qualifyColumn('user_fullname')} as account_manager_name",
                 "{$contractTypeModel->qualifyColumn('type_short_name')} as opportunity_type",
@@ -274,7 +276,7 @@ class OpportunityQueries
                 first: "end_user.{$companyModel->getKeyName()}",
                 operator: $opportunityModel->endUser()->getQualifiedForeignKeyName(),
             )
-            ->tap(CurrentUserScope::from($request, $this->gate));
+            ->tap(OpportunityScope::from($request, $this->gate));
 
         return RequestQueryBuilder::for(
             builder: $query,
@@ -485,7 +487,7 @@ class OpportunityQueries
                 },
             ])
             ->withExists('worldwideQuotes as quotes_exist')
-            ->leftJoin('contacts as primary_account_contact', function (JoinClause $join) {
+            ->leftJoin('contacts as primary_account_contact', static function (JoinClause $join): void {
                 $join->on('primary_account_contact.id', 'opportunities.primary_account_contact_id');
             })
             ->orderByRaw("isnull({$opportunityModel->qualifyColumn('order_in_pipeline_stage')}) asc")

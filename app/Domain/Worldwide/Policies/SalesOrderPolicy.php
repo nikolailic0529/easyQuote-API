@@ -2,6 +2,8 @@
 
 namespace App\Domain\Worldwide\Policies;
 
+use App\Domain\Authorization\Enum\AccessEntityDirection;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Enum\SalesOrderStatus;
 use App\Domain\Worldwide\Models\SalesOrder;
@@ -30,11 +32,47 @@ class SalesOrderPolicy
     }
 
     /**
+     * Determine whether the user can view all models.
+     */
+    public function viewAll(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_own_sales_orders') && $user->role->access->accessSalesOrderDirection === AccessEntityDirection::All) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view models related to the assigned units.
+     */
+    public function viewCurrentUnitsEntities(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_own_sales_orders') && $user->role->access->accessSalesOrderDirection !== AccessEntityDirection::Owned) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
      * Determine whether the user can view models of any owner.
      */
     public function viewAnyOwnerEntities(User $user): Response
     {
         if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_any_owner_sales_orders')) {
             return $this->allow();
         }
 
@@ -57,23 +95,23 @@ class SalesOrderPolicy
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($salesOrder->salesUnit)) {
-            return $this->allow();
-        }
-
-        if ($user->salesUnits->contains($salesOrder->salesUnit)) {
-            if ($salesOrder->user()->is($user)) {
-                return $this->allow();
-            }
-
+        if (!$this->userHasAccessToUnit($user, $salesOrder->salesUnit)) {
             return ResponseBuilder::deny()
                 ->action('view')
                 ->item('sales order')
-                ->reason('You must be an owner')
+                ->reason('You don\'t have an access to the unit.')
                 ->toResponse();
         }
 
-        return $this->deny();
+        if ($salesOrder->user()->is($user)) {
+            return $this->allow();
+        }
+
+        return ResponseBuilder::deny()
+            ->action('view')
+            ->item('worldwide quote')
+            ->reason('You must be an owner')
+            ->toResponse();
     }
 
     /**
@@ -108,23 +146,23 @@ class SalesOrderPolicy
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($salesOrder->salesUnit)) {
-            return $this->allow();
-        }
-
-        if ($user->salesUnits->contains($salesOrder->salesUnit)) {
-            if ($salesOrder->user()->is($user)) {
-                return $this->allow();
-            }
-
+        if (!$this->userHasAccessToUnit($user, $salesOrder->salesUnit)) {
             return ResponseBuilder::deny()
                 ->action('update')
                 ->item('sales order')
-                ->reason('You must be an owner')
+                ->reason('You don\'t have an access to the unit.')
                 ->toResponse();
         }
 
-        return $this->deny();
+        if ($salesOrder->user()->is($user)) {
+            return $this->allow();
+        }
+
+        return ResponseBuilder::deny()
+            ->action('update')
+            ->item('sales order')
+            ->reason('You must be an owner')
+            ->toResponse();
     }
 
     /**
@@ -143,23 +181,23 @@ class SalesOrderPolicy
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($salesOrder->salesUnit)) {
-            return $this->allow();
-        }
-
-        if ($user->salesUnits->contains($salesOrder->salesUnit)) {
-            if ($salesOrder->user()->is($user)) {
-                return $this->allow();
-            }
-
+        if (!$this->userHasAccessToUnit($user, $salesOrder->salesUnit)) {
             return ResponseBuilder::deny()
                 ->action('delete')
                 ->item('sales order')
-                ->reason('You must be an owner')
+                ->reason('You don\'t have an access to the unit.')
                 ->toResponse();
         }
 
-        return $this->deny();
+        if ($salesOrder->user()->is($user)) {
+            return $this->allow();
+        }
+
+        return ResponseBuilder::deny()
+            ->action('delete')
+            ->item('sales order')
+            ->reason('You must be an owner')
+            ->toResponse();
     }
 
     /**
@@ -187,23 +225,23 @@ class SalesOrderPolicy
         }
 
         $response = (function () use ($user, $salesOrder): Response {
-            if ($user->salesUnitsFromLedTeams->contains($salesOrder->salesUnit)) {
-                return $this->allow();
-            }
-
-            if ($user->salesUnits->contains($salesOrder->salesUnit)) {
-                if ($salesOrder->user()->is($user)) {
-                    return $this->allow();
-                }
-
+            if (!$this->userHasAccessToUnit($user, $salesOrder->salesUnit)) {
                 return ResponseBuilder::deny()
                     ->action('re-submit')
                     ->item('sales order')
-                    ->reason('You must be an owner')
+                    ->reason('You don\'t have an access to the unit.')
                     ->toResponse();
             }
 
-            return $this->deny();
+            if ($salesOrder->user()->is($user)) {
+                return $this->allow();
+            }
+
+            return ResponseBuilder::deny()
+                ->action('re-submit')
+                ->item('sales order')
+                ->reason('You must be an owner')
+                ->toResponse();
         })();
 
         if ($response->allowed()) {
@@ -263,5 +301,22 @@ class SalesOrderPolicy
             ->action('export')
             ->item('sales order')
             ->toResponse();
+    }
+
+    private function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool
+    {
+        if ($user->role->access->accessSalesOrderDirection === AccessEntityDirection::All) {
+            return true;
+        }
+
+        if ($user->salesUnitsFromLedTeams->contains($unit)) {
+            return true;
+        }
+
+        if ($user->salesUnits->contains($unit)) {
+            return true;
+        }
+
+        return false;
     }
 }

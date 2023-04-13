@@ -2,8 +2,8 @@
 
 namespace App\Domain\Contact\Queries;
 
-use App\Domain\Authorization\Queries\Scopes\CurrentUserScope;
 use App\Domain\Contact\Models\Contact;
+use App\Domain\Contact\Queries\Scopes\ContactScope;
 use App\Domain\User\Models\User;
 use App\Foundation\Database\Eloquent\QueryFilter\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
@@ -53,7 +53,7 @@ class ContactQueries
             ])
             ->leftJoin($userModel->getTable(), $userModel->getQualifiedKeyName(),
                 $contactModel->user()->getQualifiedForeignKeyName())
-            ->tap(CurrentUserScope::from($request, $this->gate));
+            ->tap(ContactScope::from($request, $this->gate));
 
         return RequestQueryBuilder::for(
             builder: $query,

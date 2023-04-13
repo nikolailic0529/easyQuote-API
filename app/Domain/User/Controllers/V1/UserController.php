@@ -3,6 +3,7 @@
 namespace App\Domain\User\Controllers\V1;
 
 use App\Domain\Authentication\Requests\{StoreResetPasswordRequest};
+use App\Domain\Authorization\Services\RolePresenter;
 use App\Domain\Invitation\DataTransferObjects\CreateInvitationData;
 use App\Domain\Invitation\Models\Invitation;
 use App\Domain\Invitation\Requests\CompleteInvitationRequest;
@@ -101,12 +102,16 @@ class UserController extends Controller
      *
      * @throws AuthorizationException
      */
-    public function showUser(User $user): JsonResponse
+    public function showUser(RolePresenter $rolePresenter, User $user): JsonResponse
     {
         $this->authorize('view', $user);
 
         return response()->json(
             UserWithIncludes::make($user)
+                ->additional([
+                    'privileges' => $rolePresenter->presentModules($user->role),
+                    'role_properties' => $rolePresenter->presentProperties($user->role),
+                ])
         );
     }
 

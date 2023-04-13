@@ -2,8 +2,8 @@
 
 namespace App\Domain\Maintenance\Providers;
 
-use App\Domain\Maintenance\Contracts\MaintenanceServiceInterface;
-use App\Domain\Maintenance\Services\MaintenanceService;
+use App\Domain\Maintenance\Contracts\ManagesMaintenanceStatus;
+use App\Domain\Maintenance\Services\MaintenanceStatusService;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
 
@@ -14,13 +14,13 @@ class MaintenanceServiceProvider extends ServiceProvider implements DeferrablePr
      */
     public function register(): void
     {
-        $this->app->singleton(MaintenanceServiceInterface::class, MaintenanceService::class);
+        $this->app->singleton(ManagesMaintenanceStatus::class, MaintenanceStatusService::class);
     }
 
     public function provides(): array
     {
         return [
-            MaintenanceServiceInterface::class,
+            ManagesMaintenanceStatus::class,
         ];
     }
 }

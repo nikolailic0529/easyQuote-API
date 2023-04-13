@@ -2,19 +2,14 @@
 
 namespace App\Domain\User\Requests;
 
-use App\Domain\Authorization\Contracts\RoleRepositoryInterface;
+use App\Domain\Authorization\Queries\RoleQueries;
 use App\Domain\Country\Contracts\CountryRepositoryInterface;
 use App\Domain\Timezone\Queries\TimezoneQueries;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowFormRequest extends FormRequest
 {
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
         ];
@@ -22,21 +17,21 @@ class ShowFormRequest extends FormRequest
 
     public function data(): array
     {
-        /** @var \App\Domain\Authorization\Contracts\RoleRepositoryInterface */
-        $roles = app(RoleRepositoryInterface::class);
+        /** @var RoleQueries $roleQueries */
+        $roleQueries = $this->container->make(RoleQueries::class);
 
-        /** @var \App\Domain\Timezone\Queries\TimezoneQueries $timezoneQueries */
+        /** @var TimezoneQueries $timezoneQueries */
         $timezoneQueries = $this->container[TimezoneQueries::class];
 
-        /** @var CountryRepositoryInterface */
+        /** @var CountryRepositoryInterface $countries */
         $countries = app(CountryRepositoryInterface::class);
 
-        $filteredRoles = $roles->allActivated(['id', 'name'])
+        $roles = $roleQueries->activeRoles()->get()
             ->sortBy('name', SORT_NATURAL)
             ->values();
 
         return [
-            'roles' => $filteredRoles,
+            'roles' => $roles,
             'countries' => $countries->all(),
             'timezones' => $timezoneQueries->listOfTimezonesQuery()->get(),
         ];

@@ -279,6 +279,7 @@ return [
         \App\Domain\DocumentProcessing\Providers\SnappyServiceProvider::class,
         \App\Domain\DocumentProcessing\Providers\ParserServiceProvider::class,
 
+        \App\Domain\Authorization\Providers\ModuleServiceProvider::class,
         \App\Domain\Authorization\Providers\PermissionServiceProvider::class,
         \App\Domain\Authorization\Providers\PermissionEventServiceProvider::class,
 

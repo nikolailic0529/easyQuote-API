@@ -3,6 +3,8 @@
 namespace App\Domain\Pipeline\Models;
 
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
+use Database\Factories\PipelineStageFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -21,8 +23,14 @@ class PipelineStage extends Model
 {
     use Uuid;
     use SoftDeletes;
+    use HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): PipelineStageFactory
+    {
+        return PipelineStageFactory::new();
+    }
 
     public function pipeline(): BelongsTo
     {

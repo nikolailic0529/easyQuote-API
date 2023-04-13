@@ -136,6 +136,7 @@ class WorldwideQuoteState extends JsonResource
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),
                 'delete' => $user->can('delete', $this->resource),
+                'change_ownership' => $user->can('change_ownership', $this->resource),
             ],
 
             'versions' => $this->whenLoaded('versions'),

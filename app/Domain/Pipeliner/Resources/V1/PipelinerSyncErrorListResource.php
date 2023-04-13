@@ -2,8 +2,8 @@
 
 namespace App\Domain\Pipeliner\Resources\V1;
 
-use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Pipeliner\Models\PipelinerSyncError;
+use App\Domain\Shared\Eloquent\Contracts\ProvidesIdForHumans;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**

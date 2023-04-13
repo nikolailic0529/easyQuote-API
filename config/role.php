@@ -2,9 +2,10 @@
 
 return [
     'privileges' => [
-        $R = 'Read Only',
-        $CRU = 'Read & Write',
-        $CRUD = 'Read, Write and Delete',
+        $RO = 'Read Only',
+        $RW = 'Read & Write',
+        $RWED = 'Read & Write where Editor',
+        $RWD = 'Read, Write and Delete',
     ],
     'properties' => [
         // Rescue quote
@@ -42,15 +43,15 @@ return [
     'submodules' => [
         'Quotes' => [
             'External Quotes' => [
-                $R => [
+                $RO => [
                     'view_own_external_quotes',
                 ],
-                $CRU => [
+                $RW => [
                     'view_own_external_quotes',
                     'create_external_quotes',
                     'update_own_external_quotes',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_own_external_quotes',
                     'create_external_quotes',
                     'update_own_external_quotes',
@@ -58,33 +59,34 @@ return [
                 ],
             ],
             'Internal Quotes' => [
-                $R => [
+                $RO => [
                     'view_own_internal_quotes',
                 ],
-                $CRU => [
+                $RW => [
                     'view_own_internal_quotes',
                     'create_internal_quotes',
                     'update_own_internal_quotes',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_own_internal_quotes',
                     'create_internal_quotes',
                     'update_own_internal_quotes',
                     'delete_own_internal_quotes',
+                    'delete_rfq',
                 ],
             ],
         ],
         'Contracts' => [
             'HPE Contracts' => [
-                $R => [
+                $RO => [
                     'view_own_hpe_contracts',
                 ],
-                $CRU => [
+                $RW => [
                     'view_own_hpe_contracts',
                     'create_hpe_contracts',
                     'update_own_hpe_contracts',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_own_hpe_contracts',
                     'create_hpe_contracts',
                     'update_own_hpe_contracts',
@@ -92,15 +94,15 @@ return [
                 ],
             ],
             'Quote Based Contracts' => [
-                $R => [
+                $RO => [
                     'view_own_quote_contracts',
                 ],
-                $CRU => [
+                $RW => [
                     'view_own_quote_contracts',
                     'create_quote_contracts',
                     'update_own_quote_contracts',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_own_quote_contracts',
                     'create_quote_contracts',
                     'update_own_quote_contracts',
@@ -110,15 +112,15 @@ return [
         ],
         'Templates' => [
             'Quote Templates' => [
-                $R => [
+                $RO => [
                     'view_own_quote_templates',
                 ],
-                $CRU => [
+                $RW => [
                     'view_own_quote_templates',
                     'create_quote_templates',
                     'update_own_quote_templates',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_own_quote_templates',
                     'create_quote_templates',
                     'update_own_quote_templates',
@@ -126,15 +128,15 @@ return [
                 ],
             ],
             'Contract Templates' => [
-                $R => [
+                $RO => [
                     'view_own_contract_templates',
                 ],
-                $CRU => [
+                $RW => [
                     'view_own_contract_templates',
                     'create_contract_templates',
                     'update_own_contract_templates',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_own_contract_templates',
                     'create_contract_templates',
                     'update_own_contract_templates',
@@ -142,15 +144,15 @@ return [
                 ],
             ],
             'HPE Contract Templates' => [
-                $R => [
+                $RO => [
                     'view_own_hpe_contract_templates',
                 ],
-                $CRU => [
+                $RW => [
                     'view_own_hpe_contract_templates',
                     'create_hpe_contract_templates',
                     'update_own_hpe_contract_templates',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_own_hpe_contract_templates',
                     'create_hpe_contract_templates',
                     'update_own_hpe_contract_templates',
@@ -158,15 +160,15 @@ return [
                 ],
             ],
             'Sales Order Templates' => [
-                $R => [
+                $RO => [
                     'view_sales_order_templates',
                 ],
-                $CRU => [
+                $RW => [
                     'view_sales_order_templates',
                     'create_sales_order_templates',
                     'update_own_sales_order_templates',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_sales_order_templates',
                     'create_sales_order_templates',
                     'update_own_sales_order_templates',
@@ -174,38 +176,38 @@ return [
                 ],
             ],
             'Quote Task Template' => [
-                $R => [
+                $RO => [
                     'view_quote_task_template',
                 ],
-                $CRU => [
+                $RW => [
                     'view_quote_task_template',
                     'update_quote_task_template',
                 ],
             ],
             'Opportunity Forms' => [
-                $R => [
+                $RO => [
                     'view_opportunity_forms',
                 ],
-                $CRU => [
+                $RW => [
                     'view_opportunity_forms',
                     'create_opportunity_forms', 'update_opportunity_forms',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_opportunity_forms',
                     'create_opportunity_forms', 'update_opportunity_forms',
                     'delete_opportunity_forms',
                 ],
             ],
             'Importable Columns' => [
-                $R => [
+                $RO => [
                     'view_importable_columns',
                 ],
-                $CRU => [
+                $RW => [
                     'view_importable_columns',
                     'create_importable_columns',
                     'update_importable_columns',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_importable_columns',
                     'create_importable_columns',
                     'update_importable_columns',
@@ -215,26 +217,26 @@ return [
         ],
         'Users' => [
             'Teams' => [
-                $R => [
+                $RO => [
                     'view_teams',
                 ],
-                $CRU => [
+                $RW => [
                     'view_teams', 'create_teams', 'update_teams',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_teams', 'create_teams', 'update_teams', 'delete_teams',
                 ],
             ],
             'Roles' => [
-                $R => [
+                $RO => [
                     'view_roles',
                 ],
-                $CRU => [
+                $RW => [
                     'view_roles',
                     'create_roles',
                     'update_roles',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_roles',
                     'create_roles',
                     'update_roles',
@@ -242,15 +244,15 @@ return [
                 ],
             ],
             'Invitations' => [
-                $R => [
+                $RO => [
                     'view_invitations',
                 ],
-                $CRU => [
+                $RW => [
                     'view_invitations',
                     'create_invitations',
                     'update_invitations',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_invitations',
                     'create_invitations',
                     'update_invitations',
@@ -260,15 +262,15 @@ return [
         ],
         'Discounts' => [
             'Special Negotiation Discounts' => [
-                $R => [
+                $RO => [
                     'view_sn_discounts',
                 ],
-                $CRU => [
+                $RW => [
                     'view_sn_discounts',
                     'create_sn_discounts',
                     'update_sn_discounts',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_sn_discounts',
                     'create_sn_discounts',
                     'update_sn_discounts',
@@ -276,15 +278,15 @@ return [
                 ],
             ],
             'Promotional Discounts' => [
-                $R => [
+                $RO => [
                     'view_promo_discounts',
                 ],
-                $CRU => [
+                $RW => [
                     'view_promo_discounts',
                     'create_promo_discounts',
                     'update_promo_discounts',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_promo_discounts',
                     'create_promo_discounts',
                     'update_promo_discounts',
@@ -292,15 +294,15 @@ return [
                 ],
             ],
             'Pre-Pay Discounts' => [
-                $R => [
+                $RO => [
                     'view_prepay_discounts',
                 ],
-                $CRU => [
+                $RW => [
                     'view_prepay_discounts',
                     'create_prepay_discounts',
                     'update_prepay_discounts',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_prepay_discounts',
                     'create_prepay_discounts',
                     'update_prepay_discounts',
@@ -308,15 +310,15 @@ return [
                 ],
             ],
             'Multi-Year Discounts' => [
-                $R => [
+                $RO => [
                     'view_multiyear_discounts',
                 ],
-                $CRU => [
+                $RW => [
                     'view_multiyear_discounts',
                     'create_multiyear_discounts',
                     'update_multiyear_discounts',
                 ],
-                $CRUD => [
+                $RWD => [
                     'view_multiyear_discounts',
                     'create_multiyear_discounts',
                     'update_multiyear_discounts',
@@ -327,96 +329,110 @@ return [
     ],
     'modules' => [
         'Addresses' => [
-            $R => [
+            $RO => [
                 'view_addresses',
             ],
-            $CRU => [
+            $RW => [
                 'view_addresses',
                 'create_addresses', 'update_addresses',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_addresses',
                 'create_addresses', 'update_addresses', 'delete_addresses',
             ],
         ],
         'Contacts' => [
-            $R => [
+            $RO => [
                 'view_contacts',
             ],
-            $CRU => [
+            $RW => [
                 'view_contacts',
                 'create_contacts', 'update_contacts',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_contacts',
                 'create_contacts', 'update_contacts', 'delete_contacts',
             ],
         ],
         'Assets' => [
-            $R => [
+            $RO => [
                 'view_assets',
             ],
-            $CRU => [
+            $RW => [
                 'view_assets',
                 'create_assets', 'update_assets',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_assets',
                 'create_assets', 'update_assets', 'delete_assets',
             ],
         ],
         'Settings' => [
-            $R => [
+            $RO => [
                 'view_system_settings',
             ],
-            $CRU => [
+            $RW => [
                 'view_system_settings',
                 'update_system_settings',
             ],
         ],
         'Audit' => [
-            $R => [
+            $RO => [
                 'view_activities',
             ],
         ],
         'Users' => [
-            $R => [
+            $RO => [
                 'view_users',
             ],
-            $CRU => [
+            $RW => [
                 'view_users',
                 'invite_collaboration_users', 'update_users', 'reset_users_password',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_users',
                 'invite_collaboration_users', 'update_users', 'reset_users_password',
                 'delete_users',
             ],
         ],
         'Opportunities' => [
-            $R => [
+            $RO => [
                 'view_opportunities',
             ],
-            $CRU => [
+            $RW => [
                 'view_opportunities',
                 'create_opportunities', 'update_own_opportunities',
             ],
-            $CRUD => [
+            $RWED => [
+                'view_opportunities',
+                'create_opportunities', 'update_own_opportunities',
+                'view_opportunities_where_editor',
+                'update_opportunities_where_editor',
+            ],
+            $RWD => [
                 'view_opportunities',
                 'create_opportunities', 'update_own_opportunities',
                 'delete_own_opportunities',
             ],
         ],
         'Worldwide Quotes' => [
-            $R => [
+            $RO => [
                 'view_own_ww_quotes', 'view_own_ww_quote_files',
             ],
-            $CRU => [
+            $RW => [
                 'view_own_ww_quotes', 'view_own_ww_quote_files',
                 'create_ww_quotes', 'update_own_ww_quotes',
                 'create_ww_quote_files', 'update_own_ww_quote_files', 'handle_own_ww_quote_files',
             ],
-            $CRUD => [
+            $RWED => [
+                'view_own_ww_quotes', 'view_own_ww_quote_files',
+                'create_ww_quotes', 'update_own_ww_quotes',
+                'create_ww_quote_files', 'update_own_ww_quote_files', 'handle_own_ww_quote_files',
+
+                'view_ww_quotes_where_editor',
+                'update_ww_quotes_where_editor',
+            ],
+            $RWD => [
                 'view_own_ww_quotes', 'view_own_ww_quote_files',
                 'create_ww_quotes', 'update_own_ww_quotes',
                 'create_ww_quote_files', 'update_own_ww_quote_files', 'handle_own_ww_quote_files',
@@ -424,135 +440,141 @@ return [
             ],
         ],
         'Sales Orders' => [
-            $R => [
+            $RO => [
                 'view_own_sales_orders',
             ],
-            $CRU => [
+            $RW => [
                 'view_own_sales_orders', 'create_sales_orders', 'update_own_sales_orders',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_own_sales_orders', 'create_sales_orders', 'update_own_sales_orders', 'delete_own_sales_orders',
             ],
         ],
         'Quotes' => [
-            $R => [
+            $RO => [
                 'view_own_quotes', 'view_quote_files',
             ],
-            $CRU => [
+            $RW => [
                 'view_own_quotes',
                 'view_quote_files',
                 'create_quotes', 'update_own_quotes',
                 'create_quote_files', 'update_quote_files', 'handle_quote_files',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_own_quotes',
                 'create_quotes', 'update_own_quotes', 'delete_own_quotes',
                 'view_quote_files',
                 'create_quote_files', 'update_quote_files', 'handle_quote_files',
                 'delete_quote_files',
-                'delete_rfq',
             ],
         ],
         'Countries' => [
-            $R => [
+            $RO => [
                 'view_countries',
             ],
-            $CRU => [
+            $RW => [
                 'view_countries',
                 'create_countries', 'update_countries',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_countries',
                 'create_countries', 'update_countries', 'delete_countries',
             ],
         ],
         'Contracts' => [
-            $R => [
+            $RO => [
                 'view_own_contracts',
             ],
-            $CRU => [
+            $RW => [
                 'view_own_contracts',
                 'create_contracts', 'update_own_contracts',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_own_contracts',
                 'create_contracts', 'update_own_contracts', 'delete_own_contracts',
             ],
         ],
         'Templates' => [
-            $R => [
+            $RO => [
                 'view_templates',
             ],
-            $CRU => [
+            $RW => [
                 'view_templates',
                 'create_templates', 'update_templates',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_templates',
                 'create_templates', 'update_templates', 'delete_templates',
             ],
         ],
         'Companies' => [
-            $R => [
+            $RO => [
                 'view_companies',
             ],
-            $CRU => [
+            $RW => [
                 'view_companies',
                 'create_companies', 'update_companies',
             ],
-            $CRUD => [
+            $RWED => [
+                'view_companies',
+                'create_companies', 'update_companies',
+
+                'view_companies_where_editor',
+                'update_companies_where_editor',
+            ],
+            $RWD => [
                 'view_companies',
                 'create_companies', 'update_companies', 'delete_companies',
             ],
         ],
         'Vendors' => [
-            $R => [
+            $RO => [
                 'view_vendors',
             ],
-            $CRU => [
+            $RW => [
                 'view_vendors',
                 'create_vendors', 'update_vendors',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_vendors',
                 'create_vendors', 'update_vendors', 'delete_vendors',
             ],
         ],
         'Margins' => [
-            $R => [
+            $RO => [
                 'view_margins',
             ],
-            $CRU => [
+            $RW => [
                 'view_margins',
                 'create_margins', 'update_margins',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_margins',
                 'create_margins', 'update_margins', 'delete_margins',
             ],
         ],
         'Discounts' => [
-            $R => [
+            $RO => [
                 'view_discounts',
             ],
-            $CRU => [
+            $RW => [
                 'view_discounts',
                 'create_discounts', 'update_discounts',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_discounts',
                 'create_discounts', 'update_discounts', 'delete_discounts',
             ],
         ],
         'Renewals' => [
-            $R => [
+            $RO => [
                 'view_renewals',
             ],
-            $CRU => [
+            $RW => [
                 'view_renewals',
                 'create_renewals', 'update_renewals',
             ],
-            $CRUD => [
+            $RWD => [
                 'view_renewals',
                 'create_renewals', 'update_renewals', 'delete_renewals',
             ],

@@ -102,6 +102,7 @@ class CompanyWithIncludes extends JsonResource
                 'view' => $request->user()->can('view', $this->resource),
                 'update' => $request->user()->can('update', $this->resource),
                 'delete' => $request->user()->can('delete', $this->resource),
+                'change_ownership' => $request->user()->can('change_ownership', $this->resource),
             ],
 
             'creation_date' => isset($this->creation_date) ? format('date', $this->creation_date) : null,

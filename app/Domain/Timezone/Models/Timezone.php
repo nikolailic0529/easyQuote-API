@@ -3,7 +3,7 @@
 namespace App\Domain\Timezone\Models;
 
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
-use App\Domain\Eloquent\Contracts\HasOrderedScope;
+use App\Domain\Shared\Eloquent\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 

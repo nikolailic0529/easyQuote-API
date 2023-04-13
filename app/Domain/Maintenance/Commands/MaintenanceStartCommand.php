@@ -2,88 +2,105 @@
 
 namespace App\Domain\Maintenance\Commands;
 
-use App\Domain\Build\Contracts\BuildRepositoryInterface as Builds;
-use App\Domain\Maintenance\Jobs\UpMaintenance;
+use App\Domain\Build\Contracts\BuildRepositoryInterface;
+use App\Domain\Build\Models\Build;
+use App\Domain\Maintenance\Jobs\DownIntoMaintenanceMode;
 use Carbon\Carbon;
+use Carbon\CarbonInterval;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Bus\Dispatcher;
+use React\EventLoop\Loop;
+use Symfony\Component\Console\Cursor;
+use Symfony\Component\Console\Input\InputArgument;
 
 class MaintenanceStartCommand extends Command
 {
     /**
-     * The name and signature of the console command.
-     *
      * @var string
      */
-    protected $signature = 'eq:maintenance-start {start_time} {end_time} {build_number?} {git_tag?}';
+    protected $name = 'eq:maintenance-start';
 
     /**
-     * The console command description.
-     *
      * @var string
      */
     protected $description = 'Put the application into maintenance mode';
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
+    public function handle(Dispatcher $dispatcher): int
     {
-        parent::__construct();
+        $delay = $this->resolveDelayInterval();
+        $down = $this->resolveDownInterval();
+        $startIn = now()->add($delay);
+        $endIn = $startIn->clone()->add($down);
+
+        $this->createBuild($startIn, $endIn);
+
+        $dispatcher->dispatch(new DownIntoMaintenanceMode($startIn, $endIn));
+
+        $this->waitUntil($startIn);
+
+        $this->output->writeLn(
+            sprintf('Maintenance started. Down time: %s', CarbonInterval::create($down)->cascade()->forHumans())
+        );
+
+        return self::SUCCESS;
     }
 
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
-    public function handle()
+    private function waitUntil(Carbon $schedule): void
     {
-        $scheduledMinutes = (int) $this->argument('start_time');
-        $startTime = now()->addMinutes($scheduledMinutes);
+        $loop = Loop::get();
+        $out = $this->output;
+        $cursor = new Cursor($out);
 
-        $totalMinutes = (int) $this->argument('end_time');
-        $endTime = now()->addMinutes($totalMinutes + $scheduledMinutes);
+        $timer = $loop->addPeriodicTimer(1.0, static function () use ($out, $cursor, $schedule): void {
+            $cursor->moveToColumn(1);
+            $cursor->clearLine();
+            $out->write(sprintf('Start in: %ds', $schedule->diffInSeconds(now())));
+        });
 
-        $this->createBuild($startTime, $endTime);
+        $loop->addTimer($schedule->diffInSeconds(now()), static function () use ($out, $loop, $timer): void {
+            $loop->cancelTimer($timer);
+            $out->writeln('');
+        });
 
-        UpMaintenance::dispatch($startTime, $endTime);
-
-        $this->wait($startTime);
-
-        $this->maintenanceStartedMessage($totalMinutes);
+        $loop->run();
     }
 
-    protected function wait(Carbon $schedule)
+    private function createBuild(Carbon $start_time, Carbon $end_time): void
     {
-        while ($schedule->gt($now = now())) {
-            sleep(2);
-            $this->remainingTimeMessage($schedule->diffInSeconds($now));
-        }
+        $buildNumber = $this->argument('build');
+        $buildTag = $this->argument('tag');
+
+        /** @var Build|null $prevBuild */
+        $prevBuild = Build::query()->latest()->first();
+
+        $buildNumber ??= $prevBuild?->build_number;
+        $buildTag ??= $prevBuild?->git_tag;
+
+        $this->laravel->make(BuildRepositoryInterface::class)->create([
+            'start_time' => $start_time,
+            'end_time' => $end_time,
+            'build_number' => $buildNumber,
+            'git_tag' => $buildTag,
+        ]);
     }
 
-    protected function remainingTimeMessage(int $seconds)
+    private function resolveDelayInterval(): \DateInterval
     {
-        $unit = \Str::plural('second', $seconds);
-
-        $this->warn("Maintenance will start in {$seconds} {$unit} ...");
+        return CarbonInterval::seconds(60 * $this->argument('delay'));
     }
 
-    protected function maintenanceStartedMessage(int $minutes)
+    private function resolveDownInterval(): \DateInterval
     {
-        $unit = \Str::plural('minute', $minutes);
-
-        $this->output->write("\n");
-        $this->alert("Maintenance started! Estimated time is {$minutes} {$unit}.");
+        return CarbonInterval::seconds(60 * $this->argument('time'));
     }
 
-    protected function createBuild(Carbon $start_time, Carbon $end_time): void
+    protected function getArguments(): array
     {
-        $attributes = array_filter(\Arr::only($this->arguments(), ['build_number', 'git_tag']));
-
-        $attributes += optional(app(Builds::class)->last())->only('build_number', 'git_tag') ?? [];
-
-        app(Builds::class)->create($attributes + compact('start_time', 'end_time'));
+        return [
+            new InputArgument('delay', InputArgument::REQUIRED, 'Delay before start in minutes'),
+            new InputArgument('time', InputArgument::REQUIRED, 'Maintenance time in minutes'),
+            new InputArgument('build', InputArgument::OPTIONAL, 'Build number'),
+            new InputArgument('tag', InputArgument::OPTIONAL, 'Build tag'),
+        ];
     }
 }

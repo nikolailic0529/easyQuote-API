@@ -2,35 +2,21 @@
 
 namespace App\Domain\Authorization\Commands;
 
-use App\Domain\Authorization\Models\{Role};
+use App\Domain\Authorization\Models\Role;
 use Illuminate\Console\Command;
 use Illuminate\Database\ConnectionInterface;
 
 class UpdateRolesCommand extends Command
 {
     /**
-     * The name and signature of the console command.
-     *
      * @var string
      */
     protected $signature = 'eq:update-roles';
 
     /**
-     * The console command description.
-     *
      * @var string
      */
-    protected $description = 'Update System Defined Roles';
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
+    protected $description = 'Update system defined roles';
 
     /**
      * Execute the console command.
@@ -67,21 +53,25 @@ class UpdateRolesCommand extends Command
         /** @var ConnectionInterface $connection */
         $connection = $this->laravel[ConnectionInterface::class];
 
-        $this->withProgressBar($roles, function (array $attributes) use ($connection) {
+        $this->withProgressBar($roles, static function (array $attributes) use ($connection): void {
             $role = Role::query()
                 ->where('name', $attributes['name'])
                 ->where('is_system', true)
                 ->first();
 
-            /* @var \App\Domain\Authorization\Models\Role $role */
-            $role ??= tap(new Role(), function (Role $role) use ($connection, $attributes) {
-                $role->name = $attributes['name'];
-                $role->is_system = true;
+            $role ??= new Role();
 
-                $connection->transaction(fn () => $role->save());
+            $role->name = $attributes['name'];
+            $role->is_system = true;
+
+            if (isset($attributes['access'])) {
+                $role->access = $attributes['access'];
+            }
+
+            $connection->transaction(static function () use ($role, $attributes): void {
+                $role->save();
+                $role->syncPermissions($attributes['permissions']);
             });
-
-            $connection->transaction(fn () => $role->syncPermissions($attributes['permissions']));
         });
     }
 }

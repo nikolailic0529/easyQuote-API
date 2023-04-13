@@ -3,9 +3,9 @@
 namespace App\Domain\Pipeliner\Services\Exceptions;
 
 use App\Domain\Contact\Models\Contact;
-use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Pipeliner\Services\Contracts\ContainsRelatedEntities;
 use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Shared\Eloquent\Contracts\ProvidesIdForHumans;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

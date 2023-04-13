@@ -585,7 +585,9 @@ class CompanyDataMapper
         $anotherContactMap = $importedContactsDontHaveRelThroughPlRef->keyBy($contactHashResolver);
 
         $newImportedAddresses = $anotherAddressMap->diffKeys($currentAddressMap);
+        $newImportedAddresses = $newImportedAddresses->merge($anotherAddressMap->whereNotNull('pl_reference'));
         $newImportedContacts = $anotherContactMap->diffKeys($currentContactMap);
+        $newImportedContacts = $newImportedContacts->merge($anotherContactMap->whereNotNull('pl_reference'));
 
         $newAddressMap = $newImportedAddresses
             ->mapWithKeys(function (ImportedAddress $a) use ($company): array {

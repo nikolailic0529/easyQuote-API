@@ -55,7 +55,7 @@ blade;
 blade;
             case self::TYPE_TAG:
                 return <<<'blade'
-<span style="word-break: break-word">{!! $value !!}</span>
+<span {{ $attributes }}>{!! $value !!}</span>
 blade;
             default:
             case self::TYPE_TXT:

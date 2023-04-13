@@ -10,7 +10,7 @@ use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 final class FlagsData extends Data
 {
     public function __construct(
-        public bool $emailNotif = true,
+        public bool $emailNotif = false,
         public bool $appNotif = true,
     ) {
     }

@@ -87,17 +87,26 @@ class OpportunityOwnershipTest extends TestCase
             ->create();
 
         $newOwner = User::factory()->create();
-        $newUnit = SalesUnit::factory()->create();
-
         $this->getJson('api/opportunities/'.$opp->getKey())
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
                 'user_id',
                 'sales_unit_id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                ],
             ])
             ->assertJsonPath('user_id', $opp->owner->getKey())
-            ->assertJsonPath('sales_unit_id', $opp->salesUnit->getKey());
+            ->assertJsonPath('sales_unit_id', $opp->salesUnit->getKey())
+            ->assertJsonPath('permissions.view', true)
+            ->assertJsonPath('permissions.update', true)
+            ->assertJsonPath('permissions.delete', true)
+            ->assertJsonPath('permissions.change_ownership', true);
+        $newUnit = SalesUnit::factory()->create();
 
         $this->patchJson('api/opportunities/'.$opp->getKey().'/ownership', $data = [
             'owner_id' => $newOwner->getKey(),
@@ -406,6 +415,8 @@ class OpportunityOwnershipTest extends TestCase
             'create_opportunities',
             'update_own_opportunities',
             'delete_own_opportunities',
+            'view_opportunities_where_editor',
+            'update_opportunities_where_editor',
         );
         $originalOwner->syncRoles($originalOwnerRole);
 
@@ -459,6 +470,23 @@ class OpportunityOwnershipTest extends TestCase
             ])
             ->assertJsonPath('permissions.view', true)
             ->assertJsonPath('permissions.update', true)
-            ->assertJsonPath('permissions.delete', true);
+            ->assertJsonPath('permissions.delete', false);
+
+        $this->getJson('api/opportunities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $opp->getKey());
     }
 }

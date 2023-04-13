@@ -46,9 +46,6 @@ class AuthenticatedUserResource extends JsonResource
             'country' => $this->whenLoaded('country'),
             'picture' => $this->picture,
 
-            'privileges' => $this->privileges,
-            'role_properties' => $this->role_properties,
-
             'companies' => $this->companies->map(static function (Company $company): array {
                 return [
                     'id' => $company->getKey(),

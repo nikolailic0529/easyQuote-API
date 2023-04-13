@@ -2,9 +2,10 @@
 
 namespace App\Domain\Worldwide\Queries;
 
-use App\Domain\Authorization\Queries\Scopes\CurrentUserScope;
 use App\Domain\Company\Models\Company;
+use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Queries\Scopes\SalesOrderScope;
 use App\Foundation\Database\Eloquent\QueryFilter\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
@@ -15,16 +16,17 @@ use Illuminate\Http\Request;
 
 class SalesOrderQueries
 {
-    public function __construct(protected Elasticsearch $elasticsearch,
-                                protected Gate $gate)
-    {
+    public function __construct(
+        protected readonly Elasticsearch $elasticsearch,
+        protected readonly Gate $gate
+    ) {
     }
 
     public function listOfCompanySalesOrdersQuery(Company $company, ?Request $request = null): Builder
     {
         $request ??= new Request();
 
-        /** @var \App\Domain\User\Models\User|null $user */
+        /** @var User|null $user */
         $user = $request->user();
 
         $query = SalesOrder::query()
@@ -48,10 +50,10 @@ class SalesOrderQueries
                 'sales_orders.submitted_at',
                 'sales_orders.activated_at'
             )
-            ->join('worldwide_quotes', function (JoinClause $join) {
+            ->join('worldwide_quotes', static function (JoinClause $join): void {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');
             })
-            ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
+            ->join('worldwide_quote_versions as active_quote_version', static function (JoinClause $join): void {
                 $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
             })
             ->join('opportunities', static function (JoinClause $join) use ($company): void {
@@ -61,18 +63,18 @@ class SalesOrderQueries
                             ->orWhere('opportunities.end_user_id', $company->getKey());
                     });
             })
-            ->join('companies as primary_account', function (JoinClause $join) {
+            ->join('companies as primary_account', static function (JoinClause $join): void {
                 $join->on('primary_account.id', 'opportunities.primary_account_id');
             })
-            ->join('companies', function (JoinClause $join) {
+            ->join('companies', static function (JoinClause $join): void {
                 $join->on('companies.id', 'active_quote_version.company_id');
             })
-            ->join('contract_types', function (JoinClause $join) {
+            ->join('contract_types', static function (JoinClause $join): void {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->tap(CurrentUserScope::from($request, $this->gate));
+            ->tap(SalesOrderScope::from($request, $this->gate));
 
-        return tap($query, function (Builder $builder) {
+        return tap($query, static function (Builder $builder): void {
             $builder->orderBy('updated_at', 'desc');
         });
     }
@@ -108,31 +110,31 @@ class SalesOrderQueries
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
             ])
-            ->join('worldwide_quotes', function (JoinClause $join) {
+            ->join('worldwide_quotes', static function (JoinClause $join): void {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');
             })
-            ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
+            ->join('worldwide_quote_versions as active_quote_version', static function (JoinClause $join): void {
                 $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->join('opportunities', function (JoinClause $join) {
+            ->join('opportunities', static function (JoinClause $join): void {
                 $join->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
-            ->join('companies as primary_account', function (JoinClause $join) {
+            ->join('companies as primary_account', static function (JoinClause $join): void {
                 $join->on('primary_account.id', 'opportunities.primary_account_id');
             })
-            ->leftJoin('companies as end_user', function (JoinClause $join): void {
+            ->leftJoin('companies as end_user', static function (JoinClause $join): void {
                 $join->on('end_user.id', 'opportunities.end_user_id');
             })
-            ->leftJoin('users as account_manager', function (JoinClause $join): void {
+            ->leftJoin('users as account_manager', static function (JoinClause $join): void {
                 $join->on('account_manager.id', 'opportunities.account_manager_id');
             })
-            ->join('companies', function (JoinClause $join) {
+            ->join('companies', static function (JoinClause $join): void {
                 $join->on('companies.id', 'active_quote_version.company_id');
             })
-            ->join('contract_types', function (JoinClause $join) {
+            ->join('contract_types', static function (JoinClause $join): void {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->tap(CurrentUserScope::from($request, $this->gate))
+            ->tap(SalesOrderScope::from($request, $this->gate))
             ->whereNull('sales_orders.submitted_at')
             ->orderByDesc($model->qualifyColumn('is_active'));
 
@@ -200,31 +202,31 @@ class SalesOrderQueries
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
             ])
-            ->join('worldwide_quotes', function (JoinClause $join) {
+            ->join('worldwide_quotes', static function (JoinClause $join): void {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');
             })
-            ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
+            ->join('worldwide_quote_versions as active_quote_version', static function (JoinClause $join): void {
                 $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->join('opportunities', function (JoinClause $join) {
+            ->join('opportunities', static function (JoinClause $join): void {
                 $join->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
-            ->join('companies as primary_account', function (JoinClause $join) {
+            ->join('companies as primary_account', static function (JoinClause $join): void {
                 $join->on('primary_account.id', 'opportunities.primary_account_id');
             })
-            ->leftJoin('companies as end_user', function (JoinClause $join): void {
+            ->leftJoin('companies as end_user', static function (JoinClause $join): void {
                 $join->on('end_user.id', 'opportunities.end_user_id');
             })
-            ->leftJoin('users as account_manager', function (JoinClause $join): void {
+            ->leftJoin('users as account_manager', static function (JoinClause $join): void {
                 $join->on('account_manager.id', 'opportunities.account_manager_id');
             })
-            ->join('companies', function (JoinClause $join) {
+            ->join('companies', static function (JoinClause $join): void {
                 $join->on('companies.id', 'active_quote_version.company_id');
             })
-            ->join('contract_types', function (JoinClause $join) {
+            ->join('contract_types', static function (JoinClause $join): void {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->tap(CurrentUserScope::from($request, $this->gate))
+            ->tap(SalesOrderScope::from($request, $this->gate))
             ->whereNotNull('sales_orders.submitted_at')
             ->orderByDesc($model->qualifyColumn('is_active'));
 

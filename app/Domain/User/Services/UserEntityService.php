@@ -15,10 +15,13 @@ use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\DataTransferObjects\UpdateCurrentUserData;
 use App\Domain\User\DataTransferObjects\UpdateUserData;
 use App\Domain\User\Models\User;
+use App\Foundation\Filesystem\TemporaryDirectory;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Spatie\LaravelData\Optional;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -150,6 +153,15 @@ class UserEntityService
 
     protected function createPictureForUser(User $user, \SplFileInfo $file): Image
     {
+        if ($file instanceof UploadedFile) {
+            $ext = $file->guessClientExtension();
+
+            if ($ext) {
+                $dir = (new TemporaryDirectory())->create();
+                $file = $file->move($dir->path(''), name: Str::random(40).'.'.$ext);
+            }
+        }
+
         return $this->thumbnailService->createResizedImageFor($file, $user, [
             'width' => 120,
             'height' => 120,

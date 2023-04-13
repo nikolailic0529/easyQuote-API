@@ -2,10 +2,11 @@
 
 namespace App\Domain\Worldwide\Policies;
 
+use App\Domain\Authorization\Enum\AccessEntityDirection;
+use App\Domain\Authorization\Enum\AccessEntityPipelineDirection;
 use App\Domain\User\Models\ModelHasSharingUsers;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Models\Opportunity;
-use App\Domain\Worldwide\Models\WorldwideQuote;
 use App\Foundation\Auth\Access\Response\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
@@ -21,7 +22,77 @@ class OpportunityPolicy
      */
     public function viewAny(User $user): Response
     {
-        if ($user->can('view_opportunities')) {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->canAny(['view_opportunities', 'view_opportunities_where_editor'])) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view all models.
+     */
+    public function viewAll(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_opportunities')
+            && $user->role->access->accessOpportunityDirection === AccessEntityDirection::All
+            && $user->role->access->accessOpportunityPipelineDirection === AccessEntityPipelineDirection::All) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view models related to the assigned units.
+     */
+    public function viewCurrentUnitsEntities(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->role->access->accessOpportunityDirection !== AccessEntityDirection::Owned) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view models where editor rights are granted.
+     */
+    public function viewEntitiesWhereEditor(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_opportunities_where_editor')) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view models related to the all pipelines.
+     */
+    public function viewEntitiesOfAllPipelines(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->role->access->accessOpportunityPipelineDirection === AccessEntityPipelineDirection::All) {
             return $this->allow();
         }
 
@@ -49,32 +120,51 @@ class OpportunityPolicy
             return $this->allow();
         }
 
-        if ($user->cant('view_opportunities')) {
+        if ($user->cant('view_opportunities') && $user->cant('view_opportunities_where_editor')) {
             return ResponseBuilder::deny()
                 ->action('view')
                 ->item('opportunity')
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($opportunity->salesUnit)) {
+        if ($user->role->access->accessOpportunityDirection !== AccessEntityDirection::All
+            && $user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit)
+            && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
+            return ResponseBuilder::deny()
+                ->action('view')
+                ->item('opportunity')
+                ->reason('You don\'t have an access to the unit.')
+                ->toResponse();
+        }
+
+        if (!$this->userHasAccessToPipeline($opportunity, $user)) {
+            return ResponseBuilder::deny()
+                ->action('view')
+                ->item('opportunity')
+                ->reason('You don\'t have an access to the pipeline.')
+                ->toResponse();
+        }
+
+        if ($user->role->access->accessOpportunityDirection === AccessEntityDirection::All) {
             return $this->allow();
         }
 
-        if ($user->salesUnits->contains($opportunity->salesUnit)) {
-            if ($opportunity->owner()->is($user) || $opportunity->accountManager()->is($user) || $this->userInSharingUsers($opportunity, $user)) {
-                return $this->allow();
-            }
+        if ($user->can('view_opportunities') && $opportunity->user()->is($user)) {
+            return $this->allow();
+        }
 
-            return ResponseBuilder::deny()
-                ->action('view')
-                ->item('opportunity')
-                ->reason('You must be an owner or account manager')
-                ->toResponse();
+        if ($user->can('view_opportunities') && $opportunity->accountManager()->is($user)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_opportunities_where_editor') && $this->userInSharingUsers($opportunity, $user)) {
+            return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('view')
             ->item('opportunity')
+            ->reason('You must be either an owner, account manager or editor')
             ->toResponse();
     }
 
@@ -103,45 +193,46 @@ class OpportunityPolicy
             return $this->allow();
         }
 
-        if ($user->cant('update_own_opportunities')) {
+        if ($user->cant('update_own_opportunities') && $user->cant('update_opportunities_where_editor')) {
             return ResponseBuilder::deny()
                 ->action('update')
                 ->item('opportunity')
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($opportunity->salesUnit)) {
-            return $this->allow();
-        }
-
-        if ($user->salesUnits->contains($opportunity->salesUnit)) {
-            if ($opportunity->owner()->is($user) || $opportunity->accountManager()
-                    ->is($user) || $this->userInSharingUsers($opportunity, $user)) {
-                return $this->allow();
-            }
-
+        if ($user->role->access->accessOpportunityDirection !== AccessEntityDirection::All
+            && $user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit) && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
             return ResponseBuilder::deny()
-                ->action('view')
+                ->action('update')
                 ->item('opportunity')
-                ->reason('You must be an owner or account manager')
+                ->reason('You don\'t have an access to the unit.')
                 ->toResponse();
         }
 
-        // Allow the user to update an opportunity when the user can update any quote associated with it.
-        if (!isset($opportunity->quotes_exist) || $opportunity->quotes_exist) {
-            $userCanUpdateAnyQuoteOfOpportunity = $opportunity->worldwideQuotes
-                ->contains(static function (WorldwideQuote $quote) use ($user): bool {
-                    return $user->can('update', $quote);
-                });
+        if (!$this->userHasAccessToPipeline($opportunity, $user)) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('opportunity')
+                ->reason('You don\'t have an access to the pipeline.')
+                ->toResponse();
+        }
 
-            if ($userCanUpdateAnyQuoteOfOpportunity) {
-                return $this->allow();
-            }
+        if ($user->can('update_own_opportunities') && $opportunity->user()->is($user)) {
+            return $this->allow();
+        }
+
+        if ($user->can('update_own_opportunities') && $opportunity->accountManager()->is($user)) {
+            return $this->allow();
+        }
+
+        if ($user->can('update_opportunities_where_editor') && $this->userInSharingUsers($opportunity, $user)) {
+            return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('update')
             ->item('opportunity')
+            ->reason('You must be either an owner, account manager or editor')
             ->toResponse();
     }
 
@@ -154,32 +245,29 @@ class OpportunityPolicy
             return $this->allow();
         }
 
-        if (!$user->hasPermissionTo('change_opportunities_ownership')) {
+        if ($user->cant('change_opportunities_ownership')) {
             return ResponseBuilder::deny()
                 ->action('change ownership')
                 ->item('opportunity')
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($opportunity->salesUnit)) {
+        if ($user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit) && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
+            return ResponseBuilder::deny()
+                ->action('change ownership')
+                ->item('opportunity')
+                ->reason('You don\'t have an access to the unit.')
+                ->toResponse();
+        }
+
+        if ($opportunity->user()->is($user) || $opportunity->accountManager()->is($user)) {
             return $this->allow();
-        }
-
-        if ($user->salesUnits->contains($opportunity->salesUnit)) {
-            if ($opportunity->owner()->is($user) || $opportunity->accountManager()->is($user)) {
-                return $this->allow();
-            }
-
-            return ResponseBuilder::deny()
-                ->action('change ownership')
-                ->item('opportunity')
-                ->reason('You must be an owner, account manager, or editor')
-                ->toResponse();
         }
 
         return ResponseBuilder::deny()
             ->action('change ownership')
             ->item('opportunity')
+            ->reason('You must be an owner or account manager')
             ->toResponse();
     }
 
@@ -202,23 +290,32 @@ class OpportunityPolicy
                     ->toResponse();
             }
 
-            if ($user->salesUnitsFromLedTeams->contains($opportunity->salesUnit)) {
-                return $this->allow();
-            }
-
-            if ($user->salesUnits->contains($opportunity->salesUnit)) {
-                if ($opportunity->owner()->is($user) || $opportunity->accountManager()->is($user) || $this->userInSharingUsers($opportunity, $user)) {
-                    return $this->allow();
-                }
-
+            if ($user->role->access->accessOpportunityDirection !== AccessEntityDirection::All
+                && $user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit) && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
                 return ResponseBuilder::deny()
                     ->action('delete')
                     ->item('opportunity')
-                    ->reason('You must be an owner or account manager')
+                    ->reason('You don\'t have an access to the unit.')
                     ->toResponse();
             }
 
-            return $this->deny();
+            if (!$this->userHasAccessToPipeline($opportunity, $user)) {
+                return ResponseBuilder::deny()
+                    ->action('update')
+                    ->item('opportunity')
+                    ->reason('You don\'t have an access to the pipeline.')
+                    ->toResponse();
+            }
+
+            if ($opportunity->owner()->is($user) || $opportunity->accountManager()->is($user)) {
+                return $this->allow();
+            }
+
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('opportunity')
+                ->reason('You must be an owner or account manager')
+                ->toResponse();
         })();
 
         if ($response->allowed()) {
@@ -244,6 +341,17 @@ class OpportunityPolicy
             ->lazy()
             ->pluck($userForeignKey)
             ->containsStrict($user->getKey());
+    }
+
+    protected function userHasAccessToPipeline(Opportunity $opp, User $user): bool
+    {
+        if ($user->role->access->accessOpportunityPipelineDirection === AccessEntityPipelineDirection::All) {
+            return true;
+        }
+
+        return $user->role->access->allowedOpportunityPipelines->toCollection()
+            ->pluck('pipelineId')
+            ->containsStrict($opp->pipeline()->getParentKey());
     }
 
     protected function quotesExist(Opportunity $opportunity): bool

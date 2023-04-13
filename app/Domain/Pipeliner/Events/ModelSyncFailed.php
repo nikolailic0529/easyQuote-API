@@ -2,7 +2,7 @@
 
 namespace App\Domain\Pipeliner\Events;
 
-use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
+use App\Domain\Shared\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\User\Models\User;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;

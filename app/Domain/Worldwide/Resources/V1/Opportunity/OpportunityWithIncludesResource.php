@@ -33,6 +33,7 @@ class OpportunityWithIncludesResource extends JsonResource
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),
                 'delete' => $user->can('delete', $this->resource),
+                'change_ownership' => $user->can('changeOwnership', $this->resource),
             ],
 
             'sales_unit_id' => $this->salesUnit()->getParentKey(),

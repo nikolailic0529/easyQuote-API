@@ -2,7 +2,6 @@
 
 namespace App\Domain\Worldwide\Queries;
 
-use App\Domain\Authorization\Queries\Scopes\CurrentUserScope;
 use App\Domain\Company\Models\Company;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\DataTransferObjects\Quote\AssetsLookupData;
@@ -12,6 +11,7 @@ use App\Domain\Worldwide\Models\WorldwideQuote;
 use App\Domain\Worldwide\Models\WorldwideQuoteAsset;
 use App\Domain\Worldwide\Models\WorldwideQuoteAssetsGroup;
 use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
+use App\Domain\Worldwide\Queries\Scopes\WorldwideQuoteScope;
 use App\Foundation\Database\Eloquent\QueryFilter\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
@@ -25,17 +25,18 @@ use Illuminate\Support\Facades\DB;
 
 class WorldwideQuoteQueries
 {
-    public function __construct(protected readonly ConnectionResolverInterface $connectionResolver,
-                                protected readonly Elasticsearch $elasticsearch,
-                                protected readonly Gate $gate)
-    {
+    public function __construct(
+        protected readonly ConnectionResolverInterface $connectionResolver,
+        protected readonly Elasticsearch $elasticsearch,
+        protected readonly Gate $gate
+    ) {
     }
 
     public function aliveDraftedListingQuery(Request $request = null): Builder
     {
         return $this->draftedListingQuery($request)
             ->with([
-                'versions' => function (Relation $relation) {
+                'versions' => static function (Relation $relation): void {
                     $relation->select([
                         'worldwide_quote_versions.id',
                         'worldwide_quote_versions.worldwide_quote_id',
@@ -44,7 +45,7 @@ class WorldwideQuoteQueries
                         'worldwide_quote_versions.user_version_sequence_number',
                         'worldwide_quote_versions.updated_at',
                     ])
-                        ->join('users', function (JoinClause $join) {
+                        ->join('users', static function (JoinClause $join): void {
                             $join->on('users.id', 'worldwide_quote_versions.user_id');
                         })
                         ->orderByDesc('updated_at');
@@ -85,7 +86,7 @@ class WorldwideQuoteQueries
         $model = new WorldwideQuote();
 
         $query = $model->newQuery()
-            ->join('worldwide_quote_versions as active_version', function (JoinClause $joinClause) {
+            ->join('worldwide_quote_versions as active_version', static function (JoinClause $joinClause): void {
                 $joinClause->on('active_version.id', 'worldwide_quotes.active_version_id');
             })
             ->select(
@@ -112,19 +113,19 @@ class WorldwideQuoteQueries
                 'worldwide_quotes.activated_at',
                 DB::raw('(sales_orders.id is not null) as sales_order_exists')
             )
-            ->join('contract_types', function (JoinClause $join) {
+            ->join('contract_types', static function (JoinClause $join): void {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->join('opportunities', function (JoinClause $join) {
+            ->join('opportunities', static function (JoinClause $join): void {
                 $join->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
-            ->leftJoin('companies', function (JoinClause $join) {
+            ->leftJoin('companies', static function (JoinClause $join): void {
                 $join->on('companies.id', 'opportunities.primary_account_id');
             })
-            ->leftJoin('companies as end_user', function (JoinClause $join) {
+            ->leftJoin('companies as end_user', static function (JoinClause $join): void {
                 $join->on('end_user.id', 'opportunities.end_user_id');
             })
-            ->leftJoin('sales_orders', function (JoinClause $join) {
+            ->leftJoin('sales_orders', static function (JoinClause $join): void {
                 $join->on('sales_orders.worldwide_quote_id', 'worldwide_quotes.id')
                     ->whereNull('sales_orders.deleted_at');
             })
@@ -141,7 +142,7 @@ class WorldwideQuoteQueries
                 'opportunities.is_contract_duration_checked',
                 'opportunities.contract_duration_months',
             ])
-            ->tap(CurrentUserScope::from($request, $this->gate))
+            ->tap(WorldwideQuoteScope::from($request, $this->gate))
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -255,10 +256,10 @@ class WorldwideQuoteQueries
         ];
 
         return $quoteVersion->assets()->getQuery()
-            ->join($vendorRelationship->getRelated()->getTable(), function (JoinClause $join) use ($vendorRelationship) {
+            ->join($vendorRelationship->getRelated()->getTable(), static function (JoinClause $join) use ($vendorRelationship): void {
                 $join->on($vendorRelationship->getQualifiedForeignKeyName(), $vendorRelationship->getQualifiedOwnerKeyName());
             })
-            ->where(function (Builder $builder) use ($data, $assetModel, $vendorRelationship) {
+            ->where(static function (Builder $builder) use ($data, $assetModel, $vendorRelationship): void {
                 $input = array_values($data->input);
 
                 $columns = [
@@ -279,15 +280,17 @@ class WorldwideQuoteQueries
                 }
             })
             ->select($selectColumns)
-            ->when($data->assets_group instanceof WorldwideQuoteAssetsGroup, function (Builder $builder) use ($vendorRelationship, $data, $selectColumns) {
-                $builder->union(
-                    $data->assets_group->assets()->getQuery()
-                        ->join($vendorRelationship->getRelated()->getTable(), function (JoinClause $join) use ($vendorRelationship) {
-                            $join->on($vendorRelationship->getQualifiedForeignKeyName(), $vendorRelationship->getQualifiedOwnerKeyName());
-                        })
-                        ->select($selectColumns)
-                );
-            })
+            ->when($data->assets_group instanceof WorldwideQuoteAssetsGroup,
+                static function (Builder $builder) use ($vendorRelationship, $data, $selectColumns): void {
+                    /* @noinspection PhpParamsInspection */
+                    $builder->union(
+                        $data->assets_group->assets()->getQuery()
+                            ->join($vendorRelationship->getRelated()->getTable(), static function (JoinClause $join) use ($vendorRelationship): void {
+                                $join->on($vendorRelationship->getQualifiedForeignKeyName(), $vendorRelationship->getQualifiedOwnerKeyName());
+                            })
+                            ->select($selectColumns)
+                    );
+                })
             ->with(['machineAddress', 'buyCurrency']);
     }
 }

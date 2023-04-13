@@ -6,6 +6,8 @@ use App\Domain\Shared\Eloquent\Concerns\Uuid;
 use App\Domain\Space\Models\Space;
 use App\Domain\Worldwide\Models\OpportunityForm;
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
+use Database\Factories\PipelineFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,8 +30,14 @@ class Pipeline extends Model implements SearchableEntity
 {
     use Uuid;
     use SoftDeletes;
+    use HasFactory;
 
     protected $guarded = [];
+
+    protected static function newFactory(): PipelineFactory
+    {
+        return PipelineFactory::new();
+    }
 
     public function space(): BelongsTo
     {

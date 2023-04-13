@@ -25,11 +25,17 @@
 - delete_rfq
 - submit_quotes
 - view_own_ww_quotes
+- view_any_owner_ww_quotes
+- view_ww_quotes_where_editor
+- update_ww_quotes_where_editor
 - create_ww_quotes
 - update_own_ww_quotes
 - delete_own_ww_quotes
 - change_ww_quotes_ownership
 - view_own_sales_orders
+- view_any_owner_sales_orders
+- view_sales_orders_where_editor
+- update_sales_orders_where_editor
 - create_sales_orders
 - update_own_sales_orders
 - delete_own_sales_orders
@@ -70,6 +76,8 @@
 - update_templates
 - delete_templates
 - view_companies
+- view_companies_where_editor
+- update_companies_where_editor
 - create_companies
 - update_companies
 - delete_companies
@@ -157,6 +165,8 @@
 - update_multiyear_discounts
 - delete_multiyear_discounts
 - view_opportunities
+- view_opportunities_where_editor
+- update_opportunities_where_editor
 - create_opportunities
 - update_own_opportunities
 - delete_own_opportunities

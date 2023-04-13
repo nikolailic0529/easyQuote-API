@@ -16,6 +16,31 @@ class RoleQueries
     ) {
     }
 
+    public function activeRoles(): Builder
+    {
+        $model = new Role();
+
+        return $model->newQuery()
+            ->select([
+                $model->getQualifiedKeyName(),
+                $model->qualifyColumn('name'),
+            ])
+            ->whereNotNull('activated_at');
+    }
+
+    public function rolesSatisfyModuleQuery(string $module): Builder
+    {
+        $model = new Role();
+
+        return $model->newQuery()
+            ->orderBy('name')
+            ->withCount('users')
+            ->whereHas('permissions',
+                static function (Builder $builder) use ($module): void {
+                    $builder->whereIn('name', ["view_$module", "view_own_$module"]);
+                });
+    }
+
     public function listRolesQuery(): Builder
     {
         $model = new Role();

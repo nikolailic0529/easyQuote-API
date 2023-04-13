@@ -47,8 +47,6 @@ class UserWithIncludes extends JsonResource
             'role_name' => $this->role_name,
             'picture' => $this->picture,
 
-            'privileges' => $this->privileges,
-            'role_properties' => $this->role_properties,
             'must_change_password' => $this->must_change_password,
             'timezone_text' => $this->timezone_text,
             'timezone' => $this->timezone,
@@ -63,6 +61,8 @@ class UserWithIncludes extends JsonResource
                 ? $this->latestLogin->{$this->latestLogin->getCreatedAtColumn()}
                 : null,
             'activated_at' => $this->activated_at,
+
+            $this->merge($this->additional),
         ];
     }
 }

@@ -2,9 +2,9 @@
 
 namespace App\Domain\Currency\Models;
 
-use App\Domain\Eloquent\Contracts\HasOrderedScope;
 use App\Domain\ExchangeRate\Models\ExchangeRate;
 use App\Domain\Shared\Eloquent\Concerns\{Uuid};
+use App\Domain\Shared\Eloquent\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Rennokki\QueryCache\Traits\QueryCacheable;

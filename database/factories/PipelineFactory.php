@@ -1,13 +1,20 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
 use App\Domain\Pipeline\Models\Pipeline;
-use Faker\Generator as Faker;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
-$factory->define(Pipeline::class, function (Faker $faker) {
-    return [
-        'space_id' => SP_EPD,
-        'pipeline_name' => \Illuminate\Support\Str::random(40),
-    ];
-});
+class PipelineFactory extends Factory
+{
+    protected $model = Pipeline::class;
+
+    public function definition(): array
+    {
+        return [
+            'space_id' => SP_EPD,
+            'pipeline_name' => Str::random(40),
+        ];
+    }
+}

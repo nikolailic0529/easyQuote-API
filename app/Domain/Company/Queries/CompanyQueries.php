@@ -3,10 +3,10 @@
 namespace App\Domain\Company\Queries;
 
 use App\Domain\Asset\Models\Asset;
-use App\Domain\Authorization\Queries\Scopes\CurrentUserScope;
 use App\Domain\Company\Enum\CompanyType;
 use App\Domain\Company\Models\Company;
 use App\Domain\Company\Queries\Filters\FilterCompanyCategory;
+use App\Domain\Company\Queries\Scopes\CompanyScope;
 use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\Stats\Models\QuoteTotal;
 use App\Domain\User\Models\User;
@@ -92,7 +92,7 @@ class CompanyQueries
             ->withCasts([
                 'total_quoted_value' => 'decimal:2',
             ])
-            ->tap(CurrentUserScope::from($request, $this->gate))
+            ->tap(CompanyScope::from($request, $this->gate))
             ->orderByDesc($companyModel->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -150,7 +150,7 @@ class CompanyQueries
 
         $query = $model->newQuery()
             ->where($model->qualifyColumn('type'), CompanyType::EXTERNAL)
-            ->tap(CurrentUserScope::from($request, $this->gate))
+            ->tap(CompanyScope::from($request, $this->gate))
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -224,7 +224,7 @@ class CompanyQueries
         return $companyModel->newQuery()
             ->where('type', CompanyType::EXTERNAL)
             ->whereNotNull('activated_at')
-            ->tap(CurrentUserScope::from($request ?? new Request(), $this->gate))
+            ->tap(CompanyScope::from($request ?? new Request(), $this->gate))
             ->orderByRaw("field({$companyModel->qualifyColumn('vat')}, ?, null) desc", [CP_DEF_VAT]);
     }
 

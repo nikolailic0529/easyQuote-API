@@ -455,6 +455,190 @@ class OpportunityTest extends TestCase
     }
 
     /**
+     * Test an ability to view only own paginated opportunities related to the selected pipelines.
+     */
+    public function testCanViewOnlyOwnPaginatedOpportunitiesRelatedToSelectedPipelines(): void
+    {
+        /** @var Role $role */
+        $role = Role::factory()->create();
+
+        $role->syncPermissions('view_opportunities');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->syncRoles($role);
+        $selectedPipeline = Pipeline::factory()->create();
+        $user->role->access = [
+            'access_opportunity_direction' => 'current_units',
+            'access_opportunity_pipeline_direction' => 'selected',
+            'allowed_opportunity_pipelines' => [
+                ['pipeline_id' => $selectedPipeline->getKey()],
+            ],
+        ];
+        $user->role->save();
+
+        $ownOpportunityRelatedToSelectedPipeline = Opportunity::factory()
+            ->for($selectedPipeline)
+            ->for($user->salesUnits->first())
+            ->for($user)
+            ->create();
+
+        $ownOpportunityRelatedToDifferentPipeline = Opportunity::factory()
+            ->for(Pipeline::factory())
+            ->for($user->salesUnits->first())
+            ->for($user)
+            ->create();
+
+        Opportunity::factory()
+            ->for(SalesUnit::factory())
+            ->create();
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('api/opportunities')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'permissions',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownOpportunityRelatedToSelectedPipeline->getKey())
+            ->assertJsonPath('data.0.permissions.view', true)
+            ->assertJsonPath('data.0.permissions.update', false)
+            ->assertJsonPath('data.0.permissions.delete', false);
+    }
+
+    /**
+     * Test an ability to view opportunities from all units related to the selected pipelines.
+     */
+    public function testCanViewPaginatedOpportunitiesFromAllUnitsRelatedToSelectedPipelines(): void
+    {
+        /** @var Role $role */
+        $role = Role::factory()->create();
+
+        $role->syncPermissions('view_opportunities');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->syncRoles($role);
+        /** @var Pipeline $selectedPipeline */
+        $selectedPipeline = Pipeline::factory()
+            ->has(PipelineStage::factory())
+            ->create();
+
+        $user->role->access = [
+            'access_opportunity_direction' => 'all',
+            'access_opportunity_pipeline_direction' => 'selected',
+            'allowed_opportunity_pipelines' => [
+                ['pipeline_id' => $selectedPipeline->getKey()],
+            ],
+        ];
+        $user->role->save();
+
+        $ownOpportunityRelatedToSelectedPipeline = Opportunity::factory()
+            ->for($selectedPipeline)
+            ->for($user->salesUnits->first())
+            ->for($user)
+            ->create();
+
+        $ownOpportunityRelatedToDifferentPipeline = Opportunity::factory()
+            ->for(Pipeline::factory())
+            ->for($user->salesUnits->first())
+            ->for($user)
+            ->create();
+
+        Opportunity::factory()
+            ->for(SalesUnit::factory())
+            ->create();
+
+        $this->actingAs($user, 'api');
+
+        $r = $this->getJson('api/opportunities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'pipeline_id',
+                        'permissions',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data');
+
+        foreach ($r->json('data') as $opp) {
+            $this->assertSame(true, $opp['permissions']['view']);
+            $this->assertSame(false, $opp['permissions']['update']);
+            $this->assertSame(false, $opp['permissions']['delete']);
+        }
+    }
+
+    /**
+     * Test an ability to view assigned opportunity entities.
+     */
+    public function testCanViewAssignedPaginatedOpportunities(): void
+    {
+        $this->markTestSkipped('Data allocation ignored for now');
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_opportunities', 'update_own_opportunities', 'delete_own_opportunities');
+
+        /** @var User $user */
+        $user = User::factory()
+            ->hasAttached(SalesUnit::factory())
+            ->create();
+
+        $user->syncRoles($role);
+
+        $opportunity = Opportunity::factory()
+            ->for($user->salesUnits->first())
+            ->hasAttached($user, pivot: [
+                'assignment_start_date' => today(), 'assignment_end_date' => today()->addDay(),
+            ], relationship: 'assignedToUsers')
+            ->create();
+
+        Opportunity::factory()->create();
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/opportunities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'permissions',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $opportunity->getKey());
+
+        foreach ($response->json('data') as $item) {
+            $this->assertTrue($item['permissions']['view']);
+            $this->assertTrue($item['permissions']['update']);
+            $this->assertTrue($item['permissions']['delete']);
+        }
+    }
+
+    /**
      * Test an ability to view own lost opportunity entities.
      */
     public function testCanViewOwnPaginatedLostOpportunities(): void
@@ -697,7 +881,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        tap(new Company(), function (Company $company) {
+        tap(new Company(), function (Company $company): void {
             $company->name = $this->faker->company;
             $company->vat = Str::random(40);
             $company->type = 'External';
@@ -949,7 +1133,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $account = tap(new Company(), function (Company $company) {
+        $account = tap(new Company(), function (Company $company): void {
             $company->name = $this->faker->company;
             $company->vat = Str::random(40);
             $company->type = 'External';
@@ -1142,7 +1326,7 @@ class OpportunityTest extends TestCase
     {
         $this->authenticateApi();
 
-        tap(new Company(), function (Company $company) {
+        tap(new Company(), function (Company $company): void {
             $company->name = $this->faker->company;
             $company->vat = Str::random(40);
             $company->type = 'External';
@@ -1386,7 +1570,7 @@ class OpportunityTest extends TestCase
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
-        $account = tap(new Company(), function (Company $company) {
+        $account = tap(new Company(), function (Company $company): void {
             $company->name = $this->faker->company;
             $company->vat = Str::random(40);
             $company->type = 'External';
@@ -1772,7 +1956,7 @@ class OpportunityTest extends TestCase
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
-        $account = tap(new Company(), function (Company $company) {
+        $account = tap(new Company(), function (Company $company): void {
             $company->name = $this->faker->company;
             $company->vat = Str::random(40);
             $company->type = 'External';
@@ -2994,7 +3178,7 @@ class OpportunityTest extends TestCase
     {
         /** @var Role $role */
         $role = Role::factory()->create();
-        $role->syncPermissions('view_opportunities');
+        $role->syncPermissions('view_opportunities', 'view_opportunities_where_editor');
 
         /** @var User $currentUser */
         $currentUser = User::factory()

@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Authorization\Enum\AccessEntityDirection;
+use App\Domain\Authorization\Enum\AccessEntityPipelineDirection;
 use App\Domain\Authorization\Models\Permission;
 use App\Domain\Authorization\Models\Role;
+use App\Domain\Pipeline\Models\Pipeline;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -61,7 +64,13 @@ class RoleTest extends TestCase
         $this->authenticateApi();
 
         /** @var Role $role */
-        $role = Role::factory()->create();
+        $role = Role::factory()->create([
+            'access' => [
+                'allowedOpportunityPipelines' => [
+                    ['pipelineId' => Pipeline::factory()->create()->getKey()],
+                ],
+            ],
+        ]);
         $allPermissions = Permission::query()->where('guard_name', 'api')->get();
         $role->syncPermissions($allPermissions);
 
@@ -84,23 +93,80 @@ class RoleTest extends TestCase
                         ],
                     ],
                 ],
-            ]);
+                'access_data' => [
+                    'access_contact_direction',
+                    'access_company_direction',
+                    'access_opportunity_direction',
+                    'access_opportunity_pipeline_direction',
+                    'allowed_opportunity_pipelines' => [
+                        '*' => [
+                            'pipeline_id',
+                            'pipeline_name',
+                        ],
+                    ],
+                ],
+            ])
+            ->assertJsonCount(1, 'access_data.allowed_opportunity_pipelines');
     }
 
     /**
      * Test an ability to create a new role with valid attributes.
+     *
+     * @dataProvider roleDataProvider
      */
-    public function testCanCreateNewRole(): void
+    public function testCanCreateNewRole(\Closure $getData): void
     {
         $this->authenticateApi();
 
-        $attributes = \factory(Role::class)->state('privileges')->raw();
+        $data = $getData();
 
-        $this->postJson('api/roles', $attributes)
+        $r = $this->postJson('api/roles', $data)
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'privileges', 'created_at', 'activated_at',
             ]);
+
+        $this->getJson('api/roles/'.$r->json('id'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'name',
+                'user_id',
+                'is_system',
+                'created_at',
+                'activated_at',
+                'privileges' => [
+                    '*' => [
+                        'module',
+                        'privilege',
+                        'submodules' => [
+                            '*' => [
+                                'submodule',
+                                'privilege',
+                            ],
+                        ],
+                    ],
+                ],
+                'access_data' => [
+                    'access_contact_direction',
+                    'access_company_direction',
+                    'access_opportunity_direction',
+                    'access_worldwide_quote_direction',
+                    'access_sales_order_direction',
+                ],
+            ])
+            ->assertJsonPath('name', $data['name']);
+
+        if (isset($data['access_data'])) {
+            foreach ($data['access_data'] as $name => $value) {
+                $this->assertSame($value, $r->json("access_data.$name"), $name);
+            }
+        }
+
+        $dataPrivilegesMap = $this->privilegesToMap($data['privileges']);
+        $responsePrivilegesMap = $this->privilegesToMap($r->json('privileges'));
+
+        $this->assertEquals($dataPrivilegesMap, $responsePrivilegesMap);
     }
 
     /**
@@ -122,19 +188,27 @@ class RoleTest extends TestCase
 
     /**
      * Test an ability to update an existing role.
+     *
+     * @dataProvider roleDataProvider
      */
-    public function testCanUpdateExistingRole(): void
+    public function testCanUpdateExistingRole(\Closure $getData): void
     {
         $this->authenticateApi();
 
-        $role = \factory(Role::class)->create();
+        $role = Role::factory()->create();
 
-        $attributes = \factory(Role::class)->state('privileges')->raw();
+        $data = $getData();
 
-        $this->patchJson("api/roles/{$role->id}", $attributes)
+        $r = $this->patchJson("api/roles/{$role->getKey()}", $data)
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'name', 'user_id', 'is_system', 'created_at', 'activated_at',
+                'id',
+                'name',
+                'user_id',
+                'is_system',
+                'created_at',
+                'activated_at',
                 'privileges' => [
                     '*' => [
                         'module',
@@ -147,8 +221,137 @@ class RoleTest extends TestCase
                         ],
                     ],
                 ],
+                'access_data' => [
+                    'access_contact_direction',
+                    'access_company_direction',
+                    'access_opportunity_direction',
+                    'access_worldwide_quote_direction',
+                    'access_sales_order_direction',
+                ],
             ])
-            ->assertJsonFragment(Arr::only($attributes, ['name', 'privileges']));
+            ->assertJsonPath('name', $data['name']);
+
+        if (isset($data['access_data'])) {
+            foreach ($data['access_data'] as $name => $value) {
+                $this->assertSame($value, $r->json("access_data.$name"), $name);
+            }
+        }
+
+        $dataPrivilegesMap = $this->privilegesToMap($data['privileges']);
+        $responsePrivilegesMap = $this->privilegesToMap($r->json('privileges'));
+
+        $this->assertEquals($dataPrivilegesMap, $responsePrivilegesMap);
+    }
+
+    protected function roleDataProvider(): iterable
+    {
+        yield 'only privileges' => [
+            function (): array {
+                return [
+                    'name' => Str::random(60),
+                    'privileges' => $this->randomRolePrivileges(),
+                ];
+            },
+        ];
+
+        $directions = [
+            'access_contact_direction',
+            'access_company_direction',
+            'access_opportunity_direction',
+            'access_worldwide_quote_direction',
+            'access_sales_order_direction',
+        ];
+
+        foreach (AccessEntityDirection::cases() as $case) {
+            foreach ($directions as $module) {
+                yield "access data: $module: $case->value" => [
+                    function () use ($module, $case): array {
+                        return [
+                            'name' => Str::random(60),
+                            'privileges' => $this->randomRolePrivileges(),
+                            'access_data' => [
+                                $module => $case->value,
+                            ],
+                        ];
+                    },
+                ];
+            }
+        }
+
+        yield 'access data: access_opportunity_pipeline_direction: all' => [
+            function () {
+                return [
+                    'name' => Str::random(60),
+                    'privileges' => $this->randomRolePrivileges(),
+                    'access_data' => [
+                        'access_opportunity_pipeline_direction' => AccessEntityPipelineDirection::All->value,
+                    ],
+                ];
+            },
+        ];
+
+        yield 'access data: access_opportunity_pipeline_direction: selected' => [
+            function () {
+                $pipelines = Pipeline::factory()->count(2)->create();
+
+                return [
+                    'name' => Str::random(60),
+                    'privileges' => $this->randomRolePrivileges(),
+                    'access_data' => [
+                        'access_opportunity_pipeline_direction' => AccessEntityPipelineDirection::Selected->value,
+                        'allowed_opportunity_pipelines' => $pipelines->map(static function (Pipeline $pipeline): array {
+                            return [
+                                'pipeline_id' => $pipeline->getKey(),
+                                'pipeline_name' => $pipeline->pipeline_name,
+                            ];
+                        })
+                            ->all(),
+                    ],
+                ];
+            },
+        ];
+    }
+
+    private function privilegesToMap(array $privileges): array
+    {
+        return collect($privileges)
+            ->lazy()
+            ->map(static function (array $module): array {
+                $submodules = collect($module['submodules'])
+                    ->pluck('privilege', 'submodule')
+                    ->all();
+
+                $module['submodules'] = $submodules;
+
+                return $module;
+            })
+            ->keyBy('module')
+            ->all();
+    }
+
+    private function randomRolePrivileges(): array
+    {
+        $modulePrivileges = collect(config('role.modules'))
+            ->map(static fn (array $rights): array => array_keys($rights));
+        $modules = array_keys(config('role.modules'));
+        $submodules = config('role.submodules');
+
+        return collect($modules)
+            ->map(static function (string $mName) use ($modulePrivileges, $submodules): array {
+                $sub = collect($submodules[$mName] ?? [])
+                    ->map(static function (array $privileges, string $subModuleName): array {
+                        return ['submodule' => $subModuleName, 'privilege' => Arr::random(array_keys($privileges))];
+                    })
+                    ->values()
+                    ->all();
+
+                return [
+                    'module' => $mName,
+                    'privilege' => Arr::random($modulePrivileges[$mName]),
+                    'submodules' => $sub,
+                ];
+            })
+            ->all();
     }
 
     /**
@@ -181,6 +384,7 @@ class RoleTest extends TestCase
         ]);
 
         $this->patchJson('api/roles/'.$role->getKey(), $attributes)
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'user_id', 'is_system', 'created_at', 'activated_at',
@@ -275,11 +479,10 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = \factory(Role::class)->create();
+        $role = Role::factory()->create();
 
         $this->deleteJson('api/roles/'.$role->getKey())
-            ->assertOk()
-            ->assertExactJson([true]);
+            ->assertNoContent();
     }
 
     /**
@@ -289,7 +492,7 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = \factory(Role::class)->create(['is_system' => true]);
+        $role = Role::factory()->create(['is_system' => true]);
 
         $response = $this->deleteJson('api/roles/'.$role->getKey())->assertForbidden();
 
@@ -303,15 +506,14 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = \tap(\factory(Role::class)->create(), static function (Role $role): void {
+        $role = \tap(Role::factory()->create(), static function (Role $role): void {
             $role->activated_at = null;
 
             $role->save();
         });
 
         $this->putJson('api/roles/activate/'.$role->getKey())
-            ->assertOk()
-            ->assertExactJson([true]);
+            ->assertNoContent();
     }
 
     /**
@@ -321,7 +523,7 @@ class RoleTest extends TestCase
     {
         $this->authenticateApi();
 
-        $role = \tap(\factory(Role::class)->create(), static function (Role $role): void {
+        $role = \tap(Role::factory()->create(), static function (Role $role): void {
             $role->activated_at = now();
 
             $role->save();
@@ -329,7 +531,6 @@ class RoleTest extends TestCase
 
         $this->putJson('api/roles/deactivate/'.$role->getKey())
 //            ->dump()
-            ->assertOk()
-            ->assertExactJson([true]);
+            ->assertNoContent();
     }
 }

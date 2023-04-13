@@ -4,9 +4,9 @@ namespace App\Domain\Appointment\Models;
 
 use App\Domain\AppEvent\Models\AppEvent;
 use App\Domain\AppEvent\Models\ModelHasEvents;
-use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Reminder\Enum\ReminderStatus;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
+use App\Domain\Shared\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\User\Contracts\HasOwner;
 use Carbon\CarbonInterval;
 use Database\Factories\AppointmentReminderFactory;

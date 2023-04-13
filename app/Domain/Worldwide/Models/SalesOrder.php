@@ -3,6 +3,7 @@
 namespace App\Domain\Worldwide\Models;
 
 use App\Domain\SalesUnit\Contracts\HasSalesUnit;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
 use Database\Factories\SalesOrderFactory;
@@ -37,7 +38,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property int|null                $status
  * @property string|null             $status_reason
  * @property string|null             $failure_reason
- * @property SalesOrder              $salesUnit
+ * @property SalesUnit               $salesUnit
  */
 class SalesOrder extends Model implements SearchableEntity, HasSalesUnit
 {

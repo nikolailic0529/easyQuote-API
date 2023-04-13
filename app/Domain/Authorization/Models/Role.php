@@ -2,9 +2,9 @@
 
 namespace App\Domain\Authorization\Models;
 
-use App\Domain\Activity\Concerns\LogsActivity;
 use App\Domain\Authentication\Concerns\Multitenantable;
-use App\Domain\Authorization\Services\PermissionHelper;
+use App\Domain\Authorization\DataTransferObjects\AccessData;
+use App\Domain\Pipeline\Models\Pipeline;
 use App\Domain\Shared\Eloquent\Concerns\Activatable;
 use App\Domain\Shared\Eloquent\Concerns\Searchable;
 use App\Domain\Shared\Eloquent\Concerns\Systemable;
@@ -12,6 +12,7 @@ use App\Domain\Shared\Eloquent\Concerns\Uuid;
 use App\Domain\Shared\Eloquent\Contracts\ActivatableInterface;
 use App\Domain\User\Concerns\BelongsToUser;
 use App\Domain\User\Concerns\HasUsers;
+use App\Foundation\Database\Eloquent\Relations\SchemalessRelation;
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
 use Database\Factories\RoleFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Contracts\Role as RoleContract;
 use Spatie\Permission\Exceptions\GuardDoesNotMatch;
 use Spatie\Permission\Exceptions\RoleAlreadyExists;
@@ -33,6 +34,9 @@ use Spatie\Permission\Traits\RefreshesPermissionCache;
  * @property string|null                              $guard_name
  * @property bool|null                                $is_system
  * @property \Illuminate\Database\Eloquent\Collection $permissions
+ * @property Carbon|mixed                             $activated_at
+ * @property AccessData                               $access
+ * @property \Illuminate\Database\Eloquent\Collection $allowedOpportunityPipelines
  */
 class Role extends Model implements RoleContract, ActivatableInterface, SearchableEntity
 {
@@ -46,7 +50,6 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
     use SoftDeletes;
     use Activatable;
     use Systemable;
-    use LogsActivity;
     use HasFactory;
 
     protected $fillable = [
@@ -59,15 +62,8 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
 
     protected $casts = [
         'is_system' => 'boolean',
+        'access' => AccessData::class,
     ];
-
-    protected static $logAttributes = [
-        'name', 'modules_privileges',
-    ];
-
-    protected static $logOnlyDirty = true;
-
-    protected static $submitEmptyLogs = false;
 
     public function __construct(array $attributes = [])
     {
@@ -131,6 +127,19 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         );
     }
 
+    public function allowedOpportunityPipelines(): SchemalessRelation
+    {
+        return new SchemalessRelation(Pipeline::query(), $this, static function (Role $role): array {
+            if (!$role->access) {
+                return [];
+            }
+
+            return $role->access->allowedOpportunityPipelines->toCollection()
+                ->pluck('pipelineId')
+                ->all();
+        });
+    }
+
     /**
      * Find a role by its name and guard name.
      *
@@ -178,6 +187,7 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         $role = static::where(compact('name', 'guard_name'))->first();
 
         if (!$role) {
+            /* @noinspection PhpIncompatibleReturnTypeInspection */
             return static::query()->create(compact('name', 'guard_name'));
         }
 
@@ -208,21 +218,6 @@ class Role extends Model implements RoleContract, ActivatableInterface, Searchab
         }
 
         return $this->permissions->contains('id', $permission->id);
-    }
-
-    public function getPropertiesAttribute(): Collection
-    {
-        return PermissionHelper::roleProperties($this);
-    }
-
-    public function getPrivilegesAttribute(): Collection
-    {
-        return PermissionHelper::rolePrivileges($this);
-    }
-
-    public function getModulesPrivilegesAttribute()
-    {
-        return Collection::wrap($this->privileges)->toString('module', 'privilege');
     }
 
     public function getItemNameAttribute()

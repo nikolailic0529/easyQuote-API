@@ -27,7 +27,7 @@ class WorldwideQuoteGenericTest extends TestCase
      */
     public function testCanViewMergedAddressesOfWorldwideQuote(): void
     {
-        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
+        /** @var Opportunity $opportunity */
         $opportunity = Opportunity::factory()->create();
 
         $opportunity->primaryAccount->addresses()->sync(factory(Address::class, 2)->create());
@@ -64,7 +64,7 @@ class WorldwideQuoteGenericTest extends TestCase
      */
     public function testCanViewMergedContactsOfWorldwideQuote(): void
     {
-        /** @var \App\Domain\Worldwide\Models\Opportunity $opportunity */
+        /** @var Opportunity $opportunity */
         $opportunity = Opportunity::factory()->create();
 
         $opportunity->primaryAccount->addresses()->sync(factory(Address::class, 2)->create());
@@ -382,7 +382,7 @@ class WorldwideQuoteGenericTest extends TestCase
         /** @var Role $role */
         $role = factory(Role::class)->create();
 
-        $role->syncPermissions('view_own_ww_quotes');
+        $role->syncPermissions('view_own_ww_quotes', 'view_ww_quotes_where_editor');
 
         /** @var User $user */
         $user = User::factory()
@@ -504,7 +504,7 @@ class WorldwideQuoteGenericTest extends TestCase
         /** @var Role $role */
         $role = factory(Role::class)->create();
 
-        $role->syncPermissions('view_own_ww_quotes');
+        $role->syncPermissions('view_own_ww_quotes', 'view_ww_quotes_where_editor');
 
         /** @var User $user */
         $user = User::factory()

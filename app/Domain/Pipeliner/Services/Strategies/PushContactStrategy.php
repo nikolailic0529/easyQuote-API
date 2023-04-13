@@ -53,6 +53,10 @@ class PushContactStrategy implements PushStrategy
             throw new \TypeError(sprintf('Model must be an instance of %s.', Contact::class));
         }
 
+        if (!$model->salesUnit->is_enabled) {
+            throw PipelinerSyncException::modelBelongsToDisabledUnit($model, $model->salesUnit)->relatedTo($model);
+        }
+
         $this->lockProvider->lock(static::class.$model->getKey(), 30)
             ->block(30, function () use ($model): void {
                 if (null !== $model->user) {

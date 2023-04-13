@@ -198,7 +198,7 @@ class CompanyTest extends TestCase
     {
         /** @var Role $role */
         $role = Role::factory()->create();
-        $role->syncPermissions('view_companies');
+        $role->syncPermissions(['view_companies', 'view_companies_where_editor']);
 
         /** @var User $user */
         $user = User::factory()
@@ -1708,8 +1708,8 @@ class CompanyTest extends TestCase
                         ],
                     ],
                 ],
-            ]);
-
+            ])
+            ->assertJsonCount(2, 'data');
         $this->assertNotEmpty($response->json('data'));
         $this->assertContains($rescueQuote->getKey(), $response->json('data.*.id'));
         $this->assertContains($worldwideQuote->getKey(), $response->json('data.*.id'));
@@ -1738,7 +1738,9 @@ class CompanyTest extends TestCase
         $this->actingAs($user, 'api');
 
         /** @var \App\Domain\Company\Models\Company $company */
-        $company = Company::factory()->create();
+        $company = Company::factory()
+            ->for($user->salesUnits->first())
+            ->create();
 
         /** @var Customer $rescueCustomer */
         $rescueCustomer = factory(Customer::class)->create([

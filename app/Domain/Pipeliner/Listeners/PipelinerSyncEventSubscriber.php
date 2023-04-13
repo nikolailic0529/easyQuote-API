@@ -4,7 +4,6 @@ namespace App\Domain\Pipeliner\Listeners;
 
 use App\Domain\AppEvent\Services\AppEventEntityService;
 use App\Domain\Company\Models\Company;
-use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Pipeliner\Events\AggregateSyncCompleted;
 use App\Domain\Pipeliner\Events\AggregateSyncEntityProcessed;
 use App\Domain\Pipeliner\Events\AggregateSyncEntitySkipped;
@@ -24,6 +23,7 @@ use App\Domain\Pipeliner\Services\PipelinerAggregateSyncEventService;
 use App\Domain\Pipeliner\Services\PipelinerSyncErrorEntityService;
 use App\Domain\Pipeliner\Services\Strategies\Contracts\PushStrategy;
 use App\Domain\Pipeliner\Services\Strategies\StrategyNameResolver;
+use App\Domain\Shared\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Contracts\Cache\Repository as Cache;

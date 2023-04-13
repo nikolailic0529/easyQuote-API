@@ -5,8 +5,8 @@ namespace Tests\Unit;
 use App\Domain\Build\Models\Build;
 use App\Domain\Maintenance\Events\MaintenanceCompleted;
 use App\Domain\Maintenance\Events\MaintenanceScheduled;
-use App\Domain\Maintenance\Events\{MaintenanceStarted};
-use App\Domain\Maintenance\Jobs\UpMaintenance;
+use App\Domain\Maintenance\Events\MaintenanceStarted;
+use App\Domain\Maintenance\Jobs\DownIntoMaintenanceMode;
 use App\Domain\Slack\Events\Sent;
 use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -40,7 +40,7 @@ class MaintenanceTest extends TestCase
             'end_time' => $endTime,
         ]);
 
-        UpMaintenance::dispatchNow(
+        DownIntoMaintenanceMode::dispatchNow(
             $startTime,
             $endTime,
             $autoComplete

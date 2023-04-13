@@ -15,7 +15,7 @@ class RoleSeeder extends Seeder
      *
      * @throws \Throwable
      */
-    public function run()
+    public function run(): void
     {
         /** @var array $seeds */
         $seeds = require database_path('seeders/models/roles.php');
@@ -29,15 +29,17 @@ class RoleSeeder extends Seeder
                 ->where('is_system', true)
                 ->first();
 
-            /* @var Role $role */
-            $role ??= tap(new Role(), function (Role $role) use ($connection, $seed) {
-                $role->name = $seed['name'];
-                $role->is_system = true;
+            $role ??= new Role();
+            $role->name = $seed['name'];
+            $role->is_system = true;
+            if (isset($seed['access'])) {
+                $role->access = $seed['access'];
+            }
 
-                $connection->transaction(fn () => $role->save());
+            $connection->transaction(static function () use ($role, $seed): void {
+                $role->save();
+                $role->syncPermissions($seed['permissions']);
             });
-
-            $connection->transaction(fn () => $role->syncPermissions($seed['permissions']));
         }
     }
 }

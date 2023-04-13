@@ -30,8 +30,9 @@ class OpportunityList extends JsonResource
         $user = $request->user();
 
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
+            'id' => $this->getKey(),
+            'user_id' => $this->owner()->getParentKey(),
+            'pipeline_id' => $this->pipeline_id,
             'company_id' => $this->company_id,
             'opportunity_type' => $this->opportunity_type,
             'unit_name' => $this->unit_name,

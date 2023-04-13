@@ -2,25 +2,25 @@
 
 namespace App\Domain\Authorization\Controllers\V1;
 
-use App\Domain\Authorization\Contracts\RoleRepositoryInterface as Roles;
 use App\Domain\Authorization\Models\Role;
 use App\Domain\Authorization\Queries\RoleQueries;
+use App\Domain\Authorization\Requests\CreateRoleRequest;
 use App\Domain\Authorization\Requests\ShowFormRequest;
-use App\Domain\Authorization\Requests\StoreRoleBaseRequest;
-use App\Domain\Authorization\Requests\UpdateRoleBaseRequest;
-use App\Domain\Authorization\Resources\V1\Role as RoleResource;
-use App\Domain\Authorization\Resources\V1\RoleListing;
+use App\Domain\Authorization\Requests\UpdateRoleRequest;
+use App\Domain\Authorization\Resources\V1\RoleListResource;
+use App\Domain\Authorization\Resources\V1\RoleResource;
+use App\Domain\Authorization\Services\RoleEntityService;
+use App\Domain\Authorization\Services\RolePresenter;
 use App\Foundation\Http\Controller;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class RoleController extends Controller
 {
-    public function __construct(
-        protected readonly Roles $roles
-    ) {
+    public function __construct()
+    {
         $this->authorizeResource(Role::class, 'role');
     }
 
@@ -35,26 +35,22 @@ class RoleController extends Controller
     }
 
     /**
-     * Show the roles having access to the module.
-     *
-     * @param string $module
-     * @return JsonResponse
+     * List roles satisfy the module permissions.
      */
-    public function module(string $module): JsonResponse
-    {
-        $resource = $this->roles->findByModule($module,
-            static fn (Builder $builder) => $builder->withCount('users'));
+    public function module(
+        Request $request,
+        RoleQueries $queries,
+        string $module
+    ): JsonResponse {
+        $collection = $queries->rolesSatisfyModuleQuery($module)->get();
 
         return response()->json(
-            RoleListing::collection($resource)
+            RoleListResource::collection($collection)
         );
     }
 
     /**
      * Show form data.
-     *
-     * @param ShowFormRequest $request
-     * @return JsonResponse
      */
     public function create(ShowFormRequest $request): JsonResponse
     {
@@ -65,90 +61,106 @@ class RoleController extends Controller
 
     /**
      * Create role.
-     *
-     * @param StoreRoleBaseRequest $request
-     * @return JsonResponse
      */
-    public function store(StoreRoleBaseRequest $request): JsonResponse
-    {
+    public function store(
+        CreateRoleRequest $request,
+        RolePresenter $presenter,
+        RoleEntityService $service
+    ): JsonResponse {
+        $role = $service->setCauser($request->user())
+            ->createRole($request->getCreateRoleData());
+
         return response()->json(
-            RoleResource::make(
-                $this->roles->create($request->validated())
-            )
+            RoleResource::make($role)
+                ->additional([
+                    'privileges' => $presenter->presentModules($role),
+                    'properties' => $presenter->presentProperties($role),
+                ])
         );
     }
 
     /**
      * Show role.
-     *
-     * @param Role $role
-     * @return JsonResponse
      */
-    public function show(Role $role): JsonResponse
+    public function show(RolePresenter $presenter, Role $role): JsonResponse
     {
         return response()->json(
             RoleResource::make($role)
+                ->additional([
+                    'privileges' => $presenter->presentModules($role),
+                    'properties' => $presenter->presentProperties($role),
+                ])
         );
     }
 
     /**
      * Update role.
-     *
-     * @param UpdateRoleBaseRequest $request
-     * @param Role                  $role
-     * @return JsonResponse
      */
-    public function update(UpdateRoleBaseRequest $request, Role $role): JsonResponse
-    {
-        $resource = $this->roles->update($role->getKey(), $request->validated());
+    public function update(
+        UpdateRoleRequest $request,
+        RolePresenter $presenter,
+        RoleEntityService $service,
+        Role $role
+    ): JsonResponse {
+        $service->setCauser($request->user())
+            ->updateRole($role, $request->getUpdateRoleData());
 
         return response()->json(
-            RoleResource::make($resource)
+            RoleResource::make($role)
+                ->additional([
+                    'privileges' => $presenter->presentModules($role),
+                    'properties' => $presenter->presentProperties($role),
+                ])
         );
     }
 
     /**
      * Delete role.
-     *
-     * @param Role $role
-     * @return JsonResponse
      */
-    public function destroy(Role $role): JsonResponse
-    {
-        return response()->json(
-            $this->roles->delete($role->getKey())
-        );
+    public function destroy(
+        Request $request,
+        RoleEntityService $service,
+        Role $role
+    ): Response {
+        $service->setCauser($request->user())
+            ->deleteRole($role);
+
+        return response()->noContent();
     }
 
     /**
      * Mark role as active.
      *
-     * @param Role $role
-     * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function activate(Role $role): JsonResponse
-    {
+    public function activate(
+        Request $request,
+        RoleEntityService $service,
+        Role $role
+    ): Response {
         $this->authorize('update', $role);
 
-        return response()->json(
-            $this->roles->activate($role->getKey())
-        );
+        $service->setCauser($request->user())
+            ->markRoleAsActive($role);
+
+        return response()->noContent();
     }
 
     /**
      * Mark role as inactive.
      *
-     * @param Role $role
-     * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function deactivate(Role $role): JsonResponse
-    {
+    public function deactivate(
+        Request $request,
+        RoleEntityService $service,
+        Role $role
+    ): Response {
         $this->authorize('update', $role);
 
-        return response()->json(
-            $this->roles->deactivate($role->getKey())
-        );
+        $service->setCauser($request->user())
+            ->markRoleAsInactive($role);
+
+        return response()->noContent();
     }
 }

@@ -9,7 +9,7 @@
         "vendor": "LEN",
         "currency_id": "ba14da59-e6ff-43c9-ae2f-6c5491dd7e49",
         "name": "SO-Contract-EPD-LEN-Master",
-        "template_schema": "f8a24c09-c5b0-410e-b625-d5f7cae0a510.json",
+        "template_schema": "so_contract_epd_len_master_schema.json",
         "countries": [
             "1def30a0-a092-40d0-87b4-c1ee825a86f9",
             "360fefaa-5e32-4b01-b426-85e060d2498f",
@@ -36,7 +36,7 @@
         "vendor": "LEN",
         "currency_id": "ba14da59-e6ff-43c9-ae2f-6c5491dd7e49",
         "name": "SO-Contract-SWH-LEN-Master",
-        "template_schema": "cb01140e-e626-44b7-aa72-550232c50a73.json",
+        "template_schema": "so_contract_swh_len_master.json",
         "countries": [
             "1def30a0-a092-40d0-87b4-c1ee825a86f9",
             "360fefaa-5e32-4b01-b426-85e060d2498f",
@@ -63,7 +63,7 @@
         "vendor": "LEN",
         "currency_id": "ba14da59-e6ff-43c9-ae2f-6c5491dd7e49",
         "name": "SO-Pack-EPD-LEN-Master",
-        "template_schema": "f2ee9001-47f3-46de-9b5e-537bd7e317bc.json",
+        "template_schema": "so_pack_epd_len_master.json",
         "countries": [
             "1def30a0-a092-40d0-87b4-c1ee825a86f9",
             "360fefaa-5e32-4b01-b426-85e060d2498f",

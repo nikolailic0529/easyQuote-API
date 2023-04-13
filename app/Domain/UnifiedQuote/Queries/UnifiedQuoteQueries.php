@@ -2,7 +2,6 @@
 
 namespace App\Domain\UnifiedQuote\Queries;
 
-use App\Domain\Authorization\Queries\Scopes\CurrentUserScope;
 use App\Domain\Company\Models\Company;
 use App\Domain\Rescue\Models\Quote;
 use App\Domain\UnifiedQuote\DataTransferObjects\UnifiedQuotesRequestData;
@@ -10,6 +9,7 @@ use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Enum\QuoteStatus;
 use App\Domain\Worldwide\Models\WorldwideDistribution;
 use App\Domain\Worldwide\Models\WorldwideQuote;
+use App\Domain\Worldwide\Queries\Scopes\WorldwideQuoteScope;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\ConnectionInterface;
@@ -39,17 +39,17 @@ class UnifiedQuoteQueries
         $user = $request->user();
 
         $rescueQuotesQuery = Quote::query()
-            ->leftJoin('quote_versions', function (JoinClause $joinClause) {
+            ->leftJoin('quote_versions', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_versions.id', 'quotes.active_version_id');
             })
-            ->join('customers', function (JoinClause $joinClause) use ($company) {
+            ->join('customers', static function (JoinClause $joinClause) use ($company): void {
                 $joinClause->on('customers.id', 'quotes.customer_id')
                     ->where('customers.company_reference_id', $company->getKey());
             })
-            ->join('companies', function (JoinClause $joinClause) {
+            ->join('companies', static function (JoinClause $joinClause): void {
                 $joinClause->on('companies.id', DB::raw('COALESCE(quote_versions.company_id, quotes.company_id)'));
             })
-            ->leftJoin('contracts', function (JoinClause $joinClause) {
+            ->leftJoin('contracts', static function (JoinClause $joinClause): void {
                 $joinClause->on('contracts.quote_id', 'quotes.id')
                     ->whereNull('contracts.deleted_at');
             })
@@ -88,12 +88,13 @@ class UnifiedQuoteQueries
                 'quotes.activated_at as activated_at',
                 'quotes.is_active as is_active',
             ])
-            ->when($this->gate->denies('viewQuotesOfAnyUser'), function (Builder $builder) use ($user) {
+            ->when($this->gate->denies('viewQuotesOfAnyUser'), static function (Builder $builder) use ($user): void {
                 $builder->where($builder->qualifyColumn('user_id'), $user?->getKey())
-                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->join('team_team_leader', function (JoinClause $join) use ($user) {
-                        $join->on('users.team_id', 'team_team_leader.team_id')
-                            ->where('team_team_leader.team_leader_id', $user?->getKey());
-                    }));
+                    ->orWhereIn($builder->qualifyColumn('user_id'),
+                        User::query()->select('id')->join('team_team_leader', static function (JoinClause $join) use ($user): void {
+                            $join->on('users.team_id', 'team_team_leader.team_id')
+                                ->where('team_team_leader.team_leader_id', $user?->getKey());
+                        }));
             });
 
         $distributorFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
@@ -116,19 +117,19 @@ class UnifiedQuoteQueries
                             ->orWhere('opportunities.end_user_id', $company->getKey());
                     });
             })
-            ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
+            ->join('worldwide_quote_versions as quote_active_version', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->join('companies as company', function (JoinClause $joinClause) {
+            ->join('companies as company', static function (JoinClause $joinClause): void {
                 $joinClause->on('company.id', 'quote_active_version.company_id');
             })
-            ->join('companies as primary_account', function (JoinClause $joinClause) {
+            ->join('companies as primary_account', static function (JoinClause $joinClause): void {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
             })
-            ->join('contract_types', function (JoinClause $joinClause) {
+            ->join('contract_types', static function (JoinClause $joinClause): void {
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->leftJoin('sales_orders', function (JoinClause $joinClause) {
+            ->leftJoin('sales_orders', static function (JoinClause $joinClause): void {
                 $joinClause->on('sales_orders.worldwide_quote_id', 'worldwide_quotes.id')
                     ->whereNull('sales_orders.deleted_at');
             })
@@ -170,7 +171,7 @@ class UnifiedQuoteQueries
                 'worldwide_quotes.activated_at as activated_at',
                 'worldwide_quotes.is_active as is_active',
             ])
-            ->tap(CurrentUserScope::from($request, $this->gate));
+            ->tap(WorldwideQuoteScope::from($request, $this->gate));
 
         /** @var Builder[] $queries */
         $queries = [];
@@ -193,7 +194,7 @@ class UnifiedQuoteQueries
             $unifiedQuery->unionAll($query);
         }
 
-        return tap($unifiedQuery->toBase(), function (BaseBuilder $builder) {
+        return tap($unifiedQuery->toBase(), static function (BaseBuilder $builder): void {
             $builder->orderBy('updated_at', 'desc');
         });
     }
@@ -214,20 +215,22 @@ class UnifiedQuoteQueries
 
         if ($requestData->get_rescue_entities) {
             $queries[] = $this->draftedRescueQuotesListingQuery()
-                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
-                    $builder->where(function (Builder $builder) use ($requestData) {
+                ->when(false === $requestData->get_any_owner_entities, static function (Builder $builder) use ($requestData): void {
+                    $builder->where(static function (Builder $builder) use ($requestData): void {
                         $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
-                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
                     });
                 });
         }
 
         if ($requestData->get_worldwide_entities) {
             $queries[] = $this->draftedWorldwideQuotesListingQuery()
-                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
-                    $builder->where(function (Builder $builder) use ($requestData) {
+                ->when(false === $requestData->get_any_owner_entities, static function (Builder $builder) use ($requestData): void {
+                    $builder->where(static function (Builder $builder) use ($requestData): void {
                         $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
-                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
                     });
                 });
         }
@@ -273,20 +276,22 @@ class UnifiedQuoteQueries
 
         if ($requestData->get_rescue_entities) {
             $queries[] = $this->submittedRescueQuotesListingQuery()
-                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
-                    $builder->where(function (Builder $builder) use ($requestData) {
+                ->when(false === $requestData->get_any_owner_entities, static function (Builder $builder) use ($requestData): void {
+                    $builder->where(static function (Builder $builder) use ($requestData): void {
                         $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
-                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
                     });
                 });
         }
 
         if ($requestData->get_worldwide_entities) {
             $queries[] = $this->submittedWorldwideQuotesListingQuery()
-                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
-                    $builder->where(function (Builder $builder) use ($requestData) {
+                ->when(false === $requestData->get_any_owner_entities, static function (Builder $builder) use ($requestData): void {
+                    $builder->where(static function (Builder $builder) use ($requestData): void {
                         $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
-                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
                     });
                 });
         }
@@ -332,20 +337,22 @@ class UnifiedQuoteQueries
 
         if ($requestData->get_rescue_entities) {
             $queries[] = $this->expiringRescueQuotesListingQuery()
-                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
-                    $builder->where(function (Builder $builder) use ($requestData) {
+                ->when(false === $requestData->get_any_owner_entities, static function (Builder $builder) use ($requestData): void {
+                    $builder->where(static function (Builder $builder) use ($requestData): void {
                         $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
-                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
                     });
                 });
         }
 
         if ($requestData->get_worldwide_entities) {
             $queries[] = $this->expiringWorldwideQuotesListingQuery()
-                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
-                    $builder->where(function (Builder $builder) use ($requestData) {
+                ->when(false === $requestData->get_any_owner_entities, static function (Builder $builder) use ($requestData): void {
+                    $builder->where(static function (Builder $builder) use ($requestData): void {
                         $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
-                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+                            ->orWhereIn($builder->qualifyColumn('user_id'),
+                                User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
                     });
                 });
         }
@@ -378,13 +385,13 @@ class UnifiedQuoteQueries
     public function expiringRescueQuotesListingQuery(): Builder
     {
         return Quote::query()
-            ->leftJoin('quote_versions', function (JoinClause $joinClause) {
+            ->leftJoin('quote_versions', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_versions.id', 'quotes.active_version_id');
             })
-            ->join('customers', function (JoinClause $joinClause) {
+            ->join('customers', static function (JoinClause $joinClause): void {
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
-            ->leftJoin('companies', function (JoinClause $joinClause) {
+            ->leftJoin('companies', static function (JoinClause $joinClause): void {
                 $joinClause->on('companies.id', DB::raw('COALESCE(quote_versions.company_id, quotes.company_id)'));
             })
 //            ->whereNull('quotes.submitted_at')
@@ -410,19 +417,19 @@ class UnifiedQuoteQueries
     public function expiringWorldwideQuotesListingQuery(): Builder
     {
         return WorldwideQuote::query()
-            ->join('opportunities', function (JoinClause $joinClause) {
+            ->join('opportunities', static function (JoinClause $joinClause): void {
                 $joinClause->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
-            ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
+            ->join('worldwide_quote_versions as quote_active_version', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->leftJoin('companies as company', function (JoinClause $joinClause) {
+            ->leftJoin('companies as company', static function (JoinClause $joinClause): void {
                 $joinClause->on('company.id', 'quote_active_version.company_id');
             })
-            ->leftJoin('companies as primary_account', function (JoinClause $joinClause) {
+            ->leftJoin('companies as primary_account', static function (JoinClause $joinClause): void {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
             })
-            ->join('contract_types', function (JoinClause $joinClause) {
+            ->join('contract_types', static function (JoinClause $joinClause): void {
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
 //            ->whereNull('worldwide_quotes.submitted_at')
@@ -449,13 +456,13 @@ class UnifiedQuoteQueries
     public function draftedRescueQuotesListingQuery(): Builder
     {
         return Quote::query()
-            ->leftJoin('quote_versions', function (JoinClause $joinClause) {
+            ->leftJoin('quote_versions', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_versions.id', 'quotes.active_version_id');
             })
-            ->join('customers', function (JoinClause $joinClause) {
+            ->join('customers', static function (JoinClause $joinClause): void {
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
-            ->leftJoin('companies', function (JoinClause $joinClause) {
+            ->leftJoin('companies', static function (JoinClause $joinClause): void {
                 $joinClause->on('companies.id', DB::raw('COALESCE(quote_versions.company_id, quotes.company_id)'));
             })
             ->whereNull('quotes.submitted_at')
@@ -502,19 +509,19 @@ class UnifiedQuoteQueries
             ->limit(1);
 
         return WorldwideQuote::query()
-            ->join('opportunities', function (JoinClause $joinClause) {
+            ->join('opportunities', static function (JoinClause $joinClause): void {
                 $joinClause->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
-            ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
+            ->join('worldwide_quote_versions as quote_active_version', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->leftJoin('companies as company', function (JoinClause $joinClause) {
+            ->leftJoin('companies as company', static function (JoinClause $joinClause): void {
                 $joinClause->on('company.id', 'quote_active_version.company_id');
             })
-            ->leftJoin('companies as primary_account', function (JoinClause $joinClause) {
+            ->leftJoin('companies as primary_account', static function (JoinClause $joinClause): void {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
             })
-            ->join('contract_types', function (JoinClause $joinClause) {
+            ->join('contract_types', static function (JoinClause $joinClause): void {
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
             ->whereNull('worldwide_quotes.submitted_at')
@@ -554,16 +561,16 @@ class UnifiedQuoteQueries
     public function submittedRescueQuotesListingQuery(): Builder
     {
         return Quote::query()
-            ->leftJoin('quote_versions', function (JoinClause $joinClause) {
+            ->leftJoin('quote_versions', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_versions.id', 'quotes.active_version_id');
             })
-            ->join('customers', function (JoinClause $joinClause) {
+            ->join('customers', static function (JoinClause $joinClause): void {
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
-            ->join('companies', function (JoinClause $joinClause) {
+            ->join('companies', static function (JoinClause $joinClause): void {
                 $joinClause->on('companies.id', DB::raw('COALESCE(quote_versions.company_id, quotes.company_id)'));
             })
-            ->leftJoin('contracts', function (JoinClause $joinClause) {
+            ->leftJoin('contracts', static function (JoinClause $joinClause): void {
                 $joinClause->on('contracts.quote_id', 'quotes.id')
                     ->whereNull('contracts.deleted_at');
             })
@@ -617,22 +624,22 @@ class UnifiedQuoteQueries
             ->limit(1);
 
         return WorldwideQuote::query()
-            ->join('opportunities', function (JoinClause $joinClause) {
+            ->join('opportunities', static function (JoinClause $joinClause): void {
                 $joinClause->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
-            ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
+            ->join('worldwide_quote_versions as quote_active_version', static function (JoinClause $joinClause): void {
                 $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->join('companies as company', function (JoinClause $joinClause) {
+            ->join('companies as company', static function (JoinClause $joinClause): void {
                 $joinClause->on('company.id', 'quote_active_version.company_id');
             })
-            ->join('companies as primary_account', function (JoinClause $joinClause) {
+            ->join('companies as primary_account', static function (JoinClause $joinClause): void {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
             })
-            ->join('contract_types', function (JoinClause $joinClause) {
+            ->join('contract_types', static function (JoinClause $joinClause): void {
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->leftJoin('sales_orders', function (JoinClause $joinClause) {
+            ->leftJoin('sales_orders', static function (JoinClause $joinClause): void {
                 $joinClause->on('sales_orders.worldwide_quote_id', 'worldwide_quotes.id')
                     ->whereNull('sales_orders.deleted_at');
             })

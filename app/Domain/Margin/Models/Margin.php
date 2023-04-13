@@ -3,17 +3,18 @@
 namespace App\Domain\Margin\Models;
 
 use App\Domain\Authentication\Concerns\Multitenantable;
-use App\Domain\Eloquent\Contracts\{HasOrderedScope};
 use App\Domain\Rescue\Models\BaseQuote as Quote;
 use App\Domain\Shared\Eloquent\Concerns\Activatable;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
 use App\Domain\Shared\Eloquent\Contracts\ActivatableInterface;
+use App\Domain\Shared\Eloquent\Contracts\HasOrderedScope;
 use App\Domain\User\Concerns\BelongsToUser;
 use App\Domain\Vendor\Concerns\BelongsToVendor;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 abstract class Margin extends Model implements HasOrderedScope, ActivatableInterface
 {
@@ -88,7 +89,7 @@ abstract class Margin extends Model implements HasOrderedScope, ActivatableInter
 
     public function getDiffValueAttribute()
     {
-        if (\Str::snake($this->method) === 'no_margin') {
+        if (Str::snake($this->method) === 'no_margin') {
             return $this->value;
         }
 
@@ -97,12 +98,12 @@ abstract class Margin extends Model implements HasOrderedScope, ActivatableInter
 
     public function isStandard()
     {
-        return \Str::snake($this->method) === 'standard';
+        return Str::snake($this->method) === 'standard';
     }
 
     public function isNoMargin()
     {
-        return \Str::snake($this->method) === 'no_margin';
+        return Str::snake($this->method) === 'no_margin';
     }
 
     public function scopeMethod($query, string $method)

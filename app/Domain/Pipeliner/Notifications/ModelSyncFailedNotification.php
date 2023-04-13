@@ -3,8 +3,8 @@
 namespace App\Domain\Pipeliner\Notifications;
 
 use App\Domain\Company\Models\Company;
-use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Priority\Enum\Priority;
+use App\Domain\Shared\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Worldwide\Models\Opportunity;
 use Illuminate\Bus\Queueable;
 use Illuminate\Database\Eloquent\Model;

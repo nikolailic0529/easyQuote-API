@@ -260,6 +260,8 @@ class WorldwideQuoteOwnershipTest extends TestCase
             'create_ww_quotes', 'update_own_ww_quotes',
             'create_ww_quote_files', 'update_own_ww_quote_files', 'handle_own_ww_quote_files',
             'delete_own_ww_quotes', 'delete_own_ww_quote_files',
+            'view_ww_quotes_where_editor',
+            'update_ww_quotes_where_editor',
         );
         $originalOwner->syncRoles($originalOwnerRole);
 
@@ -305,11 +307,13 @@ class WorldwideQuoteOwnershipTest extends TestCase
                     'view',
                     'update',
                     'delete',
+                    'change_ownership',
                 ],
             ])
             ->assertJsonPath('permissions.view', true)
             ->assertJsonPath('permissions.update', true)
-            ->assertJsonPath('permissions.delete', true);
+            ->assertJsonPath('permissions.delete', false)
+            ->assertJsonPath('permissions.change_ownership', false);
     }
 
     /**

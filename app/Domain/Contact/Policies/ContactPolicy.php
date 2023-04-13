@@ -2,8 +2,11 @@
 
 namespace App\Domain\Contact\Policies;
 
+use App\Domain\Authorization\Enum\AccessEntityDirection;
 use App\Domain\Contact\Models\Contact;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\Models\{User};
+use App\Foundation\Auth\Access\Response\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
 
@@ -13,8 +16,6 @@ class ContactPolicy
 
     /**
      * Determine whether the user can view any contacts.
-     *
-     * @param \App\Domain\User\Models\User $user
      */
     public function viewAny(User $user): Response
     {
@@ -22,7 +23,39 @@ class ContactPolicy
             return $this->allow();
         }
 
-        if ($user->canAny(['view_contacts', 'view_companies', 'view_opportunities'])) {
+        if ($user->can('view_contacts')) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view all models.
+     */
+    public function viewAll(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_contacts') && $user->role->access->accessContactDirection === AccessEntityDirection::All) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view models related to the assigned units.
+     */
+    public function viewCurrentUnitsEntities(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->role->access->accessContactDirection !== AccessEntityDirection::Owned) {
             return $this->allow();
         }
 
@@ -31,8 +64,6 @@ class ContactPolicy
 
     /**
      * Determine whether the user can view entities of any owner.
-     *
-     * @param \App\Domain\User\Models\User $user
      */
     public function viewAnyOwnerEntities(User $user): Response
     {
@@ -45,8 +76,6 @@ class ContactPolicy
 
     /**
      * Determine whether the user can view the contact.
-     *
-     * @param \App\Domain\User\Models\User $user
      */
     public function view(User $user, Contact $contact): Response
     {
@@ -54,17 +83,34 @@ class ContactPolicy
             return $this->allow();
         }
 
-        if ($user->canAny(['view_contacts', 'view_companies', 'view_opportunities'])) {
+        if ($user->cant('view_contacts')) {
+            return ResponseBuilder::deny()
+                ->action('view')
+                ->item('contact')
+                ->toResponse();
+        }
+
+        if (!$this->userHasAccessToUnit($user, $contact->salesUnit)) {
+            return ResponseBuilder::deny()
+                ->action('view')
+                ->item('contact')
+                ->reason('You don\'t have an access to the unit')
+                ->toResponse();
+        }
+
+        if ($contact->user()->is($user)) {
             return $this->allow();
         }
 
-        return $this->deny();
+        return ResponseBuilder::deny()
+            ->action('view')
+            ->item('contact')
+            ->reason('You must be an owner')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can create contacts.
-     *
-     * @param \App\Domain\User\Models\User $user
      */
     public function create(User $user): Response
     {
@@ -72,7 +118,7 @@ class ContactPolicy
             return $this->allow();
         }
 
-        if ($user->canAny(['create_contacts', 'update_companies', 'update_opportunities'])) {
+        if ($user->can('create_contacts')) {
             return $this->allow();
         }
 
@@ -81,8 +127,6 @@ class ContactPolicy
 
     /**
      * Determine whether the user can update the contact.
-     *
-     * @param \App\Domain\User\Models\User $user
      */
     public function update(User $user, Contact $contact): Response
     {
@@ -90,29 +134,34 @@ class ContactPolicy
             return $this->allow();
         }
 
-        if (!$user->canAny(['update_contacts', 'update_companies', 'update_opportunities'])) {
-            return $this->deny();
+        if ($user->cant('update_contacts')) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('contact')
+                ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($contact->salesUnit)) {
+        if (!$this->userHasAccessToUnit($user, $contact->salesUnit)) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('contact')
+                ->reason('You don\'t have an access to the unit')
+                ->toResponse();
+        }
+
+        if ($contact->user()->is($user)) {
             return $this->allow();
         }
 
-        if ($user->salesUnits->contains($contact->salesUnit)) {
-            if ($contact->user()->is($user)) {
-                return $this->allow();
-            }
-
-            return $this->deny();
-        }
-
-        return $this->deny();
+        return ResponseBuilder::deny()
+            ->action('update')
+            ->item('contact')
+            ->reason('You must be an owner')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can delete the contact.
-     *
-     * @param \App\Domain\User\Models\User $user
      */
     public function delete(User $user, Contact $contact): Response
     {
@@ -120,22 +169,50 @@ class ContactPolicy
             return $this->allow();
         }
 
-        if (!$user->canAny(['delete_contacts', 'update_companies', 'update_opportunities'])) {
-            return $this->deny();
+        if ($user->cant('delete_contacts')) {
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('contact')
+                ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($contact->salesUnit)) {
+        if (!$this->userHasAccessToUnit($user, $contact->salesUnit)) {
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('contact')
+                ->reason('You don\'t have an access to the unit')
+                ->toResponse();
+        }
+
+        if ($contact->user()->is($user)) {
             return $this->allow();
         }
 
-        if ($user->salesUnits->contains($contact->salesUnit)) {
-            if ($contact->user()->is($user)) {
-                return $this->allow();
-            }
+        return ResponseBuilder::deny()
+            ->action('delete')
+            ->item('contact')
+            ->reason('You must be an owner')
+            ->toResponse();
+    }
 
-            return $this->deny();
+    private function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool
+    {
+        if ($user->role->access->accessContactDirection === AccessEntityDirection::All) {
+            return true;
         }
 
-        return $this->deny();
+        if (!$unit) {
+            return false;
+        }
+
+        if ($user->salesUnitsFromLedTeams->contains($unit)) {
+            return true;
+        }
+
+        if ($user->salesUnits->contains($unit)) {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -246,6 +246,8 @@ class WorldwideQuoteExporter
         TemplateElementChildControl $control,
         WorldwideQuotePreviewData $previewData
     ): void {
+        $templateData = $previewData->template_data;
+
         if ('img' === $control->type) {
             if (isset($templateData->template_assets->{$control->id})) {
                 $control->value = $templateData->template_assets->{$control->id} ?? '';
@@ -293,7 +295,10 @@ class WorldwideQuoteExporter
         TemplateElementChildControl $control,
         WorldwideDistributionData $distributorQuoteData,
         WorldwideQuotePreviewData $previewData
-    ): void {
+    ): void
+    {
+        $templateData = $previewData->template_data;
+
         if ('img' === $control->type) {
             if (isset($templateData->template_assets->{$control->id})) {
                 $control->value = $templateData->template_assets->{$control->id} ?? '';
@@ -379,7 +384,10 @@ class WorldwideQuoteExporter
     private function mapPackTemplateControl(
         TemplateElementChildControl $control,
         WorldwideQuotePreviewData $previewData
-    ): void {
+    ): void
+    {
+        $templateData = $previewData->template_data;
+
         if ('img' === $control->type) {
             if (isset($templateData->template_assets->{$control->id})) {
                 $control->value = $templateData->template_assets->{$control->id} ?? '';

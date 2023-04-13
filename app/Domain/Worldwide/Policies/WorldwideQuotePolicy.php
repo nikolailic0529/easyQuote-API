@@ -2,6 +2,8 @@
 
 namespace App\Domain\Worldwide\Policies;
 
+use App\Domain\Authorization\Enum\AccessEntityDirection;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\Models\ModelHasSharingUsers;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Models\WorldwideQuote;
@@ -23,7 +25,55 @@ class WorldwideQuotePolicy
             return $this->allow();
         }
 
-        if ($user->can('view_own_ww_quotes')) {
+        if ($user->canAny(['view_own_ww_quotes', 'view_ww_quotes_where_editor'])) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view all models.
+     */
+    public function viewAll(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_own_ww_quotes') && $user->role->access->accessWorldwideQuoteDirection === AccessEntityDirection::All) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view models related to the assigned units.
+     */
+    public function viewCurrentUnitsEntities(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->role->access->accessWorldwideQuoteDirection !== AccessEntityDirection::Owned) {
+            return $this->allow();
+        }
+
+        return $this->deny();
+    }
+
+    /**
+     * Determine whether the user can view models where editor are granted.
+     */
+    public function viewEntitiesWhereEditor(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_ww_quotes_where_editor')) {
             return $this->allow();
         }
 
@@ -39,6 +89,10 @@ class WorldwideQuotePolicy
             return $this->allow();
         }
 
+        if ($user->can('view_any_owner_ww_quotes')) {
+            return $this->allow();
+        }
+
         return $this->deny();
     }
 
@@ -51,32 +105,33 @@ class WorldwideQuotePolicy
             return $this->allow();
         }
 
-        if ($user->cant('view_own_ww_quotes')) {
+        if ($user->cant('view_own_ww_quotes') && $user->cant('view_ww_quotes_where_editor')) {
             return ResponseBuilder::deny()
                 ->action('view')
                 ->item('worldwide quote')
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($worldwideQuote->salesUnit)) {
+        if (!$this->userHasAccessToUnit($user, $worldwideQuote->salesUnit)) {
+            return ResponseBuilder::deny()
+                ->action('view')
+                ->item('worldwide quote')
+                ->reason('You don\'t have an access to the unit.')
+                ->toResponse();
+        }
+
+        if ($user->can('view_own_ww_quotes') && $worldwideQuote->user()->is($user)) {
             return $this->allow();
         }
 
-        if ($user->salesUnits->contains($worldwideQuote->salesUnit)) {
-            if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
-                return $this->allow();
-            }
-
-            return ResponseBuilder::deny()
-                ->action('view')
-                ->item('worldwide quote')
-                ->reason('You must be either an owner or editor')
-                ->toResponse();
+        if ($user->can('view_ww_quotes_where_editor') && $this->userInSharingUsers($worldwideQuote, $user)) {
+            return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('view')
             ->item('worldwide quote')
+            ->reason('You must be either an owner or editor')
             ->toResponse();
     }
 
@@ -134,25 +189,22 @@ class WorldwideQuotePolicy
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($worldwideQuote->salesUnit)) {
-            return $this->allow();
-        }
-
-        if ($user->salesUnits->contains($worldwideQuote->salesUnit)) {
-            if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
-                return $this->allow();
-            }
-
+        if (!$this->userHasAccessToUnit($user, $worldwideQuote->salesUnit)) {
             return ResponseBuilder::deny()
                 ->action('change ownership')
                 ->item('worldwide quote')
-                ->reason('You must be either an owner or editor')
+                ->reason('You don\'t have an access to the unit.')
                 ->toResponse();
+        }
+
+        if ($worldwideQuote->user()->is($user)) {
+            return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('change ownership')
             ->item('worldwide quote')
+            ->reason('You must be an owner')
             ->toResponse();
     }
 
@@ -204,30 +256,27 @@ class WorldwideQuotePolicy
 
             if ($user->cant('delete_own_ww_quotes')) {
                 return ResponseBuilder::deny()
-                    ->action('update')
+                    ->action('delete')
                     ->item('worldwide quote')
                     ->toResponse();
             }
 
-            if ($user->salesUnitsFromLedTeams->contains($worldwideQuote->salesUnit)) {
-                return $this->allow();
-            }
-
-            if ($user->salesUnits->contains($worldwideQuote->salesUnit)) {
-                if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
-                    return $this->allow();
-                }
-
+            if (!$this->userHasAccessToUnit($user, $worldwideQuote->salesUnit)) {
                 return ResponseBuilder::deny()
-                    ->action('update')
+                    ->action('delete')
                     ->item('worldwide quote')
-                    ->reason('You must be either an owner or editor')
+                    ->reason('You don\'t have an access to the unit.')
                     ->toResponse();
+            }
+
+            if ($worldwideQuote->user()->is($user)) {
+                return $this->allow();
             }
 
             return ResponseBuilder::deny()
                 ->action('update')
                 ->item('worldwide quote')
+                ->reason('You must be an owner')
                 ->toResponse();
         })();
 
@@ -316,32 +365,33 @@ class WorldwideQuotePolicy
             return $this->allow();
         }
 
-        if ($user->cant('update_own_ww_quotes')) {
+        if ($user->cant('update_own_ww_quotes') && $user->cant('update_ww_quotes_where_editor')) {
             return ResponseBuilder::deny()
                 ->action('update')
                 ->item('worldwide quote')
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->contains($worldwideQuote->salesUnit)) {
+        if (!$this->userHasAccessToUnit($user, $worldwideQuote->salesUnit)) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('worldwide quote')
+                ->reason('You don\'t have an access to the unit.')
+                ->toResponse();
+        }
+
+        if ($user->can('update_own_ww_quotes') && $worldwideQuote->user()->is($user)) {
             return $this->allow();
         }
 
-        if ($user->salesUnits->contains($worldwideQuote->salesUnit)) {
-            if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
-                return $this->allow();
-            }
-
-            return ResponseBuilder::deny()
-                ->action('update')
-                ->item('worldwide quote')
-                ->reason('You must be either an owner or editor')
-                ->toResponse();
+        if ($user->can('update_ww_quotes_where_editor') && $this->userInSharingUsers($worldwideQuote, $user)) {
+            return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('update')
             ->item('worldwide quote')
+            ->reason('You must be either an owner or editor')
             ->toResponse();
     }
 
@@ -359,5 +409,26 @@ class WorldwideQuotePolicy
             ->lazy()
             ->pluck($userForeignKey)
             ->containsStrict($user->getKey());
+    }
+
+    protected function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool
+    {
+        if ($user->role->access->accessWorldwideQuoteDirection === AccessEntityDirection::All) {
+            return true;
+        }
+
+        if (!$unit) {
+            return false;
+        }
+
+        if ($user->salesUnitsFromLedTeams->contains($unit)) {
+            return true;
+        }
+
+        if ($user->salesUnits->contains($unit)) {
+            return true;
+        }
+
+        return false;
     }
 }

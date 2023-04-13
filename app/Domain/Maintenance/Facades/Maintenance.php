@@ -2,7 +2,7 @@
 
 namespace App\Domain\Maintenance\Facades;
 
-use App\Domain\Maintenance\Contracts\MaintenanceServiceInterface;
+use App\Domain\Maintenance\Contracts\ManagesMaintenanceStatus;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -14,12 +14,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static void  putData()
  * @method static array getData()
  *
- * @see \App\Domain\Maintenance\Contracts\MaintenanceServiceInterface
+ * @see \App\Domain\Maintenance\Contracts\ManagesMaintenanceStatus
  */
 class Maintenance extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return MaintenanceServiceInterface::class;
+        return ManagesMaintenanceStatus::class;
     }
 }

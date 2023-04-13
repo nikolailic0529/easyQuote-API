@@ -2,62 +2,58 @@
 
 namespace App\Domain\Maintenance\Controllers\V1;
 
-use App\Domain\Build\Contracts\BuildRepositoryInterface as Builds;
-use App\Domain\Maintenance\Jobs\StopMaintenance;
-use App\Domain\Maintenance\Jobs\{UpMaintenance};
+use App\Domain\Build\Contracts\BuildRepositoryInterface;
+use App\Domain\Maintenance\Jobs\DownIntoMaintenanceMode;
+use App\Domain\Maintenance\Jobs\UpFromMaintenanceMode;
 use App\Domain\Maintenance\Requests\StartMaintenanceRequest;
+use App\Domain\Maintenance\Resources\V1\MaintenanceResource;
 use App\Foundation\Http\Controller;
+use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 class MaintenanceController extends Controller
 {
-    protected Builds $builds;
-
-    public function __construct(Builds $builds)
-    {
-        $this->builds = $builds;
-    }
-
     /**
-     * Display an information about the current maintenance.
-     *
-     * @return \Illuminate\Http\Response
+     * Show maintenance status.
      */
-    public function show()
+    public function show(BuildRepositoryInterface $buildRepository): JsonResponse
     {
         return response()->json(
-            \App\Domain\Maintenance\Resources\V1\MaintenanceResource::make($this->builds->last())
+            MaintenanceResource::make($buildRepository->last())
         );
     }
 
     /**
-     * Put the application into maintenance mode.
-     *
-     * @return \Illuminate\Http\Response
+     * Begin maintenance.
      */
-    public function start(StartMaintenanceRequest $request)
-    {
+    public function start(
+        StartMaintenanceRequest $request,
+        BuildRepositoryInterface $buildRepository,
+        Dispatcher $dispatcher,
+    ): JsonResponse {
         $request->updateRelatedSettings();
 
-        if ($request->enable) {
-            $this->builds->updateLastOrCreate($request->validated());
+        if ($request->boolean('enable')) {
+            $buildRepository->updateLastOrCreate($request->validated());
 
-            UpMaintenance::dispatchAfterResponse($request->carbonStartTime, $request->carbonEndTime, true);
+            $dispatcher->dispatch(
+                new DownIntoMaintenanceMode(startTime: $request->carbonStartTime, endTime: $request->carbonEndTime, autocomplete: true)
+            );
         }
 
         return response()->json(
-            \App\Domain\Maintenance\Resources\V1\MaintenanceResource::make($this->builds->last())
+            MaintenanceResource::make($buildRepository->last())
         );
     }
 
     /**
-     * Bring the application out of maintenance mode.
-     *
-     * @return \Illuminate\Http\Response
+     * Finish maintenance.
      */
-    public function stop()
+    public function stop(Dispatcher $dispatcher): Response
     {
-        StopMaintenance::dispatchAfterResponse();
+        $dispatcher->dispatch(new UpFromMaintenanceMode());
 
-        return response()->json(true);
+        return response()->noContent();
     }
 }

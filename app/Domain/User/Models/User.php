@@ -7,12 +7,12 @@ use App\Domain\Activity\Models\Activity;
 use App\Domain\Authorization\Concerns\HasModulePermissions;
 use App\Domain\Authorization\Concerns\HasPermissionTargets;
 use App\Domain\Authorization\Facades\Permission;
+use App\Domain\Authorization\Models\Role;
 use App\Domain\Company\Concerns\BelongsToCompany;
 use App\Domain\Company\Models\Company;
 use App\Domain\Country\Concerns\BelongsToCountry;
 use App\Domain\Country\Models\Country;
 use App\Domain\Discount\Concerns\HasDiscounts;
-use App\Domain\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\HpeContract\Models\HpeContractTemplate;
 use App\Domain\Image\Contracts\HasImagesDirectory;
 use App\Domain\Invitation\Concerns\HasInvitations;
@@ -28,6 +28,7 @@ use App\Domain\Shared\Eloquent\Concerns\HasApiTokens;
 use App\Domain\Shared\Eloquent\Concerns\Searchable;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
 use App\Domain\Shared\Eloquent\Contracts\ActivatableInterface;
+use App\Domain\Shared\Eloquent\Contracts\ProvidesIdForHumans;
 use App\Domain\Template\Concerns\HasQuoteTemplates;
 use App\Domain\Template\Concerns\HasTemplateFields;
 use App\Domain\Timezone\Concerns\BelongsToTimezone;
@@ -57,7 +58,6 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\Access\Authorizable;
-use Illuminate\Support\Arr;
 use Spatie\Permission\Traits\HasRoles;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
@@ -83,13 +83,14 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Timezone                                                                   $timezone
  * @property \App\Domain\Image\Models\Image|null                                        $image
  * @property \App\Domain\Image\Models\Image|null                                        $picture
- * @property Collection<int, User> $ledTeamUsers
- * @property Collection<int, \App\Domain\Authorization\Models\Role> $roles
- * @property Collection<int, \App\Domain\Team\Models\Team> $ledTeams
- * @property Collection<int, \App\Domain\SalesUnit\Models\SalesUnit> $salesUnitsFromLedTeams
- * @property Country $country
- * @property \App\Domain\Activity\Models\Activity|null $latestLogin
- * @property NotificationSettingsData $notification_settings
+ * @property Collection<int, User>                                                      $ledTeamUsers
+ * @property Collection<int, \App\Domain\Authorization\Models\Role>                     $roles
+ * @property Collection<int, \App\Domain\Team\Models\Team>                              $ledTeams
+ * @property Collection<int, \App\Domain\SalesUnit\Models\SalesUnit>                    $salesUnitsFromLedTeams
+ * @property Country                                                                    $country
+ * @property \App\Domain\Activity\Models\Activity|null                                  $latestLogin
+ * @property NotificationSettingsData                                                   $notification_settings
+ * @property Role                                                                       $role
  */
 class User extends Model implements ActivatableInterface, AuthenticatableContract, AuthorizableContract, CanResetPasswordContract, HasImagesDirectory, SearchableEntity, ProvidesIdForHumans
 {
@@ -309,16 +310,6 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
         return $this->role->name;
     }
 
-    public function getPrivilegesAttribute()
-    {
-        return $this->role->privileges;
-    }
-
-    public function getRolePropertiesAttribute()
-    {
-        return $this->role->properties;
-    }
-
     public function getTimezoneTextAttribute()
     {
         return $this->timezone->text;
@@ -331,10 +322,14 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
 
     public function toSearchArray(): array
     {
-        return Arr::except($this->toArray(), [
-            'email_verified_at', 'must_change_password', 'timezone_id', 'role_id',
-            'picture',
-        ]);
+        return [
+            'email' => $this->email,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'role_name' => $this->role?->name,
+            'team_name' => $this->team?->team_name,
+            'unit_names' => $this->salesUnits->pluck('unit_name')->all(),
+        ];
     }
 
     public function getItemNameAttribute()
