@@ -16,6 +16,7 @@ use App\Domain\Country\Models\Country;
 use App\Domain\Rescue\Quote\HasQuotes;
 use App\Domain\Shared\Eloquent\Concerns\Submittable;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
+use App\Domain\User\Models\User;
 use App\Domain\Vendor\Concerns\BelongsToVendors;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -125,6 +126,11 @@ class Customer extends Model
     ];
 
     protected static $recordEvents = ['deleted'];
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function addresses(): MorphToMany
     {
