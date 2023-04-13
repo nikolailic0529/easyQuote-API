@@ -5,6 +5,7 @@ namespace App\Domain\Pipeline\Policies;
 use App\Domain\Pipeline\Models\Pipeline;
 use App\Domain\User\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 class PipelinePolicy
 {
@@ -12,58 +13,52 @@ class PipelinePolicy
 
     /**
      * Determine whether the user can view any models.
-     *
-     * @return mixed
      */
-    public function viewAny(User $user)
+    public function viewAny(User $user): Response
     {
-        if ($user->hasRole(R_SUPER)) {
-            return true;
-        }
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can view the model.
-     *
-     * @return mixed
      */
-    public function view(User $user, Pipeline $pipeline)
+    public function view(User $user, Pipeline $pipeline): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can create models.
-     *
-     * @return mixed
      */
-    public function create(User $user)
+    public function create(User $user): mixed
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can update the model.
-     *
-     * @return mixed
      */
-    public function update(User $user, Pipeline $pipeline)
+    public function update(User $user, Pipeline $pipeline): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can delete the model.
-     *
-     * @return mixed
      */
-    public function delete(User $user, Pipeline $pipeline)
+    public function delete(User $user, Pipeline $pipeline): Response
     {
         if ($pipeline->is_system) {
             return $this->deny('You can not delete a system defined Pipeline entity.');
@@ -74,7 +69,9 @@ class PipelinePolicy
         }
 
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 }
