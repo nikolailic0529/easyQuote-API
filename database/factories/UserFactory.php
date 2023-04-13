@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Domain\Country\Models\Country;
 use App\Domain\User\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'password_changed_at' => now(),
             'notification_settings' => [],
+            'country_id' => Country::query()->inRandomOrder()->first()?->getKey(),
             // 'last_activity_at'    => now(),
             'ip_address' => $this->faker->ipv4,
             'already_logged_in' => 1,
