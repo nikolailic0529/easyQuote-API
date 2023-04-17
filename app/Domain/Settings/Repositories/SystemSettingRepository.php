@@ -144,12 +144,27 @@ class SystemSettingRepository implements \App\Domain\Settings\Contracts\SystemSe
 
     protected function getSupportedFileTypesUiSetting()
     {
-        return collect($this->get('supported_file_types', false))
-            ->transform(function ($type) {
-                $type = strtolower($type);
+        $fileTypes = [
+            'pdf' => [
+                'application/pdf',
+            ],
+            'docx' => [
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ],
+            'xlsx' => [
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ],
+            'csv' => [
+                'text/csv',
+                'text/plain',
+            ],
+        ];
 
-                return __("setting.supported_file_types.{$type}");
-            })->collapse();
+        return collect($this->get('supported_file_types', false))
+            ->map(static function ($type) use ($fileTypes): array {
+                return $fileTypes[mb_strtolower($type)] ?? [$type];
+            })
+            ->collapse();
     }
 
     protected function getSupportedFileTypesRequestSetting()

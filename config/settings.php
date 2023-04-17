@@ -1,12 +1,12 @@
 <?php
 
+use App\Domain\ExchangeRate\Enum\EventFrequencyEnum;
 use App\Domain\Settings\Enum\PriceCalculationDurationEnum;
 use App\Domain\Settings\ValueProviders\CurrencyValueProvider;
 use App\Domain\Settings\ValueProviders\EnumValueProvider;
 use App\Domain\Settings\ValueProviders\ExchangeRateProviderValueProvider;
 use App\Domain\Settings\ValueProviders\RangeValueProvider;
 use App\Domain\Settings\ValueProviders\UserValueProvider;
-use App\Domain\ExchangeRate\Enum\EventFrequencyEnum;
 
 return [
     'table' => 'system_settings',
@@ -25,7 +25,7 @@ return [
             'with' => [
                 'start' => 7,
                 'end' => 30,
-                'label' => ':value Days Before Expiration',
+                'label' => 'settings.value_labels.password_expiry_notification',
             ],
         ],
         'notification_time' => [
@@ -33,7 +33,7 @@ return [
             'with' => [
                 'start' => 1,
                 'end' => 3,
-                'label' => ':value Week Before Closing Date|:value Weeks Before Closing Date',
+                'label' => 'settings.value_labels.notification_time',
             ],
         ],
         'failure_report_recipients' => [
@@ -43,6 +43,7 @@ return [
             'provider' => EnumValueProvider::class,
             'with' => [
                 'enum' => PriceCalculationDurationEnum::class,
+                'label' => 'settings.value_labels.price_calculation_duration',
             ],
         ],
         'pipeliner_sync_schedule' => [
@@ -50,7 +51,7 @@ return [
             'with' => [
                 'start' => 1,
                 'end' => 12,
-                'label' => 'Every Hour|Every :value Hours',
+                'label' => 'settings.value_labels.pipeliner_sync_schedule',
             ],
         ],
         'file_upload_size' => [
@@ -58,7 +59,7 @@ return [
             'with' => [
                 'start' => 2,
                 'end' => 10,
-                'label' => ':value MB',
+                'label' => 'settings.value_labels.file_upload_size',
             ],
         ],
         'exchange_rate_provider' => [
@@ -68,6 +69,7 @@ return [
             'provider' => EnumValueProvider::class,
             'with' => [
                 'enum' => EventFrequencyEnum::class,
+                'label' => 'settings.value_labels.exchange_rate_update_schedule',
             ],
         ],
         'maintenance_start_time' => [
@@ -75,7 +77,7 @@ return [
             'with' => [
                 'start' => 1,
                 'end' => 30,
-                'label' => ':value minute from now|:value minutes from now',
+                'label' => 'settings.value_labels.maintenance_start_time',
             ],
         ],
         'maintenance_end_time' => [
@@ -84,7 +86,7 @@ return [
                 'start' => 5,
                 'end' => 120,
                 'step' => 5,
-                'label' => ':value minutes',
+                'label' => 'settings.value_labels.maintenance_end_time',
             ],
         ],
     ],

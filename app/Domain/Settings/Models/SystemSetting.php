@@ -98,7 +98,7 @@ class SystemSetting extends Model
     public function getLabelAttribute()
     {
         if (filled($this->label_format)) {
-            return str_replace(':value', $this->valueToString(), $this->label_format);
+            return __($this->label_format, ['value' => $this->valueToString()]);
         }
 
         if (blank($this->possible_values)) {
@@ -112,7 +112,7 @@ class SystemSetting extends Model
 
     public function getFieldTitleAttribute()
     {
-        return __('setting.titles.'.$this->getRawOriginal('key'));
+        return __('settings.titles.'.$this->getRawOriginal('key'));
     }
 
     public function getValueCacheKeyAttribute(): string
