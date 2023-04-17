@@ -20,6 +20,13 @@ class AssetList extends JsonResource
         return [
             'id' => $this->getKey(),
 
+            'permissions' => [
+                'view' => $request->user()->can('view', $this->resource),
+                'update' => $request->user()->can('update', $this->resource),
+                'delete' => $request->user()->can('delete', $this->resource),
+                'change_ownership' => $request->user()->can('changeOwnership', $this->resource),
+            ],
+
             'asset_category_id' => $this->asset_category_id,
             'user_id' => $this->user()->getParentKey(),
             'address_id' => $this->address()->getParentKey(),
