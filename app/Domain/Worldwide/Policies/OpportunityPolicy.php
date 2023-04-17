@@ -149,15 +149,9 @@ class OpportunityPolicy
             return $this->allow();
         }
 
-        if ($user->can('view_opportunities') && $opportunity->user()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('view_opportunities') && $opportunity->accountManager()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('view_opportunities_where_editor') && $this->userInSharingUsers($opportunity, $user)) {
+        if ($opportunity->user()->is($user)
+            || $opportunity->accountManager()->is($user)
+            || $this->userInSharingUsers($opportunity, $user)) {
             return $this->allow();
         }
 
@@ -217,15 +211,9 @@ class OpportunityPolicy
                 ->toResponse();
         }
 
-        if ($user->can('update_own_opportunities') && $opportunity->user()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('update_own_opportunities') && $opportunity->accountManager()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('update_opportunities_where_editor') && $this->userInSharingUsers($opportunity, $user)) {
+        if ($opportunity->user()->is($user)
+            || $opportunity->accountManager()->is($user)
+            || $this->userInSharingUsers($opportunity, $user)) {
             return $this->allow();
         }
 

@@ -89,21 +89,19 @@ final class OpportunityScope
                 ->where(static function (Builder $builder) use ($gate, $foreignKeyForSalesUnitRelation, $user, $model): void {
                     $builder
                         ->when($gate->denies('viewCurrentUnitsEntities', $model::class),
-                            static function (Builder $builder) use ($gate, $user, $model): void {
-                                $builder->where(static function (Builder $builder) use ($gate, $user, $model): void {
+                            static function (Builder $builder) use ($user, $model): void {
+                                $builder->where(static function (Builder $builder) use ($user, $model): void {
                                     $builder->where($builder->qualifyColumn('user_id'), $user->getKey());
 
                                     $builder->orWhere($model->accountManager()->getQualifiedForeignKeyName(), $user->getKey());
 
                                     // when user has access to the entities where editor rights are granted
-                                    if ($gate->allows('viewEntitiesWhereEditor', $model::class)) {
-                                        $builder->orWhereIn($model->getQualifiedKeyName(),
-                                            static function (BaseBuilder $builder): void {
-                                                $pivot = (new ModelHasSharingUsers());
-                                                $builder->select($pivot->related()->getForeignKeyName())
-                                                    ->from('user_has_shared_models');
-                                            });
-                                    }
+                                    $builder->orWhereIn($model->getQualifiedKeyName(),
+                                        static function (BaseBuilder $builder): void {
+                                            $pivot = (new ModelHasSharingUsers());
+                                            $builder->select($pivot->related()->getForeignKeyName())
+                                                ->from('user_has_shared_models');
+                                        });
                                 });
                             })
                         ->where(static function (Builder $builder) use ($user, $foreignKeyForSalesUnitRelation): void {
