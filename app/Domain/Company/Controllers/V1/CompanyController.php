@@ -15,6 +15,8 @@ use App\Domain\Attachment\Resources\V1\AttachmentOfCompany;
 use App\Domain\Attachment\Resources\V1\UnifiedAttachment;
 use App\Domain\Attachment\Services\AttachmentEntityService;
 use App\Domain\Attachment\Services\UnifiedAttachmentDataMapper;
+use App\Domain\Company\DataTransferObjects\BatchAttachCompanyAddressData;
+use App\Domain\Company\DataTransferObjects\BatchAttachCompanyContactData;
 use App\Domain\Company\Enum\CompanySource;
 use App\Domain\Company\Models\Company;
 use App\Domain\Company\Queries\CompanyQueries;
@@ -344,6 +346,24 @@ class CompanyController extends Controller
     }
 
     /**
+     * Batch attach address to company.
+     * @throws AuthorizationException
+     */
+    public function batchAttachAddressToCompany(
+        Request $request,
+        BatchAttachCompanyAddressData $data,
+        CompanyEntityService $service,
+        Company $company,
+    ): Response {
+        $this->authorize('update', $company);
+
+        $service->setCauser($request->user())
+            ->batchAttachAddressToCompany($company, $data);
+
+        return \response()->noContent();
+    }
+
+    /**
      * Attach address to company.
      *
      * @throws AuthorizationException
@@ -373,6 +393,24 @@ class CompanyController extends Controller
         $this->authorize('update', $company);
 
         $service->detachAddressFromCompany($company, $address);
+
+        return \response()->noContent();
+    }
+
+    /**
+     * Batch attach address to company.
+     * @throws AuthorizationException
+     */
+    public function batchAttachContactToCompany(
+        Request $request,
+        BatchAttachCompanyContactData $data,
+        CompanyEntityService $service,
+        Company $company,
+    ): Response {
+        $this->authorize('update', $company);
+
+        $service->setCauser($request->user())
+            ->batchAttachContactToCompany($company, $data);
 
         return \response()->noContent();
     }

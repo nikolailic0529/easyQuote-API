@@ -5,7 +5,11 @@ namespace App\Domain\Company\Services;
 use App\Domain\Address\Models\Address;
 use App\Domain\Authentication\Contracts\CauserAware;
 use App\Domain\Company\DataTransferObjects\AttachCompanyAddressData;
+use App\Domain\Company\DataTransferObjects\AttachCompanyAddressNoBackrefData;
 use App\Domain\Company\DataTransferObjects\AttachCompanyContactData;
+use App\Domain\Company\DataTransferObjects\AttachCompanyContactNoBackrefData;
+use App\Domain\Company\DataTransferObjects\BatchAttachCompanyAddressData;
+use App\Domain\Company\DataTransferObjects\BatchAttachCompanyContactData;
 use App\Domain\Company\DataTransferObjects\CreateCompanyData;
 use App\Domain\Company\DataTransferObjects\PartialUpdateCompanyData;
 use App\Domain\Company\DataTransferObjects\UpdateCompanyContactData;
@@ -52,8 +56,8 @@ class CompanyEntityService implements CauserAware
         Contact $contact,
         UpdateCompanyContactData $contactData
     ): Contact {
-        return tap($contact, function (Contact $contact) use ($contactData, $company) {
-            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+        return tap($contact, function (Contact $contact) use ($contactData, $company): void {
+            $oldCompany = tap(new Company(), static function (Company $oldCompany) use ($company): void {
                 $oldCompany->setRawAttributes($company->getRawOriginal());
                 $oldCompany->load(['addresses', 'contacts', 'vendors']);
             });
@@ -66,14 +70,14 @@ class CompanyEntityService implements CauserAware
             $contact->job_title = $contactData->job_title;
             $contact->is_verified = $contactData->is_verified;
 
-            $this->connection->transaction(fn () => $contact->save());
+            $this->connection->transaction(static fn () => $contact->save());
             $this->eventDispatcher->dispatch(new CompanyUpdated(company: $company, oldCompany: $oldCompany));
         });
     }
 
     public function createCompany(CreateCompanyData $data)
     {
-        return tap(new Company(), function (Company $company) use ($data) {
+        return tap(new Company(), function (Company $company) use ($data): void {
             $company->name = $data->name;
             $company->vat = $data->vat;
             $company->vat_type = $data->vat_type;
@@ -126,14 +130,14 @@ class CompanyEntityService implements CauserAware
             }
 
             // TODO: add company locking.
-            $this->connection->transaction(function () use (
+            $this->connection->transaction(static function () use (
                 $addresses,
                 $data,
                 $company,
                 $addressesData,
                 $contactsData,
                 $categories,
-            ) {
+            ): void {
                 $addresses->each->save();
 
                 $company->save();
@@ -155,7 +159,7 @@ class CompanyEntityService implements CauserAware
 
     public function updateCompany(Company $company, UpdateCompanyData $data): Company
     {
-        return tap($company, function (Company $company) use ($data) {
+        return tap($company, function (Company $company) use ($data): void {
             $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $company->name = $data->name;
@@ -224,7 +228,7 @@ class CompanyEntityService implements CauserAware
             $relationsWereChanged = false;
 
             // TODO: add company locking.
-            $this->connection->transaction(function () use (
+            $this->connection->transaction(static function () use (
                 $addresses,
                 $data,
                 $company,
@@ -232,7 +236,7 @@ class CompanyEntityService implements CauserAware
                 $latestUpdatedAtOfContactRelations,
                 &$relationsWereChanged,
                 &$attributesWereChanged,
-            ) {
+            ): void {
                 $addresses->each->save();
 
                 $relationChanges = [
@@ -281,7 +285,7 @@ class CompanyEntityService implements CauserAware
 
     public function partiallyUpdateCompany(Company $company, PartialUpdateCompanyData $data): Company
     {
-        return tap($company, function (Company $company) use ($data) {
+        return tap($company, function (Company $company) use ($data): void {
             $oldCompany = $this->dataMapper->cloneCompany($company);
 
             $company->forceFill((clone $data)->except('logo', 'delete_logo', 'addresses', 'contacts')->toArray());
@@ -308,7 +312,7 @@ class CompanyEntityService implements CauserAware
                     ->all();
             });
 
-            $this->connection->transaction(function () use ($data, $company, $addressesData, $contactsData) {
+            $this->connection->transaction(static function () use ($data, $company, $addressesData, $contactsData): void {
                 $company->save();
 
                 if (!is_null($addressesData)) {
@@ -332,12 +336,50 @@ class CompanyEntityService implements CauserAware
         });
     }
 
+    public function batchAttachAddressToCompany(Company $company, BatchAttachCompanyAddressData $data): void
+    {
+        $oldCompany = $this->dataMapper->cloneCompany($company);
+
+        $pivots = $data->addresses->toCollection()
+            ->mapWithKeys(static function (AttachCompanyAddressNoBackrefData $data): array {
+                return [$data->id => $data->except('id')->toArray()];
+            })
+            ->all();
+
+        $this->connection->transaction(static function () use ($company, $pivots): void {
+            $company->addresses()->syncWithoutDetaching($pivots);
+        });
+
+        $this->eventDispatcher->dispatch(
+            new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
+        );
+    }
+
+    public function batchAttachContactToCompany(Company $company, BatchAttachCompanyContactData $data): void
+    {
+        $oldCompany = $this->dataMapper->cloneCompany($company);
+
+        $pivots = $data->contacts->toCollection()
+            ->mapWithKeys(static function (AttachCompanyContactNoBackrefData $data): array {
+                return [$data->id => $data->except('id')->toArray()];
+            })
+            ->all();
+
+        $this->connection->transaction(static function () use ($company, $pivots): void {
+            $company->contacts()->syncWithoutDetaching($pivots);
+        });
+
+        $this->eventDispatcher->dispatch(
+            new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
+        );
+    }
+
     public function attachAddressToCompany(Company $company, Address $address): Company
     {
         return tap($company, function (Company $company) use ($address): void {
             $oldCompany = $this->dataMapper->cloneCompany($company);
 
-            $this->connection->transaction(static function () use ($company, $address) {
+            $this->connection->transaction(static function () use ($company, $address): void {
                 $company->addresses()->syncWithoutDetaching($address);
             });
 
@@ -352,7 +394,7 @@ class CompanyEntityService implements CauserAware
         return tap($company, function (Company $company) use ($address): void {
             $oldCompany = $this->dataMapper->cloneCompany($company);
 
-            $this->connection->transaction(static function () use ($company, $address) {
+            $this->connection->transaction(static function () use ($company, $address): void {
                 $company->addresses()->detach($address);
             });
 
@@ -367,7 +409,7 @@ class CompanyEntityService implements CauserAware
         return tap($company, function (Company $company) use ($contact): void {
             $oldCompany = $this->dataMapper->cloneCompany($company);
 
-            $this->connection->transaction(static function () use ($company, $contact) {
+            $this->connection->transaction(static function () use ($company, $contact): void {
                 $company->contacts()->syncWithoutDetaching($contact);
             });
 
@@ -382,7 +424,7 @@ class CompanyEntityService implements CauserAware
         return tap($company, function (Company $company) use ($contact): void {
             $oldCompany = $this->dataMapper->cloneCompany($company);
 
-            $this->connection->transaction(static function () use ($company, $contact) {
+            $this->connection->transaction(static function () use ($company, $contact): void {
                 $company->contacts()->detach($contact);
             });
 
@@ -396,7 +438,7 @@ class CompanyEntityService implements CauserAware
     {
         $company->activated_at = now();
 
-        $this->connection->transaction(function () use ($company) {
+        $this->connection->transaction(static function () use ($company): void {
             $company->save();
         });
     }
@@ -405,14 +447,14 @@ class CompanyEntityService implements CauserAware
     {
         $company->activated_at = null;
 
-        $this->connection->transaction(function () use ($company) {
+        $this->connection->transaction(static function () use ($company): void {
             $company->save();
         });
     }
 
     public function deleteCompany(Company $company): void
     {
-        $this->connection->transaction(function () use ($company) {
+        $this->connection->transaction(static function () use ($company): void {
             $company->delete();
         });
 
@@ -423,7 +465,7 @@ class CompanyEntityService implements CauserAware
 
     public function setCauser(?Model $causer): static
     {
-        return tap($this, function () use ($causer) {
+        return tap($this, function () use ($causer): void {
             $this->causer = $causer;
         });
     }

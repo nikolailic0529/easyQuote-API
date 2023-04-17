@@ -437,6 +437,10 @@ Route::group(['middleware' => 'auth:api'], static function (): void {
             [CompanyController::class, 'attachAddressToCompany']
         );
         Route::patch(
+            'companies/{company}/addresses/batch-attach',
+            [CompanyController::class, 'batchAttachAddressToCompany']
+        );
+        Route::patch(
             'companies/{company}/addresses/{address}/detach',
             [CompanyController::class, 'detachAddressFromCompany']
         )->scopeBindings();
@@ -444,6 +448,10 @@ Route::group(['middleware' => 'auth:api'], static function (): void {
         Route::patch(
             'companies/{company}/contacts/{contact}/attach',
             [CompanyController::class, 'attachContactToCompany']
+        );
+        Route::patch(
+            'companies/{company}/contacts/batch-attach',
+            [CompanyController::class, 'batchAttachContactToCompany']
         );
         Route::patch(
             'companies/{company}/contacts/{contact}/detach',
