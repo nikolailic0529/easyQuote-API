@@ -4,6 +4,7 @@ namespace App\Foundation\Mail\Listeners;
 
 use App\Foundation\Mail\Mail\MailLimitExceededMail;
 use App\Foundation\Mail\Services\MailRateLimiter;
+use Illuminate\Cache\RateLimiter;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Config\Repository as Config;
@@ -21,7 +22,8 @@ class MailEventRateLimitingSubscriber
         protected readonly LockProvider $lockProvider,
         protected readonly Config $config,
         protected readonly Cache $cache,
-        protected readonly MailRateLimiter $rateLimiter,
+        protected readonly MailRateLimiter $mailRateLimiter,
+        protected readonly RateLimiter $rateLimiter,
     ) {
     }
 
@@ -52,19 +54,19 @@ class MailEventRateLimitingSubscriber
             return;
         }
 
-        $this->lockProvider->lock(__METHOD__, 10)
-            ->block(10, function () {
-                // Send email notification about exceeded limit only once
-                if ($this->rateLimiter->remaining() === 0) {
-                    if ($this->cache->add(MailLimitExceededMail::class.$this->rateLimiter->getMaxAttempts(), true,
-                        $this->rateLimiter->availableIn())) {
-                        Mail::send(new MailLimitExceededMail(
-                            limit: $this->rateLimiter->getMaxAttempts(),
-                            remaining: $this->rateLimiter->remaining()
-                        ));
-                    }
+        // Send email notification about exceeded limit only once
+        if ($this->mailRateLimiter->remaining() === 0) {
+            $this->rateLimiter->attempt(
+                key: MailLimitExceededMail::class.$this->mailRateLimiter->getMaxAttempts(),
+                maxAttempts: 1,
+                callback: function (): void {
+                    Mail::send(new MailLimitExceededMail(
+                        limit: $this->mailRateLimiter->getMaxAttempts(),
+                        remaining: $this->mailRateLimiter->remaining()
+                    ));
                 }
-            });
+            );
+        }
     }
 
     public function attemptMailSending(MessageSending $event): bool|null
@@ -77,6 +79,6 @@ class MailEventRateLimitingSubscriber
             return null;
         }
 
-        return $this->rateLimiter->attempt();
+        return $this->mailRateLimiter->attempt();
     }
 }
