@@ -14,9 +14,11 @@ use App\Domain\Shared\Eloquent\Concerns\Uuid;
 use App\Domain\Team\Models\Team;
 use App\Domain\User\Models\User;
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
+use Database\Factories\InvitationFactory;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -47,6 +49,7 @@ class Invitation extends Model implements SearchableEntity
     use LogsActivity;
     use SoftDeletes;
     use EloquentJoin;
+    use HasFactory;
 
     protected $fillable = [
         'email', 'user_id', 'role_id', 'host', 'expires_at',
@@ -85,6 +88,11 @@ class Invitation extends Model implements SearchableEntity
                 $model->attributes['invitation_token'] = $model->generateToken();
             }
         });
+    }
+
+    protected static function newFactory(): InvitationFactory
+    {
+        return InvitationFactory::new();
     }
 
     public function generateToken(): string
@@ -170,10 +178,11 @@ class Invitation extends Model implements SearchableEntity
     public function toSearchArray(): array
     {
         return [
-            'role_name' => optional($this->role)->name,
+            'role_name' => $this->role?->name,
             'email' => $this->email,
-            'created_at' => optional($this->created_at)->format(config('date.format')),
-            'expires_at' => optional($this->expires_at)->format(config('date.format')),
+            'issuer_fullname' => $this->user?->user_fullname,
+            'created_at' => $this->created_at?->format(config('date.format')),
+            'expires_at' => $this->expires_at?->format(config('date.format')),
         ];
     }
 
