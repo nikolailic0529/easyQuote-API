@@ -90,19 +90,17 @@ class WorldwideQuoteScope
                     $builder
                         // when user has access to own entities only
                         ->when($gate->denies('viewCurrentUnitsEntities', $model::class),
-                            callback: static function (Builder $builder) use ($gate, $user, $model): void {
-                                $builder->where(static function (Builder $builder) use ($gate, $user, $model): void {
+                            callback: static function (Builder $builder) use ($user, $model): void {
+                                $builder->where(static function (Builder $builder) use ($user, $model): void {
                                     $builder->where($builder->qualifyColumn('user_id'), $user->getKey());
 
                                     // when user has access to the entities where editor rights are granted
-                                    if ($gate->allows('viewEntitiesWhereEditor', $model::class)) {
-                                        $builder->orWhereIn($model->getQualifiedKeyName(),
-                                            static function (BaseBuilder $builder): void {
-                                                $pivot = (new ModelHasSharingUsers());
-                                                $builder->select($pivot->related()->getForeignKeyName())
-                                                    ->from('user_has_shared_models');
-                                            });
-                                    }
+                                    $builder->orWhereIn($model->getQualifiedKeyName(),
+                                        static function (BaseBuilder $builder): void {
+                                            $pivot = (new ModelHasSharingUsers());
+                                            $builder->select($pivot->related()->getForeignKeyName())
+                                                ->from('user_has_shared_models');
+                                        });
                                 });
                             })
                         ->where(static function (Builder $builder) use ($user, $foreignKeyForSalesUnitRelation): void {

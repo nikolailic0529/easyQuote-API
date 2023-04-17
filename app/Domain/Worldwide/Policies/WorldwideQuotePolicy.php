@@ -120,11 +120,7 @@ class WorldwideQuotePolicy
                 ->toResponse();
         }
 
-        if ($user->can('view_own_ww_quotes') && $worldwideQuote->user()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('view_ww_quotes_where_editor') && $this->userInSharingUsers($worldwideQuote, $user)) {
+        if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
             return $this->allow();
         }
 
@@ -380,11 +376,7 @@ class WorldwideQuotePolicy
                 ->toResponse();
         }
 
-        if ($user->can('update_own_ww_quotes') && $worldwideQuote->user()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('update_ww_quotes_where_editor') && $this->userInSharingUsers($worldwideQuote, $user)) {
+        if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
             return $this->allow();
         }
 
