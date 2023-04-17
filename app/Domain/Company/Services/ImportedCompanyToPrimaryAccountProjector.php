@@ -36,13 +36,14 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
 {
     protected ?Model $causer = null;
 
-    public function __construct(protected ConnectionInterface $connection,
-                                protected Client $client,
-                                protected PermissionBroker $permissionBroker,
-                                protected ImportedAddressToAddressProjector $addressProjector,
-                                protected ImportedContactToContactProjector $contactProjector,
-                                protected ThumbnailService $thumbnailService)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected Client $client,
+        protected PermissionBroker $permissionBroker,
+        protected ImportedAddressToAddressProjector $addressProjector,
+        protected ImportedContactToContactProjector $contactProjector,
+        protected ThumbnailService $thumbnailService
+    ) {
     }
 
     private function saveCompanyPicture(Company $company, ImportedCompany $importedCompany): void
@@ -264,10 +265,23 @@ class ImportedCompanyToPrimaryAccountProjector implements CauserAware
         $newContacts = $newContactMap->values();
 
         $defaultInvoiceAddress = $company->addresses
+            ->lazy()
             ->sortByDesc('pivot.is_default')
-            ->firstWhere('address_type', '===', AddressType::INVOICE);
+            ->whereStrict('address_type', AddressType::INVOICE)
+            ->first();
 
-        if ($importedCompany->getFlag(ImportedCompany::COMPANY_DATA_EXISTS)) {
+        $invoiceAddressFilled = collect([
+            $importedCompany->address_1,
+            $importedCompany->address_2,
+            $importedCompany->city,
+            $importedCompany->post_code,
+            $importedCompany->state,
+            $importedCompany->state_code,
+            $importedCompany->country_name,
+        ])
+            ->contains(filled(...));
+
+        if ($importedCompany->getFlag(ImportedCompany::COMPANY_DATA_EXISTS) && $invoiceAddressFilled) {
             $defaultInvoiceAddress = tap($defaultInvoiceAddress ?? new Address(),
                 static function (Address $address) use (
                     $importedCompany

@@ -72,7 +72,7 @@ class CompanyDataMapper
      */
     public function mapPipelinerCreateAccountInput(Company $company): CreateAccountInput
     {
-        /** @var \App\Domain\Address\Models\Address|null $defaultAddress */
+        /** @var Address|null $defaultAddress */
         $defaultAddress = $company->addresses
             ->lazy()
             ->filter(static fn (Address $address): bool => (bool) $address->pivot?->is_default)
@@ -140,7 +140,7 @@ class CompanyDataMapper
         AccountEntity $accountEntity,
         array $sharingClients
     ): UpdateAccountInput {
-        /** @var \App\Domain\Address\Models\Address|null $defaultAddress */
+        /** @var Address|null $defaultAddress */
         $defaultAddress = $company->addresses
             ->lazy()
             ->filter(static fn (Address $address): bool => (bool) $address->pivot?->is_default)
@@ -191,7 +191,7 @@ class CompanyDataMapper
             ),
         ];
 
-        $newAddressFields = $this->mapDefaultAddressFields($defaultAddress);
+        $newAddressFields = $this->mapDefaultAddressFields(address: $defaultAddress, keepEmpty: true);
 
         $newFields = array_merge($newFields, $newAddressFields);
 
@@ -221,9 +221,9 @@ class CompanyDataMapper
         );
     }
 
-    private function mapDefaultAddressFields(?Address $address): array
+    private function mapDefaultAddressFields(?Address $address, bool $keepEmpty = false): array
     {
-        if ($address) {
+        if ($address || $keepEmpty) {
             return [
                 'address' => (string) $address?->address_1,
                 'city' => (string) $address?->city,
@@ -313,7 +313,7 @@ class CompanyDataMapper
     {
         $sortedDefaultAddresses = $company->addresses->sortByDesc('pivot.is_default');
 
-        /** @var \App\Domain\Address\Models\Address|null $invoiceAddress */
+        /** @var Address|null $invoiceAddress */
         $invoiceAddress = $sortedDefaultAddresses->first(static function (Address $address): bool {
             return AddressType::INVOICE === $address->address_type;
         });
@@ -323,7 +323,7 @@ class CompanyDataMapper
             return AddressType::HARDWARE === $address->address_type;
         });
 
-        /** @var \App\Domain\Address\Models\Address|null $swAddress */
+        /** @var Address|null $swAddress */
         $swAddress = $sortedDefaultAddresses->first(static function (Address $address): bool {
             return AddressType::SOFTWARE === $address->address_type;
         });
@@ -331,10 +331,6 @@ class CompanyDataMapper
         $vendorsCustomFields = $this->projectVendorsToCustomFields(...$company->vendors);
 
         $customFields = [...$vendorsCustomFields];
-
-        if (null !== $invoiceAddress) {
-            $customFields['cfAddress2n'] = $invoiceAddress?->address_2 ?? '';
-        }
 
         if (null !== $swAddress) {
             $customFields['cfSoftwareCountry'] = $swAddress?->country?->iso_3166_2 ?? '';
@@ -344,9 +340,8 @@ class CompanyDataMapper
             $customFields['cfHardwareCountry'] = $hwAddress?->country?->iso_3166_2 ?? '';
         }
 
-        if (null !== $invoiceAddress) {
-            $customFields['cfStateCode'] = $invoiceAddress?->state_code ?? '';
-        }
+        $customFields['cfAddress2n'] = $invoiceAddress?->address_2 ?? '';
+        $customFields['cfStateCode'] = $invoiceAddress?->state_code ?? '';
 
         $customFields['cfVat'] = VAT::VAT_NUMBER === $company->vat_type ? $company->vat : '';
         $customFields['cfVatTypeId'] = $this->resolveDataEntityByOptionName(
@@ -611,39 +606,52 @@ class CompanyDataMapper
         $company->contacts->push(...$newContactCollection);
         $company->addresses->push(...$newAddressCollection);
 
+        $invoiceAddressFilled = collect([
+            $another->address_1,
+            $another->address_2,
+            $another->city,
+            $another->post_code,
+            $another->state,
+            $another->state_code,
+            $another->country_name,
+        ])
+            ->contains(filled(...));
+
         $defaultInvoiceAddress = $company->addresses
+            ->lazy()
             ->sortByDesc('pivot.is_default')
-            ->firstWhere('address_type', '===', AddressType::INVOICE);
+            ->whereStrict('address_type', AddressType::INVOICE)
+            ->first();
 
-        if (null === $defaultInvoiceAddress) {
-            $company->addresses->push($defaultInvoiceAddress = tap(new Address(), static function (Address $address): void {
-                $address->{$address->getKeyName()} = (string) Uuid::generate(4);
-            }));
+        if ($invoiceAddressFilled) {
+            if (!$defaultInvoiceAddress) {
+                $company->addresses->push($defaultInvoiceAddress = (new Address())->setId());
+            }
+
+            tap($defaultInvoiceAddress, static function (Address $address) use ($company, $another): void {
+                $pivot = $company->addresses()->newPivot([
+                    'is_default' => (bool) $address->pivot?->is_default,
+                    $company->addresses()->getRelatedPivotKeyName() => $address->getKey(),
+                    $company->addresses()->getForeignPivotKeyName() => $company->getKey(),
+                    $company->addresses()->getMorphType() => $company->getMorphClass(),
+                ], $address->exists);
+
+                $pivot->is_default = true;
+
+                $address->setRelation($company->addresses()->getPivotAccessor(), $pivot);
+
+                $address->address_type = AddressType::INVOICE;
+                $address->address_1 = $another->address_1;
+                $address->address_2 = $another->address_2;
+                $address->city = $another->city;
+                $address->post_code = $another->post_code;
+                $address->state = $another->state;
+                $address->state_code = $another->state_code;
+                $address->country()->associate(
+                    Country::query()->where('name', $another->country_name)->first()
+                );
+            });
         }
-
-        tap($defaultInvoiceAddress, static function (Address $address) use ($company, $another): void {
-            $pivot = $company->addresses()->newPivot([
-                'is_default' => (bool) $address->pivot?->is_default,
-                $company->addresses()->getRelatedPivotKeyName() => $address->getKey(),
-                $company->addresses()->getForeignPivotKeyName() => $company->getKey(),
-                $company->addresses()->getMorphType() => $company->getMorphClass(),
-            ], $address->exists);
-
-            $pivot->is_default = true;
-
-            $address->setRelation($company->addresses()->getPivotAccessor(), $pivot);
-
-            $address->address_type = AddressType::INVOICE;
-            $address->address_1 = $another->address_1;
-            $address->address_2 = $another->address_2;
-            $address->city = $another->city;
-            $address->post_code = $another->post_code;
-            $address->state = $another->state;
-            $address->state_code = $another->state_code;
-            $address->country()->associate(
-                Country::query()->where('name', $another->country_name)->first()
-            );
-        });
 
         $hwSwCountryMap = [
             AddressType::HARDWARE => isset($another->hw_country_code)
