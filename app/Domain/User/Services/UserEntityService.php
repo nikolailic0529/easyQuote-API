@@ -14,8 +14,10 @@ use App\Domain\Notification\DataTransferObjects\UpdateNotificationSettingsGroupD
 use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\DataTransferObjects\UpdateCurrentUserData;
 use App\Domain\User\DataTransferObjects\UpdateUserData;
+use App\Domain\User\Events\UserUpdated;
 use App\Domain\User\Models\User;
 use App\Foundation\Filesystem\TemporaryDirectory;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Http\Response;
@@ -28,10 +30,11 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 class UserEntityService
 {
     public function __construct(
-        protected ConnectionInterface $connection,
-        protected Hasher $hasher,
-        protected ValidatorInterface $validator,
-        protected ThumbnailService $thumbnailService
+        protected readonly ConnectionInterface $connection,
+        protected readonly Hasher $hasher,
+        protected readonly ValidatorInterface $validator,
+        protected readonly ThumbnailService $thumbnailService,
+        protected readonly EventDispatcher $eventDispatcher,
     ) {
     }
 
@@ -98,6 +101,10 @@ class UserEntityService
             $this->connection->transaction(static function () use ($user): void {
                 $user->save();
             });
+
+            $this->eventDispatcher->dispatch(
+                new UserUpdated($user)
+            );
         });
     }
 
@@ -130,6 +137,10 @@ class UserEntityService
                 $user->companies()->sync($user->companies);
                 $user->syncRoles($role);
             });
+
+            $this->eventDispatcher->dispatch(
+                new UserUpdated($user)
+            );
         });
     }
 

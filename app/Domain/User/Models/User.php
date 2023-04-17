@@ -329,6 +329,9 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
             'role_name' => $this->role?->name,
             'team_name' => $this->team?->team_name,
             'unit_names' => $this->salesUnits->pluck('unit_name')->all(),
+            'country_code' => $this->country?->iso_3166_2,
+            'country_name' => $this->country?->name,
+            'language' => $this->language,
         ];
     }
 
