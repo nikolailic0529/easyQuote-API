@@ -71,15 +71,24 @@ class AssetOwnershipTest extends TestCase
 
         /** @var Asset $asset */
         $asset = Asset::factory()
-            ->for(User::factory(), 'user')
+            ->for($causer, 'user')
             ->create();
+
+        /** @var User $newOwner */
         $newOwner = User::factory()->create();
+        $newOwner->syncRoles($role);
 
         $this->patchJson('api/assets/'.$asset->getKey().'/ownership', $data = [
             'owner_id' => $newOwner->getKey(),
         ])
 //            ->dump()
             ->assertNoContent();
+
+        $this->getJson('api/assets/'.$asset->getKey())
+//            ->dump()
+            ->assertForbidden();
+
+        $this->actingAs($newOwner, 'api');
 
         $this->getJson('api/assets/'.$asset->getKey())
             ->assertOk()
@@ -221,6 +230,6 @@ class AssetOwnershipTest extends TestCase
             ])
             ->assertJsonPath('permissions.view', true)
             ->assertJsonPath('permissions.update', true)
-            ->assertJsonPath('permissions.delete', true);
+            ->assertJsonPath('permissions.delete', false);
     }
 }

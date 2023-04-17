@@ -3,6 +3,7 @@
 namespace App\Domain\Asset\Policies;
 
 use App\Domain\Asset\Models\Asset;
+use App\Domain\User\Models\ModelHasSharingUsers;
 use App\Domain\User\Models\User;
 use App\Foundation\Auth\Access\Response\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -32,6 +33,16 @@ class AssetPolicy
     }
 
     /**
+     * Determine whether the user can view all models.
+     */
+    public function viewAll(User $user): Response
+    {
+        return $user->hasRole(R_SUPER)
+            ? $this->allow()
+            : $this->deny();
+    }
+
+    /**
      * Determine whether the user can view models of any owner.
      */
     public function viewAnyOwnerEntities(User $user): Response
@@ -52,13 +63,21 @@ class AssetPolicy
             return $this->allow();
         }
 
-        if ($user->can('view_assets')) {
+        if ($user->cant('view_assets')) {
+            return ResponseBuilder::deny()
+                ->action('view')
+                ->item('asset')
+                ->toResponse();
+        }
+
+        if ($asset->user()->is($user) || $this->userInSharingUsers($asset, $user)) {
             return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('view')
             ->item('asset')
+            ->reason('You must be either an owner or editor')
             ->toResponse();
     }
 
@@ -83,8 +102,6 @@ class AssetPolicy
 
     /**
      * Determine whether the user can update the model.
-     *
-     * @return mixed
      */
     public function update(User $user, Asset $asset): Response
     {
@@ -92,13 +109,21 @@ class AssetPolicy
             return $this->allow();
         }
 
-        if ($user->can('update_assets')) {
+        if ($user->cant('update_assets')) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('asset')
+                ->toResponse();
+        }
+
+        if ($asset->user()->is($user) || $this->userInSharingUsers($asset, $user)) {
             return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('update')
             ->item('asset')
+            ->reason('You must be either an owner or editor')
             ->toResponse();
     }
 
@@ -108,13 +133,21 @@ class AssetPolicy
             return $this->allow();
         }
 
-        if ($user->hasPermissionTo('change_assets_ownership')) {
+        if ($user->cant('change_assets_ownership')) {
+            return ResponseBuilder::deny()
+                ->action('change ownership')
+                ->item('asset')
+                ->toResponse();
+        }
+
+        if ($asset->user()->is($user)) {
             return $this->allow();
         }
 
         return ResponseBuilder::deny()
-            ->action('change ownership of')
-            ->item('assets')
+            ->action('change ownership')
+            ->item('asset')
+            ->reason('You must be an owner')
             ->toResponse();
     }
 
@@ -127,13 +160,33 @@ class AssetPolicy
             return $this->allow();
         }
 
-        if ($user->can('delete_assets')) {
+        if ($user->cant('delete_assets')) {
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('asset')
+                ->toResponse();
+        }
+
+        if ($asset->user()->is($user)) {
             return $this->allow();
         }
 
         return ResponseBuilder::deny()
             ->action('delete')
             ->item('asset')
+            ->reason('You must be an owner')
             ->toResponse();
+    }
+
+    protected function userInSharingUsers(Asset $asset, User $user): bool
+    {
+        $userForeignKey = \once(static function (): string {
+            return (new ModelHasSharingUsers())->user()->getForeignKeyName();
+        });
+
+        return $asset->sharingUserRelations
+            ->lazy()
+            ->pluck($userForeignKey)
+            ->containsStrict($user->getKey());
     }
 }

@@ -28,6 +28,7 @@ class AssetWithIncludes extends JsonResource
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),
                 'delete' => $user->can('delete', $this->resource),
+                'change_ownership' => $user->can('change_ownership', $this->resource),
             ],
 
             'asset_category_id' => $this->assetCategory()->getParentKey(),

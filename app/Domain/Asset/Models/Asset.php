@@ -9,6 +9,7 @@ use App\Domain\Location\Models\Location;
 use App\Domain\Rescue\Models\Quote;
 use App\Domain\Shared\Eloquent\Concerns\Searchable;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
+use App\Domain\Shared\SharingUser\Contacts\HasSharingUserRelations;
 use App\Domain\User\Concerns\{BelongsToUser};
 use App\Domain\User\Models\ModelHasSharingUsers;
 use App\Domain\User\Models\User;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -28,32 +30,33 @@ use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
- * @property string|null $user_id
- * @property string|null $quote_id
- * @property string|null $quote_type
- * @property string|null $vendor_id
- * @property string|null $vendor_short_code
- * @property string|null $unit_price
- * @property \DateTimeInterface|null $base_warranty_start_date
- * @property \DateTimeInterface|null $base_warranty_end_date
- * @property \DateTimeInterface|null $active_warranty_start_date
- * @property \DateTimeInterface|null $active_warranty_end_date
- * @property string|null $item_number
- * @property string|null $product_number
- * @property string|null $serial_number
- * @property string|null $product_description
- * @property string|null $service_description
- * @property string|null $product_image
- * @property bool|null $is_migrated
- * @property AssetCategory $assetCategory
- * @property Location $location
- * @property Quote|\App\Domain\Worldwide\Models\WorldwideQuote|null $quote
+ * @property string|null                                                   $user_id
+ * @property string|null                                                   $quote_id
+ * @property string|null                                                   $quote_type
+ * @property string|null                                                   $vendor_id
+ * @property string|null                                                   $vendor_short_code
+ * @property string|null                                                   $unit_price
+ * @property \DateTimeInterface|null                                       $base_warranty_start_date
+ * @property \DateTimeInterface|null                                       $base_warranty_end_date
+ * @property \DateTimeInterface|null                                       $active_warranty_start_date
+ * @property \DateTimeInterface|null                                       $active_warranty_end_date
+ * @property string|null                                                   $item_number
+ * @property string|null                                                   $product_number
+ * @property string|null                                                   $serial_number
+ * @property string|null                                                   $product_description
+ * @property string|null                                                   $service_description
+ * @property string|null                                                   $product_image
+ * @property bool|null                                                     $is_migrated
+ * @property AssetCategory                                                 $assetCategory
+ * @property Location                                                      $location
+ * @property Quote|\App\Domain\Worldwide\Models\WorldwideQuote|null        $quote
  * @property Collection<int, Company>|\App\Domain\Company\Models\Company[] $companies
- * @property Address|null $address
- * @property User|null $user
- * @property Collection $sharingUsers
+ * @property Address|null                                                  $address
+ * @property User|null                                                     $user
+ * @property Collection                                                    $sharingUsers
+ * @property Collection                                                    $sharingUserRelations
  */
-class Asset extends Model implements SearchableEntity
+class Asset extends Model implements SearchableEntity, HasSharingUserRelations
 {
     use Uuid;
     use Multitenantable;
@@ -139,6 +142,13 @@ class Asset extends Model implements SearchableEntity
     public function companies(): BelongsToMany
     {
         return $this->belongsToMany(Company::class);
+    }
+
+    public function sharingUserRelations(): HasMany
+    {
+        $pivot = (new ModelHasSharingUsers());
+
+        return $this->hasMany(ModelHasSharingUsers::class, $pivot->related()->getForeignKeyName());
     }
 
     public function sharingUsers(): MorphToMany

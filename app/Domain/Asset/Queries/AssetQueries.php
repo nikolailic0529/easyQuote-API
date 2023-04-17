@@ -4,6 +4,7 @@ namespace App\Domain\Asset\Queries;
 
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Models\AssetCategory;
+use App\Domain\Asset\Queries\Scopes\AssetScope;
 use App\Domain\Company\Models\Company;
 use App\Domain\Rescue\Models\Customer;
 use App\Domain\Rescue\Models\Quote;
@@ -74,7 +75,7 @@ class AssetQueries
             ->join($assetCategoryModel->getTable(), $assetCategoryModel->getQualifiedKeyName(), $assetModel->assetCategory()->getQualifiedForeignKeyName())
             ->join($vendorModel->getTable(), $vendorModel->getQualifiedKeyName(), $assetModel->vendor()->getQualifiedForeignKeyName());
 
-        return tap($query, function (Builder $builder) use ($assetModel) {
+        return tap($query, static function (Builder $builder) use ($assetModel): void {
             $builder->orderByDesc($assetModel->getQualifiedCreatedAtColumn());
         });
     }
@@ -122,40 +123,23 @@ class AssetQueries
                 $userModel->qualifyColumn('user_fullname'),
             ])
             ->leftJoin($userModel->getTable(), $userModel->getQualifiedKeyName(), $assetModel->user()->getQualifiedForeignKeyName())
-            ->join($assetCategoryModel->getTable(), $assetCategoryModel->getQualifiedKeyName(), $assetModel->assetCategory()->getQualifiedForeignKeyName())
-            ->leftJoin($rescueQuoteModel->getTable(), function (JoinClause $join) use ($rescueQuoteModel, $assetModel) {
+            ->join($assetCategoryModel->getTable(), $assetCategoryModel->getQualifiedKeyName(),
+                $assetModel->assetCategory()->getQualifiedForeignKeyName())
+            ->leftJoin($rescueQuoteModel->getTable(), static function (JoinClause $join) use ($rescueQuoteModel, $assetModel): void {
                 $join->on($rescueQuoteModel->getQualifiedKeyName(), $assetModel->quote()->getQualifiedForeignKeyName());
 //                    ->whereNull($rescueQuoteModel->getQualifiedDeletedAtColumn());
             })
-            ->leftJoin($rescueCustomerModel->getTable(), $rescueCustomerModel->getQualifiedKeyName(), $rescueQuoteModel->customer()->getQualifiedForeignKeyName())
-            ->leftJoin($worldwideQuoteModel->getTable(), function (JoinClause $join) use ($worldwideQuoteModel, $assetModel) {
+            ->leftJoin($rescueCustomerModel->getTable(), $rescueCustomerModel->getQualifiedKeyName(),
+                $rescueQuoteModel->customer()->getQualifiedForeignKeyName())
+            ->leftJoin($worldwideQuoteModel->getTable(), static function (JoinClause $join) use ($worldwideQuoteModel, $assetModel): void {
                 $join->on($worldwideQuoteModel->getQualifiedKeyName(), $assetModel->quote()->getQualifiedForeignKeyName());
 //                    ->whereNull($worldwideQuoteModel->getQualifiedDeletedAtColumn());
             })
-            ->leftJoin($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $worldwideQuoteModel->opportunity()->getQualifiedForeignKeyName())
-            ->leftJoin("{$companyModel->getTable()} as primary_account", "primary_account.{$companyModel->getKeyName()}", $opportunityModel->primaryAccount()->getQualifiedForeignKeyName());
-
-        if (false === is_null($user) && $this->gate->denies('viewAnyOwnerEntities', Asset::class)) {
-            $query->where(function (Builder $builder) use ($user) {
-                $quoteType = match ($user->team?->business_division_id) {
-                    BD_RESCUE => (new Quote())->getMorphClass(),
-                    BD_WORLDWIDE => (new WorldwideQuote())->getMorphClass(),
-                    default => null,
-                };
-
-                $builder
-                    ->where(function (Builder $builder) use ($quoteType) {
-                        $builder->where($builder->qualifyColumn('quote_type'), $quoteType)
-                            ->orWhereNull($builder->qualifyColumn('quote_type'));
-                    })
-                    ->where(function (Builder $builder) use ($user) {
-                        $ledTeamUsersQuery = $user->ledTeamUsers()->getQuery();
-
-                        $builder->where($builder->qualifyColumn('user_id'), $user->getKey())
-                            ->orWhereIn($builder->qualifyColumn('user_id'), $ledTeamUsersQuery->select($ledTeamUsersQuery->qualifyColumn('id'))->toBase());
-                    });
-            });
-        }
+            ->leftJoin($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(),
+                $worldwideQuoteModel->opportunity()->getQualifiedForeignKeyName())
+            ->leftJoin("{$companyModel->getTable()} as primary_account", "primary_account.{$companyModel->getKeyName()}",
+                $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
+            ->tap(AssetScope::from($request, $this->gate));
 
         return RequestQueryBuilder::for(
             builder: $query,
@@ -198,12 +182,12 @@ class AssetQueries
     public function locationsQuery(): Builder
     {
         return Asset::query()
-            ->join('addresses', function (JoinClause $join) {
+            ->join('addresses', static function (JoinClause $join): void {
                 $join->on('addresses.id', '=', 'assets.address_id')
                     ->whereNotNull('addresses.location_id')
                     ->whereNull('addresses.deleted_at');
             })
-            ->join('locations', function (JoinClause $join) {
+            ->join('locations', static function (JoinClause $join): void {
                 $join->on('locations.id', '=', 'addresses.location_id')
                     ->whereNull('locations.deleted_at');
             })
@@ -218,7 +202,7 @@ class AssetQueries
             ->selectRaw('COUNT(*) AS `total_count`')
             ->addSelect('user_id')
             ->groupBy('user_id')
-            ->whereHas('location', fn (Builder $q) => $q->whereKey($locationId))
+            ->whereHas('location', static fn (Builder $q) => $q->whereKey($locationId))
             ->toBase();
     }
 }
