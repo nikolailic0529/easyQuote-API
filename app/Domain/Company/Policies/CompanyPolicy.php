@@ -120,11 +120,7 @@ class CompanyPolicy
                 ->toResponse();
         }
 
-        if ($user->can('view_companies') && $company->owner()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('view_companies_where_editor') && $this->userInSharingUsers($company, $user)) {
+        if ($company->owner()->is($user) || $this->userInSharingUsers($company, $user)) {
             return $this->allow();
         }
 
@@ -180,11 +176,7 @@ class CompanyPolicy
                 ->toResponse();
         }
 
-        if ($user->can('update_companies') && $company->owner()->is($user)) {
-            return $this->allow();
-        }
-
-        if ($user->can('update_companies_where_editor') && $this->userInSharingUsers($company, $user)) {
+        if ($company->owner()->is($user) || $this->userInSharingUsers($company, $user)) {
             return $this->allow();
         }
 
