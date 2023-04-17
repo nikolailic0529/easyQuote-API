@@ -28,6 +28,8 @@ class InvitationTest extends TestCase
     {
         $this->authenticateApi();
 
+        Invitation::factory()->count(2)->create();
+
         $this->getJson('api/invitations')
 //            ->dump()
             ->assertOk()
@@ -36,6 +38,13 @@ class InvitationTest extends TestCase
                     '*' => [
                         'id', 'user_id', 'role_id', 'role_name', 'invitation_token', 'host', 'created_at', 'expires_at',
                         'is_expired',
+                        'issuer' => [
+                            'id',
+                            'email',
+                            'first_name',
+                            'last_name',
+                            'user_fullname',
+                        ],
                     ],
                 ],
             ]);

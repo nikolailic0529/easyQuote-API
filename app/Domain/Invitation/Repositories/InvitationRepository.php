@@ -18,7 +18,9 @@ class InvitationRepository extends SearchableRepository implements \App\Domain\I
 
     public function userQuery(): Builder
     {
-        return $this->invitation->query()->with('role');
+        return $this->invitation->query()
+            ->with('role')
+            ->with('user');
     }
 
     public function find(string $token): Invitation

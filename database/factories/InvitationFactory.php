@@ -1,14 +1,24 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
+use App\Domain\Authorization\Models\Role;
 use App\Domain\Invitation\Models\Invitation;
-use Faker\Generator as Faker;
+use App\Domain\User\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-$factory->define(Invitation::class, static function (Faker $faker): array {
-    return [
-        'email' => Str::uuid()->toString().'@example.com',
-        'host' => config('app.url'),
-    ];
-});
+class InvitationFactory extends Factory
+{
+    protected $model = Invitation::class;
+
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'role_id' => Role::factory(),
+            'email' => Str::uuid()->toString().'@example.com',
+            'host' => config('app.url'),
+        ];
+    }
+}
