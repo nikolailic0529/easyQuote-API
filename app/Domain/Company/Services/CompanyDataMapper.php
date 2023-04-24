@@ -579,10 +579,20 @@ class CompanyDataMapper
         $anotherAddressMap = $importedAddressesDontHaveRelThroughPlRef->keyBy($addressHashResolver);
         $anotherContactMap = $importedContactsDontHaveRelThroughPlRef->keyBy($contactHashResolver);
 
-        $newImportedAddresses = $anotherAddressMap->diffKeys($currentAddressMap);
-        $newImportedAddresses = $newImportedAddresses->merge($anotherAddressMap->whereNotNull('pl_reference'));
         $newImportedContacts = $anotherContactMap->diffKeys($currentContactMap);
         $newImportedContacts = $newImportedContacts->merge($anotherContactMap->whereNotNull('pl_reference'));
+
+        $newImportedAddresses = $anotherAddressMap->diffKeys($currentAddressMap);
+        $newImportedAddresses = $newImportedAddresses->merge($anotherAddressMap->whereNotNull('pl_reference'));
+
+        // Reject the newly imported addresses which have pl reference, but don't the corresponding contact relationship through the ref.
+        $newImportedAddresses = $newImportedAddresses->reject(static function (ImportedAddress $a) use ($newImportedContacts): bool {
+            if (null === $a->pl_reference) {
+                return false;
+            }
+
+            return false === $newImportedContacts->containsStrict('pl_reference', $a->pl_reference);
+        });
 
         $newAddressMap = $newImportedAddresses
             ->mapWithKeys(function (ImportedAddress $a) use ($company): array {
