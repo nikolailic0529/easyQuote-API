@@ -866,6 +866,20 @@ class OpportunityTest extends TestCase
                         'email',
                         'user_fullname',
                     ],
+                    'permissions' => [
+                        'view',
+                        'update',
+                        'delete',
+                        'change_ownership',
+                    ],
+                    'sharing_users' => [
+                        '*' => [
+                            'id',
+                            'first_name',
+                            'last_name',
+                            'email',
+                        ],
+                    ],
                     'quote_number',
                     'submitted_at',
                 ],
