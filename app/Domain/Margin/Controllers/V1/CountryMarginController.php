@@ -6,6 +6,7 @@ use App\Domain\Margin\Contracts\MarginRepositoryInterface as MarginRepository;
 use App\Domain\Margin\Models\CountryMargin;
 use App\Domain\Margin\Requests\StoreCountryMarginRequest;
 use App\Domain\Margin\Requests\UpdateCountryMarginRequest;
+use App\Domain\Margin\Resources\V1\CountryMarginResource;
 use App\Foundation\Http\Controller;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +35,7 @@ class CountryMarginController extends Controller
      */
     public function show(CountryMargin $margin): JsonResponse
     {
-        return response()->json($margin);
+        return response()->json(CountryMarginResource::make($margin));
     }
 
     /**

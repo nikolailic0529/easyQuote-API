@@ -2,53 +2,53 @@
 
 namespace App\Domain\Country\Controllers\V1;
 
-use App\Domain\Country\Contracts\CountryRepositoryInterface;
+use App\Domain\Company\Models\Company;
 use App\Domain\Country\Models\Country;
+use App\Domain\Country\Queries\CountryQueries;
 use App\Domain\Country\Requests\StoreCountryRequest;
 use App\Domain\Country\Requests\UpdateCountryRequest;
 use App\Domain\Country\Resources\V1\CountryCollection;
+use App\Domain\Country\Resources\V1\CountryList;
 use App\Domain\Country\Resources\V1\CountryResource;
-use App\Domain\Country\Resources\V1\{CountryList};
+use App\Domain\Country\Services\CountryEntityService;
+use App\Domain\Vendor\Models\Vendor;
 use App\Foundation\Http\Controller;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class CountryController extends Controller
 {
-    protected $countries;
-
-    public function __construct(CountryRepositoryInterface $countries)
+    public function __construct()
     {
-        $this->countries = $countries;
-
-        $this->authorizeResource(\App\Domain\Country\Models\Country::class, 'country');
+        $this->authorizeResource(Country::class, 'country');
     }
 
-    public function __invoke()
+    /**
+     * List countries.
+     */
+    public function __invoke(CountryQueries $queries): JsonResponse
     {
         return response()->json(
-            CountryList::collection($this->countries->allCached())
+            CountryList::collection($queries->listCountriesOrdered()->get())
         );
     }
 
     /**
-     * Display a listing of the countries.
-     *
-     * @return \Illuminate\Http\Response
+     * Paginate countries.
      */
-    public function index()
+    public function index(Request $request, CountryQueries $queries): JsonResponse
     {
-        $resource = request()->filled('search')
-            ? $this->countries->search(request('search'))
-            : $this->countries->paginate();
+        $pagination = $queries->paginateCountriesQuery($request)->apiPaginate();
 
-        return response()->json(CountryCollection::make($resource));
+        return response()->json(CountryCollection::make($pagination));
     }
 
     /**
-     * Display the specified Country.
-     *
-     * @return \Illuminate\Http\Response
+     * Show country.
      */
-    public function show(Country $country)
+    public function show(Country $country): JsonResponse
     {
         return response()->json(
             CountryResource::make($country)->load('defaultCurrency')
@@ -56,39 +56,35 @@ class CountryController extends Controller
     }
 
     /**
-     * Display a plain listing of Countries filtered by Vendor.
-     *
-     * @return \Illuminate\Http\Response
+     * Filter countries by vendor.
      */
-    public function filterCountriesByVendor(string $vendor)
+    public function filterCountriesByVendor(CountryQueries $queries, Vendor $vendor): JsonResponse
     {
         return response()->json(
-            $this->countries->findByVendor($vendor, ['id', 'iso_3166_2', 'name'])
+            $queries->listCountriesByVendor($vendor)->get()
         );
     }
 
     /**
-     * Display a plain listing of Countries filtered by Company.
-     *
-     * @return \Illuminate\Http\Response
+     * Filter countries by company.
      */
-    public function filterCountriesByCompany(string $company)
+    public function filterCountriesByCompany(CountryQueries $queries, Company $company): JsonResponse
     {
         return response()->json(
-            $this->countries->findByCompany($company, ['id', 'iso_3166_2', 'name'])
+            $queries->listCountriesByCompany($company)->get()
         );
     }
 
     /**
-     * Store a newly created Country in storage.
-     *
-     * @param \App\Domain\Country\Models\Country $country
-     *
-     * @return \Illuminate\Http\Response
+     * Create country.
      */
-    public function store(StoreCountryRequest $request)
-    {
-        $country = $this->countries->create($request->validated());
+    public function store(
+        StoreCountryRequest $request,
+        CountryEntityService $service
+    ): JsonResponse {
+        $country = $service
+            ->setCauser($request->user())
+            ->createCountry($request->getCreateCountryData());
 
         return response()->json(
             CountryResource::make($country)->load('defaultCurrency')
@@ -96,13 +92,16 @@ class CountryController extends Controller
     }
 
     /**
-     * Update the specified Country.
-     *
-     * @return \Illuminate\Http\Response
+     * Update country.
      */
-    public function update(UpdateCountryRequest $request, Country $country)
-    {
-        $country = $this->countries->update($request->validated(), $country->id);
+    public function update(
+        UpdateCountryRequest $request,
+        CountryEntityService $service,
+        Country $country
+    ): JsonResponse {
+        $country = $service
+            ->setCauser($request->user())
+            ->updateCountry($country, $request->getUpdateCountryData());
 
         return response()->json(
             CountryResource::make($country)->load('defaultCurrency')
@@ -110,42 +109,52 @@ class CountryController extends Controller
     }
 
     /**
-     * Remove the specified Country.
-     *
-     * @return \Illuminate\Http\Response
+     * Delete country.
      */
-    public function destroy(Country $country)
-    {
-        return response()->json(
-            $this->countries->delete($country->id)
-        );
+    public function destroy(
+        Request $request,
+        CountryEntityService $service,
+        Country $country
+    ): Response {
+        $service->setCauser($request->user())
+            ->deleteCountry($country);
+
+        return response()->noContent();
     }
 
     /**
-     * Activate the specified Country.
+     * Mark country active.
      *
-     * @return \Illuminate\Http\Response
+     * @throws AuthorizationException
      */
-    public function activate(Country $country)
-    {
+    public function activate(
+        Request $request,
+        CountryEntityService $service,
+        Country $country
+    ): Response {
         $this->authorize('update', $country);
 
-        return response()->json(
-            $this->countries->activate($country->id)
-        );
+        $service->setCauser($request->user())
+            ->markCountryAsActive($country);
+
+        return response()->noContent();
     }
 
     /**
-     * Deactivate the specified Country.
+     * Mark country inactive.
      *
-     * @return \Illuminate\Http\Response
+     * @throws AuthorizationException
      */
-    public function deactivate(Country $country)
-    {
+    public function deactivate(
+        Request $request,
+        CountryEntityService $service,
+        Country $country
+    ): Response {
         $this->authorize('update', $country);
 
-        return response()->json(
-            $this->countries->deactivate($country->id)
-        );
+        $service->setCauser($request->user())
+            ->markCountryAsInactive($country);
+
+        return response()->noContent();
     }
 }

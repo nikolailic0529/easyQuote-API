@@ -12,7 +12,7 @@ abstract class TaskTemplateStore extends ValueStore implements Jsonable, \JsonSe
      *
      * @return $this
      */
-    public function setContent(array $values)
+    public function setContent(array $values): static
     {
         return parent::setContent($values);
     }

@@ -86,8 +86,7 @@ class CountryTest extends TestCase
         $country = factory(Country::class)->create();
 
         $this->deleteJson('api/countries/'.$country->getKey())
-            ->assertOk()
-            ->assertExactJson([true]);
+            ->assertNoContent();
 
         $this->getJson('api/countries/'.$country->getKey())
             ->assertNotFound();
@@ -106,7 +105,7 @@ class CountryTest extends TestCase
         $country->save();
 
         $this->putJson('api/countries/activate/'.$country->getKey())
-            ->assertOk()->assertExactJson([true]);
+            ->assertNoContent();
 
         $this->assertNotNull($country->refresh()->activated_at);
     }
@@ -124,8 +123,7 @@ class CountryTest extends TestCase
         $country->save();
 
         $this->putJson('api/countries/deactivate/'.$country->getKey())
-            ->assertOk()
-            ->assertExactJson([true]);
+            ->assertNoContent();
 
         $this->assertNull($country->refresh()->activated_at);
     }

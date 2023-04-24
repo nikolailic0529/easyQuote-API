@@ -4,18 +4,23 @@ namespace App\Domain\Margin\Models;
 
 use App\Domain\Activity\Concerns\LogsActivity;
 use App\Domain\Country\Concerns\{BelongsToCountry};
+use App\Domain\Country\Models\Country;
 use App\Domain\Rescue\Models\BaseQuote as Quote;
 use App\Domain\Shared\Eloquent\Concerns\Searchable;
+use App\Domain\Vendor\Models\Vendor;
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * @property mixed      $vendor_id
- * @property mixed      $country_id
- * @property mixed|null $quote_type
- * @property mixed|null $is_fixed
- * @property mixed|null $value
- * @property mixed|null $method
+ * @property string       $vendor_id
+ * @property string       $country_id
+ * @property string|null  $quote_type
+ * @property bool|null    $is_fixed
+ * @property string|null  $value
+ * @property string|null  $method
+ * @property string|null  $activated_at
+ * @property Vendor|null  $vendor
+ * @property Country|null $country
  */
 class CountryMargin extends Margin implements SearchableEntity
 {

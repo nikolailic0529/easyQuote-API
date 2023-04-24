@@ -51,7 +51,7 @@ class UserWithIncludes extends JsonResource
             'timezone_text' => $this->timezone_text,
             'timezone' => $this->timezone,
 
-            'country' => $this->country->exists ? $this->country : null,
+            'country' => $this->country,
 
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

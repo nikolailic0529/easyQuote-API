@@ -10,7 +10,6 @@ use App\Domain\Authorization\Facades\Permission;
 use App\Domain\Authorization\Models\Role;
 use App\Domain\Company\Concerns\BelongsToCompany;
 use App\Domain\Company\Models\Company;
-use App\Domain\Country\Concerns\BelongsToCountry;
 use App\Domain\Country\Models\Country;
 use App\Domain\Discount\Concerns\HasDiscounts;
 use App\Domain\HpeContract\Models\HpeContractTemplate;
@@ -109,7 +108,6 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
     use HasApiTokens;
     use HasInvitations;
     use BelongsToTimezone;
-    use BelongsToCountry;
     use BelongsToCompany;
     use HasCountryMargins;
     use HasDiscounts;
@@ -188,6 +186,11 @@ class User extends Model implements ActivatableInterface, AuthenticatableContrac
     public function guardName(): string
     {
         return 'api';
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
     }
 
     public function team(): BelongsTo

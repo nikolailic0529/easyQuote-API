@@ -3,7 +3,7 @@
 namespace App\Domain\User\Requests;
 
 use App\Domain\Authorization\Queries\RoleQueries;
-use App\Domain\Country\Contracts\CountryRepositoryInterface;
+use App\Domain\Country\Queries\CountryQueries;
 use App\Domain\Timezone\Queries\TimezoneQueries;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -23,8 +23,8 @@ class ShowFormRequest extends FormRequest
         /** @var TimezoneQueries $timezoneQueries */
         $timezoneQueries = $this->container[TimezoneQueries::class];
 
-        /** @var CountryRepositoryInterface $countries */
-        $countries = app(CountryRepositoryInterface::class);
+        /** @var CountryQueries $countryQueries */
+        $countryQueries = $this->container->make(CountryQueries::class);
 
         $roles = $roleQueries->activeRoles()->get()
             ->sortBy('name', SORT_NATURAL)
@@ -32,7 +32,7 @@ class ShowFormRequest extends FormRequest
 
         return [
             'roles' => $roles,
-            'countries' => $countries->all(),
+            'countries' => $countryQueries->listCountriesOrdered()->get(),
             'timezones' => $timezoneQueries->listOfTimezonesQuery()->get(),
         ];
     }

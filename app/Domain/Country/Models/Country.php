@@ -9,8 +9,8 @@ use App\Domain\Shared\Eloquent\Concerns\Activatable;
 use App\Domain\Shared\Eloquent\Concerns\Searchable;
 use App\Domain\Shared\Eloquent\Concerns\Systemable;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
-use App\Domain\Shared\Eloquent\Contracts\{HasOrderedScope};
 use App\Domain\Shared\Eloquent\Contracts\ActivatableInterface;
+use App\Domain\Shared\Eloquent\Contracts\{HasOrderedScope};
 use App\Foundation\Support\Elasticsearch\Contracts\SearchableEntity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +29,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $currency_name
  * @property string|null $currency_symbol
  * @property string|null $flag
+ * @property string|null $activated_at
  */
 class Country extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {

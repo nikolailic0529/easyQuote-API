@@ -2,6 +2,7 @@
 
 namespace App\Domain\Country\Requests;
 
+use App\Domain\Country\DataTransferObjects\CreateCountryData;
 use App\Domain\Country\Models\Country;
 use App\Domain\Currency\Models\Currency;
 use Illuminate\Foundation\Http\FormRequest;
@@ -52,5 +53,10 @@ class StoreCountryRequest extends FormRequest
         return [
             'iso_3166_2.unique' => 'The given ISO Code has already taken.',
         ];
+    }
+
+    public function getCreateCountryData(): CreateCountryData
+    {
+        return CreateCountryData::from($this->input());
     }
 }
