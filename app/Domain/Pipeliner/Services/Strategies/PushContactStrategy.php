@@ -67,10 +67,6 @@ class PushContactStrategy implements PushStrategy
                     $this->pushSalesUnitStrategy->sync($model->salesUnit);
                 }
 
-                if (null === $model->address) {
-                    throw PipelinerSyncException::undefinedContactAddressRelation($model);
-                }
-
                 $this->ensureReferenceIsValid($model);
 
                 if (null === $model->pl_reference) {
@@ -137,10 +133,6 @@ class PushContactStrategy implements PushStrategy
                 }
             })
             ->each(function (Contact $contact): void {
-                if (null === $contact->address) {
-                    throw PipelinerSyncException::undefinedContactAddressRelation($contact);
-                }
-
                 if (null !== $contact->user) {
                     $this->pushClientStrategy->sync($contact->user);
                 }

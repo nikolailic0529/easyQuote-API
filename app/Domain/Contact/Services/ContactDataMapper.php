@@ -33,17 +33,17 @@ class ContactDataMapper
 
         return new CreateContactInput(
             ownerId: $ownerId,
-            address: (string) $address->address_1,
-            city: (string) $address->city,
-            country: (string) $address->country?->name,
+            address: $address?->address_1 ?? InputValueEnum::Miss,
+            city: $address?->city ?? InputValueEnum::Miss,
+            country: $address->country?->name ?? InputValueEnum::Miss,
             email1: (string) $contact->email,
             phone1: (string) $contact->phone,
             phone2: (string) $contact->mobile,
             firstName: (string) $contact->first_name,
             lastName: (string) $contact->last_name,
-            stateProvince: (string) $address->state,
+            stateProvince: $address?->state ?? InputValueEnum::Miss,
             unitId: $contact->salesUnit?->pl_reference ?? InputValueEnum::Miss,
-            zipCode: (string) $address->post_code,
+            zipCode: $address?->post_code ?? InputValueEnum::Miss,
             gender: isset($contact->gender)
                 ? EnumResolver::fromKey(GenderEnum::class, $contact->gender->name)
                 : InputValueEnum::Miss,
@@ -71,16 +71,16 @@ class ContactDataMapper
         ];
 
         $newFields = [
-            'address' => (string) $contact->address?->address_1,
-            'city' => (string) $contact->address?->city,
-            'country' => (string) $contact->address?->country?->name,
+            'address' => $contact->address?->address_1 ?? InputValueEnum::Miss,
+            'city' => $contact->address?->city ?? InputValueEnum::Miss,
+            'country' => $contact->address?->country?->name ?? InputValueEnum::Miss,
             'email1' => (string) $contact->email,
             'phone1' => (string) $contact->phone,
             'phone2' => (string) $contact->mobile,
             'firstName' => (string) $contact->first_name,
             'lastName' => (string) $contact->last_name,
-            'stateProvince' => (string) $contact->address?->state,
-            'zipCode' => (string) $contact->address?->post_code,
+            'stateProvince' => $contact->address?->state ?? InputValueEnum::Miss,
+            'zipCode' => $contact->address?->post_code ?? InputValueEnum::Miss,
             'unitId' => $contact->salesUnit?->pl_reference ?? InputValueEnum::Miss,
             'gender' => isset($contact->gender)
                 ? $contact->gender->name
@@ -88,7 +88,7 @@ class ContactDataMapper
             'customFields' => json_encode(array_merge($contactEntity->customFields, $this->projectAddressAttrsToCustomFields($contact))),
         ];
 
-        $changedFields = array_udiff_assoc($newFields, $oldFields, function (mixed $a, mixed $b): int {
+        $changedFields = array_udiff_assoc($newFields, $oldFields, static function (mixed $a, mixed $b): int {
             if ($a === null || $b === null) {
                 return $a === $b ? 0 : 1;
             }
@@ -120,8 +120,11 @@ class ContactDataMapper
             $customFields['cfType1Id'] = $typeId;
         }
 
-        $customFields['cfAddressTwo'] = $contact->address?->address_2;
-        $customFields['cfStateCode1'] = $contact->address?->state_code;
+        if ($contact->address) {
+            $customFields['cfAddressTwo'] = $contact->address?->address_2;
+            $customFields['cfStateCode1'] = $contact->address?->state_code;
+        }
+
         $customFields['cfJobTitle'] = $contact->job_title;
 
         $languageId = $contact->language
