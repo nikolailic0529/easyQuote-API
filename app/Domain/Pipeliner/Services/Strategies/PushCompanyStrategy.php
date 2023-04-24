@@ -19,6 +19,10 @@ use App\Domain\Pipeliner\Integration\GraphQl\PipelinerContactIntegration;
 use App\Domain\Pipeliner\Integration\Models\AccountEntity;
 use App\Domain\Pipeliner\Integration\Models\AccountSharingClientRelationEntity;
 use App\Domain\Pipeliner\Integration\Models\AccountSharingClientRelationFilterInput;
+use App\Domain\Pipeliner\Integration\Models\ContactAccountRelationEntity;
+use App\Domain\Pipeliner\Integration\Models\ContactAccountRelationFilterInput;
+use App\Domain\Pipeliner\Integration\Models\ContactEntity;
+use App\Domain\Pipeliner\Integration\Models\ContactFilterInput;
 use App\Domain\Pipeliner\Integration\Models\EntityFilterStringField;
 use App\Domain\Pipeliner\Integration\Models\ValidationLevelCollection;
 use App\Domain\Pipeliner\Models\PipelinerModelUpdateLog;
@@ -243,7 +247,7 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
 
     private function persistSyncLog(Model $model): void
     {
-        tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model) {
+        tap(new PipelinerSyncStrategyLog(), function (PipelinerSyncStrategyLog $log) use ($model): void {
             $log->model()->associate($model);
             $log->strategy_name = (string) StrategyNameResolver::from($this);
             $log->save();
@@ -348,6 +352,49 @@ class PushCompanyStrategy implements PushStrategy, ImpliesSyncOfHigherHierarchyE
         $input = $this->dataMapper->mapPipelinerCreateOrUpdateContactAccountRelationInputCollection($model);
 
         $this->accountIntegration->bulkUpdateContactAccountRelation($input);
+
+        $currentAccountContacts = $this->contactIntegration->getByCriteria(
+            ContactFilterInput::new()->accountRelations(
+                ContactAccountRelationFilterInput::new()
+                    ->accountId(EntityFilterStringField::eq($model->pl_reference))
+            )
+        );
+
+        $contactRefMap = $model->contacts
+            ->lazy()
+            ->keyBy('pl_reference')
+            ->map(static fn (): bool => true)
+            ->collect();
+
+        $contactAccRelationsToBeDeleted = collect($currentAccountContacts)
+            ->lazy()
+            ->reject(static function (ContactEntity $entity) use ($contactRefMap): bool {
+                return $contactRefMap->has($entity->id);
+            })
+            ->map(static function (ContactEntity $entity) use ($model): array {
+                return collect($entity->accountRelations)
+                    ->lazy()
+                    ->filter(static function (ContactAccountRelationEntity $rel) use ($model): bool {
+                        return $rel->accountId === $model->pl_reference;
+                    })
+                    ->map(static function (ContactAccountRelationEntity $rel) {
+                        return $rel->id;
+                    })
+                    ->values()
+                    ->all();
+            })
+            ->collapse()
+            ->unique()
+            ->values()
+            ->collect();
+
+        if ($contactAccRelationsToBeDeleted->isNotEmpty()) {
+            $queue = Queue::all(concurrency: 5, jobs: $contactAccRelationsToBeDeleted->all(), handler: async(function (string $relId): void {
+                $this->accountIntegration->deleteContactAccountRelation($relId);
+            }));
+
+            await($queue);
+        }
     }
 
     public function setSalesUnits(SalesUnit ...$units): static

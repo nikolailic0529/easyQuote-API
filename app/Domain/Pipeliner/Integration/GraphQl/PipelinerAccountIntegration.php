@@ -12,12 +12,14 @@ use App\Domain\Pipeliner\Integration\Models\CreateOrUpdateContactAccountRelation
 use App\Domain\Pipeliner\Integration\Models\UpdateAccountInput;
 use App\Domain\Pipeliner\Integration\Models\UpdateAccountInputCollection;
 use App\Domain\Pipeliner\Integration\Models\ValidationLevelCollection;
+use App\Foundation\Http\Client\GuzzleReactBridge\Utils;
 use GraphQL\Mutation;
 use GraphQL\Query;
 use GraphQL\QueryBuilder\MutationBuilder;
 use GraphQL\QueryBuilder\QueryBuilder;
 use GraphQL\RawObject;
 use Illuminate\Support\LazyCollection;
+use function React\Async\await;
 
 class PipelinerAccountIntegration
 {
@@ -504,13 +506,15 @@ class PipelinerAccountIntegration
                     ])
             );
 
-        $response = $this->client
+        $promise = $this->client->async()
             ->post($this->client->buildSpaceEndpoint(), [
                 'query' => $builder->getQuery()->__toString(),
                 'variables' => [
                     'input' => ['id' => $id],
                 ],
             ]);
+
+        $response = await(Utils::adapt($promise));
 
         GraphQlRequestException::throwIfHasErrors($response);
 
