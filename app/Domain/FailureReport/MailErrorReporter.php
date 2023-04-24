@@ -8,6 +8,7 @@ use App\Foundation\Error\ErrorReporter;
 use App\Foundation\Log\Contracts\LoggerAware;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Mail\MailQueue;
+use Illuminate\Support\Collection;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
@@ -30,6 +31,12 @@ class MailErrorReporter implements ErrorReporter, LoggerAware
     public function __invoke(\Throwable $e): void
     {
         if (!$this->shouldReport($e)) {
+            return;
+        }
+
+        $reportRecipients = setting('failure_report_recipients');
+
+        if (!$reportRecipients || ($reportRecipients instanceof Collection && $reportRecipients->isEmpty())) {
             return;
         }
 

@@ -31,6 +31,7 @@ use App\Domain\HpeContract\Controllers\V1\HpeContractController;
 use App\Domain\HpeContract\Controllers\V1\HpeContractFileController;
 use App\Domain\Invitation\Controllers\V1\InvitationController;
 use App\Domain\Language\Controllers\V1\LanguageController;
+use App\Domain\Mail\Controllers\V1\MailLogController;
 use App\Domain\Maintenance\Controllers\V1\MaintenanceController;
 use App\Domain\Margin\Controllers\V1\CountryMarginController;
 use App\Domain\Note\Controllers\NoteController;
@@ -224,6 +225,9 @@ Route::group(['middleware' => 'auth:api'], static function (): void {
             'activities/subject/{subject}/export/csv',
             [ActivityController::class, 'exportActivityLogOfSubjectToCsv']
         );
+
+        Route::get('mail-log', [MailLogController::class, 'paginateMailLog']);
+        Route::get('mail-log/{record}', [MailLogController::class, 'showMailLogRecord']);
 
         Route::apiResource('importable-columns', ImportableColumnController::class);
         Route::put('importable-columns/activate/{importable_column}', [ImportableColumnController::class, 'activate']);

@@ -79,6 +79,12 @@ class MailEventRateLimitingSubscriber
             return null;
         }
 
-        return $this->mailRateLimiter->attempt();
+        $result = $this->mailRateLimiter->attempt();
+
+        if (!$result) {
+            return false;
+        }
+
+        return null;
     }
 }

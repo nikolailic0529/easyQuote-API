@@ -174,8 +174,13 @@ return [
 
         \App\Foundation\View\Providers\ViewServiceProvider::class,
         \App\Foundation\Validation\Providers\ValidationServiceProvider::class,
+
         \App\Foundation\Mail\Providers\MailServiceProvider::class,
+        // Register the MailLogEventServiceProvider here to be able recording the mail messages even when the mail limit is over
+        // It may be worth moving the mail rate limiting to the domain layer?
+        \App\Domain\Mail\Providers\MailLogEventServiceProvider::class,
         \App\Foundation\Mail\Providers\MailEventServiceProvider::class,
+
         \App\Foundation\Support\Providers\HelperServiceProvider::class,
         \App\Foundation\Support\Elasticsearch\Providers\ElasticsearchServiceProvider::class,
         \App\Foundation\Support\Elasticsearch\Providers\ElasticsearchAuthServiceProvider::class,
@@ -190,6 +195,9 @@ return [
         \App\Domain\Shared\Horizon\Providers\HorizonServiceProvider::class,
         \App\Domain\Shared\Eloquent\Providers\EntityServiceProvider::class,
         \App\Domain\Shared\Eloquent\Providers\PaginationServiceProvider::class,
+
+        \App\Domain\Mail\Providers\MailLogAuthServiceProvider::class,
+
         \App\Domain\Shared\Ownership\Providers\OwnershipServiceProvider::class,
 
         \App\Domain\Log\Providers\LogKeeperServiceProvider::class,

@@ -14,6 +14,7 @@ use App\Domain\Discount\Models\SND;
 use App\Domain\HpeContract\Models\HpeContract;
 use App\Domain\HpeContract\Models\HpeContractTemplate;
 use App\Domain\Invitation\Models\Invitation;
+use App\Domain\Mail\Models\MailLog;
 use App\Domain\Margin\Models\CountryMargin;
 use App\Domain\Pipeline\Models\Pipeline;
 use App\Domain\Rescue\Models\Contract;
@@ -57,5 +58,6 @@ return [
         Team::class,
         Pipeline::class,
         OpportunityForm::class,
+        MailLog::class,
     ],
 ];
