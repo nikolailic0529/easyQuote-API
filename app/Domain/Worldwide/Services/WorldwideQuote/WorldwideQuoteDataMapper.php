@@ -1277,13 +1277,7 @@ class WorldwideQuoteDataMapper
                     'product_no' => $asset->sku ?? '',
                     'service_sku' => $asset->service_sku ?? '',
                     'description' => $asset->product_name ?? '',
-                    'serial_no' => (string) \transform($asset->serial_no ?? '', static function (string $serial) use ($asset) {
-                        if ($asset->is_serial_number_generated) {
-                            return "$serial **";
-                        }
-
-                        return $serial;
-                    }),
+                    'serial_no' => (string) $asset->serial_no ?? '',
                     'is_serial_number_generated' => (bool) $asset->is_serial_number_generated,
                     'date_from' => $this->formatter->format('date', $asset->expiry_date),
                     'date_to' => $this->formatter->format('date', $asset->date_to),
