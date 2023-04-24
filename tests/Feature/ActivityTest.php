@@ -413,6 +413,6 @@ class ActivityTest extends TestCase
 
         $this->post('api/activities/export/csv')
             ->assertOk()
-            ->assertHeader('content-type', 'text/plain');
+            ->assertHeader('content-type', 'text/plain; charset=UTF-8');
     }
 }

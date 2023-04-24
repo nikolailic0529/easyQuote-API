@@ -1819,7 +1819,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'date_from' => '2021-01-22',
             'date_to' => '2022-01-24',
             'price' => '120000.10',
-            'original_price' => 120000.10 * .9,
+            'original_price' => round(120000.10 * .9, 4),
             'machine_address_id' => $machineAddress->getKey(),
         ];
 

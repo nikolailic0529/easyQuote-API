@@ -184,7 +184,7 @@ class StatsTest extends TestCase
         );
 
         $this->assertIsObject($customers);
-        $this->assertObjectHasAttribute('customers_count', $customers);
+        $this->assertTrue(property_exists($customers, 'customers_count'));
     }
 
     /**

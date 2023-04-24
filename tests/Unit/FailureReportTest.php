@@ -3,6 +3,8 @@
 namespace Tests\Unit;
 
 use App\Domain\FailureReport\Mail\FailureReportMail;
+use App\Domain\Settings\Models\SystemSetting;
+use App\Domain\User\Models\User;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -21,9 +23,40 @@ class FailureReportTest extends TestCase
         $this->assertStringContainsString($e->getMessage(), $html);
     }
 
+    public function testDoesntReportFailureWhenRecipientsUndefined(): void
+    {
+        Mail::fake();
+
+        $prop = SystemSetting::query()
+            ->where('key', 'failure_report_recipients')
+            ->sole();
+
+        $failureRecipient = User::factory()->create();
+        $prop->value = [];
+        $prop->save();
+
+        /** @var ExceptionHandler $handler */
+        $handler = $this->app->make(ExceptionHandler::class);
+
+        $e = new \InvalidArgumentException(Str::random(100));
+
+        $handler->report($e);
+
+        Mail::assertNothingQueued();
+        Mail::assertNothingSent();
+    }
+
     public function testReportsFailure(): void
     {
         Mail::fake();
+
+        $prop = SystemSetting::query()
+            ->where('key', 'failure_report_recipients')
+            ->sole();
+
+        $failureRecipient = User::factory()->create();
+        $prop->value = [$failureRecipient->getKey()];
+        $prop->save();
 
         /** @var ExceptionHandler $handler */
         $handler = $this->app->make(ExceptionHandler::class);
