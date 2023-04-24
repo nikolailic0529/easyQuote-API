@@ -8,6 +8,8 @@ return [
             'opportunities' => 'Möglichkeiten',
             'quotes' => 'Zitieren',
             'sync' => 'Synchronisierung',
+            'maintenance' => 'Wartung',
+            'profile' => 'Profil',
         ],
         'controls' => [
             'is_active' => 'Ist aktiv',

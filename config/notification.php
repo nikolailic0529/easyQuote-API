@@ -24,6 +24,12 @@ return [
         'sync' => [
             'is_active',
         ],
+        'maintenance' => [
+            'is_active',
+        ],
+        'profile' => [
+            'is_active',
+        ],
     ],
     'sending_management' => [
         'activities' => [
@@ -108,6 +114,18 @@ return [
                 \App\Domain\Pipeliner\Notifications\SyncStrategyModelSkippedNotification::class,
                 \App\Domain\Pipeliner\Notifications\ModelSyncFailedNotification::class,
                 \App\Domain\Pipeliner\Notifications\ModelSyncCompletedNotification::class,
+            ],
+        ],
+        'maintenance' => [
+            'is_active' => [
+                \App\Domain\Maintenance\Notifications\MaintenanceScheduledNotification::class,
+                \App\Domain\Maintenance\Notifications\MaintenanceFinishedNotification::class,
+            ],
+        ],
+        'profile' => [
+            'is_active' => [
+                \App\Domain\User\Notifications\PasswordChangedNotification::class,
+                \App\Domain\User\Notifications\PasswordExpiringNotification::class,
             ],
         ],
     ],

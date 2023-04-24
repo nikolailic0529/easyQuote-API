@@ -40,7 +40,7 @@ class NotificationSettingsPresenter
             $controls[] = [
                 'label' => $this->resolveControlLabel($key),
                 'key' => $key,
-                'email_notif' => (bool) Arr::get($groupSettings, "$key.email_notif", true),
+                'email_notif' => (bool) Arr::get($groupSettings, "$key.email_notif", false),
                 'app_notif' => (bool) Arr::get($groupSettings, "$key.app_notif", true),
             ];
         }

@@ -2,9 +2,8 @@
 
 namespace App\Domain\User\Commands;
 
-use App\Domain\Priority\Enum\Priority;
 use App\Domain\User\Models\User;
-use App\Domain\User\Notifications\PasswordExpiration as PasswordExpirationNotification;
+use App\Domain\User\Notifications\PasswordExpiringNotification;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -24,19 +23,6 @@ class NotifyPasswordExpirationCommand extends Command
      */
     protected $description = 'Notify Users to change password';
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     */
     public function handle(): int
     {
         $cursor = User::query()
@@ -54,17 +40,8 @@ class NotifyPasswordExpirationCommand extends Command
     {
         $expiresInDays = config('user.password_expiration.days') - optional($user->password_changed_at)->diffInDays(now()->startOfDay());
         $expirationDate = now()->startOfDay()->addDays($expiresInDays);
-        $expires_at = $expirationDate->format('d M Y');
 
-        notification()
-            ->for($user)
-            ->message(__(PWDE_01, compact('expires_at')))
-            ->subject($user)
-            ->url(ui_route('users.profile'))
-            ->priority(Priority::High)
-            ->push();
-
-        $user->notify(new PasswordExpirationNotification($expirationDate));
+        $user->notify(new PasswordExpiringNotification($expirationDate));
     }
 
     protected static function scope(): \Closure

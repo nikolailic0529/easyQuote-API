@@ -15,6 +15,8 @@ final class NotificationSettingsData extends Data
         public readonly OpportunitiesData $opportunities = new OpportunitiesData(),
         public readonly QuotesData $quotes = new QuotesData(),
         public readonly SyncData $sync = new SyncData(),
+        public readonly MaintenanceData $maintenance = new MaintenanceData(),
+        public readonly ProfileData $profile = new ProfileData(),
     ) {
     }
 }

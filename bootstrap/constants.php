@@ -9,9 +9,6 @@ const AU_01 = 'You are already authenticated in another account.';
 // User
 const PRE_01 = 'Your Password Reset link is expired, please contact your line-manager to resend the link.';
 const USD_01 = 'You could not delete yourself.';
-const PWDE_01 = 'Your password is expiring on :expires_at.';
-const PWDE_02 = "Your password is expiring on :expires_at. It's strongly recommended to change password.";
-const PWDC_01 = 'You have successfully changed your password.';
 const UN_FALLBACK_ROUTE = 'users.notifications';
 const AT_01 = 'Some one tried to login to your account from ip address: :ip_address.';
 

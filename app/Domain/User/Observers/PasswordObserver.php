@@ -2,58 +2,31 @@
 
 namespace App\Domain\User\Observers;
 
-use App\Domain\Priority\Enum\Priority;
-use App\Domain\User\Notifications\PasswordChanged;
-use App\Foundation\Mail\Exceptions\MailRateLimitException;
+use App\Domain\User\Notifications\PasswordChangedNotification;
 use Illuminate\Database\Eloquent\Model;
 
 class PasswordObserver
 {
-    /**
-     * Handle the model "creating" event.
-     *
-     * @return void
-     */
-    public function creating(Model $model)
+    public function creating(Model $model): void
     {
         $model->password_changed_at = now()->startOfDay();
     }
 
-    /**
-     * Handle the model "updating" event.
-     *
-     * @return void
-     */
-    public function updating(Model $model)
+    public function updating(Model $model): void
     {
         if ($model->isDirty('password')) {
             $model->password_changed_at = now()->startOfDay();
         }
     }
 
-    /**
-     * Handle the model "updating" event.
-     *
-     * @return void
-     */
-    public function updated(Model $model)
+    public function updated(Model $model): void
     {
         if (!$model->wasChanged('password')) {
             return;
         }
 
-        try {
-            $model->notify(new PasswordChanged());
-        } catch (MailRateLimitException $e) {
-            report($e);
-        }
-
-        notification()
-            ->for($model)
-            ->message(PWDC_01)
-            ->url(ui_route('users.profile'))
-            ->subject($model)
-            ->priority(Priority::Medium)
-            ->queue();
+        rescue(static function () use ($model): void {
+            $model->notify(new PasswordChangedNotification());
+        });
     }
 }
