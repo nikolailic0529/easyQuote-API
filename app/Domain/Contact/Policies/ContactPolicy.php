@@ -98,6 +98,10 @@ class ContactPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($contact->user()->is($user)) {
             return $this->allow();
         }
@@ -149,6 +153,10 @@ class ContactPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($contact->user()->is($user)) {
             return $this->allow();
         }
@@ -184,6 +192,10 @@ class ContactPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($contact->user()->is($user)) {
             return $this->allow();
         }
@@ -193,6 +205,11 @@ class ContactPolicy
             ->item('contact')
             ->reason('You must be an owner')
             ->toResponse();
+    }
+
+    private function userHasAccessToCurrentOrAllUnits(User $user): bool
+    {
+        return in_array($user->role->access->accessContactDirection, [AccessEntityDirection::CurrentUnits, AccessEntityDirection::All], true);
     }
 
     private function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool
