@@ -146,12 +146,12 @@ class CompanyEventAuditor implements ShouldQueue
         $event->company->owner->notify(new CompanyOwnershipChangedNotification($event->company));
     }
 
-    public function touchRelatedOpportunitiesOnCompanyOwnershipChanged(CompanyOwnershipChanged $event)
+    public function touchRelatedOpportunitiesOnCompanyOwnershipChanged(CompanyOwnershipChanged $event): void
     {
         $this->touchRelatedOpportunitiesOf($event->company);
     }
 
-    public function touchRelatedOpportunitiesOnCompanyUpdated(CompanyUpdated $event)
+    public function touchRelatedOpportunitiesOnCompanyUpdated(CompanyUpdated $event): void
     {
         if (($event->flags & CompanyUpdated::ATTRIBUTES_CHANGED) || ($event->flags & CompanyUpdated::RELATIONS_CHANGED)) {
             $this->touchRelatedOpportunitiesOf($event->company);
@@ -170,10 +170,14 @@ class CompanyEventAuditor implements ShouldQueue
 
         return array_merge($newAttributes, [
             'status' => $company->status->name,
-            'addresses' => $company->addresses->map(fn (Address $address) => "\{$address->address_representation\}")
-                ->implode(', '),
-            'contacts' => $company->contacts->map(fn (Contact $contact) => "\{$contact->contact_representation\}")
-                ->implode(', '),
+            'addresses' => $company->addresses->map(static function (Address $address): string {
+                return sprintf('[%s `%s` %s]', $address->address_type, $address->getIdForHumans(),
+                    $address->pivot->is_default ? 'default' : 'not default');
+            })->implode(', '),
+            'contacts' => $company->contacts->map(static function (Contact $contact): string {
+                return sprintf('[%s `%s` %s]', $contact->contact_type, $contact->getIdForHumans(),
+                    $contact->pivot->is_default ? 'default' : 'not default');
+            })->implode(', '),
             'vendors' => $company->vendors->pluck('short_code')->implode(', '),
             'aliases' => $company->aliases->pluck('name')->implode(', '),
         ]);

@@ -8,7 +8,9 @@ use App\Domain\Activity\Queries\Filters\FilterActivityByCustomPeriodPipe;
 use App\Domain\Activity\Queries\Filters\FilterActivityByDefinedPeriod;
 use App\Domain\Activity\Queries\Filters\FilterActivityByDescriptionPipe;
 use App\Domain\Activity\Queries\Filters\FilterActivityBySubjectTypesPipe;
+use App\Domain\Address\Models\Addressable;
 use App\Domain\Appointment\Models\ModelHasAppointments;
+use App\Domain\Contact\Models\Contactable;
 use App\Domain\Note\Models\ModelHasNotes;
 use App\Domain\Task\Models\ModelHasTasks;
 use App\Foundation\Database\Eloquent\QueryFilter\Pipeline\PerformElasticsearchSearch;
@@ -46,10 +48,10 @@ class ActivityQueries
                 "{$model->qualifyColumn('properties')} as properties",
                 "{$model->getQualifiedCreatedAtColumn()} as created_at",
             ])
-            ->leftJoin('users', function (JoinClause $join) use ($model) {
+            ->leftJoin('users', static function (JoinClause $join) use ($model): void {
                 $join->on('users.id', $model->causer()->getQualifiedForeignKeyName());
             })
-            ->leftJoin('oauth_clients', function (JoinClause $join) use ($model) {
+            ->leftJoin('oauth_clients', static function (JoinClause $join) use ($model): void {
                 $join->on('oauth_clients.id', $model->causer()->getQualifiedForeignKeyName());
             });
 
@@ -87,11 +89,15 @@ class ActivityQueries
         $modelHasTasks = new ModelHasTasks();
         $modelHasAppointments = new ModelHasAppointments();
         $modelHasNotes = new ModelHasNotes();
+        $modelHasAddresses = new Addressable();
+        $modelHasContacts = new Contactable();
 
         /** @var \Staudenmeir\LaravelCte\Query\Builder&Builder $query */
         $query = $model->newQuery();
 
-        $query->withExpression('subject_has_tasks',
+        $relatedCte = [];
+
+        $query->withExpression($relatedCte[] = 'subject_has_tasks',
             $modelHasTasks
                 ->newQuery()
                 ->select("{$modelHasTasks->task()->getQualifiedForeignKeyName()} as related_subject_id")
@@ -99,7 +105,7 @@ class ActivityQueries
                 ->toBase()
         );
 
-        $query->withExpression('subject_has_appointments',
+        $query->withExpression($relatedCte[] = 'subject_has_appointments',
             $modelHasAppointments
                 ->newQuery()
                 ->select("{$modelHasAppointments->appointment()->getQualifiedForeignKeyName()} as related_subject_id")
@@ -107,11 +113,27 @@ class ActivityQueries
                 ->toBase()
         );
 
-        $query->withExpression('subject_has_notes',
+        $query->withExpression($relatedCte[] = 'subject_has_notes',
             $modelHasNotes
                 ->newQuery()
                 ->select("{$modelHasNotes->note()->getQualifiedForeignKeyName()} as related_subject_id")
                 ->where($modelHasNotes->related()->getQualifiedForeignKeyName(), $subject)
+                ->toBase()
+        );
+
+        $query->withExpression($relatedCte[] = 'subject_has_addresses',
+            $modelHasAddresses
+                ->newQuery()
+                ->select("{$modelHasAddresses->address()->getQualifiedForeignKeyName()} as related_subject_id")
+                ->where($modelHasAddresses->related()->getQualifiedForeignKeyName(), $subject)
+                ->toBase()
+        );
+
+        $query->withExpression($relatedCte[] = 'subject_has_contacts',
+            $modelHasContacts
+                ->newQuery()
+                ->select("{$modelHasContacts->contact()->getQualifiedForeignKeyName()} as related_subject_id")
+                ->where($modelHasContacts->related()->getQualifiedForeignKeyName(), $subject)
                 ->toBase()
         );
 
@@ -126,32 +148,20 @@ class ActivityQueries
                 "{$model->qualifyColumn('properties')} as properties",
                 "{$model->getQualifiedCreatedAtColumn()} as created_at",
             ])
-            ->leftJoin('users', function (JoinClause $join) use ($model) {
+            ->leftJoin('users', static function (JoinClause $join) use ($model): void {
                 $join->on('users.id', $model->causer()->getQualifiedForeignKeyName());
             })
-            ->where(static function (Builder $builder) use ($subject, $model) {
+            ->where(static function (Builder $builder) use ($subject, $model, $relatedCte): void {
                 $builder->where($model->subject()->getQualifiedForeignKeyName(), $subject);
 
-                $builder->orWhereIn($model->subject()->getQualifiedForeignKeyName(),
-                    static function (BaseBuilder $builder): void {
-                        $builder
-                            ->select('related_subject_id')
-                            ->from('subject_has_tasks');
-                    });
-
-                $builder->orWhereIn($model->subject()->getQualifiedForeignKeyName(),
-                    static function (BaseBuilder $builder): void {
-                        $builder
-                            ->select('related_subject_id')
-                            ->from('subject_has_appointments');
-                    });
-
-                $builder->orWhereIn($model->subject()->getQualifiedForeignKeyName(),
-                    static function (BaseBuilder $builder): void {
-                        $builder
-                            ->select('related_subject_id')
-                            ->from('subject_has_notes');
-                    });
+                foreach ($relatedCte as $cte) {
+                    $builder->orWhereIn($model->subject()->getQualifiedForeignKeyName(),
+                        static function (BaseBuilder $builder) use ($cte): void {
+                            $builder
+                                ->select('related_subject_id')
+                                ->from($cte);
+                        });
+                }
             });
 
         return RequestQueryBuilder::for(
