@@ -4,6 +4,7 @@ namespace App\Domain\Worldwide\Policies;
 
 use App\Domain\Authorization\Enum\AccessEntityDirection;
 use App\Domain\Authorization\Enum\AccessEntityPipelineDirection;
+use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\Models\ModelHasSharingUsers;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Models\Opportunity;
@@ -127,9 +128,7 @@ class OpportunityPolicy
                 ->toResponse();
         }
 
-        if ($user->role->access->accessOpportunityDirection !== AccessEntityDirection::All
-            && $user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit)
-            && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
+        if (!$this->userHasAccessToUnit($user, $opportunity->salesUnit)) {
             return ResponseBuilder::deny()
                 ->action('view')
                 ->item('opportunity')
@@ -145,7 +144,7 @@ class OpportunityPolicy
                 ->toResponse();
         }
 
-        if ($user->role->access->accessOpportunityDirection === AccessEntityDirection::All) {
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
             return $this->allow();
         }
 
@@ -194,8 +193,7 @@ class OpportunityPolicy
                 ->toResponse();
         }
 
-        if ($user->role->access->accessOpportunityDirection !== AccessEntityDirection::All
-            && $user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit) && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
+        if (!$this->userHasAccessToUnit($user, $opportunity->salesUnit)) {
             return ResponseBuilder::deny()
                 ->action('update')
                 ->item('opportunity')
@@ -209,6 +207,10 @@ class OpportunityPolicy
                 ->item('opportunity')
                 ->reason('You don\'t have an access to the pipeline.')
                 ->toResponse();
+        }
+
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
         }
 
         if ($opportunity->user()->is($user)
@@ -240,12 +242,16 @@ class OpportunityPolicy
                 ->toResponse();
         }
 
-        if ($user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit) && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
+        if (!$this->userHasAccessToUnit($user, $opportunity->salesUnit)) {
             return ResponseBuilder::deny()
                 ->action('change ownership')
                 ->item('opportunity')
                 ->reason('You don\'t have an access to the unit.')
                 ->toResponse();
+        }
+
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
         }
 
         if ($opportunity->user()->is($user) || $opportunity->accountManager()->is($user)) {
@@ -278,8 +284,7 @@ class OpportunityPolicy
                     ->toResponse();
             }
 
-            if ($user->role->access->accessOpportunityDirection !== AccessEntityDirection::All
-                && $user->salesUnitsFromLedTeams->doesntContain($opportunity->salesUnit) && $user->salesUnits->doesntContain($opportunity->salesUnit)) {
+            if (!$this->userHasAccessToUnit($user, $opportunity->salesUnit)) {
                 return ResponseBuilder::deny()
                     ->action('delete')
                     ->item('opportunity')
@@ -293,6 +298,10 @@ class OpportunityPolicy
                     ->item('opportunity')
                     ->reason('You don\'t have an access to the pipeline.')
                     ->toResponse();
+            }
+
+            if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+                return $this->allow();
             }
 
             if ($opportunity->owner()->is($user) || $opportunity->accountManager()->is($user)) {
@@ -329,6 +338,32 @@ class OpportunityPolicy
             ->lazy()
             ->pluck($userForeignKey)
             ->containsStrict($user->getKey());
+    }
+
+    private function userHasAccessToCurrentOrAllUnits(User $user): bool
+    {
+        return in_array($user->role->access->accessOpportunityDirection, [AccessEntityDirection::CurrentUnits, AccessEntityDirection::All], true);
+    }
+
+    private function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool
+    {
+        if ($user->role->access->accessOpportunityDirection === AccessEntityDirection::All) {
+            return true;
+        }
+
+        if (!$unit) {
+            return false;
+        }
+
+        if ($user->salesUnitsFromLedTeams->contains($unit)) {
+            return true;
+        }
+
+        if ($user->salesUnits->contains($unit)) {
+            return true;
+        }
+
+        return false;
     }
 
     protected function userHasAccessToPipeline(Opportunity $opp, User $user): bool
