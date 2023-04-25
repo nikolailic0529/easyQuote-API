@@ -103,6 +103,10 @@ class SalesOrderPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($salesOrder->user()->is($user)) {
             return $this->allow();
         }
@@ -154,6 +158,10 @@ class SalesOrderPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($salesOrder->user()->is($user)) {
             return $this->allow();
         }
@@ -187,6 +195,10 @@ class SalesOrderPolicy
                 ->item('sales order')
                 ->reason('You don\'t have an access to the unit.')
                 ->toResponse();
+        }
+
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
         }
 
         if ($salesOrder->user()->is($user)) {
@@ -231,6 +243,10 @@ class SalesOrderPolicy
                     ->item('sales order')
                     ->reason('You don\'t have an access to the unit.')
                     ->toResponse();
+            }
+
+            if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+                return $this->allow();
             }
 
             if ($salesOrder->user()->is($user)) {
@@ -301,6 +317,11 @@ class SalesOrderPolicy
             ->action('export')
             ->item('sales order')
             ->toResponse();
+    }
+
+    private function userHasAccessToCurrentOrAllUnits(User $user): bool
+    {
+        return in_array($user->role->access->accessSalesOrderDirection, [AccessEntityDirection::CurrentUnits, AccessEntityDirection::All], true);
     }
 
     private function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool

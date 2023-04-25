@@ -3,21 +3,19 @@
 namespace App\Domain\Worldwide\Resources\V1\SalesOrder;
 
 use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\SalesOrder;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin SalesOrder
+ */
 class SalesOrderOfCompany extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
      * @param \Illuminate\Http\Request $request
-     *
-     * @return array
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
-        /** @var \App\Domain\Worldwide\Models\SalesOrder|SalesOrderSubmitted $this */
-
         /** @var User|null $user */
         $user = $request->user();
 
@@ -33,6 +31,8 @@ class SalesOrderOfCompany extends JsonResource
             'failure_reason' => $this->failure_reason,
             'status_reason' => $this->status_reason,
             'customer_name' => $this->customer_name,
+            'end_user_id' => $this->end_user_id,
+            'end_user_name' => $this->end_user_name,
             'company_name' => $this->company_name,
             'rfq_number' => $this->rfq_number,
             'order_type' => $this->order_type,

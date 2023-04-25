@@ -40,6 +40,8 @@ class SalesOrderQueries
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
                 'primary_account.name as customer_name',
+                'end_user.id as end_user_id',
+                'end_user.name as end_user_name',
                 'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
                 'sales_orders.status',
@@ -65,6 +67,9 @@ class SalesOrderQueries
             })
             ->join('companies as primary_account', static function (JoinClause $join): void {
                 $join->on('primary_account.id', 'opportunities.primary_account_id');
+            })
+            ->leftJoin('companies as end_user', static function (JoinClause $join): void {
+                $join->on('end_user.id', 'opportunities.end_user_id');
             })
             ->join('companies', static function (JoinClause $join): void {
                 $join->on('companies.id', 'active_quote_version.company_id');
