@@ -120,6 +120,10 @@ class CompanyPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($company->owner()->is($user) || $this->userInSharingUsers($company, $user)) {
             return $this->allow();
         }
@@ -174,6 +178,10 @@ class CompanyPolicy
                 ->item('company')
                 ->reason('You don\'t have an access to the unit')
                 ->toResponse();
+        }
+
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
         }
 
         if ($company->owner()->is($user) || $this->userInSharingUsers($company, $user)) {
@@ -231,6 +239,10 @@ class CompanyPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($company->owner()->is($user)) {
             return $this->allow();
         }
@@ -275,6 +287,10 @@ class CompanyPolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($company->owner()->is($user)) {
             return $this->allow();
         }
@@ -284,6 +300,11 @@ class CompanyPolicy
             ->item('company')
             ->reason('You must be an owner')
             ->toResponse();
+    }
+
+    private function userHasAccessToCurrentOrAllUnits(User $user): bool
+    {
+        return in_array($user->role->access->accessCompanyDirection, [AccessEntityDirection::CurrentUnits, AccessEntityDirection::All], true);
     }
 
     private function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool
