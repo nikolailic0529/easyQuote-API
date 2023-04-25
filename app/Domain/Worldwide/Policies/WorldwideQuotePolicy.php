@@ -120,6 +120,10 @@ class WorldwideQuotePolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
             return $this->allow();
         }
@@ -193,6 +197,10 @@ class WorldwideQuotePolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($worldwideQuote->user()->is($user)) {
             return $this->allow();
         }
@@ -263,6 +271,10 @@ class WorldwideQuotePolicy
                     ->item('worldwide quote')
                     ->reason('You don\'t have an access to the unit.')
                     ->toResponse();
+            }
+
+            if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+                return $this->allow();
             }
 
             if ($worldwideQuote->user()->is($user)) {
@@ -376,6 +388,10 @@ class WorldwideQuotePolicy
                 ->toResponse();
         }
 
+        if ($this->userHasAccessToCurrentOrAllUnits($user)) {
+            return $this->allow();
+        }
+
         if ($worldwideQuote->user()->is($user) || $this->userInSharingUsers($worldwideQuote, $user)) {
             return $this->allow();
         }
@@ -401,6 +417,11 @@ class WorldwideQuotePolicy
             ->lazy()
             ->pluck($userForeignKey)
             ->containsStrict($user->getKey());
+    }
+
+    private function userHasAccessToCurrentOrAllUnits(User $user): bool
+    {
+        return in_array($user->role->access->accessWorldwideQuoteDirection, [AccessEntityDirection::CurrentUnits, AccessEntityDirection::All], true);
     }
 
     protected function userHasAccessToUnit(User $user, ?SalesUnit $unit): bool
