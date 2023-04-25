@@ -9,4 +9,5 @@ enum ActivityStatusEnum: string
     case Waiting = 'Waiting';
     case Completed = 'Completed';
     case Deferred = 'Deferred';
+    case Canceled = 'Canceled';
 }
