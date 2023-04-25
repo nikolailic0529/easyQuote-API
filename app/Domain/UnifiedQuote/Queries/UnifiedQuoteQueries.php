@@ -61,6 +61,8 @@ class UnifiedQuoteQueries
                 DB::raw('NULL as opportunity_id'),
                 'customers.id as customer_id',
                 'customers.name as customer_name',
+                DB::raw('NULL as end_user_id'),
+                DB::raw('NULL as end_user_name'),
                 'companies.name as company_name',
                 'customers.rfq as rfq_number',
                 DB::raw('COALESCE(quote_versions.completeness, quotes.completeness) as completeness'),
@@ -126,6 +128,9 @@ class UnifiedQuoteQueries
             ->join('companies as primary_account', static function (JoinClause $joinClause): void {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
             })
+            ->leftJoin('companies as end_user', static function (JoinClause $joinClause): void {
+                $joinClause->on('end_user.id', 'opportunities.end_user_id');
+            })
             ->join('contract_types', static function (JoinClause $joinClause): void {
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
@@ -141,6 +146,8 @@ class UnifiedQuoteQueries
                 'opportunities.id as opportunity_id',
                 DB::raw('NULL as customer_id'),
                 'primary_account.name as customer_name',
+                'end_user.id as end_user_id',
+                'end_user.name as end_user_name',
                 'company.name as company_name',
                 'worldwide_quotes.quote_number as rfq_number',
                 'quote_active_version.completeness as completeness',

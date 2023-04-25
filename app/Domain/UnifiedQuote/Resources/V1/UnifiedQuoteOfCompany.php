@@ -7,16 +7,15 @@ use App\Domain\Worldwide\Enum\QuoteStatus;
 use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin WorldwideQuote|Quote
+ */
 class UnifiedQuoteOfCompany extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
      * @param \Illuminate\Http\Request $request
-     *
-     * @return array
      */
-    public function toArray($request)
+    public function toArray($request): array
     {
         /** @var Quote|WorldwideQuote|UnifiedQuote $this */
 
@@ -31,6 +30,8 @@ class UnifiedQuoteOfCompany extends JsonResource
             'opportunity_id' => $this->opportunity_id,
             'customer_id' => $this->customer_id,
             'customer_name' => $this->customer_name,
+            'end_user_id' => $this->end_user_id,
+            'end_user_name' => $this->end_user_name,
             'company_name' => $this->company_name,
             'rfq_number' => $this->rfq_number,
             'completeness' => $this->completeness,

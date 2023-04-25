@@ -1774,6 +1774,7 @@ class CompanyTest extends TestCase
 
         $worldwideOpportunity = Opportunity::factory()->create([
             'primary_account_id' => $company->getKey(),
+            'end_user_id' => Company::factory()->create()->getKey(),
         ]);
 
         $worldwideQuote = factory(WorldwideQuote::class)->create([
@@ -1796,6 +1797,8 @@ class CompanyTest extends TestCase
                         'opportunity_id',
                         'customer_id',
                         'customer_name',
+                        'end_user_id',
+                        'end_user_name',
                         'company_name',
                         'rfq_number',
                         'updated_at',
@@ -1970,6 +1973,8 @@ class CompanyTest extends TestCase
                         'failure_reason',
                         'status_reason',
                         'customer_name',
+                        'end_user_id',
+                        'end_user_name',
                         'rfq_number',
                         'order_type',
                         'permissions' => [
