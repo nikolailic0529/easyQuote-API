@@ -27,8 +27,8 @@ class PriceListResponseDataMapper
     {
         $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
 
-        $lock->block(30, function () use ($data, $quoteFile) {
-            $this->connection->transaction(function () use ($data, $quoteFile) {
+        $lock->block(30, function () use ($data, $quoteFile): void {
+            $this->connection->transaction(static function () use ($data, $quoteFile): void {
                 $quoteFile->rowsData()->forceDelete();
 
                 ImportedRow::query()->insert($data);
@@ -52,10 +52,10 @@ class PriceListResponseDataMapper
             $responseAttributes = array_merge_recursive($responseAttributes, $attributes);
         }
 
-        $responseAttributes = array_map(fn (array $values) => !empty(array_filter($values)), $responseAttributes);
+        $responseAttributes = array_map(static fn (array $values) => !empty(array_filter($values)), $responseAttributes);
         $responseAttributes = array_keys(array_filter($responseAttributes));
 
-        return array_map(function (array $page) use ($responseAttributes) {
+        return array_map(static function (array $page) use ($responseAttributes) {
             $header = $page['header'] ?? [];
             $attributes = $page['attributes'] ?? [];
             $attributes = [
@@ -64,7 +64,7 @@ class PriceListResponseDataMapper
                 'searchable' => $attributes['service_agreement_id'] ?? null,
             ];
 
-            $attributes = with($attributes, function (array $attributes) use ($responseAttributes): array {
+            $attributes = with($attributes, static function (array $attributes) use ($responseAttributes): array {
                 $presentAttributes = [];
 
                 foreach ($responseAttributes as $attributeName) {
@@ -108,7 +108,7 @@ class PriceListResponseDataMapper
                 continue;
             }
 
-            $pageRows = array_map(fn ($row) => $row + $attributes, $pageRows);
+            $pageRows = array_map(static fn ($row) => $row + $attributes, $pageRows);
 
             $allocatedColumns = [];
 
@@ -122,8 +122,8 @@ class PriceListResponseDataMapper
 
             foreach ($pageRows as $row) {
                 $columnsData = collect($row)
-                    ->filter(fn ($value, $key) => isset($columns[$key]))
-                    ->mapWithKeys(fn ($value, $key) => [
+                    ->filter(static fn ($value, $key) => isset($columns[$key]))
+                    ->mapWithKeys(static fn ($value, $key) => [
                         $columns[$key] => [
                             'importable_column_id' => $columns[$key],
                             'header' => $header[$key] ?? $key,
@@ -159,17 +159,24 @@ class PriceListResponseDataMapper
 
         $alias = Str::of($header)->trim()->lower();
 
+        $colModel = new ImportableColumn();
+        $aliasModel = new ImportableColumnAlias();
+
         // Looking for an importable column with exact alias matching.
-        $column = ImportableColumn::query()
-            ->whereHas('aliases', fn (Builder $query) => $query->where('alias', $alias))
-            ->when($allocatedColumns, fn (Builder $query) => $query->whereKeyNot($allocatedColumns))
-            ->orderByDesc('is_system')
-            ->orderBy('is_temp')
-            ->first(['id']);
+        $colId = $aliasModel->newQuery()
+            ->where('alias', $alias)
+            ->when($allocatedColumns, static function (Builder $query) use ($aliasModel, $allocatedColumns): void {
+                $query->whereNotIn($aliasModel->importableColumn()->getForeignKeyName(), $allocatedColumns);
+            })
+            ->join($colModel->getTable(), $colModel->getQualifiedKeyName(), $aliasModel->importableColumn()->getQualifiedForeignKeyName())
+            ->whereNull($colModel->getQualifiedDeletedAtColumn())
+            ->orderByDesc($colModel->qualifyColumn('is_system'))
+            ->orderBy($colModel->qualifyColumn('is_temp'))
+            ->value($aliasModel->importableColumn()->getQualifiedForeignKeyName());
 
         // If an importable column hasn't being found,
         // we will create a new one importable column with the respective alias.
-        if (is_null($column)) {
+        if (is_null($colId)) {
             $column = ImportableColumn::query()->make([
                 'header' => $header,
                 'name' => Str::slug($header, '_'),
@@ -178,7 +185,7 @@ class PriceListResponseDataMapper
 
             $column->save();
 
-            tap(new ImportableColumnAlias(), function (ImportableColumnAlias $columnAlias) use ($column, $alias) {
+            tap(new ImportableColumnAlias(), static function (ImportableColumnAlias $columnAlias) use ($column, $alias): void {
                 $columnAlias->id = (string) Uuid::generate(4);
                 $columnAlias->importable_column_id = $column->getKey();
                 $columnAlias->alias = $alias;
@@ -188,8 +195,8 @@ class PriceListResponseDataMapper
         }
 
         // Add allocated importable column id to array.
-        $allocatedColumns[] = $column->getKey();
+        $allocatedColumns[] = $colId;
 
-        return [$column->getKey(), $allocatedColumns];
+        return [$colId, $allocatedColumns];
     }
 }
