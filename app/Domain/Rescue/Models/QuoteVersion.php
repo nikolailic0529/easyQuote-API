@@ -7,6 +7,7 @@ use App\Domain\Note\Models\ModelHasNotes;
 use App\Domain\Note\Models\Note;
 use App\Domain\QuoteFile\Models\ImportableColumn;
 use App\Domain\Template\Models\TemplateField;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -62,5 +63,14 @@ class QuoteVersion extends BaseQuote implements HasOwnNotes
             table: (new ModelHasNotes())->getTable(),
             relatedPivotKey: 'note_id',
         )->using(ModelHasNotes::class);
+    }
+
+    protected function note(): Attribute
+    {
+        return Attribute::get(function (): ?Note {
+            return $this->notes
+                ->first(static fn (Note $note): bool => $note->getFlag(Note::FROM_ENTITY_WIZARD));
+        })
+            ->withoutObjectCaching();
     }
 }
