@@ -24,15 +24,6 @@ class MarginRepository extends SearchableRepository implements \App\Domain\Margi
         return $this->countryMargin->query()->with('country', 'vendor');
     }
 
-    public function data(): array
-    {
-        $quote_types = __('quote.types');
-        $margin_types = __('margin.types');
-        $margin_methods = collect(__('margin.methods'))->diff(['Standard']);
-
-        return compact('quote_types', 'margin_types', 'margin_methods');
-    }
-
     public function create($request): CountryMargin
     {
         if ($request instanceof \Illuminate\Http\Request) {

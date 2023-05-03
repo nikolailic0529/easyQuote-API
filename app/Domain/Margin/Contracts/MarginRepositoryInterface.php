@@ -11,11 +11,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 interface MarginRepositoryInterface
 {
     /**
-     * Get data for Creating New Quote.
-     */
-    public function data(): array;
-
-    /**
      * Get Margins query for Authenticated User.
      */
     public function userQuery(): Builder;
