@@ -2,7 +2,6 @@
 
 return [
     'system_handle' => 'System Handle',
-    'types' => ['New', 'Renewal'],
     'stages' => [
         'Initiated' => 1,
         'Customer' => 10,

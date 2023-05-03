@@ -4,34 +4,23 @@ namespace App\Domain\Discount\Validation\Rules;
 
 use App\Foundation\Validation\Rules\Concerns\IgnoresModel;
 use Illuminate\Contracts\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
-class UniqueValue implements Rule
+final class UniqueValue implements Rule
 {
     use IgnoresModel;
 
-    protected string $table;
-
-    /**
-     * Create a new rule instance.
-     *
-     * @return void
-     */
-    public function __construct(string $table)
-    {
-        $this->table = $table;
+    public function __construct(
+        protected readonly string $table
+    ) {
     }
 
     /**
-     * Determine if the validation rule passes.
-     *
      * @param string $attribute
-     * @param mixed  $value
-     *
-     * @return bool
      */
-    public function passes($attribute, $value)
+    public function passes(mixed $attribute, mixed $value): bool
     {
-        return \DB::table($this->table)
+        return DB::table($this->table)
             ->when($this->ignore, fn ($query) => $query->where('id', '!=', $this->ignore))
             ->where('name', request('name'))
             ->where('vendor_id', request('vendor_id'))
@@ -41,13 +30,8 @@ class UniqueValue implements Rule
             ->doesntExist();
     }
 
-    /**
-     * Get the validation error message.
-     *
-     * @return string
-     */
-    public function message()
+    public function message(): string
     {
-        return DE_01;
+        return __('discount.validation.value_unique');
     }
 }

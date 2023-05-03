@@ -4,9 +4,9 @@ namespace App\Domain\Discount\Requests;
 
 use App\Domain\Discount\Validation\Rules\UniqueDuration;
 
-class StoreMultiYearDiscountRequest extends StoreDiscountRequest
+final class StoreMultiYearDiscountRequest extends StoreDiscountRequest
 {
-    public function additionalRules()
+    public function additionalRules(): array
     {
         return [
             'durations' => [
@@ -27,10 +27,10 @@ class StoreMultiYearDiscountRequest extends StoreDiscountRequest
         ];
     }
 
-    public function messages()
+    public function messages(): array
     {
-        return [
-            'durations.*.duration.between' => 'The duration must be between :min and :max years.',
-        ];
+        return array_merge(parent::messages(), [
+            'durations.*.duration.between' => __('discount.validation.duration_between'),
+        ]);
     }
 }

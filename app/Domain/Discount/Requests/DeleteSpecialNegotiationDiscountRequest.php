@@ -8,7 +8,7 @@ use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 
-class DeleteSpecialNegotiationDiscountRequest extends FormRequest
+final class DeleteSpecialNegotiationDiscountRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -59,12 +59,7 @@ class DeleteSpecialNegotiationDiscountRequest extends FormRequest
         return Response::allow();
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
         ];

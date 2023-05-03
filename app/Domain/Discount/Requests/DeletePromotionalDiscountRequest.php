@@ -9,11 +9,8 @@ use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 
-class DeletePromotionalDiscountRequest extends FormRequest
+final class DeletePromotionalDiscountRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): Response
     {
         /** @var PromotionalDiscount $promotionalDiscount */
@@ -60,12 +57,7 @@ class DeletePromotionalDiscountRequest extends FormRequest
         return Response::allow();
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
         ];

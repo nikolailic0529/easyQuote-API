@@ -4,9 +4,9 @@ namespace App\Domain\Discount\Requests;
 
 use App\Domain\Discount\Validation\Rules\UniqueValue;
 
-class StoreSndRequest extends StoreDiscountRequest
+final class StoreSndRequest extends StoreDiscountRequest
 {
-    public function additionalRules()
+    public function additionalRules(): array
     {
         return [
             'value' => [

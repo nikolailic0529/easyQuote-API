@@ -7,24 +7,19 @@ use Illuminate\Validation\Rule;
 
 abstract class StoreDiscountRequest extends FormRequest
 {
-    public function authorize()
-    {
-        return true;
-    }
-
-    public function rules()
+    final public function rules(): array
     {
         return array_merge($this->commonRules(), $this->additionalRules());
     }
 
-    public function messages()
+    public function messages(): array
     {
         return [
-            'vendor_id.exists' => 'The chosen vendor should belong to the chosen country.',
+            'vendor_id.exists' => __('discount.validation.vendor_exists'),
         ];
     }
 
-    protected function commonRules()
+    final protected function commonRules(): array
     {
         return [
             'name' => [
@@ -42,10 +37,11 @@ abstract class StoreDiscountRequest extends FormRequest
                 'required',
                 'string',
                 'uuid',
-                Rule::exists('country_vendor')->where('country_id', $this->country_id),
+                Rule::exists('country_vendor')
+                    ->where('country_id', $this->input('country_id')),
             ],
         ];
     }
 
-    abstract public function additionalRules();
+    abstract public function additionalRules(): array;
 }

@@ -48,13 +48,6 @@ class StoreCountryRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'iso_3166_2.unique' => 'The given ISO Code has already taken.',
-        ];
-    }
-
     public function getCreateCountryData(): CreateCountryData
     {
         return CreateCountryData::from($this->input());

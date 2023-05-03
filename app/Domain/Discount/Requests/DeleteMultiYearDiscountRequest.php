@@ -9,11 +9,8 @@ use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 
-class DeleteMultiYearDiscountRequest extends FormRequest
+final class DeleteMultiYearDiscountRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): Response
     {
         /** @var MultiYearDiscount $multiYearDiscount */
@@ -60,12 +57,7 @@ class DeleteMultiYearDiscountRequest extends FormRequest
         return Response::allow();
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array
-     */
-    public function rules()
+    public function rules(): array
     {
         return [
         ];
