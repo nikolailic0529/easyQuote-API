@@ -52,7 +52,7 @@ class QuoteVersionResource extends JsonResource
             'additional_details' => $this->activeVersionOrCurrent->additional_details,
             'checkbox_status' => $this->activeVersionOrCurrent->checkbox_status,
             'closing_date' => optional($this->activeVersionOrCurrent->closing_date)->format(config('date.format_ui')),
-            'additional_notes' => $this->activeVersionOrCurrent->note?->text,
+            'additional_notes' => $this->activeVersionOrCurrent->note?->note,
             'list_price' => $this->asDecimal((float) $this->activeVersionOrCurrent->totalPrice),
             'calculate_list_price' => $this->activeVersionOrCurrent->calculate_list_price,
             'buy_price_formatted' => $this->asDecimal((float) $this->activeVersionOrCurrent->buy_price),
