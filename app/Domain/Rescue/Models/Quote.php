@@ -63,10 +63,11 @@ class Quote extends BaseQuote implements Multitenantable, HasOwner, LinkedToTask
 
     protected function note(): Attribute
     {
-        return Attribute::get(function () {
+        return Attribute::get(function (): ?Note {
             return $this->notes
                 ->first(static fn (Note $note): bool => $note->getFlag(Note::FROM_ENTITY_WIZARD));
-        });
+        })
+            ->withoutObjectCaching();
     }
 
     public function notes(): MorphToMany
