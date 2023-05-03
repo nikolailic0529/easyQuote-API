@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Facades\Setting;
-use App\Models\{Company, Data\Country, Template\TemplateField, Vendor};
-use App\Models\Data\Currency;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\Settings\Facades\Setting;
+use App\Domain\Template\Models\TemplateField;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -18,7 +21,7 @@ class QuoteTemplatesSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the quote_templates, country_quote_template (pivot), quote_template_template_field (pivot) tables
+        // Empty the quote_templates, country_quote_template (pivot), quote_template_template_field (pivot) tables
         Schema::disableForeignKeyConstraints();
 
         DB::table('quote_templates')->delete();
@@ -34,14 +37,13 @@ class QuoteTemplatesSeeder extends Seeder
         $templateFields = TemplateField::query()->where('is_system', true)->pluck('id')->all();
 
         collect($templates)->each(function ($template) use ($templateFields, $design, $currency) {
-
             collect($template['companies'])->each(function ($companyData) use ($template, $templateFields, $design, $currency) {
                 $company = Company::query()->where('vat', $companyData['vat'])->first();
                 $company->acronym = $companyData['acronym'];
 
                 collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design, $currency) {
                     $vendor = Vendor::query()->where('short_code', $vendorCode)->first();
-                    $quoteTemplateId = (string)\Webpatser\Uuid\Uuid::generate(4);
+                    $quoteTemplateId = (string) \Webpatser\Uuid\Uuid::generate(4);
 
                     $templateName = $template['new_name'];
                     $name = "{$company->acronym}-{$vendor->short_code}-{$templateName}";
@@ -63,13 +65,13 @@ class QuoteTemplatesSeeder extends Seeder
                         'form_values_data' => $templateSchema['form_values_data'],
                         'created_at' => now(),
                         'updated_at' => now(),
-                        'activated_at' => now()
+                        'activated_at' => now(),
                     ]);
 
                     $templateFields = array_map(function ($templateFieldId) use ($quoteTemplateId) {
                         return [
                             'quote_template_id' => $quoteTemplateId,
-                            'template_field_id' => $templateFieldId
+                            'template_field_id' => $templateFieldId,
                         ];
                     }, $templateFields);
 
@@ -80,7 +82,7 @@ class QuoteTemplatesSeeder extends Seeder
 
                         DB::table('country_quote_template')->insert([
                             'quote_template_id' => $quoteTemplateId,
-                            'country_id' => $countryId
+                            'country_id' => $countryId,
                         ]);
                     }
                 });
@@ -97,6 +99,7 @@ class QuoteTemplatesSeeder extends Seeder
         $design = json_decode($design, true);
         $form_data = json_encode($design['form_data']);
         $form_values_data = json_encode($design['form_values_data']);
+
         return compact('form_data', 'form_values_data');
     }
 }

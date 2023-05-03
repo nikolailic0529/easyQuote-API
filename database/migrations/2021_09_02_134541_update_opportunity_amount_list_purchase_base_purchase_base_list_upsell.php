@@ -1,11 +1,11 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Doctrine\DBAL\Types\FloatType;
 use Doctrine\DBAL\Types\Type;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class UpdateOpportunityAmountListPurchaseBasePurchaseBaseListUpsell extends Migration
 {
@@ -19,7 +19,7 @@ class UpdateOpportunityAmountListPurchaseBasePurchaseBaseListUpsell extends Migr
         if (!Type::hasType('double')) {
             Type::addType('double', FloatType::class);
         }
-        Schema::table('opportunities', function (Blueprint $table) { 
+        Schema::table('opportunities', function (Blueprint $table) {
             DB::statement('ALTER TABLE `opportunities`  
                     CHANGE  `opportunity_amount` `opportunity_amount` DOUBLE(20,2) NULL DEFAULT NULL,
                     CHANGE  `purchase_price` `purchase_price` DOUBLE(20,2) NULL DEFAULT NULL,

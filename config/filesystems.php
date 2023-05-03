@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Default Filesystem Disk
@@ -42,13 +41,12 @@ return [
     */
 
     'disks' => [
-
-        # STORAGE_PATH=/data/eq-data
-        # STORAGE_PATH_ROOT=/data/eq-data/app
-        # STORAGE_PATH_PUBLIC=/data/eq-data/app/public
-        # STORAGE_PATH_LOGS=/data/eq-data/logs/laravel.log
-        # STORAGE_PATH_SNAPSHOTS=/data/eq-data/app/snapshots
-        # STORAGE_PATH_ATTACHMENTS=/data/eq-data/app/public/attachments
+        // STORAGE_PATH=/data/eq-data
+        // STORAGE_PATH_ROOT=/data/eq-data/app
+        // STORAGE_PATH_PUBLIC=/data/eq-data/app/public
+        // STORAGE_PATH_LOGS=/data/eq-data/logs/laravel.log
+        // STORAGE_PATH_SNAPSHOTS=/data/eq-data/app/snapshots
+        // STORAGE_PATH_ATTACHMENTS=/data/eq-data/app/public/attachments
 
         'local' => [
             'driver' => 'local',
@@ -79,12 +77,12 @@ return [
 
         'snapshots' => [
             'driver' => 'local',
-            'root' => storage_path('app/snapshots')
+            'root' => storage_path('app/snapshots'),
         ],
 
         'exchange-rates' => [
             'driver' => 'local',
-            'root' => storage_path('rates')
+            'root' => storage_path('rates'),
         ],
 
         'attachments' => [
@@ -112,9 +110,7 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/public/ww_quote_files'),
             'url' => env('APP_URL').'/storage/ww_quote_files',
-            'visibility' => 'public'
+            'visibility' => 'public',
         ]
-
     ],
-
 ];

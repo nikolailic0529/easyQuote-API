@@ -1,76 +1,44 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
-use App\Contracts\Repositories\{CurrencyRepositoryInterface as Currencies,};
-use App\Models\Company;
-use App\Models\Customer\Customer;
-use App\Models\Quote\Margin\CountryMargin;
-use App\Models\Quote\Quote;
-use App\Models\Template\QuoteTemplate;
-use App\Models\User;
-use App\Models\Vendor;
-use Faker\Generator as Faker;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\Rescue\Models\Customer;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Arr;
 
-$factory->define(Quote::class, function (Faker $faker) {
-    /** @var Company $company */
-    $company = factory(Company::class)->create();
+class QuoteFactory extends Factory
+{
+    protected $model = Quote::class;
 
-    $vendor = $company->vendors->whenEmpty(
-        function ($vendors) use ($company) {
-            $vendor = factory(Vendor::class)->create();
-
-            $company->vendors()->syncWithoutDetaching([$vendor->getKey()]);
-
-            return $vendor;
-        },
-        fn() => $company->vendors->random()
-    );
-
-    $country = $vendor->countries->random();
-
-    $template = factory(QuoteTemplate::class)->create([
-        'company_id' => $company->getKey(),
-        'vendor_id' => $vendor->getKey(),
-    ]);
-
-    $template->countries()->sync($country->getKey());
-
-    $sourceCurrency = app(Currencies::class)->all()->random();
-
-    $targetCurrency = app(Currencies::class)->all()->random();
-
-    $customer = factory(Customer::class)->create();
-
-    $user = factory(User::class)->create();
-
-    return [
-        'user_id' => $user->id,
-        'company_id' => $company->id,
-        'vendor_id' => $vendor->id,
-        'country_id' => $country->id,
-        'customer_id' => $customer->id,
-        'quote_template_id' => $template->id,
-        'source_currency_id' => $sourceCurrency->id,
-        'target_currency_id' => $targetCurrency->id,
-        'exchange_rate_margin' => mt_rand(0, 99),
-        'last_drafted_step' => Arr::random(array_keys(__('quote.stages'))),
-        'pricing_document' => $faker->bankAccountNumber,
-        'service_agreement_id' => $faker->bankAccountNumber,
-        'system_handle' => $faker->bankAccountNumber,
-        'additional_details' => $faker->sentences(10, true),
-        'additional_notes' => $faker->sentences(10, true),
-        'closing_date' => now()->addDays(rand(1, 10))->format('Y-m-d'),
-        'calculate_list_price' => true,
-        'buy_price' => (float)rand(10000, 40000),
-        'custom_discount' => (float)rand(5, 99),
-    ];
-});
-
-$factory->state(Quote::class, 'state', function () use ($factory) {
-    $quote_data = Arr::except($factory->raw(Quote::class), 'customer_id');
-    $margin = $factory->raw(CountryMargin::class, Arr::only($quote_data, ['country_id', 'vendor_id']));
-
-    return compact('quote_data', 'margin');
-});
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'company_id' => Company::factory(),
+            'vendor_id' => \factory(Vendor::class)->create()->getKey(),
+            'country_id' => Country::query()->get()->random()->getKey(),
+            'customer_id' => \factory(Customer::class)->create()->getKey(),
+            'quote_template_id' => \factory(QuoteTemplate::class)->create()->getKey(),
+            'source_currency_id' => Currency::query()->get()->random()->getKey(),
+            'target_currency_id' => Currency::query()->get()->random()->getKey(),
+            'exchange_rate_margin' => mt_rand(0, 99),
+            'last_drafted_step' => Arr::random(array_keys(__('quote.stages'))),
+            'pricing_document' => $this->faker->bankAccountNumber,
+            'service_agreement_id' => $this->faker->bankAccountNumber,
+            'system_handle' => $this->faker->bankAccountNumber,
+            'additional_details' => $this->faker->sentences(10, true),
+            'additional_notes' => $this->faker->sentences(10, true),
+            'closing_date' => now()->addDays(rand(1, 10))->format('Y-m-d'),
+            'calculate_list_price' => true,
+            'buy_price' => (float) rand(10000, 40000),
+            'custom_discount' => (float) rand(5, 99),
+        ];
+    }
+}

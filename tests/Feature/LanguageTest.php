@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 /**
@@ -13,20 +11,39 @@ class LanguageTest extends TestCase
 {
     /**
      * Test an ability to view list of available languages.
-     *
-     * @return void
      */
-    public function testCanViewListOfLanguages()
+    public function testCanViewListOfLanguages(): void
     {
         $response = $this->get('api/data/languages')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'name'
-                ]
+                    'id', 'name',
+                ],
             ]);
 
         $this->assertNotEmpty($response->json());
+    }
+
+    /**
+     * Test an ability to view list of contact languages.
+     */
+    public function testCanViewListOfContactLanguages(): void
+    {
+        $response = $this->get('api/data/languages/contact')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'code',
+                        'name',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
     }
 }

@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateImportableColumnsTable extends Migration
 {
@@ -28,7 +28,7 @@ class CreateImportableColumnsTable extends Migration
             $table->string('name')->index();
 
             $table->tinyInteger('order')->default(0);
-            
+
             $table->boolean('is_system')->index()->default(false);
             $table->boolean('is_temp')->index()->default(false);
 

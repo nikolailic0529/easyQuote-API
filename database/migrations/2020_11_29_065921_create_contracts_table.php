@@ -15,7 +15,7 @@ class CreateContractsTable extends Migration
     {
         Schema::create('contracts', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            
+
             $table->foreignUuid('user_id')->comment('Foreign key on users table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('quote_id')->nullable()->comment('Foreign key on quotes table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('customer_id')->nullable()->comment('Foreign key on customers table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();

@@ -12,7 +12,6 @@ class SeedDefaultPipilineAndStages extends Migration
     public function up()
     {
         \Illuminate\Support\Facades\DB::transaction(function () {
-
             $worldwidePipelineKey = 'e6a3a7bd-e9cb-4d0f-add7-b7cfc88768ac';
 
             \Illuminate\Support\Facades\DB::table('pipelines')->insert([
@@ -25,7 +24,6 @@ class SeedDefaultPipilineAndStages extends Migration
             $stageOrder = 1;
 
             $pipelineStages = [
-
                 [
                     'id' => '626bd0f6-dff9-4170-89d8-48492409407b',
                     'pipeline_id' => $worldwidePipelineKey,
@@ -97,11 +95,9 @@ class SeedDefaultPipilineAndStages extends Migration
                     'created_at' => now(),
                     'updated_at' => now(),
                 ],
-
             ];
 
             \Illuminate\Support\Facades\DB::table('pipeline_stages')->insert($pipelineStages);
-
         });
     }
 
@@ -112,6 +108,5 @@ class SeedDefaultPipilineAndStages extends Migration
      */
     public function down()
     {
-        //
     }
 }

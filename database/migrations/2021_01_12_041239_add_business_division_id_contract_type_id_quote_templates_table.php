@@ -20,17 +20,15 @@ class AddBusinessDivisionIdContractTypeIdQuoteTemplatesTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('quote_templates')->update([
                 'business_division_id' => '45fc3384-27c1-4a44-a111-2e52b072791e', // Rescue
-                'contract_type_id' => 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3' // Services Contract
+                'contract_type_id' => 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3', // Services Contract
             ]);
-
         });
 
         Schema::table('quote_templates', function (Blueprint $table) {
-           $table->uuid('business_division_id')->nullable(false)->change();
-           $table->uuid('contract_type_id')->nullable(false)->change();
+            $table->uuid('business_division_id')->nullable(false)->change();
+            $table->uuid('contract_type_id')->nullable(false)->change();
         });
 
         Schema::table('quote_templates', function (Blueprint $table) {
@@ -54,7 +52,7 @@ class AddBusinessDivisionIdContractTypeIdQuoteTemplatesTable extends Migration
 
             $table->dropColumn([
                 'business_division_id',
-                'contract_type_id'
+                'contract_type_id',
             ]);
         });
 

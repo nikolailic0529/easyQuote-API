@@ -2,13 +2,12 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Quote\WorldwideDistribution;
-use App\Models\Quote\WorldwideQuote;
+use App\Domain\Worldwide\Models\WorldwideDistribution;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Faker\Generator as Faker;
-use Illuminate\Database\Eloquent\Relations\Relation;
 
 $factory->define(WorldwideDistribution::class, function (Faker $faker) {
-    /** @var WorldwideQuote $wwQuote */
+    /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
     $wwQuote = factory(WorldwideQuote::class)->create();
 
     return [

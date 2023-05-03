@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Application Name
@@ -172,75 +171,196 @@ return [
         /*
          * Application Service Providers...
          */
-        App\Providers\AppServiceProvider::class,
-        App\Providers\HelperServiceProvider::class,
 
-        App\Providers\EntityServiceProvider::class,
+        \App\Foundation\View\Providers\ViewServiceProvider::class,
+        \App\Foundation\Validation\Providers\ValidationServiceProvider::class,
 
-        App\Providers\AccessServiceProvider::class,
-        App\Providers\ActivityServiceProvider::class,
-        App\Providers\AssetServiceProvider::class,
-        App\Providers\AuthenticationServiceProvider::class,
-        App\Providers\BuildServiceProvider::class,
+        \App\Foundation\Mail\Providers\MailServiceProvider::class,
+        // Register the MailLogEventServiceProvider here to be able recording the mail messages even when the mail limit is over
+        // It may be worth moving the mail rate limiting to the domain layer?
+        \App\Domain\Mail\Providers\MailLogEventServiceProvider::class,
+        \App\Foundation\Mail\Providers\MailEventServiceProvider::class,
 
-        App\Providers\CompanyServiceProvider::class,
-        App\Providers\ContactServiceProvider::class,
-        App\Providers\CountryServiceProvider::class,
-        App\Providers\CurrencyServiceProvider::class,
-        App\Providers\CustomerServiceProvider::class,
-        App\Providers\DashboardServiceProvider::class,
-        App\Providers\DiscountServiceProvider::class,
-        App\Providers\ElasticsearchServiceProvider::class,
-        App\Providers\ExchangeRatesServiceProvider::class,
-        App\Providers\FailureServiceProvider::class,
-        App\Providers\HpeContractServiceProvider::class,
-        App\Providers\HttpServiceProvider::class,
-        App\Providers\InvitationServiceProvider::class,
-        App\Providers\LanguageServiceProvider::class,
-        App\Providers\LocationServiceProvider::class,
-        App\Providers\MaintenanceServiceProvider::class,
-        App\Providers\NoteServiceProvider::class,
-        App\Providers\NotificationServiceProvider::class,
-        App\Providers\ParserServiceProvider::class,
-        App\Providers\PermissionServiceProvider::class,
+        \App\Foundation\Support\Providers\HelperServiceProvider::class,
+        \App\Foundation\Support\Elasticsearch\Providers\ElasticsearchServiceProvider::class,
+        \App\Foundation\Support\Elasticsearch\Providers\ElasticsearchAuthServiceProvider::class,
+        \App\Foundation\Http\Providers\HttpServiceProvider::class,
+        \App\Foundation\Http\Providers\ResourceServiceProvider::class,
+        \App\Foundation\Support\Providers\MacroServiceProvider::class,
+        \App\Foundation\Broadcasting\Providers\BroadcastServiceProvider::class,
+        \App\Foundation\Http\Route\RouteServiceProvider::class,
+        \App\Foundation\Support\Providers\TelescopeServiceProvider::class,
+        \App\Foundation\Cache\Providers\CacheServiceProvider::class,
 
-        App\Providers\QuoteContractServiceProvider::class,
-        App\Providers\QuoteServiceProvider::class,
-        App\Providers\ResourceServiceProvider::class,
+        \App\Domain\Shared\Horizon\Providers\HorizonServiceProvider::class,
+        \App\Domain\Shared\Eloquent\Providers\EntityServiceProvider::class,
+        \App\Domain\Shared\Eloquent\Providers\PaginationServiceProvider::class,
 
-        App\Providers\SettingServiceProvider::class,
-        App\Providers\SlackServiceProvider::class,
-        App\Providers\TaskServiceProvider::class,
-        App\Providers\TemplateServiceProvider::class,
-        App\Providers\TimezoneServiceProvider::class,
-        App\Providers\UIServiceProvider::class,
-        App\Providers\UserServiceProvider::class,
-        App\Providers\VendorServiceProvider::class,
-        App\Providers\DocumentEngineServiceProvider::class,
+        \App\Domain\Mail\Providers\MailLogAuthServiceProvider::class,
 
-        App\Providers\QueryBuilderServiceProvider::class,
-        App\Providers\MacroServiceProvider::class,
-        App\Providers\ObserverServiceProvider::class,
-        App\Providers\AuthServiceProvider::class,
-        App\Providers\BroadcastServiceProvider::class,
-        App\Providers\EventServiceProvider::class,
-        App\Providers\RouteServiceProvider::class,
-        App\Providers\TelescopeServiceProvider::class,
-        App\Providers\CacheServiceProvider::class,
+        \App\Domain\Shared\Ownership\Providers\OwnershipServiceProvider::class,
+
+        \App\Domain\Log\Providers\LogKeeperServiceProvider::class,
+
+        \App\Domain\App\Providers\AppServiceProvider::class,
+
+        \App\Domain\Appointment\Providers\AppointmentAuthServiceProvider::class,
+        \App\Domain\Appointment\Providers\AppointmentOwnershipServiceProvider::class,
+        \App\Domain\Appointment\Providers\AppointmentServiceProvider::class,
+
+        \App\Domain\Authentication\Providers\AuthenticationServiceProvider::class,
+        \App\Domain\Authentication\Providers\AccessServiceProvider::class,
+
+        \App\Domain\Activity\Providers\ActivityServiceProvider::class,
+        \App\Domain\Activity\Providers\ActivityAuthServiceProvider::class,
+
+        \App\Domain\Asset\Providers\AssetServiceProvider::class,
+        \App\Domain\Asset\Providers\AssetOwnershipServiceProvider::class,
+        \App\Domain\Asset\Providers\AssetAuthServiceProvider::class,
+
+        \App\Domain\Build\Providers\BuildServiceProvider::class,
+
+        \App\Domain\Company\Providers\CompanyServiceProvider::class,
+        \App\Domain\Company\Providers\CompanyOwnershipServiceProvider::class,
+        \App\Domain\Company\Providers\CompanyAuthServiceProvider::class,
+        \App\Domain\Company\Providers\CompanyEventServiceProvider::class,
+
+        \App\Domain\Address\Providers\AddressOwnershipServiceProvider::class,
+        \App\Domain\Address\Providers\AddressAuthServiceProvider::class,
+        \App\Domain\Address\Providers\AddressEventServiceProvider::class,
+
+        \App\Domain\Location\Providers\LocationServiceProvider::class,
+
+        \App\Domain\Contact\Providers\ContactServiceProvider::class,
+        \App\Domain\Contact\Providers\ContactOwnershipServiceProvider::class,
+        \App\Domain\Contact\Providers\ContactAuthServiceProvider::class,
+        \App\Domain\Contact\Providers\ContactEventServiceProvider::class,
+
+        \App\Domain\Country\Providers\CountryServiceProvider::class,
+        \App\Domain\Country\Providers\CountryAuthServiceProvider::class,
+
+        \App\Domain\Currency\Providers\CurrencyServiceProvider::class,
+
+        \App\Domain\Rescue\Providers\CustomerServiceProvider::class,
+        \App\Domain\Rescue\Providers\CustomerEventServiceProvider::class,
+
+        \App\Domain\Stats\Providers\DashboardServiceProvider::class,
+        \App\Domain\Stats\Providers\StatsEventServiceProvider::class,
+
+        \App\Domain\Margin\Providers\MarginServiceProvider::class,
+        \App\Domain\Margin\Providers\MarginAuthServiceProvider::class,
+
+        \App\Domain\Discount\Providers\DiscountServiceProvider::class,
+        \App\Domain\Discount\Providers\DiscountAuthServiceProvider::class,
+
+        \App\Domain\ExchangeRate\Providers\ExchangeRatesServiceProvider::class,
+        \App\Domain\ExchangeRate\Providers\ExchangeRateEventServiceProvider::class,
+
+        \App\Domain\FailureReport\Providers\FailureServiceProvider::class,
+
+        \App\Domain\HpeContract\Providers\HpeContractServiceProvider::class,
+        \App\Domain\HpeContract\Providers\HpeContractAuthServiceProvider::class,
+
+        \App\Domain\Invitation\Providers\InvitationServiceProvider::class,
+        \App\Domain\Invitation\Providers\InvitationAuthServiceProvider::class,
+
+        \App\Domain\Language\Providers\LanguageServiceProvider::class,
+
+        \App\Domain\Maintenance\Providers\MaintenanceServiceProvider::class,
+
+        \App\Domain\Note\Providers\NoteServiceProvider::class,
+        \App\Domain\Note\Providers\NoteOwnershipServiceProvider::class,
+        \App\Domain\Note\Providers\NoteAuthServiceProvider::class,
+        \App\Domain\Note\Providers\NoteEventServiceProvider::class,
+
+        \App\Domain\Notification\Providers\NotificationServiceProvider::class,
+        \App\Domain\Notification\Providers\NotificationAuthServiceProvider::class,
+        \App\Domain\Notification\Providers\NotificationEventServiceProvider::class,
+
+        \App\Domain\QuoteFile\Providers\QuoteFileServiceProvider::class,
+        \App\Domain\QuoteFile\Providers\QuoteFileAuthServiceProvider::class,
+        \App\Domain\QuoteFile\Providers\DocumentMappingEventServiceProvider::class,
+        \App\Domain\QuoteFile\Providers\ImportableColumnEventServiceProvider::class,
+
+        \App\Domain\DocumentEngine\Providers\DocumentEngineServiceProvider::class,
+
+        \App\Domain\DocumentProcessing\Providers\SnappyServiceProvider::class,
+        \App\Domain\DocumentProcessing\Providers\ParserServiceProvider::class,
+
+        \App\Domain\Authorization\Providers\ModuleServiceProvider::class,
+        \App\Domain\Authorization\Providers\PermissionServiceProvider::class,
+        \App\Domain\Authorization\Providers\PermissionEventServiceProvider::class,
+
+        \App\Domain\Rescue\Providers\QuoteContractServiceProvider::class,
+        \App\Domain\Rescue\Providers\QuoteServiceProvider::class,
+        \App\Domain\Rescue\Providers\QuoteEventServiceProvider::class,
+        \App\Domain\Rescue\Providers\RescueAuthServiceProvider::class,
+
+        \App\Domain\Settings\Providers\SettingServiceProvider::class,
+        \App\Domain\Settings\Providers\SettingsAuthServiceProvider::class,
+
+        \App\Domain\Slack\Providers\SlackServiceProvider::class,
+
+        \App\Domain\Task\Providers\TaskServiceProvider::class,
+        \App\Domain\Task\Providers\TaskOwnershipServiceProvider::class,
+        \App\Domain\Task\Providers\TaskAuthServiceProvider::class,
+        \App\Domain\Task\Providers\TaskEventServiceProvider::class,
+
+        \App\Domain\Template\Providers\TemplateServiceProvider::class,
+        \App\Domain\Template\Providers\TemplateAuthServiceProvider::class,
+        \App\Domain\Template\Providers\TemplateEventServiceProvider::class,
+
+        \App\Domain\Timezone\Providers\TimezoneServiceProvider::class,
+
+        \App\Domain\UserInterface\Providers\UIServiceProvider::class,
+
+        \App\Domain\User\Providers\UserServiceProvider::class,
+        \App\Domain\User\Providers\UserAuthServiceProvider::class,
+        \App\Domain\User\Providers\UserEventServiceProvider::class,
+
+        \App\Domain\Team\Providers\TeamEventServiceProvider::class,
+
+        \App\Domain\Vendor\Providers\VendorServiceProvider::class,
+        \App\Domain\Vendor\Providers\VendorAuthServiceProvider::class,
+
+        \App\Domain\Authorization\Providers\AuthServiceProvider::class,
+
         Webpatser\Countries\CountriesServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
         Barryvdh\Snappy\ServiceProvider::class,
-        App\Providers\SnappyServiceProvider::class,
         Spatie\Geocoder\GeocoderServiceProvider::class,
-        App\Providers\AttachmentServiceProvider::class,
-        App\Providers\FormatterServiceProvider::class,
-        App\Providers\SalesOrderServiceProvider::class,
-        App\Providers\VendorServicesServiceProvider::class,
 
-        LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
+        \App\Domain\Attachment\Providers\AttachmentServiceProvider::class,
+        \App\Domain\Attachment\Providers\AttachmentOwnershipServiceProvider::class,
+        \App\Domain\Attachment\Providers\AttachmentEventServiceProvider::class,
 
-        App\Providers\LogKeeperServiceProvider::class,
+        \App\Domain\Formatting\Providers\FormatterServiceProvider::class,
+
+        \App\Domain\UnifiedQuote\Providers\UnifiedQuoteAuthServiceProvider::class,
+
+        \App\Domain\Worldwide\Providers\QuoteServiceProvider::class,
+        \App\Domain\Worldwide\Providers\QuoteOwnershipServiceProvider::class,
+        \App\Domain\Worldwide\Providers\WorldwideQuoteEventServiceProvider::class,
+        \App\Domain\Worldwide\Providers\SalesOrderServiceProvider::class,
+        \App\Domain\Worldwide\Providers\SalesOrderEventServiceProvider::class,
+        \App\Domain\Worldwide\Providers\OpportunityOwnershipServiceProvider::class,
+        \App\Domain\Worldwide\Providers\OpportunityEventServiceProvider::class,
+        \App\Domain\Worldwide\Providers\WorldwideAuthServiceProvider::class,
+        \App\Domain\Worldwide\Providers\ViewServiceProvider::class,
+
+        \App\Domain\Pipeline\Providers\PipelineAuthServiceProvider::class,
+        \App\Domain\Pipeline\Providers\PipelineEventServiceProvider::class,
+
+        \App\Domain\Pipeliner\Providers\PipelinerServiceProvider::class,
+        \App\Domain\Pipeliner\Providers\PipelinerAuthServiceProvider::class,
+        \App\Domain\Pipeliner\Providers\PipelinerEventServiceProvider::class,
+
+        \App\Domain\VendorServices\Providers\VendorServicesServiceProvider::class,
+
+        \App\Domain\Image\Providers\ImageServiceProvider::class,
+
+        \App\Domain\SalesUnit\Providers\SalesUnitAuthServiceProvider::class,
     ],
 
     /*
@@ -255,7 +375,6 @@ return [
     */
 
     'aliases' => [
-
         'App' => Illuminate\Support\Facades\App::class,
         'Arr' => Illuminate\Support\Arr::class,
         'Artisan' => Illuminate\Support\Facades\Artisan::class,
@@ -294,14 +413,12 @@ return [
         'Uuid' => Webpatser\Uuid\Uuid::class,
         'Countries' => Webpatser\Countries\CountriesFacade::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
-        'Setting' => App\Facades\Setting::class,
-        'Failure' => App\Facades\Failure::class,
+        'Setting' => \App\Domain\Settings\Facades\Setting::class,
         'ImageIntervention' => Intervention\Image\Facades\Image::class,
-        'Maintenance' => App\Facades\Maintenance::class,
-        'Permission' => App\Facades\Permission::class,
-        'UserForm' => App\Facades\UserForm::class,
+        'Maintenance' => \App\Domain\Maintenance\Facades\Maintenance::class,
+        'Permission' => \App\Domain\Authorization\Facades\Permission::class,
+        'UserForm' => \App\Domain\User\Facades\UserForm::class,
         'Geocoder' => Spatie\Geocoder\Facades\Geocoder::class,
-        'CustomerFlow' => App\Facades\CustomerFlow::class,
+        'CustomerFlow' => \App\Domain\Rescue\Facades\CustomerFlow::class,
     ],
-
 ];

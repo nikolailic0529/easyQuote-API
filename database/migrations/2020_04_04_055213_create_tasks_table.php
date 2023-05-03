@@ -24,9 +24,9 @@ class CreateTasksTable extends Migration
             $table->string('name')->comment('Task name');
             $table->json('content')->comment('Task content');
             $table->unsignedTinyInteger('priority')->default(1)->comment('Task priority');
-            
+
             $table->timestamp('expiry_date')->nullable()->comment('Task expiry date');
-            
+
             $table->timestamps();
             $table->softDeletes()->index();
         });

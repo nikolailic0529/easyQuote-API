@@ -19,12 +19,10 @@ class AddBusinessDivisionIdContractTypeIdContractTemplatesTable extends Migratio
         });
 
         DB::transaction(function () {
-
             DB::table('contract_templates')->update([
                 'business_division_id' => '45fc3384-27c1-4a44-a111-2e52b072791e', // Rescue
-                'contract_type_id' => 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3' // Services Contract
+                'contract_type_id' => 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3', // Services Contract
             ]);
-
         });
 
         Schema::table('contract_templates', function (Blueprint $table) {
@@ -53,7 +51,7 @@ class AddBusinessDivisionIdContractTypeIdContractTemplatesTable extends Migratio
 
             $table->dropColumn([
                 'business_division_id',
-                'contract_type_id'
+                'contract_type_id',
             ]);
         });
 

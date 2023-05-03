@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\VendorServices;
 
-use App\Services\VendorServices\CheckSalesOrderService;
-use App\Services\VendorServices\Exceptions\VendorServicesRequestException;
-use App\Services\VendorServices\Models\CheckSalesOrderResult;
-use App\Services\VendorServices\OauthClient as VSOauthClient;
+use App\Domain\VendorServices\Services\CheckSalesOrderService;
+use App\Domain\VendorServices\Services\Exceptions\VendorServicesRequestException;
+use App\Domain\VendorServices\Services\Models\CheckSalesOrderResult;
+use App\Domain\VendorServices\Services\OauthClient as VSOauthClient;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Tests\TestCase;
 
@@ -15,7 +15,8 @@ class CheckSalesOrderTest extends TestCase
      * Test handling of successful response of check sales order endpoint.
      *
      * @return void
-     * @throws \App\Services\VendorServices\Exceptions\VendorServicesRequestException
+     *
+     * @throws \App\Domain\VendorServices\Services\Exceptions\VendorServicesRequestException
      */
     public function testItChecksExistingSalesOrderOnVendorServicesApi()
     {
@@ -28,18 +29,18 @@ class CheckSalesOrderTest extends TestCase
             '*' => HttpFactory::response(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234']),
         ]);
 
-        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn() => $oauthFactory);
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn () => $oauthFactory);
 
         /** @var HttpFactory $factory */
         $factory = $this->app[HttpFactory::class];
 
         $factory->fake([
-            '*' => $factory->response($response)
+            '*' => $factory->response($response),
         ]);
 
         $this->app->when(CheckSalesOrderService::class)
             ->needs(HttpFactory::class)
-            ->give(fn() => $factory);
+            ->give(fn () => $factory);
 
         /** @var CheckSalesOrderService $service */
         $service = $this->app[CheckSalesOrderService::class];
@@ -65,18 +66,18 @@ class CheckSalesOrderTest extends TestCase
             '*' => HttpFactory::response(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234']),
         ]);
 
-        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn() => $oauthFactory);
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn () => $oauthFactory);
 
         /** @var HttpFactory $factory */
         $factory = $this->app[HttpFactory::class];
 
         $factory->fake([
-            '*' => $factory->response($response, 422)
+            '*' => $factory->response($response, 422),
         ]);
 
         $this->app->when(CheckSalesOrderService::class)
             ->needs(HttpFactory::class)
-            ->give(fn() => $factory);
+            ->give(fn () => $factory);
 
         /** @var CheckSalesOrderService $service */
         $service = $this->app[CheckSalesOrderService::class];

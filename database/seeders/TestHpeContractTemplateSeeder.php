@@ -2,13 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Contracts\Repositories\CurrencyRepositoryInterface;
-use App\Models\Template\HpeContractTemplate;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Currency\Contracts\CurrencyRepositoryInterface;
+use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Image\Services\ThumbHelper;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Database\Seeder;
-use App\Models\{Company, Vendor, Data\Country,};
-use App\Services\ThumbHelper;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class TestHpeContractTemplateSeeder extends Seeder
 {
@@ -27,7 +28,7 @@ class TestHpeContractTemplateSeeder extends Seeder
             foreach ($templates as $template) {
                 $this->createTemplate($template);
             }
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
             throw $e;
@@ -38,15 +39,15 @@ class TestHpeContractTemplateSeeder extends Seeder
 
     protected function createTemplate(array $template): void
     {
-        $company = Company::query()->system()->whereShortCode('THG')->first();
-        $vendor = Vendor::query()->whereShortCode('HPE')->first();
+        $company = Company::query()->where('flags', '&', Company::SYSTEM)->where('short_code', 'THG')->first();
+        $vendor = Vendor::query()->where('short_code', 'HPE')->first();
         $countries = Country::query()->whereIn('iso_3166_2', ['DE', 'CH'])->pluck('id', 'iso_3166_2');
 
-        $images = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::WITH_KEYS);
+        $images = ThumbHelper::retrieveLogoFromModels([$company, $vendor], ThumbHelper::MAP);
 
         $formData = $this->parseDesign(json_encode($template), $images);
 
-        /** @var CurrencyRepositoryInterface */
+        /** @var \App\Domain\Currency\Contracts\CurrencyRepositoryInterface */
         $currencies = app(CurrencyRepositoryInterface::class);
 
         foreach ($countries as $key => $country) {
@@ -55,11 +56,11 @@ class TestHpeContractTemplateSeeder extends Seeder
             $name = sprintf('T%s-HPE-%s', $key, $key);
 
             $template = HpeContractTemplate::make([
-                'name'        => $name,
-                'form_data'   => $formData,
-                'company_id'  => $company->getKey(),
-                'vendor_id'   => $vendor->getKey(),
-                'currency_id' =>  optional($currency)->getKey(),
+                'name' => $name,
+                'form_data' => $formData,
+                'company_id' => $company->getKey(),
+                'vendor_id' => $vendor->getKey(),
+                'currency_id' => optional($currency)->getKey(),
             ]);
 
             $template->save();

@@ -2,7 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Asset;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Company\Models\Company;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -15,11 +16,9 @@ class ActivityTest extends TestCase
     use DatabaseTransactions;
 
     /**
-     * Test Activity listing.
-     *
-     * @return void
+     * Test an ability to view paginated activity log.
      */
-    public function testCanViewPaginatedActivityLog()
+    public function testCanViewPaginatedActivityLog(): void
     {
         $this->authenticateApi();
 
@@ -40,17 +39,17 @@ class ActivityTest extends TestCase
                             'old' => [
                                 '*' => [
                                     'attribute',
-                                    'value'
-                                ]
+                                    'value',
+                                ],
                             ],
                             'attributes' => [
                                 '*' => [
                                     'attribute',
-                                    'value'
-                                ]
-                            ]
-                        ]
-                    ]
+                                    'value',
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -59,8 +58,8 @@ class ActivityTest extends TestCase
                 'last_page_url',
                 'links' => [
                     '*' => [
-                        'url', 'label', 'active'
-                    ]
+                        'url', 'label', 'active',
+                    ],
                 ],
                 'next_page_url',
                 'path',
@@ -70,25 +69,92 @@ class ActivityTest extends TestCase
                 'total',
                 'summary' => [
                     '*' => [
-                        'type', 'count'
-                    ]
-                ]
+                        'type', 'count',
+                    ],
+                ],
             ]);
 
         $this->postJson('api/activities', [
             'order_by_created' => 'asc',
-            'search' => Str::random(10)
+            'search' => Str::random(10),
         ])
 //            ->dump()
             ->assertOk();
     }
 
     /**
-     * Test Activity listing by specified types.
-     *
-     * @return void
+     * Test an ability to view paginated activity log of subject.
      */
-    public function testCanViewActivityLogByDescription()
+    public function testCanViewPaginatedActivityLogOfSubject(): void
+    {
+        $this->authenticateApi();
+
+        $subject = Company::factory()->create();
+
+        $this->postJson("api/activities/subject/{$subject->getKey()}")
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'log_name',
+                        'description',
+                        'subject_id',
+                        'subject_name',
+                        'subject_type',
+                        'causer_name',
+                        'changes' => [
+                            'old' => [
+                                '*' => [
+                                    'attribute',
+                                    'value',
+                                ],
+                            ],
+                            'attributes' => [
+                                '*' => [
+                                    'attribute',
+                                    'value',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'links' => [
+                    '*' => [
+                        'url', 'label', 'active',
+                    ],
+                ],
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+                'summary' => [
+                    '*' => [
+                        'type', 'count',
+                    ],
+                ],
+            ]);
+
+        $this->postJson('api/activities', [
+            'order_by_created' => 'asc',
+            'search' => Str::random(10),
+        ])
+//            ->dump()
+            ->assertOk();
+    }
+
+    /**
+     * Test an ability to view activity log of specific description.
+     */
+    public function testCanViewActivityLogByDescription(): void
     {
         $this->authenticateApi();
 
@@ -111,17 +177,17 @@ class ActivityTest extends TestCase
                                 'old' => [
                                     '*' => [
                                         'attribute',
-                                        'value'
-                                    ]
+                                        'value',
+                                    ],
                                 ],
                                 'attributes' => [
                                     '*' => [
                                         'attribute',
-                                        'value'
-                                    ]
-                                ]
-                            ]
-                        ]
+                                        'value',
+                                    ],
+                                ],
+                            ],
+                        ],
                     ],
                     'current_page',
                     'first_page_url',
@@ -130,8 +196,8 @@ class ActivityTest extends TestCase
                     'last_page_url',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
+                            'url', 'label', 'active',
+                        ],
                     ],
                     'next_page_url',
                     'path',
@@ -141,9 +207,9 @@ class ActivityTest extends TestCase
                     'total',
                     'summary' => [
                         '*' => [
-                            'type', 'count'
-                        ]
-                    ]
+                            'type', 'count',
+                        ],
+                    ],
                 ]);
         }
 
@@ -151,11 +217,9 @@ class ActivityTest extends TestCase
     }
 
     /**
-     * Test Activity listing by specified subject types.
-     *
-     * @return void
+     * Test an ability to filter activity log by subject types.
      */
-    public function testCanViewActivityLogBySubjectTypes()
+    public function testCanViewActivityLogBySubjectTypes(): void
     {
         $this->authenticateApi();
 
@@ -178,17 +242,17 @@ class ActivityTest extends TestCase
                                 'old' => [
                                     '*' => [
                                         'attribute',
-                                        'value'
-                                    ]
+                                        'value',
+                                    ],
                                 ],
                                 'attributes' => [
                                     '*' => [
                                         'attribute',
-                                        'value'
-                                    ]
-                                ]
-                            ]
-                        ]
+                                        'value',
+                                    ],
+                                ],
+                            ],
+                        ],
                     ],
                     'current_page',
                     'first_page_url',
@@ -197,8 +261,8 @@ class ActivityTest extends TestCase
                     'last_page_url',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
+                            'url', 'label', 'active',
+                        ],
                     ],
                     'next_page_url',
                     'path',
@@ -208,9 +272,9 @@ class ActivityTest extends TestCase
                     'total',
                     'summary' => [
                         '*' => [
-                            'type', 'count'
-                        ]
-                    ]
+                            'type', 'count',
+                        ],
+                    ],
                 ]);
         }
 
@@ -219,11 +283,9 @@ class ActivityTest extends TestCase
     }
 
     /**
-     * Test Activity listing by specified periods.
-     *
-     * @return void
+     * Test an ability to filter activity log by periods.
      */
-    public function testCanViewActivityLogByPeriods()
+    public function testCanViewActivityLogByPeriods(): void
     {
         $this->authenticateApi();
 
@@ -244,17 +306,17 @@ class ActivityTest extends TestCase
                                 'old' => [
                                     '*' => [
                                         'attribute',
-                                        'value'
-                                    ]
+                                        'value',
+                                    ],
                                 ],
                                 'attributes' => [
                                     '*' => [
                                         'attribute',
-                                        'value'
-                                    ]
-                                ]
-                            ]
-                        ]
+                                        'value',
+                                    ],
+                                ],
+                            ],
+                        ],
                     ],
                     'current_page',
                     'first_page_url',
@@ -263,8 +325,8 @@ class ActivityTest extends TestCase
                     'last_page_url',
                     'links' => [
                         '*' => [
-                            'url', 'label', 'active'
-                        ]
+                            'url', 'label', 'active',
+                        ],
                     ],
                     'next_page_url',
                     'path',
@@ -274,19 +336,17 @@ class ActivityTest extends TestCase
                     'total',
                     'summary' => [
                         '*' => [
-                            'type', 'count'
-                        ]
-                    ]
+                            'type', 'count',
+                        ],
+                    ],
                 ]);
         }
     }
 
     /**
-     * Test Activity Export as PDF.
-     *
-     * @return void
+     * Test an ability to export activity log to pdf.
      */
-    public function testCanExportActivityLogToPdf()
+    public function testCanExportActivityLogToPdf(): void
     {
         $this->authenticateApi();
 
@@ -306,11 +366,11 @@ class ActivityTest extends TestCase
             ->on($model)
             ->withProperties([
                 'old' => [
-                    'product_no' => 'ABCD'
+                    'product_no' => 'ABCD',
                 ],
                 'new' => [
-                    'product_no' => 'GHJK'
-                ]
+                    'product_no' => 'GHJK',
+                ],
             ])
             ->log('updated');
 
@@ -321,11 +381,9 @@ class ActivityTest extends TestCase
     }
 
     /**
-     * Test Activity Export as CSV.
-     *
-     * @return void
+     * Test an ability to export activity log to csv.
      */
-    public function testCanExportActivityLogToCsv()
+    public function testCanExportActivityLogToCsv(): void
     {
         $this->authenticateApi();
 
@@ -345,16 +403,16 @@ class ActivityTest extends TestCase
             ->on($model)
             ->withProperties([
                 'old' => [
-                    'product_no' => 'ABCD'
+                    'product_no' => 'ABCD',
                 ],
                 'new' => [
-                    'product_no' => 'GHJK'
-                ]
+                    'product_no' => 'GHJK',
+                ],
             ])
             ->log('updated');
 
         $this->post('api/activities/export/csv')
             ->assertOk()
-            ->assertHeader('content-type', 'text/plain');
+            ->assertHeader('content-type', 'text/plain; charset=UTF-8');
     }
 }

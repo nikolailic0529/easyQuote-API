@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Company;
-use App\Models\Customer\Customer;
+use App\Domain\Company\Models\Company;
+use App\Domain\Rescue\Models\Customer;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -26,15 +26,14 @@ class AddSourceCompaniesTable extends Migration
         });
 
         Schema::table('companies', function (Blueprint $table) {
-            /**
+            /*
              * type max length is 8 chars
              * category max length is 16 chars
              */
             $table->rawIndex(DB::raw('type(8), category(16)'), 'companies_type_category_index');
         });
 
-        DB::transaction(fn () =>
-            Company::whereType('External')->whereCategory('End User')->update(['source' => Customer::S4_SOURCE])
+        DB::transaction(fn () => Company::whereType('External')->whereCategory('End User')->update(['source' => Customer::S4_SOURCE])
         );
     }
 

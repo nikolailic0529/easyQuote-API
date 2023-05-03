@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class SystemSettings extends Migration
 {
@@ -27,7 +27,7 @@ class SystemSettings extends Migration
 
             $table->json('possible_values')->nullable();
             $table->json('validation')->nullable();
-            
+
             $table->boolean('is_read_only')->default(false);
 
             $table->unsignedTinyInteger('order')->default(1);

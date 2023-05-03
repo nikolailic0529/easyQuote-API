@@ -2,12 +2,12 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\Quote\Contract;
-use App\Models\Template\ContractTemplate;
+use App\Domain\Rescue\Models\Contract;
+use App\Domain\Rescue\Models\ContractTemplate;
 use Faker\Generator as Faker;
 
 $factory->define(Contract::class, function (Faker $faker) {
-    $quote = factory(\App\Models\Quote\Quote::class)->create();
+    $quote = factory(\App\Domain\Rescue\Models\Quote::class)->create();
 
     return [
         'quote_id' => $quote->getKey(),

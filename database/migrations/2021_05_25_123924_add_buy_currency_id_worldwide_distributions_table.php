@@ -19,12 +19,10 @@ class AddBuyCurrencyIdWorldwideDistributionsTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('worldwide_distributions')
                 ->update([
-                    'buy_currency_id' => DB::raw('distribution_currency_id')
+                    'buy_currency_id' => DB::raw('distribution_currency_id'),
                 ]);
-
         });
     }
 

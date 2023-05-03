@@ -15,7 +15,7 @@ class CreateWorldwideQuotesTable extends Migration
     {
         Schema::create('worldwide_quotes', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            
+
             $table->foreignUuid('user_id')->comment('Foreign key on users table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('worldwide_customer_id')->comment('Foreign key on worldwide_customers table')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('company_id')->nullable()->comment('Foreign key on companies table')->constrained()->nullOnDelete()->cascadeOnUpdate();

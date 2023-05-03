@@ -1,0 +1,109 @@
+{
+  "data": {
+    "entities": {
+      "opportunity": {
+        "getById": {
+          "id": "b11412b7-d7d0-4e6f-9549-de2bdf36ec40",
+          "revision": 86830,
+          "formattedName": "Malaysia - Petronas Rapid Project",
+          "name": "Malaysia - Petronas Rapid Project",
+          "status": "Open",
+          "closingDate": "2022-04-14",
+          "qualifyDate": null,
+          "lostDate": null,
+          "wonDate": null,
+          "quickAccountEmail": "",
+          "quickAccountName": "",
+          "quickAccountPhone": "",
+          "quickContactName": "",
+          "quickEmail": "",
+          "quickPhone": "",
+          "ranking": 20,
+          "value": {
+            "baseValue": 5806.511226252159,
+            "currencyId": "3b14dfb9-c3d8-4079-916f-37af7085bec6",
+            "valueForeign": 6723.94
+          },
+          "productSections": [],
+          "contactRelations": {
+            "edges": [
+              {
+                "node": {
+                  "id": "a3a3a9c8-cd91-4b40-b910-62b0d1c76e47",
+                  "isPrimary": true,
+                  "contact": {
+                    "contactType": {
+                      "name": "Default contact"
+                    },
+                    "id": "c3839f98-fe54-49b6-946f-218647941e50",
+                    "address": "Bechtle Logistik & Service GmbH\nBechtle Platz 1, \n",
+                    "city": "Neckarsulm",
+                    "country": "Germany",
+                    "email1": "vincent.volpp@bechtle.com",
+                    "phone1": "+49 7132 981 3389",
+                    "title": "",
+                    "formattedName": "Vincent Volpp",
+                    "firstName": "Vincent",
+                    "lastName": "Volpp",
+                    "zipCode": "DE-74172 ",
+                    "stateProvince": "",
+                    "customFields": "{\"cfLanguage1nId\": \"990328e8-884a-4cca-b591-5e232d5d880b\", \"cfChristmaGreetings\": false, \"cfJobTitle\": \"Presales Lenovo Data Center Solutions\", \"cfMngtInfo\": false, \"cfWebinar\": false, \"cfAddressTwo\": null, \"cfCustSurvContact\": false, \"cfType1Id\": null, \"cfStateCode1\": null}"
+                  }
+                }
+              }
+            ]
+          },
+          "unit": {
+            "id": "79ed86c3-d96b-4b6d-8fb0-f887602a5f28",
+            "name": "Worldwide"
+          },
+          "step": {
+            "id": "7bc37b31-8725-4256-b867-472033316e5a",
+            "name": "Customer_Contact",
+            "percent": 50
+          },
+          "owner": {
+            "id": "00000000-0000-0000-0000-000000037eb6",
+            "formattedName": "Patricia Salido",
+            "email": "patricia.salido@europlusdirect.com"
+          },
+          "primaryAccount": {
+            "id": "ca05e233-8667-4f04-b1b8-7ed98de5e988",
+            "formattedName": "Bechtle Logistik & Service GmbH",
+            "email1": "",
+            "homePage": "",
+            "address": "Bechtle-Allee 1, ",
+            "city": "Gaildorf",
+            "zipCode": "74405 ",
+            "stateProvince": "",
+            "country": "Germany",
+            "customFields": "{\"cfMargin\": 0.0, \"cfStateCode\": null, \"cfBusinessPartner\": null, \"cfTypeId\": null, \"cfVendor2\": [], \"cfQuarterlyAuditDate\": null, \"cfDistributor\": null, \"cfVatTypeId\": null, \"cfSoftwareCountry\": null, \"cfAddress2n\": null, \"cfHardwareCountry\": null, \"cfReseller\": null, \"cfCustSurvAccountId\": [], \"cfEndUser\": null, \"cfVat\": null}"
+          },
+          "primaryContact": {
+            "id": "c3839f98-fe54-49b6-946f-218647941e50",
+            "address": "Bechtle Logistik & Service GmbH\nBechtle Platz 1, \n",
+            "city": "Neckarsulm",
+            "country": "Germany",
+            "email1": "vincent.volpp@bechtle.com",
+            "phone1": "+49 7132 981 3389",
+            "title": "",
+            "formattedName": "Vincent Volpp",
+            "firstName": "Vincent",
+            "lastName": "Volpp",
+            "zipCode": "DE-74172 ",
+            "stateProvince": ""
+          },
+          "productCurrency": {
+            "id": "c4ca4238-a0b9-0382-0dcc-509a6f75849b",
+            "code": "GBP"
+          },
+          "opptyType": {
+            "id": "0c03f112-4544-06a8-b162-1f14524c149c",
+            "name": "Default pipeline"
+          },
+          "customFields": "{\"cfCompetition\": \"\", \"cfPersonalRatingId\": \"6ed297a3-f4c7-4447-8d52-e6d97ac41765\", \"cfDistributor4nId\": null, \"cfConfiguration1n\": false, \"cfLeadNumber\": \"\", \"cfCdmr1n\": false, \"cfAmpId\": \"\", \"cfCountry2\": \"\", \"cfDistributor5nId\": null, \"cfValueLastPeriode\": 0.0, \"cfSnd\": false, \"cfContactName2\": \"\", \"cfSupplier5\": \"\", \"cfDistributorCountry4nId\": null, \"cfAdditionalHardware\": false, \"cfMargin1\": 18.0, \"cfCustOrderDate\": null, \"cfAccountManagerMvId\": null, \"cfContactName4\": \"\", \"cfLate\": false, \"cfNewBiz\": 0.0, \"cfRemark\": \"\", \"cfAccountManagerId\": null, \"cfCountry5\": \"\", \"cfSuppConfirmDate\": null, \"cfOpportunityTypeId\": \"d9188f70-9c44-469d-8931-4bd2acd4782d\", \"cfDistributorCountry5nId\": null, \"cfSourceId\": null, \"cfDistributorCountry3nId\": null, \"cfContactName1\": \"\", \"cfStartDateAssumed\": true, \"cfAibValue\": 0, \"cfRenewalReminderCreated\": false, \"cfEmailAddress4\": \"\", \"cfDelayedClosing\": null, \"cfCountry4\": \"\", \"cfDistributor1Id\": \"2b1f30cf-064d-43d0-9f8c-deb71d77997d\", \"cfLeadSourceId\": null, \"cfDurationInMonth1n\": null, \"cfNatureOfServiceId\": \"3582b8c9-3d8f-449d-ae9c-f19035f9cfb9\", \"cfCountry\": \"\", \"cfSupplier3\": \"\", \"cfTestComm\": \"\", \"cfToFinance\": null, \"cfServiceCredits\": false, \"cfDistributorCountry2n1Id\": null, \"cfEmailAddress2\": \"\", \"cfSupplier\": \"\", \"cfCampaignId\": null, \"cfSupplier4\": \"\", \"cfLeadSourceMvId\": null, \"cfTpmId\": null, \"cfSupplier2\": \"\", \"cfEmailAddress5\": \"\", \"cfEmailAddress\": \"nicole.lee@fssb.microlink.com.my\", \"cfHigherSla\": false, \"cfRenYearId\": null, \"cfContactName5\": \"\", \"cfInitialSalesId\": null, \"cfSupplOrderTransaction\": \"\", \"cfEmailAddress1\": \"\", \"cfContactName\": \"Nicole\", \"cfCountry6Id\": \"a9a546e6-90f6-40fe-87b0-51057ddc3c05\", \"cfCountry1\": \"\", \"cfPersonalRating1nId\": null, \"cfSla\": \"5 year NBD\", \"cfPurchasePrice\": {\"baseValue\": 0, \"currencyId\": \"c4ca4238-a0b9-0382-0dcc-509a6f75849b\", \"valueForeign\": 0}, \"cfHwStatusId\": \"716ea2bf-fc9c-4910-8e01-43bac930f747\", \"cfContactName3\": \"\", \"cfDistributor2nId\": null, \"cfRegionId\": \"6e7442de-3ae0-4a50-a40c-41679417dc2b\", \"cfStartDate\": \"2022-03-17\", \"cfCustomerStatusId\": \"a6db195f-6570-410e-b37c-eb631e53dca4\", \"cfEndDate\": \"2022-03-09\", \"cfSupplier1\": \"\", \"cfNatureOfService1Id\": null, \"cfEnduser\": \"Petronas Rapid Project\", \"cfInitialQuoteValue\": \"\", \"cfDmr\": false, \"cfCountry3\": \"\", \"cfEndDateAssumed\": true, \"cfInitialQuoteValue1n\": 0.0, \"cfRenMonthId\": null, \"cfEmailAddress3\": \"\", \"cfEstimatedUpsellAmount\": 0, \"cfListPrice\": {\"baseValue\": 0, \"currencyId\": \"c4ca4238-a0b9-0382-0dcc-509a6f75849b\", \"valueForeign\": 0}, \"cfDistributor3nId\": null, \"cfSuppOrderDate\": null, \"cfVendorLead\": false, \"cfDropInId\": null}"
+        }
+      }
+    }
+  }
+}

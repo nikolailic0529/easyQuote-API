@@ -23,8 +23,6 @@ class AddSortRowsColumnSortRowsDirectionWorldwideQuotesTable extends Migration
                 ->default('asc')
                 ->after('sort_rows_column')
                 ->comment('Sorting direction of the pack assets');
-
-
         });
     }
 
@@ -38,7 +36,7 @@ class AddSortRowsColumnSortRowsDirectionWorldwideQuotesTable extends Migration
         Schema::table('worldwide_quotes', function (Blueprint $table) {
             $table->dropColumn([
                 'sort_rows_column',
-                'sort_rows_direction'
+                'sort_rows_direction',
             ]);
         });
     }

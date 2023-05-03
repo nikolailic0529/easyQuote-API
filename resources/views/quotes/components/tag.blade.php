@@ -4,6 +4,6 @@
 <span
     class="{{ $class }}"
     @textoverflow ($tagValue, 15, $page_name === 'data_pages')
-        style="font-size:14px!important"
+        style="font-size:12px!important"
     @endtextoverflow
     >{{ $tagValue }}</span>

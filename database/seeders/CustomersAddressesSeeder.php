@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\{Address, Customer\Customer, Data\Country};
+use App\Domain\Address\Models\Address;
+use App\Domain\Country\Models\Country;
+use App\Domain\Rescue\Models\Customer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -16,7 +18,7 @@ class CustomersAddressesSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the addresses table
+        // Empty the addresses table
         Schema::disableForeignKeyConstraints();
 
         DB::table('addresses')->delete();
@@ -35,7 +37,7 @@ class CustomersAddressesSeeder extends Seeder
 
         $addresses = collect([
             Address::type('Software')->firstOrCreate($addresses->get('Software'))->id,
-            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))->id
+            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))->id,
         ]);
 
         Customer::all()->each(function ($customer) use ($addresses) {

@@ -13,6 +13,5 @@ class OpportunitySeeder extends Seeder
      */
     public function run()
     {
-        //
     }
 }

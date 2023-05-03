@@ -1,10 +1,10 @@
 <?php
 
-use App\Http\Controllers\API\Quotes\QuoteController;
-use App\Http\Controllers\API\Quotes\QuoteSubmittedController;
+use App\Domain\HpeContract\Controllers\V1\HpeContractController;
+use App\Domain\Rescue\Controllers\V1\QuoteSubmittedController;
+use App\Domain\Worldwide\Controllers\V1\Quote\WorldwideQuoteController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\API\HpeContractController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteController;
+use Illuminate\View\View;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,11 +17,11 @@ use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteController;
 |
 */
 
-Route::get('/', function () {
+Route::get('/', static function (): View {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
+Route::get('/dashboard', static function (): View {
     return view('dashboard');
 })->middleware(['auth'])->name('dashboard');
 

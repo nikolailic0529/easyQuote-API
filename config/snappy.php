@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Snappy PDF / Image Configuration
@@ -35,18 +34,17 @@ return [
 
     'pdf' => [
         'enabled' => true,
-        'binary'  => windows_os() ? '"C:/Program Files/wkhtmltopdf/bin/wkhtmltopdf.exe"' : base_path('vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64'),
+        'binary' => env('WKHTMLTOPDF_PATH', base_path('vendor/bin/wkhtmltopdf-amd64')),
         'timeout' => false,
         'options' => ['dpi' => 300],
-        'env'     => [],
+        'env' => [],
     ],
 
     'image' => [
         'enabled' => true,
-        'binary'  => '/usr/local/bin/wkhtmltoimage',
+        'binary' => '/usr/local/bin/wkhtmltoimage',
         'timeout' => false,
         'options' => [],
-        'env'     => [],
+        'env' => [],
     ],
-
 ];

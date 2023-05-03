@@ -1,10 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class MigrateHpeContractTemplatesToHpeContractTemplatesTable extends Migration
 {
@@ -18,7 +16,7 @@ class MigrateHpeContractTemplatesToHpeContractTemplatesTable extends Migration
         DB::beginTransaction();
 
         try {
-            /**
+            /*
              * Migrate quote_templates with type = 3 to hpe_contract_templates table.
              */
             DB::table('quote_templates')
@@ -74,6 +72,5 @@ class MigrateHpeContractTemplatesToHpeContractTemplatesTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Space;
+use App\Domain\Space\Models\Space;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class SpaceTest extends TestCase
 {
     use DatabaseTransactions;
@@ -24,10 +27,9 @@ class SpaceTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'space_name'
-                ]
+                    'id', 'space_name',
+                ],
             ]);
-
     }
 
     /**
@@ -52,16 +54,15 @@ class SpaceTest extends TestCase
         ]]);
 
         $this->putJson('api/spaces', [
-            'spaces' => $spacesData
+            'spaces' => $spacesData,
         ])
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
                     'id',
-                    'space_name'
-                ]
+                    'space_name',
+                ],
             ]);
-
     }
 }

@@ -1,12 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use PhpParser\Node\Stmt\Catch_;
 
 class MigrateQuoteVersionsToQuoteVersionsTable extends Migration
 {
@@ -150,6 +146,5 @@ class MigrateQuoteVersionsToQuoteVersionsTable extends Migration
      */
     public function down()
     {
-        // 
     }
 }

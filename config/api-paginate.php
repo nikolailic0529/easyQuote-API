@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
      * The maximum number of results that will be returned
      * when using the JSON API paginator.
@@ -29,8 +28,8 @@ return [
      */
     'method_name' => 'jsonPaginate',
 
-    /**
+    /*
      * Count rows cache ttl in minutes.
      */
-    'count_cache_ttl' => 60
+    'count_cache_ttl' => 60,
 ];

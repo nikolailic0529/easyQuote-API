@@ -4,34 +4,53 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Arr;
-use App\Models\Data\Timezone;
+use Illuminate\Support\Str;
 
 class TimezoneSeeder extends Seeder
 {
-    /**
-     * Run the database seeders.
-     *
-     * @return void
-     * @throws \Throwable
-     */
-    public function run()
+    public function run(): void
     {
-        $timezones = json_decode(file_get_contents(database_path('seeders/models/timezones.json')), true);
-
-        DB::transaction(
-            fn () =>
-            collect($timezones)
-                ->each(fn ($timezone) => Timezone::query()->updateOrCreate(
-                    Arr::only($timezone, 'text'),
-                    [
-                        'abbr' => $timezone['abbr'],
-                        'utc' => head($timezone['utc']),
-                        'text' => $timezone['text'],
-                        'value' => $timezone['value'],
-                        'offset' => $timezone['offset']
-                    ]
-                ))
+        $seeds = collect(
+            json_decode(
+                json: file_get_contents(__DIR__.'/models/timezones.json'),
+                associative: true
+            )
         );
+
+        $seeds = $seeds->map(static function (array $seed): array {
+            $seed['id'] = Str::orderedUuid()->toString();
+
+            return $seed;
+        });
+
+        DB::transaction(static function () use ($seeds): void {
+            foreach ($seeds as $seed) {
+                $tz = DB::table('timezones')->where('text', $seed['text'])->first();
+
+                if (!$tz) {
+                    DB::table('timezones')
+                        ->insert([
+                            'id' => $seed['id'],
+                            'abbr' => $seed['abbr'],
+                            'utc' => $seed['utc'],
+                            'text' => $seed['text'],
+                            'value' => $seed['value'],
+                            'offset' => $seed['offset'],
+                        ]);
+
+                    continue;
+                }
+
+                DB::table('timezones')
+                    ->where('id', $tz->id)
+                    ->update([
+                        'abbr' => $seed['abbr'],
+                        'utc' => $seed['utc'],
+                        'text' => $seed['text'],
+                        'value' => $seed['value'],
+                        'offset' => $seed['offset'],
+                    ]);
+            }
+        });
     }
 }

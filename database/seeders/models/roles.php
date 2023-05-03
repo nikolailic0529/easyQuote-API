@@ -5,11 +5,9 @@ $RW = 'Read & Write';
 $RWD = 'Read, Write and Delete';
 
 return [
-
     [
         'name' => 'Administrator',
-        'permissions' =>
-            [
+        'permissions' => [
                 // Settings permissions
                 'view_system_settings',
                 'update_system_settings',
@@ -52,26 +50,27 @@ return [
                 'download_quote_price',
                 'download_quote_schedule',
 
-                // Sales order permissions
-                'view_own_sales_orders',
-                'create_sales_orders',
-                'update_own_sales_orders',
-                'delete_own_sales_orders',
-                'cancel_sales_orders',
-                'resubmit_sales_orders',
-                'unravel_sales_orders',
-                'alter_active_status_of_sales_orders',
-                'download_sales_order_pdf',
+            // Sales order permissions
+            'view_own_sales_orders',
+            'create_sales_orders',
+            'update_own_sales_orders',
+            'delete_own_sales_orders',
+            'cancel_sales_orders',
+            'resubmit_sales_orders',
+            'unravel_sales_orders',
+            'alter_active_status_of_sales_orders',
+            'download_sales_order_pdf',
+            'refresh_status_of_sales_orders',
 
-                // Contract permissions
-                'view_contracts',
-                'create_contracts',
-                'update_contracts',
-                'delete_contracts',
-                'view_own_quote_contracts',
-                'create_quote_contracts',
-                'update_own_quote_contracts',
-                'delete_own_quote_contracts',
+            // Contract permissions
+            'view_contracts',
+            'create_contracts',
+            'update_contracts',
+            'delete_contracts',
+            'view_own_quote_contracts',
+            'create_quote_contracts',
+            'update_own_quote_contracts',
+            'delete_own_quote_contracts',
                 'download_contract_pdf',
 
                 // Country permissions
@@ -85,6 +84,7 @@ return [
                 'create_companies',
                 'update_companies',
                 'delete_companies',
+                'change_companies_ownership',
 
                 // Vendor permissions
                 'view_vendors',
@@ -112,6 +112,7 @@ return [
                 'create_assets',
                 'update_assets',
                 'delete_assets',
+                'change_assets_ownership',
 
                 // Rescue quote permissions
                 'view_own_external_quotes',
@@ -180,12 +181,14 @@ return [
                 'update_own_ww_quote_files',
                 'handle_own_ww_quote_files',
                 'delete_own_ww_quote_files',
+                'change_ww_quotes_ownership',
 
                 // Opportunity permissions
                 'view_opportunities',
                 'create_opportunities',
                 'update_own_opportunities',
                 'delete_own_opportunities',
+                'change_opportunities_ownership',
 
                 // Team permissions
                 'view_teams',
@@ -193,36 +196,35 @@ return [
                 'update_teams',
                 'delete_teams',
             ],
-        'privileges' =>
-            [
+        'privileges' => [
                 'Addresses' => $RWD,
                 'Contacts' => $RWD,
                 'Assets' => $RWD,
                 'Settings' => $RW,
                 'Countries' => $RWD,
                 'Audit' => $RO,
-                'Users' => $RWD,
-                'Quotes' => $RWD,
-                'Contracts' => $RWD,
-                'Templates' => $RWD,
-                'Companies' => $RWD,
-                'Vendors' => $RWD,
-                'Margins' => $RWD,
-                'Discounts' => $RWD,
-                'Teams' => $RWD,
-            ],
-        'companies' =>
-            [
-                'SWH',
-                'THG',
-                'EPD',
-            ],
+            'Users' => $RWD,
+            'Quotes' => $RWD,
+            'Contracts' => $RWD,
+            'Templates' => $RWD,
+            'Companies' => $RWD,
+            'Vendors' => $RWD,
+            'Margins' => $RWD,
+            'Discounts' => $RWD,
+            'Teams' => $RWD,
+        ],
+        'access' => [
+            'access_contact_direction' => 'all',
+            'access_company_direction' => 'all',
+            'access_opportunity_direction' => 'all',
+            'access_opportunity_pipeline_direction' => 'all',
+            'access_worldwide_quote_direction' => 'all',
+            'access_sales_order_direction' => 'all',
+        ],
     ],
     [
         'name' => 'Sales Manager',
-        'permissions' =>
-            [
-
+        'permissions' => [
                 // Rescue quote permissions
                 'view_own_quotes',
                 'create_quotes',
@@ -293,8 +295,7 @@ return [
                 'create_contacts',
                 'update_contacts',
             ],
-        'privileges' =>
-            [
+        'privileges' => [
                 'Addresses' => $RW,
                 'Contacts' => $RW,
                 'Assets' => $RW,
@@ -305,12 +306,6 @@ return [
                 'Vendors' => $RWD,
                 'Margins' => $RWD,
                 'Discounts' => $RWD,
-            ],
-        'companies' =>
-            [
-                'SWH',
-                'THG',
-                'EPD',
             ],
     ],
 ];

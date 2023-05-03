@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Data\Country;
-use App\Models\User;
+use App\Domain\Country\Models\Country;
+use App\Domain\User\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -22,13 +22,13 @@ class AddCountryIdUsersTable extends Migration
         $columns = collect(array_keys($schemaManager->listTableColumns('users')));
         $foreigns = collect($schemaManager->listTableForeignKeys('users'))->map->getName();
 
-        if (! $columns->contains('country_id')) {
+        if (!$columns->contains('country_id')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->uuid('country_id')->nullable()->after('timezone_id')->comment('User Country');
             });
         }
 
-        if (! $foreigns->contains('users_country_id_foreign')) {
+        if (!$foreigns->contains('users_country_id_foreign')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->foreign('country_id')->references('id')->on('countries')->onDelete('SET NULL')->onUpdate('cascade');
             });

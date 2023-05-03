@@ -256,6 +256,45 @@
       "droppable": false,
       "decoration": "4",
       "visibility": true
+    },
+    {
+      "id": "9f1e6967-0d22-4d97-988a-431a0605e3ae",
+      "name": "Single Column",
+      "child": [
+        {
+          "id": "57a8440f-a11a-4ab2-ba19-4b4e7cb6dbac",
+          "class": "col-lg-12 border-right",
+          "controls": [
+            {
+              "id": "fb0eda6d-3d58-469d-8601-0ed194ab68ec",
+              "css": null,
+              "src": null,
+              "name": "quote_assets",
+              "show": false,
+              "type": "quote_assets",
+              "class": null,
+              "label": "Quote Assets",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "57a8440f-a11a-4ab2-ba19-4b4e7cb6dbac",
+              "attached_element_id": "9f1e6967-0d22-4d97-988a-431a0605e3ae"
+            }
+          ],
+          "position": 1
+        }
+      ],
+      "class": "single-column field-dragger",
+      "order": 1,
+      "toggle": false,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "1",
+      "visibility": false
     }
   ],
   "first_page": [
@@ -294,7 +333,7 @@
               "type": "p",
               "class": null,
               "label": "Paragraph",
-              "value": "67, Albian Street, Leeds LS15AA<br/>\nUnited Kingdom <br/>\n(+44) 01 113 887 8650<br/>",
+              "value": "67, Albion Street, Leeds LS15AA<br/>\nUnited Kingdom <br/>\n+44 (0) 113 887 8650<br/>",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -304,15 +343,50 @@
               "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
             },
             {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
+              "id": "account_manager_email",
+              "css": null,
+              "name": "account_manager_email",
+              "show": false,
+              "type": "tag",
+              "class": "s4-form-control",
+              "label": "Account Manager Email",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": true,
+              "is_required": false,
+              "attached_child_id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
+              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+            },
+            {
+              "id": "ccd1ab5b-8ca3-497e-a019-8781b68abdd1",
               "css": null,
               "src": null,
               "name": "p-1",
               "show": false,
               "type": "p",
-              "class": "blue",
+              "class": null,
               "label": "Paragraph",
-              "value": "sales@epd-worldwide.com<br/>\nepd-worldwide.com",
+              "value": "enquiriesww@europlusdirect.com<br/>",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "5368de05-288a-47c6-b2e9-f71d35e1b9e3",
+              "attached_element_id": "ed245966-53a7-4fee-b8cb-b9260c1e90a4"
+            },
+            {
+              "id": "68592f53-518b-4f68-8536-d6f49b492ed4",
+              "css": null,
+              "src": null,
+              "name": "p-1",
+              "show": false,
+              "type": "p",
+              "class": null,
+              "label": "Paragraph",
+              "value": "europlusdirect.com",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -1181,86 +1255,6 @@
       "decoration": "1"
     },
     {
-      "id": "92f3440e-bb38-4937-a46f-bc361766062f",
-      "css": "mt-5 footer-html",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
-              "css": null,
-              "src": null,
-              "name": "p-1",
-              "show": false,
-              "type": "p",
-              "class": "font-sm",
-              "label": "Paragraph",
-              "value": "Please note that all pricing is correct at the time of providing this quotation but may be subject to change by the vendor.",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
-              "attached_element_id": "92f3440e-bb38-4937-a46f-bc361766062f"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "toggle": false,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1",
-      "visibility": false
-    },
-    {
-      "id": "ec69f316-ac87-47fb-98e2-47f15ca9f5c6",
-      "css": "footer-html",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "bbcb8781-eb68-470d-9e26-98ad29667d0b",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "d25eacb0-d57f-490f-8b6b-24bd2ec0fadf",
-              "css": null,
-              "src": null,
-              "name": "p-1",
-              "show": false,
-              "type": "p",
-              "class": "font-sm",
-              "label": "Paragraph",
-              "value": "Pricing will be valid until the end of the month only due to flunctuations in the currency exchange rate.",
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "bbcb8781-eb68-470d-9e26-98ad29667d0b",
-              "attached_element_id": "ec69f316-ac87-47fb-98e2-47f15ca9f5c6"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "toggle": false,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1",
-      "visibility": false
-    },
-    {
       "id": "4514442f-2b63-4cee-be54-7d86c6ae0336",
       "css": "footer-html",
       "name": "Single Column",
@@ -1269,6 +1263,24 @@
           "id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
           "class": "col-lg-12 border-right",
           "controls": [
+            {
+              "id": "016794b0-2a1b-4209-b14d-0085c9135bb7",
+              "css": null,
+              "src": null,
+              "name": "p-1",
+              "show": false,
+              "type": "p",
+              "class": null,
+              "label": "Paragraph",
+              "value": "Please note that all pricing is correct at the time of providing this quotation but may be subject to change by the vendor.\nPricing will be valid until the end of the month due to fluctuation in the currency exchange rate.\nThe pricing on the quote provided without the serial numbers is budgetary and is subjected to change during fulfilment.",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "b60e7616-c7a6-431b-8c60-8f44065fe96b",
+              "attached_element_id": "4514442f-2b63-4cee-be54-7d86c6ae0336"
+            },
             {
               "id": "footer_notes",
               "css": null,

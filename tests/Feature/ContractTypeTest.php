@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class ContractTypeTest extends TestCase
 {
     /**
@@ -20,7 +21,7 @@ class ContractTypeTest extends TestCase
         $this->getJson('api/contract-types')
             ->assertOk()
             ->assertJsonStructure([
-                '*' => ['id', 'type_name', 'type_short_name']
+                '*' => ['id', 'type_name', 'type_short_name'],
             ]);
     }
 }

@@ -2,20 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Models\Data\Country;
-use App\Models\QuoteFile\ImportableColumn;
+use App\Domain\Country\Models\Country;
+use App\Domain\QuoteFile\Models\ImportableColumn;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
  */
 class ImportableColumnTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test importable columns listing.
@@ -24,6 +23,8 @@ class ImportableColumnTest extends TestCase
      */
     public function testCanViewListingOfImportableColumns()
     {
+        $this->authenticateApi();
+
         $this->getJson('api/importable-columns')
 //            ->dump()
             ->assertOk()
@@ -85,6 +86,8 @@ class ImportableColumnTest extends TestCase
      */
     public function testCanCreateImportableColumn()
     {
+        $this->authenticateApi();
+
         $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
 
         $attributes = factory(ImportableColumn::class)->state('aliases')->raw();
@@ -135,6 +138,8 @@ class ImportableColumnTest extends TestCase
      */
     public function testCanUpdateImportableColumn()
     {
+        $this->authenticateApi();
+
         $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
 
         /** @var ImportableColumn $importableColumn */
@@ -177,9 +182,7 @@ class ImportableColumnTest extends TestCase
         $this->assertCount(count($newAliases), $response->json('aliases'));
 
         foreach ($newAliases as $alias) {
-
             $this->assertContains($alias, $response->json('aliases.*.alias'));
-
         }
     }
 
@@ -190,6 +193,8 @@ class ImportableColumnTest extends TestCase
      */
     public function testCanDeleteImportableColumn()
     {
+        $this->authenticateApi();
+
         $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
 
         $importableColumn = factory(ImportableColumn::class)->create();
@@ -208,6 +213,8 @@ class ImportableColumnTest extends TestCase
      */
     public function testCanMarkImportableColumnAsActive()
     {
+        $this->authenticateApi();
+
         $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
 
         $importableColumn = factory(ImportableColumn::class)->create([
@@ -237,6 +244,8 @@ class ImportableColumnTest extends TestCase
      */
     public function testCanMarkImportableColumnAsInactive()
     {
+        $this->authenticateApi();
+
         $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
 
         $importableColumn = factory(ImportableColumn::class)->create([

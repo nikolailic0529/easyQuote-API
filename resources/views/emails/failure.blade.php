@@ -3,26 +3,12 @@
 
 The system went down with message:
 ```
-{!! $failure->message !!}
+{!! $failure_message !!}
 ```
-
-**Possible reasons:**
-@forelse ($failure->reasons as $key => $reason)
-     {{ ++$key }}. {{ $reason }}
-@empty
-     No known reasons.
-@endforelse
-
-**Possbile resolving:**
-@forelse ($failure->resolving as $key => $resolve)
-    {{ ++$key }}. {{ $resolve }}
-@empty
-    No known resovling.
-@endforelse
 
 **Trace:**
 ```
-{!! $failure->trace !!}
+{!! $failure_trace !!}
 ```
 
 Thanks,<br>

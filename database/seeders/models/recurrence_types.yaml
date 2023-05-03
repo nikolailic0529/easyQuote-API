@@ -1,0 +1,24 @@
+---
+- id: 961355e7-133f-4ccc-8eef-e214a50cb457
+  value: NotSet
+- id: 961355e7-1344-49f2-9e34-b8e9e9607eea
+  value: Daily
+- id: 961355e7-1347-4c9e-b622-700b8ab8fda0
+  value: Weekly
+- id: 961355e7-134a-401e-a762-163a53b8db76
+  value: MonthlyRelative
+- id: 961355e7-134c-4116-af1b-6e650ed85746
+  value: MonthlyAbsolute
+- id: 961355e7-134f-4c22-b59f-1cab13605d42
+  value: YearlyRelative
+- id: 961355e7-1351-4dfc-a9ff-e806ed403a12
+  value: YearlyAbsolute
+- id: 961355e7-1353-410c-9d36-60daec48e419
+  value: AfterNDays
+- id: 961355e7-1356-4e19-9f28-781f21541523
+  value: AfterNWeeks
+- id: 961355e7-1358-4a26-b88d-6da146073aa8
+  value: AfterNMonths
+- id: 961355e7-135b-48fa-9d7e-b747ff6dc719
+  value: AfterNYears
+...

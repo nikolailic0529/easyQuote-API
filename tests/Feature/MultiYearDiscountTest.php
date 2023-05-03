@@ -1,14 +1,15 @@
 <?php
 
-
 namespace Tests\Feature;
 
-
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\WorldwideQuote;
+use App\Domain\Discount\Models\MultiYearDiscount;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class MultiYearDiscountTest extends TestCase
 {
     use DatabaseTransactions;
@@ -24,7 +25,7 @@ class MultiYearDiscountTest extends TestCase
 
         factory(MultiYearDiscount::class, 30)->create();
 
-        $this->getJson("api/discounts/multi_year")
+        $this->getJson('api/discounts/multi_year')
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -69,7 +70,7 @@ class MultiYearDiscountTest extends TestCase
 
         $this->authenticateApi();
 
-        $this->postJson("api/discounts/multi_year", $attributes)
+        $this->postJson('api/discounts/multi_year', $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -103,7 +104,7 @@ class MultiYearDiscountTest extends TestCase
 
         $attributes = factory(MultiYearDiscount::class)->raw();
 
-        $this->patchJson("api/discounts/multi_year/".$discount->getKey(), $attributes)
+        $this->patchJson('api/discounts/multi_year/'.$discount->getKey(), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -135,7 +136,7 @@ class MultiYearDiscountTest extends TestCase
 
         $discount = factory(MultiYearDiscount::class)->create();
 
-        $this->deleteJson("api/discounts/multi_year/".$discount->getKey())
+        $this->deleteJson('api/discounts/multi_year/'.$discount->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -154,18 +155,18 @@ class MultiYearDiscountTest extends TestCase
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $quote->activeVersion->multiYearDiscount()->associate($discount)->save();
 
         $this->authenticateApi();
 
-        $response = $this->deleteJson("api/discounts/multi_year/".$discount->getKey())
+        $response = $this->deleteJson('api/discounts/multi_year/'.$discount->getKey())
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([
-                'message'
+                'message',
             ]);
 
         $this->assertStringStartsWith('You can not delete the multi-year discount', $response->json('message'));

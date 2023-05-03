@@ -2,22 +2,25 @@
 
 namespace Tests\Feature;
 
-use App\Models\Company;
-use App\Models\Data\Country;
-use App\Models\Quote\Quote;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Vendor;
+use App\Domain\Authentication\Services\UserTeamGate;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Country\Models\Country;
+use App\Domain\Rescue\Models\QuoteTemplate;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Str};
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\{WithFakeUser};
 
 /**
  * @group build
  */
 class QuoteTemplateTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to view paginated templates listing.
@@ -26,6 +29,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanViewPaginatedTemplatesListing()
     {
+        $this->authenticateApi();
+
         QuoteTemplate::query()->delete();
 
         factory(QuoteTemplate::class, 30)->create()
@@ -34,7 +39,7 @@ class QuoteTemplateTest extends TestCase
                 $quoteTemplate->countries()->sync(Country::limit(2)->get());
             });
 
-        $this->getJson("api/templates")
+        $this->getJson('api/templates')
             ->assertOk()
             ->assertJsonStructure([
                 'meta' => [
@@ -85,9 +90,11 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanViewTemplate()
     {
+        $this->authenticateApi();
+
         $quoteTemplate = factory(QuoteTemplate::class)->create();
 
-        $this->getJson("api/templates/".$quoteTemplate->getKey())
+        $this->getJson('api/templates/'.$quoteTemplate->getKey())
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -120,12 +127,14 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanCreateTemplate()
     {
+        $this->authenticateApi();
+
         $attributes = factory(QuoteTemplate::class)->raw([
             'countries' => Country::limit(2)->pluck('id')->all(),
             'vendors' => Vendor::limit(2)->pluck('id')->all(),
         ]);
 
-        $this->postJson(url("api/templates"), $attributes)
+        $this->postJson(url('api/templates'), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -202,14 +211,14 @@ class QuoteTemplateTest extends TestCase
         ]);
 
         $this->postJson('api/templates/filter-ww/pack', [
-            'company_id' => $templates->random()->company_id
+            'company_id' => $templates->random()->company_id,
         ])
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'name'
-                ]
+                    'id', 'name',
+                ],
             ]);
     }
 
@@ -253,7 +262,7 @@ class QuoteTemplateTest extends TestCase
         $templates = factory(QuoteTemplate::class, 10)->create();
 
         $this->postJson('api/quotes/step/1', [
-            'company_id' => Company::value('id')
+            'company_id' => Company::value('id'),
         ])
 //            ->dump()
             ->assertOk();
@@ -266,6 +275,8 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanUpdateQuoteTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['form_data' => ['TEMPLATE_SCHEMA']]);
 
         $attributes = factory(QuoteTemplate::class)->raw([
@@ -278,7 +289,7 @@ class QuoteTemplateTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['form_data' => ['TEMPLATE_SCHEMA']]);
 
-        $this->patchJson("api/templates/".$template->getKey(), Arr::except($attributes, ['form_data', 'form_values_data']))
+        $this->patchJson('api/templates/'.$template->getKey(), Arr::except($attributes, ['form_data', 'form_values_data']))
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure(['id', 'business_division_id', 'contract_type_id', 'name', 'company_id', 'vendor_id', 'currency_id', 'form_data', 'created_at']);
@@ -287,7 +298,7 @@ class QuoteTemplateTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['form_data' => ['TEMPLATE_SCHEMA']]);
 
-        $this->patchJson("api/templates/".$template->getKey(), Arr::only($attributes, ['form_data', 'form_values_data']))
+        $this->patchJson('api/templates/'.$template->getKey(), Arr::only($attributes, ['form_data', 'form_values_data']))
             ->assertOk()
             ->assertJsonStructure(['id', 'business_division_id', 'contract_type_id', 'name', 'company_id', 'vendor_id', 'currency_id', 'form_data', 'created_at']);
 
@@ -304,27 +315,31 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanNotUpdateMasterTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
 
         $attributes = factory(QuoteTemplate::class)->raw([
             'countries' => Country::limit(2)->pluck('id')->all(),
         ]);
 
-        $this->patchJson(url("api/templates/".$template->getKey()), $attributes)
+        $this->patchJson(url('api/templates/'.$template->getKey()), $attributes)
             ->assertForbidden()
             ->assertJsonFragment(['message' => QTSU_01]);
     }
 
     /**
-     * Test an ability to make a copy of an existing template
+     * Test an ability to make a copy of an existing template.
      *
      * @return void
      */
     public function testCanCopyTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
 
-        $response = $this->putJson("api/templates/copy/".$template->getKey(), [])->assertOk();
+        $response = $this->putJson('api/templates/copy/'.$template->getKey(), [])->assertOk();
 
         /**
          * Assert the newly replicated template exists.
@@ -343,9 +358,11 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanDeleteTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create();
 
-        $this->deleteJson("api/templates/".$template->getKey(), [])
+        $this->deleteJson('api/templates/'.$template->getKey(), [])
             ->assertNoContent();
 
         $this->getJson('api/templates/'.$template->getKey())
@@ -359,9 +376,11 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanNotDeleteMasterTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
 
-        $this->deleteJson("api/templates/".$template->getKey(), [])
+        $this->deleteJson('api/templates/'.$template->getKey(), [])
             ->assertForbidden()
             ->assertJsonFragment(['message' => QTSD_01]);
     }
@@ -373,9 +392,11 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanActivateTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['activated_at' => null]);
 
-        $this->putJson("api/templates/activate/".$template->getKey(), [])
+        $this->putJson('api/templates/activate/'.$template->getKey(), [])
             ->assertNoContent();
 
         $response = $this->getJson('api/templates/'.$template->getKey())
@@ -394,9 +415,11 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanDeactivateTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create(['activated_at' => now()]);
 
-        $this->putJson("api/templates/deactivate/".$template->getKey(), [])
+        $this->putJson('api/templates/deactivate/'.$template->getKey(), [])
             ->assertNoContent();
 
         $response = $this->getJson('api/templates/'.$template->getKey())
@@ -415,13 +438,15 @@ class QuoteTemplateTest extends TestCase
      */
     public function testCanViewTemplateSchema()
     {
+        $this->authenticateApi();
+
         $template = factory(QuoteTemplate::class)->create([
-            'business_division_id' => BD_WORLDWIDE
+            'business_division_id' => BD_WORLDWIDE,
         ]);
 
         $template->vendors()->sync(Vendor::limit(2)->get());
 
-        $this->getJson("api/templates/designer/".$template->getKey())
+        $this->getJson('api/templates/designer/'.$template->getKey())
             ->assertOk()
             ->assertJsonStructure([
                 'first_page',
@@ -429,5 +454,107 @@ class QuoteTemplateTest extends TestCase
                 'last_page',
                 'payment_schedule',
             ]);
+    }
+
+    /**
+     * Test an ability to update an existing quote template when the actor is the team leader of the template owner.
+     */
+    public function testCanUpdateQuoteTemplateOwnedByLedTeamUser(): void
+    {
+        $this->authenticateApi();
+
+        /** @var \App\Domain\Authorization\Models\Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_quote_templates', 'update_own_quote_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var \App\Domain\User\Models\User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var \App\Domain\User\Models\User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+        /** @var \App\Domain\Rescue\Models\QuoteTemplate $template */
+        $template = factory(QuoteTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $data = [
+            'name' => Str::random(40),
+        ];
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/templates/'.$template->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'name',
+            ]);
+
+        $this->assertSame($data['name'], $response->json('name'));
+    }
+
+    /**
+     * Test an ability to delete an existing quote template owned when the actor is the team leader of the template owner.
+     */
+    public function testCanDeleteQuoteTemplateOwnedByLedTeamUser(): void
+    {
+        $this->authenticateApi();
+
+        /** @var \App\Domain\Authorization\Models\Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_quote_templates', 'create_quote_templates', 'update_own_quote_templates', 'delete_own_quote_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var \App\Domain\User\Models\User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var \App\Domain\User\Models\User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+        /** @var \App\Domain\Rescue\Models\QuoteTemplate $template */
+        $template = factory(QuoteTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/templates/'.$template->getKey())
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/templates/'.$template->getKey())
+//            ->dump()
+            ->assertNoContent();
+
+        $this->getJson('api/templates/'.$template->getKey())
+            ->assertNotFound();
     }
 }

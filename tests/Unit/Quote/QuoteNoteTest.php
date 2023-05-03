@@ -2,100 +2,135 @@
 
 namespace Tests\Unit\Quote;
 
-use App\Events\QuoteNoteCreated;
-use App\Listeners\QuoteNoteCreatedListener;
-use Tests\TestCase;
-use App\Models\Quote\QuoteNote;
+use App\Domain\Note\Models\Note;
+use App\Domain\Rescue\Models\Quote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Event;
-use Tests\Unit\Traits\{
-    AssertsListing,
-    WithFakeQuote,
-    WithFakeUser,
-};
+use Illuminate\Support\Arr;
+use Tests\TestCase;
 
 /**
  * @group build
  */
 class QuoteNoteTest extends TestCase
 {
-    use AssertsListing, WithFakeUser, WithFakeQuote, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
-     * Test quote notes listing.
-     *
-     * @return void
+     * Test an ability to view paginated notes of quote.
      */
-    public function testQuoteNoteListing()
+    public function testCanViewPaginatedNotesOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
-        
-        $response = $this->getJson(url('api/quotes/notes/'.$quote->id));
+        $this->authenticateApi();
 
-        $this->assertListing($response);
+        $quote = Quote::factory()->create();
+
+        Note::factory()
+            ->hasAttached($quote, relationship: 'rescueQuotesHaveNote')
+            ->create();
+
+        $response = $this->getJson('api/quotes/notes/'.$quote->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'text',
+                        'is_system',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
+                        'created_at',
+                        'updated_at',
+                    ],
+                ],
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+                'links' => [
+                    '*' => ['url', 'label', 'active'],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
     }
 
     /**
-     * Test creating a new note for specific quote.
-     *
-     * @return void
+     * Test an ability to create a new note for a quote.
      */
-    public function testQuoteNoteCreating()
+    public function testCanCreateNoteForQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
 
-        Event::fake([
-            QuoteNoteCreated::class
-        ]);
+        $quote = Quote::factory()->create();
 
-        Event::hasListeners(QuoteNoteCreatedListener::class);
+        $data = Note::factory()->raw();
+        $data['text'] = Arr::pull($data, 'note');
 
-        $attributes = factory(QuoteNote::class)->raw();
-
-        $response = $this->postJson(url('api/quotes/notes/'.$quote->id), $attributes)->assertCreated()
-            ->assertJsonStructure(['id', 'text', 'quote_id', 'user_id']);
-
-        $id = $response->json('id');
-
-        Event::assertDispatched(QuoteNoteCreated::class, fn (QuoteNoteCreated $event) => $id === $event->quoteNote->id);
+        $this->postJson('api/quotes/notes/'.$quote->getKey(), $data)
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'text',
+                'user_id',
+            ]);
     }
 
     /**
      * Test updating a newly created quote note.
-     *
-     * @return void
      */
-    public function testQuoteNoteUpdating()
+    public function testCanUpdateNoteOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
 
-        $quoteNote = factory(QuoteNote::class)->create([
-            'quote_id' => $quote->id
-        ]);
+        $quote = Quote::factory()->create();
 
-        $attributes = factory(QuoteNote::class)->raw();
+        $note = Note::factory()
+            ->hasAttached($quote, relationship: 'rescueQuotesHaveNote')
+            ->create();
 
-        $this->patchJson(url('api/quotes/notes/'.$quote->id.'/'.$quoteNote->id), $attributes)->assertOk()
-            ->assertJsonStructure(['id', 'text', 'quote_id', 'user_id'])
-            ->assertJsonFragment(['text' => $attributes['text']]);
+        $data = Note::factory()->raw();
+        $data['text'] = Arr::pull($data, 'note');
+
+        $this->patchJson('api/quotes/notes/'.$quote->getKey().'/'.$note->getKey(), $data)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'text',
+                'user_id',
+            ])
+            ->assertJsonFragment(['text' => $data['text']]);
     }
 
     /**
      * Test deleting a newly create quote note.
-     *
-     * @return void
      */
-    public function testQuoteNoteDeleting()
+    public function testCanDeleteNoteOfQuote(): void
     {
-        $quote = $this->createQuote($this->user);
+        $this->authenticateApi();
 
-        $quoteNote = factory(QuoteNote::class)->create([
-            'quote_id' => $quote->id
-        ]);
+        $quote = Quote::factory()->create();
 
-        $this->deleteJson(url('api/quotes/notes/'.$quote->id.'/'.$quoteNote->id))->assertOk()
-            ->assertExactJson([true]);
+        $note = Note::factory()
+            ->hasAttached($quote, relationship: 'rescueQuotesHaveNote')
+            ->create();
 
-        $this->assertSoftDeleted($quoteNote);
+        $this->deleteJson('api/quotes/notes/'.$quote->getKey().'/'.$note->getKey())
+            ->assertNoContent();
+
+        $this->getJson('api/quotes/notes/'.$quote->getKey().'/'.$note->getKey())
+//            ->dump()
+            ->assertNotFound();
     }
 }

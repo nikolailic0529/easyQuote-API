@@ -2,23 +2,34 @@
 
 namespace Tests\Feature;
 
-use App\Models\Address;
-use App\Models\Data\Country;
-use App\Models\Role;
-use App\Models\User;
+use App\Domain\Address\Models\Address;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Country\Models\Country;
+use App\Domain\User\Models\User;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class AddressTest extends TestCase
 {
     /**
      * Test an ability to view a list of available addresses.
-     *
-     * @return void
      */
-    public function testCanViewListOfAddresses()
+    public function testCanViewListOfAddresses(): void
     {
         $this->authenticateApi();
+
+        $this->pruneUsing(Address::query()->toBase());
+
+        Address::factory(2)
+            ->for(User::factory())
+            ->for(Country::query()->first())
+            ->create();
 
         $this->getJson('api/addresses')
 //            ->dump()
@@ -26,26 +37,46 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code', 'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at', 'updated_at', 'activated_at',
+                        'id',
+                        'address_type',
+                        'address_1',
+                        'city',
+                        'state',
+                        'state_code',
+                        'post_code',
+                        'address_2',
+                        'country_id',
+                        'created_at',
+                        'updated_at',
+                        'activated_at',
                         'country' => [
-//                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
+                            'id',
+                            'iso_3166_2',
+                            'name',
+                        ],
+                        'user_id',
+                        'user' => [
+                            'id',
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
+                    ],
+                ],
+                'meta' => [
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active',
                         ],
                     ],
                 ],
                 'current_page',
-                'first_page_url',
                 'from',
                 'last_page',
-                'last_page_url',
-                'links' => [
-                    '*' => [
-                        'url', 'label', 'active',
-                    ],
-                ],
-                'next_page_url',
                 'path',
                 'per_page',
-                'prev_page_url',
                 'to',
                 'total',
             ]);
@@ -58,6 +89,7 @@ class AddressTest extends TestCase
             'post_code',
             'state',
             'street_address',
+            'user_fullname',
         ];
 
         foreach ($orderFields as $field) {
@@ -72,9 +104,9 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewOnlyOwnedAddressesWithoutSuperPermissions()
+    public function testCanViewOnlyOwnedAddressesWithoutSuperPermissions(): void
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
@@ -84,7 +116,7 @@ class AddressTest extends TestCase
         ]);
 
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -96,26 +128,46 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code', 'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at', 'updated_at', 'activated_at',
+                        'id',
+                        'address_type',
+                        'address_1',
+                        'city',
+                        'state',
+                        'state_code',
+                        'post_code',
+                        'address_2',
+                        'country_id',
+                        'created_at',
+                        'updated_at',
+                        'activated_at',
                         'country' => [
-//                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
+                            'id',
+                            'iso_3166_2',
+                            'name',
+                        ],
+                        'user_id',
+                        'user' => [
+                            'id',
+                            'first_name',
+                            'middle_name',
+                            'last_name',
+                            'user_fullname',
+                            'picture',
+                        ],
+                    ],
+                ],
+                'meta' => [
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active',
                         ],
                     ],
                 ],
                 'current_page',
-                'first_page_url',
                 'from',
                 'last_page',
-                'last_page_url',
-                'links' => [
-                    '*' => [
-                        'url', 'label', 'active',
-                    ],
-                ],
-                'next_page_url',
                 'path',
                 'per_page',
-                'prev_page_url',
                 'to',
                 'total',
             ]);
@@ -134,8 +186,6 @@ class AddressTest extends TestCase
 
     /**
      * Test an ability to create a new address.
-     *
-     * @return string
      */
     public function testCanCreateNewAddress(): string
     {
@@ -150,6 +200,7 @@ class AddressTest extends TestCase
             'state' => Str::random(10),
             'state_code' => Str::random(10),
             'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
         ];
 
         $response = $this->postJson('api/addresses', $data)
@@ -157,7 +208,7 @@ class AddressTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'location_id',
+                'contact_id',
                 'address_type',
                 'address_1',
                 'city',
@@ -184,11 +235,78 @@ class AddressTest extends TestCase
     }
 
     /**
+     * Test an ability to create a new address with company relations.
+     */
+    public function testCanCreateNewAddressWithCompanyRelations(): string
+    {
+        $this->authenticateApi();
+
+        $data = [
+            'address_type' => 'Equipment',
+            'address_1' => Str::random(40),
+            'address_2' => Str::random(40),
+            'city' => Str::random(20),
+            'post_code' => Str::random(10),
+            'state' => Str::random(10),
+            'state_code' => Str::random(10),
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
+            'company_relations' => Company::factory()->count(2)->create()->map->only('id')->all(),
+        ];
+
+        $response = $this->postJson('api/addresses', $data)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'contact_id',
+                'address_type',
+                'address_1',
+                'city',
+                'state',
+                'state_code',
+                'post_code',
+                'address_2',
+                'country_id',
+                'created_at',
+                'updated_at',
+                'activated_at',
+                'country' => [
+                    'id', 'iso_3166_2', 'name',
+                ],
+            ]);
+
+        foreach (Arr::except($data, 'company_relations') as $attribute => $value) {
+            $this->assertSame($response->json($attribute), $value);
+        }
+
+        $this->assertSame($response->json('country.id'), $data['country_id']);
+
+        foreach ($data['company_relations'] as $relation) {
+            $r = $this->getJson('api/companies/'.$relation['id'])
+//                ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ]);
+
+            $this->assertContains($response->json('id'), $r->json('addresses.*.id'));
+        }
+
+        return $response->json('id');
+    }
+
+    /**
      * Test an ability to view an existing address.
      *
      * @return void
      */
-    public function testCanViewAddress()
+    public function testCanViewAddress(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -199,6 +317,7 @@ class AddressTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'location_id',
+                'contact_id',
                 'address_type',
                 'address_1',
                 'city',
@@ -221,7 +340,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanUpdateAddress()
+    public function testCanUpdateAddress(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -236,6 +355,7 @@ class AddressTest extends TestCase
             'state' => Str::random(10),
             'state_code' => Str::random(10),
             'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
         ];
 
         $this->patchJson('api/addresses/'.$addressID, $data)
@@ -252,11 +372,85 @@ class AddressTest extends TestCase
     }
 
     /**
+     * Test an ability to update an existing address.
+     */
+    public function testCanUpdateAddressWithCompanyRelations(): void
+    {
+        $addressID = $this->testCanCreateNewAddress();
+
+        $this->authenticateApi();
+
+        $this->travelTo(now()->subMinute());
+        $company = Company::factory()->create();
+        $this->travelBack();
+
+        $companyUpdatedAt = $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at',
+            ])
+            ->json('updated_at');
+
+        $data = [
+            'address_type' => 'Software',
+            'address_1' => Str::random(40),
+            'address_2' => Str::random(40),
+            'city' => Str::random(20),
+            'post_code' => Str::random(10),
+            'state' => Str::random(10),
+            'state_code' => Str::random(10),
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'contact_id' => Contact::factory()->create()->getKey(),
+            'company_relations' => [['id' => $company->getKey()]],
+        ];
+
+        $this->patchJson('api/addresses/'.$addressID, $data)
+            ->assertOk();
+
+        $response = $this->getJson('api/addresses/'.$addressID)
+            ->assertOk();
+
+        foreach (Arr::except($data, 'company_relations') as $attribute => $value) {
+            $this->assertSame($response->json($attribute), $value);
+        }
+
+        foreach ($data['company_relations'] as $relation) {
+            $r = $this->getJson('api/companies/'.$relation['id'])
+//                ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                        ],
+                    ],
+                ]);
+
+            $this->assertContains($response->json('id'), $r->json('addresses.*.id'));
+        }
+
+        $this->assertSame($response->json('country.id'), $data['country_id']);
+
+        $r = $this->getJson('api/companies/'.$company->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'updated_at',
+            ]);
+
+        $this->assertNotSame($companyUpdatedAt, $r->json('updated_at'));
+    }
+
+    /**
      * Test an ability to delete an existing address.
      *
      * @return void
      */
-    public function testCanDeleteAddress()
+    public function testCanDeleteAddress(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -274,7 +468,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanMarkAddressAsActive()
+    public function testCanMarkAddressAsActive(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 
@@ -302,7 +496,7 @@ class AddressTest extends TestCase
      *
      * @return void
      */
-    public function testCanMarkAddressAsInactive()
+    public function testCanMarkAddressAsInactive(): void
     {
         $addressID = $this->testCanCreateNewAddress();
 

@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreatePrePayDiscountsTable extends Migration
 {
@@ -15,7 +15,7 @@ class CreatePrePayDiscountsTable extends Migration
     {
         Schema::create('pre_pay_discounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            
+
             $table->uuid('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->uuid('country_id');

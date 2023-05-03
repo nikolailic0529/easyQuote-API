@@ -1,19 +1,18 @@
 <?php
 
-
 namespace Tests\Feature;
 
-
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\WorldwideQuote;
+use App\Domain\Discount\Models\PrePayDiscount;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
+/**
+ * @group build
+ */
 class PrePayDiscountTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test can view paginated pre pay discounts.
@@ -22,9 +21,11 @@ class PrePayDiscountTest extends TestCase
      */
     public function testCanViewPaginatedPrePayDiscounts()
     {
+        $this->authenticateApi();
+
         factory(PrePayDiscount::class, 30)->create();
 
-        $this->getJson("api/discounts/pre_pay")
+        $this->getJson('api/discounts/pre_pay')
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -54,6 +55,11 @@ class PrePayDiscountTest extends TestCase
                     ],
                 ],
             ]);
+
+        $this->getJson('api/discounts/pre_pay?order_by_durations_value=asc');
+        $this->getJson('api/discounts/pre_pay?order_by_durations_value=desc');
+        $this->getJson('api/discounts/pre_pay?order_by_durations_duration=asc');
+        $this->getJson('api/discounts/pre_pay?order_by_durations_duration=desc');
     }
 
     /**
@@ -63,11 +69,13 @@ class PrePayDiscountTest extends TestCase
      */
     public function testCanCreatePrePayDiscount()
     {
+        $this->authenticateApi();
+
         PrePayDiscount::query()->delete();
 
         $attributes = factory(PrePayDiscount::class)->raw();
 
-        $this->postJson("api/discounts/pre_pay", $attributes)
+        $this->postJson('api/discounts/pre_pay', $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -93,13 +101,15 @@ class PrePayDiscountTest extends TestCase
      */
     public function testCanUpdatePrePayDiscount()
     {
+        $this->authenticateApi();
+
         PrePayDiscount::query()->delete();
 
         $discount = factory(PrePayDiscount::class)->create();
 
         $attributes = factory(PrePayDiscount::class)->raw();
 
-        $this->patchJson("api/discounts/pre_pay/".$discount->getKey(), $attributes)
+        $this->patchJson('api/discounts/pre_pay/'.$discount->getKey(), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -125,11 +135,13 @@ class PrePayDiscountTest extends TestCase
      */
     public function testCanDeletePrePayDiscount()
     {
+        $this->authenticateApi();
+
         PrePayDiscount::query()->delete();
 
         $discount = factory(PrePayDiscount::class)->create();
 
-        $this->deleteJson("api/discounts/pre_pay/".$discount->getKey())
+        $this->deleteJson('api/discounts/pre_pay/'.$discount->getKey())
             ->assertOk()
             ->assertExactJson([true]);
 
@@ -144,22 +156,24 @@ class PrePayDiscountTest extends TestCase
      */
     public function testCanNotDeletePrePayDiscountAttachedToWorldwidePackQuote()
     {
+        $this->authenticateApi();
+
         $discount = factory(PrePayDiscount::class)->create();
 
-        /** @var WorldwideQuote $quote */
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $quote->activeVersion->prePayDiscount()->associate($discount)->save();
 
         $this->authenticateApi();
 
-        $response = $this->deleteJson("api/discounts/pre_pay/".$discount->getKey())
+        $response = $this->deleteJson('api/discounts/pre_pay/'.$discount->getKey())
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([
-                'message'
+                'message',
             ]);
 
         $this->assertStringStartsWith('You can not delete the pre-pay discount', $response->json('message'));
@@ -172,6 +186,8 @@ class PrePayDiscountTest extends TestCase
      */
     public function testCanActivatePrePayDiscount()
     {
+        $this->authenticateApi();
+
         PrePayDiscount::query()->delete();
 
         $discount = factory(PrePayDiscount::class)->create();
@@ -204,6 +220,8 @@ class PrePayDiscountTest extends TestCase
      */
     public function testCanDeactivatePrePayDiscount()
     {
+        $this->authenticateApi();
+
         PrePayDiscount::query()->delete();
 
         $discount = factory(PrePayDiscount::class)->create();

@@ -1,14 +1,19 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
-use App\Models\Model;
-use App\Models\System\CustomFieldValue;
-use Faker\Generator as Faker;
+use App\Domain\CustomField\Models\CustomFieldValue;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
-$factory->define(CustomFieldValue::class, function (Faker $faker) {
-    return [
-        'id' => null,
-        'field_value' => Str::random(40)
-    ];
-});
+class CustomFieldValueFactory extends Factory
+{
+    protected $model = CustomFieldValue::class;
+
+    public function definition(): array
+    {
+        return [
+            'field_value' => Str::random(40),
+        ];
+    }
+}

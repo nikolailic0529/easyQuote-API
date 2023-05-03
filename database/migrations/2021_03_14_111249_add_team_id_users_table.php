@@ -18,11 +18,9 @@ class AddTeamIdUsersTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('users')
                 ->whereNull('team_id')
                 ->update(['team_id' => UT_RESCUE]);
-
         });
     }
 

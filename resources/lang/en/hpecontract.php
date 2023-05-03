@@ -6,6 +6,6 @@ return [
         'Import' => 20,
         'Assets Review' => 50,
         'Assorted Detail' => 70,
-        'Complete' => 100
-    ]
+        'Complete' => 100,
+    ],
 ];

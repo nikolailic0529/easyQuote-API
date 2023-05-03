@@ -14,7 +14,7 @@ class AddAccountManagerIdOpportunityTotalsTable extends Migration
     public function up()
     {
         Schema::table('opportunity_totals', function (Blueprint $table) {
-           $table->foreignUuid('account_manager_id')->nullable()->after('user_id')->comment('Foreign key on users table')->constrained('users')->nullOnDelete()->cascadeOnUpdate();
+            $table->foreignUuid('account_manager_id')->nullable()->after('user_id')->comment('Foreign key on users table')->constrained('users')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 

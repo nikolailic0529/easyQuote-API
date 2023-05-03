@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class MigrateQuoteFilesQuotesTable extends Migration
 {
@@ -15,9 +13,9 @@ class MigrateQuoteFilesQuotesTable extends Migration
     public function up()
     {
         DB::beginTransaction();
-        
+
         try {
-            /**
+            /*
              * Migrate Distributor files.
              */
             DB::table('quote_files')
@@ -26,7 +24,7 @@ class MigrateQuoteFilesQuotesTable extends Migration
                 ->cursor()
                 ->each(function ($quoteFile) {
                     $qualifiedKey = $quoteFile->file_type === 'Distributor Price List' ? 'distributor_file_id' : 'schedule_file_id';
-    
+
                     DB::table('quotes')->where('id', $quoteFile->quote_id)->update([$qualifiedKey => $quoteFile->id]);
                 });
         } catch (Throwable $e) {
@@ -45,6 +43,5 @@ class MigrateQuoteFilesQuotesTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

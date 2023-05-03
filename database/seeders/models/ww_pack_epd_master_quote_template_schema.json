@@ -51,7 +51,7 @@
               "type": "richtext",
               "class": null,
               "label": "Rich Text",
-              "value": "<p><strong>Account Management</strong> – Your account manager will help you to manage your services contract, and will arrange quarterly support reviews for you to ensure that the service levels within the services contract remain appropriate for the applications running on the hardware. If your IT environment changes, with the addition or decommissioning of hardware, we can update your services contract at any time.</p><p><strong>Renewal Service</strong> – Your account manager will remind you when your services contract is due to expire, normally 45 to 90 days in advance. This gives us enough time to review your current IT support, take into account any changes that have taken place in your IT environment, and create an up-to-date tailored quotation.</p><p><strong>Assistance with Vendor tools</strong> – We are experienced in using the proprietary tools and resources available to make managing your IT support easier. We can help you to link your support with the Support Centre portal and introduce you to contacts that can assist with installing IRS.</p><p><strong>Support for the whole lifecycle</strong> – Europlus Direct can provide support for your IT environment from initial product purchase through to decommissioning and technology refresh.</p><p>Consolidate your IT Support – Your account manager will help you to consolidate your various IT support agreements and certificates under one Vendor services contract. This can include Vendor hardware and some multi-vendor hardware.</p><p><strong>Flexibility</strong> – Once a services contract is in place with Vendor, it is possible for you to add new hardware to the contract (with 30 days’ notice) or remove hardware from the contract (with 90 days’ notice). Any difference in cost will be invoiced or credited accordingly. Services Contracts can also be cancelled entirely, subject to minimum periods of cover and notice periods.</p>",
+              "value": "<p><strong>Account Management</strong> &ndash; Your account manager will help you to manage your services contract, and will arrange quarterly support reviews for you to ensure that the service levels within the services contract remain appropriate for the applications running on the hardware. If your IT environment changes, with the addition or decommissioning of hardware, we can update your services contract at any time.</p>\n<p><strong>Renewal Service</strong> &ndash; Your account manager will remind you when your services contract is due to expire, normally 45 to 90 days in advance. This gives us enough time to review your current IT support, take into account any changes that have taken place in your IT environment, and create an up-to-date tailored quotation.</p>\n<p><strong>Assistance with Vendor tools</strong> &ndash; We are experienced in using the proprietary tools and resources available to make managing your IT support easier. We can help you to link your support with the Support Centre portal and introduce you to contacts that can assist with installing IRS.</p>\n<p><strong>Support for the whole lifecycle</strong> &ndash; Europlus Direct can provide support for your IT environment from initial product purchase through to decommissioning and technology refresh.</p>\n<p>Consolidate your IT Support &ndash; Your account manager will help you to consolidate your various IT support agreements and certificates under one Vendor services contract. This can include Vendor hardware and some multi-vendor hardware.</p>\n<p><strong>Flexibility</strong> &ndash; Once a services contract is in place with Vendor, it is possible for you to add new hardware to the contract (with 30 days&rsquo; notice) or remove hardware from the contract (with 90 days&rsquo; notice). Any difference in cost will be invoiced or credited accordingly. Services Contracts can also be cancelled entirely, subject to minimum periods of cover and notice periods.</p>",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -59,6 +59,43 @@
               "is_required": false,
               "attached_child_id": "20b8033e-434b-47ac-96c0-dfb361dcc6d3",
               "attached_element_id": "7487ada6-1182-4737-9a62-34c893e7fbd1"
+            }
+          ],
+          "position": 1
+        }
+      ],
+      "class": "single-column field-dragger",
+      "order": 1,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "1"
+    },
+    {
+      "id": "3eec2b71-4d21-44ee-bf82-ab3cba059293",
+      "name": "Single Column",
+      "child": [
+        {
+          "id": "18cd4bb2-1fe6-4122-9f2b-032353d7bee4",
+          "class": "col-lg-12 border-right",
+          "controls": [
+            {
+              "id": "d454d9ed-4907-4112-806c-24a26a593d86",
+              "css": null,
+              "src": null,
+              "name": "richtext-1",
+              "show": false,
+              "type": "richtext",
+              "class": null,
+              "label": "Rich Text",
+              "value": "<p>Please note that all pricing is correct at the time of providing this quotation but may be subject to change by the vendor. Pricing will be valid until the end of the month due to fluctuation in the currency exchange rate. The pricing on the quote provided without the serial numbers is budgetary and is subjected to change during fulfilment.</p>",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "18cd4bb2-1fe6-4122-9f2b-032353d7bee4",
+              "attached_element_id": "3eec2b71-4d21-44ee-bf82-ab3cba059293"
             }
           ],
           "position": 1
@@ -182,6 +219,45 @@
       "droppable": false,
       "decoration": "4",
       "visibility": true
+    },
+    {
+      "id": "4531244a-e179-4f22-b0a0-5e050074264d",
+      "name": "Single Column",
+      "child": [
+        {
+          "id": "d5ace174-076c-4267-b1ab-84c413d1cb62",
+          "class": "col-lg-12 border-right",
+          "controls": [
+            {
+              "id": "74b83b0e-be83-447e-99d6-1ebb0298c6c5",
+              "css": null,
+              "src": null,
+              "name": "quote_assets",
+              "show": false,
+              "type": "quote_assets",
+              "class": null,
+              "label": "Quote Assets",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "d5ace174-076c-4267-b1ab-84c413d1cb62",
+              "attached_element_id": "4531244a-e179-4f22-b0a0-5e050074264d"
+            }
+          ],
+          "position": 1
+        }
+      ],
+      "class": "single-column field-dragger",
+      "order": 1,
+      "toggle": false,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "1",
+      "visibility": false
     }
   ],
   "first_page": [
@@ -218,9 +294,9 @@
               "name": "p-1",
               "show": false,
               "type": "p",
-              "class": null,
+              "class": "blue",
               "label": "Paragraph",
-              "value": "67, Albian Street, Leeds LS15AA<br/>\nUnited Kingdom <br/>\n(+44) 01 113 887 8650<br/>",
+              "value": "67, Albion Street, Leeds LS15AA<br/>\nUnited Kingdom <br/>\n+44 (0) 113 887 8650<br/>",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -230,15 +306,50 @@
               "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
             },
             {
-              "id": "dbb7dd0e-c4ad-4353-830d-35e522a654db",
+              "id": "account_manager_email",
+              "css": null,
+              "name": "account_manager_email",
+              "show": false,
+              "type": "tag",
+              "class": "s4-form-control",
+              "label": "Account Manager Email",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": true,
+              "is_required": false,
+              "attached_child_id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
+            },
+            {
+              "id": "dde22478-6c07-4164-bb8c-d6e5a6db997a",
               "css": null,
               "src": null,
               "name": "p-1",
               "show": false,
               "type": "p",
-              "class": "blue",
+              "class": null,
               "label": "Paragraph",
-              "value": "sales@epd-worldwide.com<br/>\nepd-worldwide.com",
+              "value": "enquiriesww@europlusdirect.com<br/>",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "1e606c8e-c9b1-4a51-a262-e420d2eb593a",
+              "attached_element_id": "b993d7cd-5a03-4560-a4da-91bc2ea663c0"
+            },
+            {
+              "id": "c60bc3b4-fbb6-409c-98e8-1dacfe3da8ea",
+              "css": null,
+              "src": null,
+              "name": "p-1",
+              "show": false,
+              "type": "p",
+              "class": null,
+              "label": "Paragraph",
+              "value": "europlusdirect.com",
               "is_field": true,
               "is_image": false,
               "droppable": false,

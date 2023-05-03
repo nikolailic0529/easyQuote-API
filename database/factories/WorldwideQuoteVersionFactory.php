@@ -1,19 +1,23 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
-use App\Models\Company;
-use App\Models\Data\Currency;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\User;
-use Faker\Generator as Faker;
+use App\Domain\Company\Models\Company;
+use App\Domain\Currency\Models\Currency;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-$factory->define(WorldwideQuoteVersion::class, function (Faker $faker) {
-    $user = factory(User::class)->create();
+class WorldwideQuoteVersionFactory extends Factory
+{
+    protected $model = WorldwideQuoteVersion::class;
 
-    return [
-        'user_id' => $user->getKey(),
-        'company_id' => Company::query()->where('short_code', $faker->randomElement(['SWH', 'EPD', 'THG']))->value('id'),
-        'quote_currency_id' => Currency::query()->where('code', $faker->randomElement(['GBP', 'USD']))->value('id'),
-    ];
-});
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'company_id' => Company::query()->where('short_code', $this->faker->randomElement(['SWH', 'EPD', 'THG']))->value('id'),
+            'quote_currency_id' => Currency::query()->where('code', $this->faker->randomElement(['GBP', 'USD']))->value('id'),
+        ];
+    }
+}

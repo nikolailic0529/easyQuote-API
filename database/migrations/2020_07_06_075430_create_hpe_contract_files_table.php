@@ -36,7 +36,7 @@ class CreateHpeContractFilesTable extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::dropIfExists('hpe_contract_files');
-        
+
         Schema::enableForeignKeyConstraints();
     }
 }

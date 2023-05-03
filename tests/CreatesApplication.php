@@ -3,7 +3,6 @@
 namespace Tests;
 
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Support\Facades\Artisan;
 
 trait CreatesApplication
 {
@@ -14,30 +13,15 @@ trait CreatesApplication
      */
     public function createApplication()
     {
-        $app = $this->makeApp();
+        /** @var \Illuminate\Foundation\Application $app */
+        $app = require __DIR__.'/../bootstrap/app.php';
+
+        $app->make(Kernel::class)->bootstrap();
 
         if (!$app->environment('testing')) {
-            $this->clearCache();
-            $app = $this->makeApp();
+            throw new \RuntimeException('Tests execution is supported only in the testing environment. Consider run: `php artisan config:clear`.');
         }
 
         return $app;
-    }
-
-    /**
-     * Create a new Application instance.
-     *
-     * @return \Illuminate\Foundation\Application
-     */
-    protected function makeApp()
-    {
-        $app = require __DIR__ . '/../bootstrap/app.php';
-        $app->make(Kernel::class)->bootstrap();
-        return $app;
-    }
-
-    protected function clearCache(): void
-    {
-        Artisan::call('optimize:clear');
     }
 }

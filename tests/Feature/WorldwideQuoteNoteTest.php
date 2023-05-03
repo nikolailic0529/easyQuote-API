@@ -2,34 +2,36 @@
 
 namespace Tests\Feature;
 
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteNote;
-use App\Notifications\WorldwideQuote\NoteCreated;
+use App\Domain\Note\Models\Note;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
- * Class WorldwideQuoteNoteTest
  * @group worldwide
+ * @group build
  */
 class WorldwideQuoteNoteTest extends TestCase
 {
+    use DatabaseTransactions;
 
     /**
      * Test can view paginated listing of notes on worldwide quote.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedListingOfNotesOnWorldwideQuote()
+    public function testCanViewPaginatedListingOfNotesOnWorldwideQuote(): void
     {
         $this->authenticateApi();
 
         $wwQuote = factory(WorldwideQuote::class)->create();
 
-        $wwNotes = factory(WorldwideQuoteNote::class, 30)->create([
-            'worldwide_quote_id' => $wwQuote->getKey(),
-            'user_id' => auth()->id()
-        ]);
+        Note::factory()
+//            ->count(30)
+            ->hasAttached($wwQuote, relationship: 'worldwideQuotesHaveNote')
+            ->for(User::factory(), 'owner')
+            ->create();
 
         $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes')
 //            ->dump()
@@ -38,14 +40,18 @@ class WorldwideQuoteNoteTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'worldwide_quote_id',
                         'user_id',
+                        'is_system',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
                         'created_at',
                         'updated_at',
                         'user' => [
-                            'id', 'first_name', 'last_name'
-                        ]
-                    ]
+                            'id', 'first_name', 'last_name',
+                        ],
+                    ],
                 ],
                 'current_page',
                 'from',
@@ -57,7 +63,7 @@ class WorldwideQuoteNoteTest extends TestCase
 //                'last_page_url',
 //                'next_page_url',
                 'to',
-                'total'
+                'total',
             ]);
     }
 
@@ -73,78 +79,74 @@ class WorldwideQuoteNoteTest extends TestCase
         $this->authenticateApi();
 
         $wwQuote = factory(WorldwideQuote::class)->create([
-            'user_id' => auth()->id()
+            'user_id' => auth()->id(),
         ]);
 
-        $data = factory(WorldwideQuoteNote::class)->raw();
+        $data = Note::factory()->raw();
+        $data['text'] = Arr::pull($data, 'note');
 
         $response = $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/notes', $data)
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
-                'id', 'worldwide_quote_id', 'user_id', 'text', 'created_at'
+                'id', 'user_id', 'note', 'created_at',
             ]);
-
-        Notification::assertSentTo(auth()->user(), NoteCreated::class);
 
         $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$response->json('id'))->assertOk()
             ->assertJsonStructure([
-                'id', 'worldwide_quote_id', 'user_id', 'text', 'created_at'
+                'id', 'user_id', 'note', 'created_at',
             ]);
     }
 
     /**
      * Test can update an existing note on worldwide quote.
-     *
-     * @return void
      */
-    public function testCanUpdateNoteOnWorldwideQuote()
+    public function testCanUpdateNoteOnWorldwideQuote(): void
     {
         $this->authenticateApi();
 
         $wwQuote = factory(WorldwideQuote::class)->create();
 
-        $wwNote = factory(WorldwideQuoteNote::class)->create([
-            'worldwide_quote_id' => $wwQuote->getKey(),
-            'user_id' => auth()->id()
-        ]);
+        $note = Note::factory()
+            ->hasAttached($wwQuote, relationship: 'worldwideQuotesHaveNote')
+            ->for(User::factory(), 'owner')
+            ->create();
 
-        $data = factory(WorldwideQuoteNote::class)->raw();
+        $data = Note::factory()->raw();
+        $data['text'] = Arr::pull($data, 'note');
 
-        $response = $this->patchJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$wwNote->getKey(), $data)
+        $response = $this->patchJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$note->getKey(), $data)
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'worldwide_quote_id', 'user_id', 'text', 'created_at'
+                'id', 'user_id', 'note', 'created_at',
             ]);
 
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$response->json('id'))->assertOk()
             ->assertJsonStructure([
-                'id', 'worldwide_quote_id', 'user_id', 'text', 'created_at'
+                'id', 'user_id', 'note', 'created_at',
             ]);
 
-        $this->assertEquals($data['text'], $response->json('text'));
+        $this->assertEquals($data['text'], $response->json('note'));
     }
 
     /**
      * Test can delete an existing note on worldwide quote.
-     *
-     * @return void
      */
-    public function testCanDeleteNoteOnWorldwideQuote()
+    public function testCanDeleteNoteOnWorldwideQuote(): void
     {
         $this->authenticateApi();
 
         $wwQuote = factory(WorldwideQuote::class)->create();
 
-        $wwNote = factory(WorldwideQuoteNote::class)->create([
-            'worldwide_quote_id' => $wwQuote->getKey(),
-            'user_id' => auth()->id()
-        ]);
+        $note = Note::factory()
+            ->hasAttached($wwQuote, relationship: 'worldwideQuotesHaveNote')
+            ->for(User::factory(), 'owner')
+            ->create();
 
-        $this->deleteJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$wwNote->getKey())
+        $this->deleteJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$note->getKey())
             ->assertNoContent();
 
-        $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$wwNote->getKey())
+        $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes/'.$note->getKey())
             ->assertNotFound();
     }
 }

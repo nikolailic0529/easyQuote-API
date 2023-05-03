@@ -52,7 +52,7 @@ class DropVersionableColumnsWorldwideQuotesTable extends Migration
                 'additional_details',
                 'additional_notes',
                 'checkbox_status',
-                'assets_migrated_at'
+                'assets_migrated_at',
             ]);
         });
     }

@@ -23,7 +23,17 @@
         }
 
         html, body {
-            font-size: 14px;
+            font-size: 13px;
+        }
+
+        .table > tbody > tr > th {
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
+        }
+
+        .table > tbody > tr > td {
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
         }
     </style>
 </head>

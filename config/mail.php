@@ -1,7 +1,8 @@
 <?php
 
-return [
+use Carbon\CarbonInterval;
 
+return [
     /*
     |--------------------------------------------------------------------------
     | Mail Driver
@@ -133,4 +134,10 @@ return [
 
     'log_channel' => env('MAIL_LOG_CHANNEL'),
 
+    'limiter' => [
+        'enabled' => env('MAIL_RATE_LIMIT_ENABLED', true),
+        'driver' => 'database',
+        'key' => 'limiter::mail',
+        'decay_seconds' => CarbonInterval::month()->totalSeconds,
+    ],
 ];

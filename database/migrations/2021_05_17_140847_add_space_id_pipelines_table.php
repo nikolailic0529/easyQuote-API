@@ -26,9 +26,9 @@ class AddSpaceIdPipelinesTable extends Migration
         });
 
         Schema::table('pipelines', function (Blueprint $table) {
-           $table->uuid('space_id')->nullable(false)->change();
+            $table->uuid('space_id')->nullable(false)->change();
 
-           $table->foreign('space_id')->references('id')->on('spaces')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreign('space_id')->references('id')->on('spaces')->cascadeOnDelete()->cascadeOnUpdate();
         });
     }
 

@@ -2,34 +2,34 @@
 
 namespace Tests\Feature;
 
-use App\Models\Asset;
-use App\Models\Company;
-use App\Models\Quote\Quote;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Role;
-use App\Models\Team;
-use App\Models\User;
-use App\Models\Vendor;
+use App\Domain\Asset\Models\Asset;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
+use App\Domain\Vendor\Models\Vendor;
+use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
+ * @group asset
  * @group build
  */
 class AssetTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
-     * Test can view assets listing.
-     *
-     * @return void
+     * Test an ability to view assets listing.
      */
-    public function testCanViewAssetsListing()
+    public function testCanViewAssetsListing(): void
     {
-        factory(Asset::class, 20)->create();
+        $this->authenticateApi();
+
+        Asset::factory(20)->create();
 
         $worldwideQuote = factory(WorldwideQuote::class)->create();
 
@@ -45,11 +45,18 @@ class AssetTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'permissions' => [
+                            'view',
+                            'update',
+                            'delete',
+                            'change_ownership',
+                        ],
                         'asset_category_id',
                         'user_id',
                         'address_id',
                         'vendor_id',
                         'quote_id',
+                        'user_fullname',
                         'customer_name',
                         'rfq_number',
                         'vendor_short_code',
@@ -88,12 +95,139 @@ class AssetTest extends TestCase
     }
 
     /**
-     * Test an ability to view paginated assets of business division of user's team.
-     *
-     * @return void
+     * Test an ability to view assets in the listing where user is editor.
      */
-    public function testCanViewPaginatedAssetsOfBusinessDivisionOfUserTeam()
+    public function testCanViewAssetsInListingWhereEditor(): void
     {
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        /** @var Role $role */
+        $role = Role::factory()->create();
+        $role->syncPermissions('view_assets');
+
+        $user->syncRoles($role);
+
+        $assets = Asset::factory()
+            ->count(2)
+            ->hasAttached($user, relationship: 'sharingUsers')
+            ->create();
+
+        $this->actingAs($user, 'api');
+
+        $r = $this->getJson('api/assets')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                    ],
+                ],
+            ])
+            ->assertJsonCount(2, 'data');
+
+        foreach ($assets as $asset) {
+            $this->assertContains($asset->getKey(), $r->json('data.*.id'));
+        }
+    }
+
+    /**
+     * Test an ability to view asset where user is editor.
+     */
+    public function testCanViewAssetWhereEditor(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        /** @var Role $role */
+        $role = Role::factory()->create();
+        $role->syncPermissions('view_assets');
+
+        $user->syncRoles($role);
+
+        $asset = Asset::factory()
+            ->hasAttached($user, relationship: 'sharingUsers')
+            ->create();
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('api/assets/'.$asset->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                    'change_ownership',
+                ],
+            ])
+            ->assertJsonPath('permissions.view', true)
+            ->assertJsonPath('permissions.update', false)
+            ->assertJsonPath('permissions.delete', false)
+            ->assertJsonPath('permissions.change_ownership', false);
+    }
+
+    /**
+     * Test an ability to update asset where user is editor.
+     */
+    public function testCanUpdateAssetWhereEditor(): void
+    {
+        /** @var User $user */
+        $user = User::factory()->create();
+
+        /** @var Role $role */
+        $role = Role::factory()->create();
+        $role->syncPermissions('view_assets', 'update_assets');
+
+        $user->syncRoles($role);
+
+        /** @var Asset $asset */
+        $asset = Asset::factory()
+            ->hasAttached($user, relationship: 'sharingUsers')
+            ->create();
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('api/assets/'.$asset->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                    'change_ownership',
+                ],
+            ])
+            ->assertJsonPath('permissions.view', true)
+            ->assertJsonPath('permissions.update', true)
+            ->assertJsonPath('permissions.delete', false)
+            ->assertJsonPath('permissions.change_ownership', false);
+
+        $this->patchJson('api/assets/'.$asset->getKey(), [
+            'product_number' => Str::random(40),
+            'serial_number' => Str::random(40),
+            'asset_category_id' => $asset->assetCategory()->getParentKey(),
+            'vendor_id' => $asset->vendor()->getParentKey(),
+            'base_warranty_start_date' => $asset->base_warranty_start_date->format('Y-m-d'),
+            'base_warranty_end_date' => $asset->base_warranty_end_date->format('Y-m-d'),
+            'active_warranty_start_date' => $asset->active_warranty_start_date->format('Y-m-d'),
+            'active_warranty_end_date' => $asset->active_warranty_end_date->format('Y-m-d'),
+        ])
+//            ->dump()
+            ->assertOk();
+    }
+
+    /**
+     * Test an ability to view paginated assets of business division of user's team.
+     */
+    public function testCanViewPaginatedAssetsOfBusinessDivisionOfUserTeam(): void
+    {
+        $this->authenticateApi();
+
         /** @var Quote $rescueQuote */
         $rescueQuote = factory(Quote::class)->create();
 
@@ -101,13 +235,13 @@ class AssetTest extends TestCase
             'business_division_id' => BD_RESCUE,
         ]);
 
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions('view_assets');
 
         /** @var User $user */
-        $user = factory(User::class)->create([
+        $user = User::factory()->create([
             'team_id' => $team->getKey(),
         ]);
 
@@ -116,11 +250,10 @@ class AssetTest extends TestCase
         $this->be($user, 'api');
 
         /** @var Asset $asset */
-        $asset = factory(Asset::class)->create([
-            'user_id' => $user->getKey(),
-            'quote_id' => $rescueQuote->getKey(),
-            'quote_type' => $rescueQuote->getMorphClass(),
-        ]);
+        $asset = Asset::factory()
+            ->for($user)
+            ->for($rescueQuote, 'quote')
+            ->create();
 
         $response = $this->getJson('api/assets')
 //            ->dump()
@@ -174,13 +307,75 @@ class AssetTest extends TestCase
     }
 
     /**
-     * Test can create a new asset.
-     *
-     * @return void
+     * Test an ability to view an existing asset.
      */
-    public function testCanCreateNewAsset()
+    public function testCanViewAsset(): void
     {
-        $attributes = factory(Asset::class)->raw();
+        $this->authenticateApi();
+
+        $asset = Asset::factory()
+            ->for(User::factory())
+            ->hasAttached(User::factory(2), relationship: 'sharingUsers')
+            ->create();
+
+        $this->getJson('api/assets/'.$asset->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'asset_category_id',
+                'user_id',
+                'address_id',
+                'vendor_id',
+                'quote_id',
+                'quote_type',
+                'user' => [
+                    'id',
+                    'first_name',
+                    'last_name',
+                    'email',
+                ],
+                'sharing_users' => [
+                    '*' => [
+                        'id',
+                        'first_name',
+                        'last_name',
+                        'email',
+                    ],
+                ],
+                'rfq_number',
+                'vendor_short_code',
+                'asset_category_name',
+                'address' => [
+                    'id',
+                    'address_type',
+                ],
+                'country' => [
+                    'id',
+                    'iso_3166_2',
+                ],
+                'unit_price',
+                'base_warranty_start_date',
+                'base_warranty_end_date',
+                'active_warranty_start_date',
+                'active_warranty_end_date',
+                'product_number',
+                'serial_number',
+                'product_description',
+                'product_image',
+                'created_at',
+                'updated_at',
+            ]);
+    }
+
+    /**
+     * Test an ability to create a new asset.
+     */
+    public function testCanCreateNewAsset(): void
+    {
+        $this->authenticateApi();
+
+        $attributes = Asset::factory()->raw();
 
         $this->getJson('api/assets/create')
 //            ->dump()
@@ -188,14 +383,14 @@ class AssetTest extends TestCase
             ->assertJsonStructure([
                 'asset_categories' => [
                     '*' => [
-                        'id', 'name'
-                    ]
+                        'id', 'name',
+                    ],
                 ],
                 'vendors' => [
                     '*' => [
                         'id', 'name',
-                    ]
-                ]
+                    ],
+                ],
             ]);
 
         $response = $this->postJson('api/assets', $attributes)
@@ -230,16 +425,15 @@ class AssetTest extends TestCase
     }
 
     /**
-     * Test can update a newly created asset.
-     *
-     * @return void
+     * Test an ability to update a newly created asset.
      */
-    public function testCanUpdateAsset()
+    public function testCanUpdateAsset(): void
     {
-        /** @var Asset */
-        $asset = factory(Asset::class)->create();
+        $this->authenticateApi();
 
-        $attributes = factory(Asset::class)->raw();
+        $asset = Asset::factory()->create();
+
+        $attributes = Asset::factory()->raw();
 
         $response = $this->patchJson('api/assets/'.$asset->getKey(), $attributes)
 //            ->dump()
@@ -273,14 +467,13 @@ class AssetTest extends TestCase
     }
 
     /**
-     * Test can delete a newly created asset.
-     *
-     * @return void
+     * Test an ability to delete a newly created asset.
      */
-    public function testCanDeleteAsset()
+    public function testCanDeleteAsset(): void
     {
-        /** @var Asset */
-        $asset = factory(Asset::class)->create();
+        $this->authenticateApi();
+
+        $asset = Asset::factory()->create();
 
         $this->deleteJson('api/assets/'.$asset->getKey())->assertOk();
 
@@ -289,11 +482,11 @@ class AssetTest extends TestCase
 
     /**
      * Test an ability to check uniqueness of the specified asset data.
-     *
-     * @return void
      */
-    public function testCanCheckUniquenessOfAsset()
+    public function testCanCheckUniquenessOfAsset(): void
     {
+        $this->authenticateApi();
+
         $response = $this->postJson('api/assets/unique', [
             'vendor_id' => Vendor::query()->where('short_code', 'HPE')->value('id'),
             'serial_number' => Str::random(20),
@@ -305,12 +498,13 @@ class AssetTest extends TestCase
         $this->assertTrue(filter_var($response->getContent(), FILTER_VALIDATE_BOOLEAN));
 
         /** @var Asset $asset */
-        $asset = factory(Asset::class)->create();
+        $asset = Asset::factory()->create();
 
         $response = $this->postJson('api/assets/unique', [
             'vendor_id' => $asset->vendor_id,
             'serial_number' => $asset->serial_number,
             'product_number' => $asset->product_number,
+            'user_id' => $asset->user()->getParentKey(),
         ])
 //            ->dump()
             ->assertOk();
@@ -320,17 +514,17 @@ class AssetTest extends TestCase
 
     /**
      * Test an ability to view existing companies list of the specified asset entity.
-     *
-     * @return void
      */
-    public function testCanViewCompaniesOfAsset()
+    public function testCanViewCompaniesOfAsset(): void
     {
+        $this->authenticateApi();
+
         /** @var Asset $asset */
-        $asset = factory(Asset::class)->create();
+        $asset = Asset::factory()->create();
         /** @var Company $companyOfAsset */
-        $companyOfAsset = factory(Company::class)->create();
+        $companyOfAsset = Company::factory()->create();
         /** @var Company $anotherCompany */
-        $anotherCompany = factory(Company::class)->create();
+        $anotherCompany = Company::factory()->create();
 
         $companyOfAsset->assets()->sync($asset);
 

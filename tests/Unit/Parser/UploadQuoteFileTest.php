@@ -2,23 +2,24 @@
 
 namespace Tests\Unit\Parser;
 
-use Tests\TestCase;
-use Illuminate\Support\Facades\File;
-use Illuminate\Http\UploadedFile;
-use Tests\Unit\Traits\WithFakeUser;
-use Illuminate\Http\Testing\File as TestingFile;
-use App\Facades\Setting;
+use App\Domain\Settings\Facades\Setting;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Testing\File as TestingFile;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
+use Tests\TestCase;
 
 /**
  * @group build
  */
 class UploadQuoteFileTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     public function testUploadQuoteFileWithInfiniteCoordinatesRange()
     {
+        $this->authenticateApi();
+
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Support Warehouse Ltd-SELECT ADMINISTRATIVE SERVICES-49698055-08272020.xlsx');
 
         $file = UploadedFile::fake()->createWithContent($filePath, File::get($filePath));
@@ -30,11 +31,11 @@ class UploadQuoteFileTest extends TestCase
 
     /**
      * Test QuoteFile Storing.
-     *
-     * @return void
      */
     public function testUploadSupportedQuoteFile(): void
     {
+        $this->authenticateApi();
+
         $file = UploadedFile::fake()->createWithContent(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf'), File::get(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf')));
 
         $this->uploadFile($file)
@@ -46,12 +47,14 @@ class UploadQuoteFileTest extends TestCase
                 'original_file_path',
                 'original_file_name',
                 'user_id',
-                'quote_file_format_id'
+                'quote_file_format_id',
             ]);
     }
 
     public function testUploadNonSupportedQuoteFile(): void
     {
+        $this->authenticateApi();
+
         $file = UploadedFile::fake()->create('nonsupported.extension', 64);
 
         $response = $this->uploadFile($file);
@@ -59,12 +62,14 @@ class UploadQuoteFileTest extends TestCase
         $response->assertStatus(422);
 
         $response->assertJsonStructure([
-            'message', 'Error' => ['original' => ['quote_file']]
+            'message', 'Error' => ['original' => ['quote_file']],
         ]);
     }
 
     public function testUploadQuoteFileLargerThanAllowedSize()
     {
+        $this->authenticateApi();
+
         $file = UploadedFile::fake()->create('large_file.csv', Setting::get('file_upload_size_kb') * 2);
 
         $response = $this->uploadFile($file);
@@ -72,7 +77,7 @@ class UploadQuoteFileTest extends TestCase
         $response->assertStatus(422);
 
         $response->assertJsonStructure([
-            'message', 'Error' => ['original' => ['quote_file']]
+            'message', 'Error' => ['original' => ['quote_file']],
         ]);
     }
 
@@ -81,7 +86,6 @@ class UploadQuoteFileTest extends TestCase
         return $this->postJson(
             url('/api/quotes/file'),
             ['quote_file' => $file, 'file_type' => $type ?? QFT_PL],
-            ['Authorization' => "Bearer {$this->accessToken}"]
         );
     }
 }

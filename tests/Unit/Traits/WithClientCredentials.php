@@ -13,7 +13,7 @@ trait WithClientCredentials
 
         $attributes = array_merge($attributes, [
             'grant_type' => 'client_credentials',
-            'scope' => '*'
+            'scope' => '*',
         ]);
 
         $response = $this->withoutMiddleware()->postJson(url('oauth/token'), $attributes);
@@ -22,6 +22,6 @@ trait WithClientCredentials
 
         $accessToken = $response->json('access_token');
 
-        $this->clientAuthHeader = ['Authorization' => 'Bearer ' . $accessToken];
+        $this->clientAuthHeader = ['Authorization' => 'Bearer '.$accessToken];
     }
 }

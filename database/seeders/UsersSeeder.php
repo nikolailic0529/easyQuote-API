@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\{Data\Timezone, Role, User};
+use App\Domain\Authorization\Models\{Role};
+use App\Domain\Timezone\Models\Timezone;
+use App\Domain\User\Models\User;
 use Faker\Generator as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -13,12 +15,15 @@ class UsersSeeder extends Seeder
     /**
      * Run the database seeders.
      *
-     * @param Faker $faker
      * @return void
      */
     public function run(Faker $faker)
     {
-        //Empty the users table
+        if (app()->environment('production')) {
+            return;
+        }
+
+        // Empty the users table
         Schema::disableForeignKeyConstraints();
 
         DB::table('users')->delete();
@@ -29,7 +34,7 @@ class UsersSeeder extends Seeder
         $administratorRole = Role::findByName('Administrator');
 
         collect($users)->each(function ($user) use ($administratorRole, $faker) {
-            $timezoneId = Timezone::query()->orderByRaw("RAND()")->value('id');
+            $timezoneId = Timezone::query()->orderByRaw('RAND()')->value('id');
 
             $user = User::create([
                 'email' => $user['email'],
@@ -37,7 +42,7 @@ class UsersSeeder extends Seeder
                 'middle_name' => $faker->firstName,
                 'last_name' => $faker->lastName,
                 'password' => isset($user['password']) ? bcrypt($user['password']) : '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-                'timezone_id' => $timezoneId
+                'timezone_id' => $timezoneId,
             ]);
 
             $user->assignRole($administratorRole);

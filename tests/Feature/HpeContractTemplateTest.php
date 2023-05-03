@@ -2,20 +2,24 @@
 
 namespace Tests\Feature;
 
-use App\Models\Data\Country;
-use App\Models\Template\HpeContractTemplate;
+use App\Domain\Authentication\Services\UserTeamGate;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Country\Models\Country;
+use App\Domain\HpeContract\Models\HpeContractTemplate;
+use App\Domain\Team\Models\Team;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 use Tests\Unit\Traits\AssertsListing;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
  */
 class HpeContractTemplateTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     protected static array $assertableAttributes = ['id', 'name', 'company_id', 'vendor_id', 'currency_id', 'form_data', 'data_headers', 'countries'];
 
@@ -26,7 +30,9 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanViewPaginatedHpeContractTemplates()
     {
-        $this->getJson(url("api/hpe-contract-templates"))->assertOk()
+        $this->authenticateApi();
+
+        $this->getJson(url('api/hpe-contract-templates'))->assertOk()
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
@@ -84,8 +90,10 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanCreateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $attributes = factory(HpeContractTemplate::class)->raw([
-            'countries' => Country::limit(2)->pluck('id')->all()
+            'countries' => Country::limit(2)->pluck('id')->all(),
         ]);
 
         $response = $this->postJson('api/hpe-contract-templates', $attributes)
@@ -112,6 +120,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanUpdateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
 
         $attributes = factory(HpeContractTemplate::class)->raw();
@@ -138,6 +148,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanActivateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
         $template->activated_at = null;
         $template->save();
@@ -145,9 +157,9 @@ class HpeContractTemplateTest extends TestCase
         $this->putJson('api/hpe-contract-templates/activate/'.$template->getKey())->assertOk();
 
         $response = $this->getJson('api/hpe-contract-templates/'.$template->getKey())->assertOk()
-                ->assertJsonStructure([
-                    'id', 'activated_at'
-                ]);
+            ->assertJsonStructure([
+                'id', 'activated_at',
+            ]);
         $this->assertNotEmpty($response->json('activated_at'));
     }
 
@@ -158,6 +170,8 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanDeactivateHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
         $template->activated_at = now();
         $template->save();
@@ -166,7 +180,7 @@ class HpeContractTemplateTest extends TestCase
 
         $response = $this->getJson('api/hpe-contract-templates/'.$template->getKey())->assertOk()
             ->assertJsonStructure([
-                'id', 'activated_at'
+                'id', 'activated_at',
             ]);
         $this->assertNull($response->json('activated_at'));
     }
@@ -178,10 +192,116 @@ class HpeContractTemplateTest extends TestCase
      */
     public function testCanDeleteHpeContractTemplate()
     {
+        $this->authenticateApi();
+
         $template = factory(HpeContractTemplate::class)->create();
 
-        $this->deleteJson('api/hpe-contract-templates/'.$template->getKey())->dump()->assertOk();
+        $this->deleteJson('api/hpe-contract-templates/'.$template->getKey())
+//            ->dump()
+            ->assertOk();
 
         $this->getJson('api/hpe-contract-templates/'.$template->getKey())->assertNotFound();
+    }
+
+    /**
+     * Test an ability to update an existing hpe contract template when the actor is the team leader of the template owner.
+     */
+    public function testCanUpdateHpeContractTemplateOwnedByLedTeamUser(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_hpe_contract_templates', 'create_hpe_contract_templates', 'update_own_hpe_contract_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var \App\Domain\User\Models\User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+        /** @var HpeContractTemplate $template */
+        $template = factory(HpeContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $data = [
+            'name' => Str::random(40),
+        ];
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/hpe-contract-templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->patchJson('api/hpe-contract-templates/'.$template->getKey(), $data)
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/hpe-contract-templates/'.$template->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'name',
+            ]);
+
+        $this->assertSame($data['name'], $response->json('name'));
+    }
+
+    /**
+     * Test an ability to delete an existing hpe contract template owned when the actor is the team leader of the template owner.
+     */
+    public function testCanDeleteHpeContractTemplateOwnedByLedTeamUser(): void
+    {
+        $this->authenticateApi();
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(['view_own_hpe_contract_templates', 'create_hpe_contract_templates', 'update_own_hpe_contract_templates', 'delete_own_hpe_contract_templates']);
+
+        /** @var Team $team */
+        $team = factory(Team::class)->create();
+
+        /** @var User $teamLeader */
+        $teamLeader = User::factory()->create(['team_id' => $team->getKey()]);
+        $teamLeader->syncRoles($role);
+
+        /** @var User $ledUser */
+        $ledUser = User::factory()->create(['team_id' => $team->getKey()]);
+        $ledUser->syncRoles($role);
+
+        /** @var \App\Domain\HpeContract\Models\HpeContractTemplate $template */
+        $template = factory(HpeContractTemplate::class)->create(['user_id' => $ledUser->getKey()]);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/hpe-contract-templates/'.$template->getKey())
+//            ->dump()
+            ->assertForbidden();
+
+        $team->teamLeaders()->sync($teamLeader);
+
+        $this->app->forgetInstance(UserTeamGate::class);
+
+        $this->authenticateApi($teamLeader);
+
+        $this->deleteJson('api/hpe-contract-templates/'.$template->getKey())
+//            ->dump()
+            ->assertOk();
+
+        $this->getJson('api/hpe-contract-templates/'.$template->getKey())
+            ->assertNotFound();
     }
 }

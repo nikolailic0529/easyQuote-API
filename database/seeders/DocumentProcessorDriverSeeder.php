@@ -19,18 +19,13 @@ class DocumentProcessorDriverSeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         $connection->transaction(function () use ($seeds, $connection) {
-
             foreach ($seeds as $seed) {
-
                 $connection->table('document_processor_drivers')
                     ->insertOrIgnore([
                         'id' => $seed['id'],
-                        'driver_name' => $seed['driver_name']
+                        'driver_name' => $seed['driver_name'],
                     ]);
-
             }
-
         });
-
     }
 }

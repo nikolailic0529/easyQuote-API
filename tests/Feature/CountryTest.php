@@ -2,28 +2,28 @@
 
 namespace Tests\Feature;
 
-use App\Models\Data\Country;
+use App\Domain\Country\Models\Country;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
  */
 class CountryTest extends TestCase
 {
-    use WithFakeUser, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test an ability to create a new country.
-     *
-     * @return void
      */
-    public function testCanCreateCountry()
+    public function testCanCreateCountry(): void
     {
-        $attributes = factory(Country::class)->raw();
+        $this->authenticateApi();
 
-        $this->postJson("api/countries/", $attributes)
+        $attributes = factory(Country::class)->raw(['name' => Str::random(100)]);
+
+        $this->postJson('api/countries/', $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -38,16 +38,17 @@ class CountryTest extends TestCase
 
     /**
      * Test an ability to update an existing country.
-     *
-     * @return void
      */
-    public function testCanUpdateCountry()
+    public function testCanUpdateCountry(): void
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
-        $attributes = factory(Country::class)->raw();
+        $attributes = factory(Country::class)->raw(['name' => Str::random(100)]);
 
-        $this->patchJson("api/countries/".$country->getKey(), $attributes)
+        $this->patchJson('api/countries/'.$country->getKey(), $attributes)
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -62,69 +63,67 @@ class CountryTest extends TestCase
 
     /**
      * Test can not update system country.
-     *
-     * @return void
      */
-    public function testCanNotUpdateSystemCountry()
+    public function testCanNotUpdateSystemCountry(): void
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create(['is_system' => true]);
 
         $attributes = factory(Country::class)->raw();
 
-        $this->patchJson("api/countries/".$country->getKey(), $attributes)
+        $this->patchJson('api/countries/'.$country->getKey(), $attributes)
             ->assertForbidden();
     }
 
     /**
      * Test can delete an existing country.
-     *
-     * @return void
      */
-    public function testCanDeleteCountry()
+    public function testCanDeleteCountry(): void
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
-        $this->deleteJson("api/countries/".$country->getKey())
-            ->assertOk()
-            ->assertExactJson([true]);
+        $this->deleteJson('api/countries/'.$country->getKey())
+            ->assertNoContent();
 
-        $this->getJson("api/countries/".$country->getKey())
+        $this->getJson('api/countries/'.$country->getKey())
             ->assertNotFound();
     }
 
     /**
-     * Test can activate an existing country
-     *
-     * @return void
+     * Test an ability to mark an existing country as active.
      */
-    public function testCanActivateCountry()
+    public function testCanMarkCountryAsActive(): void
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
         $country->activated_at = null;
         $country->save();
 
-        $this->putJson("api/countries/activate/".$country->getKey())
-            ->assertOk()->assertExactJson([true]);
+        $this->putJson('api/countries/activate/'.$country->getKey())
+            ->assertNoContent();
 
         $this->assertNotNull($country->refresh()->activated_at);
     }
 
     /**
-     * Test activating a newly created Country.
-     *
-     * @return void
+     * Test an ability to mark an existing country as inactive.
      */
-    public function testCanDeactivateCountry()
+    public function testCanMarkCountryAsInactive(): void
     {
+        $this->authenticateApi();
+
         $country = factory(Country::class)->create();
 
         $country->activated_at = now();
         $country->save();
 
-        $this->putJson("api/countries/deactivate/".$country->getKey())
-            ->assertOk()
-            ->assertExactJson([true]);
+        $this->putJson('api/countries/deactivate/'.$country->getKey())
+            ->assertNoContent();
 
         $this->assertNull($country->refresh()->activated_at);
     }

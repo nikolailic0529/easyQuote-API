@@ -18,7 +18,7 @@ class CreateUserFormsTable extends Migration
 
             $table->uuid('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            
+
             $table->string('key')->index();
             $table->json('form')->nullable();
 

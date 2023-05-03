@@ -19,17 +19,13 @@ class SpaceSeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         $connection->transaction(function () use ($seeds, $connection) {
-
             foreach ($seeds as $seed) {
-
                 $connection->table('spaces')
                     ->insertOrIgnore([
                         'id' => $seed['id'],
-                        'space_name' => $seed['space_name']
+                        'space_name' => $seed['space_name'],
                     ]);
-
             }
-
         });
     }
 }

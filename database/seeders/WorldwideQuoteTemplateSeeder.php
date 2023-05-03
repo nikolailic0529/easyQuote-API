@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Company;
-use App\Services\ThumbHelper;
+use App\Domain\Company\Models\Company;
+use App\Domain\Image\Services\ThumbHelper;
 use Illuminate\Database\Seeder;
 
 class WorldwideQuoteTemplateSeeder extends Seeder
@@ -12,13 +12,14 @@ class WorldwideQuoteTemplateSeeder extends Seeder
      * Run the database seeds.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
     {
-        /** @var \App\Models\Company $epdCompanyModel */
+        /** @var \App\Domain\Company\Models\Company $epdCompanyModel */
         $epdCompanyModel = Company::query()->where('short_code', 'EPD')->sole();
-        $templateAssets = ThumbHelper::retrieveLogoFromModels([$epdCompanyModel], ThumbHelper::WITH_KEYS);
+        $templateAssets = ThumbHelper::retrieveLogoFromModels([$epdCompanyModel], ThumbHelper::MAP);
 
         $oldWwContractQuoteTemplateUuid = '4f8bc11b-6109-41db-87f9-962c37dd8c7f';
         $oldWwContractQuoteTemplateSchema = file_get_contents(database_path('seeders/models/ww_contract_epd_master_quote_template_schema_old.json'));
@@ -120,7 +121,6 @@ class WorldwideQuoteTemplateSeeder extends Seeder
         ];
 
         $connection->transaction(function () use ($connection, $seeds) {
-
             foreach ($seeds as $seed) {
                 $connection->table('quote_templates')
                     ->upsert([
@@ -160,9 +160,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
                             'vendor_id' => $key,
                         ]);
                 }
-
             }
-
         });
     }
 

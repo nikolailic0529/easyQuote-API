@@ -2,10 +2,10 @@
 
 namespace Tests\Unit\Parser;
 
-use Tests\TestCase;
-use App\Contracts\Services\CsvParserInterface;
+use App\Domain\DocumentProcessing\Readers\Contracts\CsvParserInterface;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\File;
+use Tests\TestCase;
 
 /**
  * @group build
@@ -13,13 +13,6 @@ use Illuminate\Support\Facades\File;
 class CsvDelimiterDetectTest extends TestCase
 {
     use DatabaseTransactions;
-    
-    /**
-     * CsvParser singleton.
-     *
-     * @var \App\Contracts\Services\CsvParserInterface
-     */
-    protected $csv;
 
     /**
      * Path to files directory.
@@ -27,13 +20,6 @@ class CsvDelimiterDetectTest extends TestCase
      * @var string
      */
     protected $filesDirectory = 'tests/Unit/Data/csv-files-test';
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->csv = app(CsvParserInterface::class);
-    }
 
     /**
      * Test valid detection colon delimiter.
@@ -79,17 +65,17 @@ class CsvDelimiterDetectTest extends TestCase
     {
         $filepath = base_path("{$this->filesDirectory}/one_line.csv");
 
-        $this->assertIsString($this->csv->guessDelimiter($filepath));
+        $this->assertIsString($this->app->make(CsvParserInterface::class)->guessDelimiter($filepath));
     }
 
     protected function assertDeterminedDelimiter(string $delimiter, ?string $directory = null): void
     {
         $directory = $directory ?? $delimiter;
 
-        $files = File::files(base_path($this->filesDirectory . DIRECTORY_SEPARATOR . $directory));
+        $files = File::files(base_path($this->filesDirectory.DIRECTORY_SEPARATOR.$directory));
 
         collect($files)->each(function ($file) use ($delimiter) {
-            $determinedDelimiter = $this->csv->guessDelimiter($file->getPathname());
+            $determinedDelimiter = $this->app->make(CsvParserInterface::class)->guessDelimiter($file->getPathname());
             $this->assertEquals($delimiter, $determinedDelimiter);
         });
     }

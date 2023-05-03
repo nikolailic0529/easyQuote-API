@@ -1,0 +1,122 @@
+{
+  "data": {
+    "entities": {
+      "opportunity": {
+        "getByCriteria": {
+          "edges": [
+            {
+              "node": {
+                "id": "1d801433-cc0c-46b0-9730-6297f416ae7e",
+                "revision": 87750,
+                "formattedName": "Poland -  Bank of China (Europe) S.A.Poland Branch",
+                "name": "Poland -  Bank of China (Europe) S.A.Poland Branch",
+                "status": "Open",
+                "closingDate": "2022-04-28",
+                "qualifyDate": null,
+                "lostDate": null,
+                "wonDate": null,
+                "quickAccountEmail": "",
+                "quickAccountName": "",
+                "quickAccountPhone": "",
+                "quickContactName": "",
+                "quickEmail": "",
+                "quickPhone": "",
+                "ranking": 20,
+                "value": {
+                  "baseValue": 7050.15,
+                  "currencyId": "c4ca4238-a0b9-0382-0dcc-509a6f75849b",
+                  "valueForeign": 7050.15
+                },
+                "productSections": [],
+                "contactRelations": {
+                  "edges": [
+                    {
+                      "node": {
+                        "id": "869dc06f-456f-43d8-9946-c3ca84aeca7b",
+                        "isPrimary": true,
+                        "contact": {
+                          "contactType": {
+                            "name": "Default contact"
+                          },
+                          "id": "c518b016-6876-4352-ad33-15028d1b0813",
+                          "address": "Nidderdale House, Beckwith Knowle, Otley Rd, ",
+                          "city": "Harrogate",
+                          "country": "United Kingdom",
+                          "email1": "Damian.Piekut@arrow.com",
+                          "phone1": "+44 1423 519461",
+                          "title": "",
+                          "formattedName": "Damian Piekut",
+                          "firstName": "Damian",
+                          "lastName": "Piekut",
+                          "zipCode": "HG3 1SA",
+                          "stateProvince": "Harrogate",
+                          "customFields": "{\"cfAddressTwo\": \"\", \"cfChristmaGreetings\": false, \"cfJobTitle\": \"Quote & Configuration Specialist\", \"cfLanguage1nId\": \"990328e8-884a-4cca-b591-5e232d5d880b\", \"cfType1Id\": \"0d7cfbdc-1dbb-4935-ae48-6de7c5949474\", \"cfWebinar\": false, \"cfCustSurvContact\": false, \"cfMngtInfo\": false, \"cfStateCode1\": \"\"}"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "unit": {
+                  "id": "79ed86c3-d96b-4b6d-8fb0-f887602a5f28",
+                  "name": "Worldwide"
+                },
+                "step": {
+                  "id": "7bc37b31-8725-4256-b867-472033316e5a",
+                  "name": "Customer_Contact",
+                  "percent": 50
+                },
+                "owner": {
+                  "id": "00000000-0000-0000-0000-000000037eb6",
+                  "formattedName": "Patricia Salido",
+                  "email": "patricia.salido@europlusdirect.com"
+                },
+                "primaryAccount": {
+                  "id": "6f80ecce-436a-4c46-9a97-b43872134ff0",
+                  "formattedName": "Arrow UK ECS ",
+                  "email1": "",
+                  "homePage": "",
+                  "address": "Nidderdale House, Beckwith Knowle, Otley Rd, ",
+                  "city": "Harrogate",
+                  "zipCode": "HG3 1SA",
+                  "stateProvince": "Harrogate",
+                  "country": "United Kingdom",
+                  "customFields": "{\"cfBusinessPartner\": null, \"cfStateCode\": null, \"cfVatTypeId\": null, \"cfDistributor\": true, \"cfHardwareCountry\": null, \"cfVat\": null, \"cfEndUser\": null, \"cfCustSurvAccountId\": [], \"cfMargin\": 0.0, \"cfVendor2\": [], \"cfSoftwareCountry\": null, \"cfAddress2n\": null, \"cfReseller\": true, \"cfTypeId\": null, \"cfQuarterlyAuditDate\": null}"
+                },
+                "primaryContact": {
+                  "id": "c518b016-6876-4352-ad33-15028d1b0813",
+                  "address": "Nidderdale House, Beckwith Knowle, Otley Rd, ",
+                  "city": "Harrogate",
+                  "country": "United Kingdom",
+                  "email1": "Damian.Piekut@arrow.com",
+                  "phone1": "+44 1423 519461",
+                  "title": "",
+                  "formattedName": "Damian Piekut",
+                  "firstName": "Damian",
+                  "lastName": "Piekut",
+                  "zipCode": "HG3 1SA",
+                  "stateProvince": "Harrogate"
+                },
+                "productCurrency": {
+                  "id": "c4ca4238-a0b9-0382-0dcc-509a6f75849b",
+                  "code": "GBP"
+                },
+                "opptyType": {
+                  "id": "0c03f112-4544-06a8-b162-1f14524c149c",
+                  "name": "Default pipeline"
+                },
+                "customFields": "{\"cfDropInId\": null, \"cfContactName5\": \"\", \"cfHwStatusId\": \"716ea2bf-fc9c-4910-8e01-43bac930f747\", \"cfNewBiz\": 0.0, \"cfEmailAddress2\": \"\", \"cfDmr\": false, \"cfDistributorCountry3nId\": null, \"cfCountry4\": \"\", \"cfNatureOfServiceId\": \"3582b8c9-3d8f-449d-ae9c-f19035f9cfb9\", \"cfRemark\": \"\", \"cfNatureOfService1Id\": null, \"cfValueLastPeriode\": 0.0, \"cfStartDate\": \"2022-03-17\", \"cfEmailAddress4\": \"\", \"cfSuppOrderDate\": null, \"cfSnd\": false, \"cfDistributorCountry5nId\": null, \"cfEndDateAssumed\": true, \"cfDistributor5nId\": null, \"cfEmailAddress1\": \"\", \"cfContactName4\": \"\", \"cfContactName2\": \"\", \"cfCountry\": \"\", \"cfCountry2\": \"\", \"cfRenYearId\": null, \"cfAibValue\": 0, \"cfRegionId\": \"906afa40-13e9-47ed-9fe3-95da54f627a9\", \"cfOpportunityTypeId\": \"d9188f70-9c44-469d-8931-4bd2acd4782d\", \"cfEmailAddress5\": \"\", \"cfPersonalRatingId\": \"6ed297a3-f4c7-4447-8d52-e6d97ac41765\", \"cfTestComm\": \"\", \"cfMargin1\": 13.0, \"cfCompetition\": \"\", \"cfRenMonthId\": null, \"cfCustomerStatusId\": \"a6db195f-6570-410e-b37c-eb631e53dca4\", \"cfDurationInMonth1n\": null, \"cfRenewalReminderCreated\": false, \"cfCampaignId\": null, \"cfDelayedClosing\": null, \"cfSla\": \"\", \"cfSupplier2\": \"\", \"cfTpmId\": null, \"cfInitialQuoteValue\": \"\", \"cfStartDateAssumed\": true, \"cfConfiguration1n\": false, \"cfDistributorCountry2n1Id\": null, \"cfAdditionalHardware\": false, \"cfPersonalRating1nId\": null, \"cfInitialQuoteValue1n\": 0.0, \"cfVendorLead\": false, \"cfContactName1\": \"\", \"cfSourceId\": null, \"cfSupplOrderTransaction\": \"\", \"cfLeadSourceMvId\": null, \"cfEmailAddress\": \"Piotr\", \"cfSupplier1\": \"\", \"cfCountry6Id\": \"be96ec81-a6e9-4258-b739-3e08f4c08fcf\", \"cfDistributor2nId\": null, \"cfLeadNumber\": \"\", \"cfCountry3\": \"\", \"cfDistributorCountry4nId\": null, \"cfSupplier4\": \"\", \"cfCountry1\": \"\", \"cfSupplier5\": \"\", \"cfDistributor1Id\": \"c44cb291-4e29-4e5a-afd8-164c845b6882\", \"cfPurchasePrice\": {\"baseValue\": 0, \"currencyId\": \"c4ca4238-a0b9-0382-0dcc-509a6f75849b\", \"valueForeign\": 0}, \"cfLeadSourceId\": null, \"cfDistributor4nId\": null, \"cfDistributor3nId\": null, \"cfCustOrderDate\": null, \"cfAmpId\": \"\", \"cfCountry5\": \"\", \"cfSupplier\": \"\", \"cfSupplier3\": \"\", \"cfToFinance\": null, \"cfEstimatedUpsellAmount\": 0, \"cfAccountManagerMvId\": null, \"cfSuppConfirmDate\": null, \"cfContactName3\": \"\", \"cfLate\": false, \"cfAccountManagerId\": null, \"cfInitialSalesId\": null, \"cfEmailAddress3\": \"\", \"cfListPrice\": {\"baseValue\": 0, \"currencyId\": \"c4ca4238-a0b9-0382-0dcc-509a6f75849b\", \"valueForeign\": 0}, \"cfServiceCredits\": false, \"cfEnduser\": \"Bank of China (Europe) S.A.Poland Branch\", \"cfEndDate\": \"2022-03-25\", \"cfContactName\": \"Piotr\", \"cfCdmr1n\": false, \"cfHigherSla\": false}"
+              }
+            }
+          ],
+          "pageInfo": {
+            "startCursor": "WyIyMDIyLTAzLTE4VDE2OjQ0OjIyLjA1NDg0OSswMDowMCIsICIxZDgwMTQzMy1jYzBjLTQ2YjAtOTczMC02Mjk3ZjQxNmFlN2UiXQ==",
+            "endCursor": "WyIyMDIyLTAzLTE2VDEyOjMwOjU1LjI2MzEyOSswMDowMCIsICI3YjVkNTk2Zi1lZWQzLTQ1MzktYTQxMC1mNzI5YTFmODBkZDYiXQ==",
+            "hasNextPage": false,
+            "hasPreviousPage": false
+          },
+          "totalCount": 1758
+        }
+      }
+    }
+  }
+}

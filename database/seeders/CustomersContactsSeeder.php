@@ -2,7 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\{Contact, Customer\Customer};
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Rescue\Models\Customer;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -16,7 +17,7 @@ class CustomersContactsSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the contacts table
+        // Empty the contacts table
         Schema::disableForeignKeyConstraints();
 
         DB::table('contacts')->delete();
@@ -29,7 +30,7 @@ class CustomersContactsSeeder extends Seeder
         $contacts = collect($contacts)->keyBy('contact_type');
         $contacts = collect([
             Contact::type('Software')->firstOrCreate($contacts->get('Software'))->id,
-            Contact::type('Hardware')->firstOrCreate($contacts->get('Hardware'))->id
+            Contact::type('Hardware')->firstOrCreate($contacts->get('Hardware'))->id,
         ]);
 
         Customer::all()->each(function ($customer) use ($contacts) {

@@ -3,14 +3,14 @@
 return [
     'types' => [
         'schedule' => 'Payment Schedule',
-        'price' => 'Distributor Price List'
+        'price' => 'Distributor Price List',
     ],
     'ui_formats' => [
         'pdf' => [
-            'application/pdf'
+            'application/pdf',
         ],
         'docx' => [
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        ]
-    ]
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+    ],
 ];

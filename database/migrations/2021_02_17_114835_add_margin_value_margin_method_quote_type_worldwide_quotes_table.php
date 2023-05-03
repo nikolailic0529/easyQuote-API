@@ -31,7 +31,7 @@ class AddMarginValueMarginMethodQuoteTypeWorldwideQuotesTable extends Migration
             $table->dropColumn([
                 'quote_type',
                 'margin_value',
-                'margin_method'
+                'margin_method',
             ]);
         });
     }

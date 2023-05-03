@@ -11,6 +11,7 @@ class WorldwideSalesOrderTemplateSeeder extends Seeder
      * Run the database seeds.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
@@ -22,7 +23,6 @@ class WorldwideSalesOrderTemplateSeeder extends Seeder
 
         $wwContractTemplates = collect($wwContractTemplates)
             ->map(function (array $template) use ($connection) {
-
                 $schemaPath = database_path('seeders/models/template_schemas/'.$template['template_schema']);
 
                 $template['template_schema'] = json_decode(file_get_contents($schemaPath), true);
@@ -42,9 +42,7 @@ class WorldwideSalesOrderTemplateSeeder extends Seeder
             ->all();
 
         foreach ($wwContractTemplates as $template) {
-
-            $connection->transaction(function () use ($template, $wwContractTemplates, $connection) {
-
+            $connection->transaction(function () use ($template, $connection) {
                 $connection->table('template_schemas')
                     ->where('id', $template['template_schema']['id'])
                     ->upsert([
@@ -80,17 +78,13 @@ class WorldwideSalesOrderTemplateSeeder extends Seeder
                     ]);
 
                 foreach ($template['countries'] as $countryKey) {
-
                     $connection->table('country_sales_order_template')
                         ->insertOrIgnore([
                             'sales_order_template_id' => $template['id'],
                             'country_id' => $countryKey,
                         ]);
-
                 }
-
             });
-
         }
     }
 }

@@ -24,7 +24,7 @@ class CreateOpportunityFormsTable extends Migration
 
             $table->timestamps();
             $table->softDeletes()->index();
-            $table->boolean('is_not_deleted')->virtualAs("IF(deleted_at IS NULL, 1, NULL)");
+            $table->boolean('is_not_deleted')->virtualAs('IF(deleted_at IS NULL, 1, NULL)');
 
             $table->unique(['pipeline_id', 'is_not_deleted']);
         });

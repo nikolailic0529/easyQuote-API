@@ -20,7 +20,7 @@ class MakeUserIdNullableWorldwideQuoteNotesTable extends Migration
         });
 
         Schema::table('worldwide_quote_notes', function (Blueprint $table) {
-           $table->foreign('user_id')->references('id')->on('users')->nullOnDelete()->cascadeOnUpdate();
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 

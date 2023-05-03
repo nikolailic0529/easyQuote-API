@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'enabled' => env('GOOGLE_MAPS_GEOCODING_ENABLED', true),
 
     /*
      * The api key used when sending Geocoding requests to Google.
@@ -35,5 +36,4 @@ return [
      * More info: https://developers.google.com/maps/documentation/javascript/geocoding#GeocodingRequests
      */
     'country' => '',
-
 ];

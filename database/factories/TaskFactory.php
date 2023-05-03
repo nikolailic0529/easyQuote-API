@@ -1,55 +1,47 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
-use App\Models\{
-    Attachment,
-    Task,
-    User,
-};
-use Faker\Generator as Faker;
+use App\Domain\Priority\Enum\Priority;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\Task\Enum\TaskTypeEnum;
+use App\Domain\Task\Models\Task;
+use App\Domain\User\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-$factory->define(Task::class, function (Faker $faker) {
-    $user = User::firstOr(fn () => factory(User::class)->create());
+class TaskFactory extends Factory
+{
+    protected $model = Task::class;
 
-    return [
-        'user_id'       => $user->id,
-        'name'          => $faker->text(50),
-        'content'       => [
-            [
-                'id' => $faker->uuid,
-                'name' => $faker->randomElement(['Single Column', 'Two Column', 'Three Column']),
-                'child' => [],
-                'class' => 'single-column field-dragger',
-                'order' => 1,
-                'controls' => [],
-                'is_field' => false,
-                'droppable' => false,
-                'decoration' => '1'
-            ]
-        ],
-        'expiry_date'   => now()->addYear(mt_rand(1, 2))->format('Y-m-d H:i:s'),
-        'priority'      => mt_rand(1, 3)
-    ];
-});
+    public function definition(): array
+    {
+        return [
+            'sales_unit_id' => SalesUnit::query()->get()->random()->getKey(),
+            'activity_type' => $this->faker->randomElement(TaskTypeEnum::cases()),
+            'user_id' => User::factory(),
+            'name' => $this->faker->text(50),
+            'content' => [
+                [
+                    'id' => $this->faker->uuid,
+                    'name' => $this->faker->randomElement(['Single Column', 'Two Column', 'Three Column']),
+                    'child' => [],
+                    'class' => 'single-column field-dragger',
+                    'order' => 1,
+                    'controls' => [],
+                    'is_field' => false,
+                    'droppable' => false,
+                    'decoration' => '1',
+                ],
+            ],
+            'expiry_date' => now()->addYear()->format('Y-m-d H:i:s'),
+            'priority' => $this->faker->randomElement(Priority::cases()),
+        ];
+    }
 
-$factory->state(Task::class, 'expired', [
-    'expiry_date' => now()->subDay()
-]);
-
-$factory->afterCreating(Task::class, function (Task $task) {
-    $task->users()->sync(factory(User::class, 2)->create());
-    $task->attachments()->sync(factory(Attachment::class, 2)->create());
-});
-
-$factory->state(Task::class, 'users', function (Faker $faker) {
-    return [
-        'users' => factory(User::class, 2)->create()->pluck('id')->toArray()
-    ];
-});
-
-$factory->state(Task::class, 'attachments', function (Faker $faker) {
-    return [
-        'attachments' => factory(Attachment::class, 4)->create()->pluck('id')->toArray()
-    ];
-});
+    public function expired(): TaskFactory
+    {
+        return $this->state(fn (): array => [
+            'expiry_date' => now()->subDay(),
+        ]);
+    }
+}

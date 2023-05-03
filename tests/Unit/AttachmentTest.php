@@ -2,14 +2,11 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
-use Illuminate\Support\{
-    Facades\Storage,
-    Facades\File,
-};
-use App\Models\Attachment;
+use App\Domain\Attachment\Models\Attachment;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
 
 /**
  * @group build

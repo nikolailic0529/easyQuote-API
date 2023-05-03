@@ -14,14 +14,12 @@ class AddMultiYearDiscountIdPromotionalDiscountIdPrePayDiscountIdSnDiscountIdCus
     public function up()
     {
         Schema::table('worldwide_quotes', function (Blueprint $table) {
-
             $table->foreignUuid('multi_year_discount_id')->nullable()->after('output_currency_id')->comment('Foreign key on multi_year_discounts table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('pre_pay_discount_id')->nullable()->after('multi_year_discount_id')->comment('Foreign key on pre_pay_discounts table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('promotional_discount_id')->nullable()->after('pre_pay_discount_id')->comment('Foreign key on promotional_discounts table')->constrained()->nullOnDelete()->cascadeOnUpdate();
             $table->foreignUuid('sn_discount_id')->nullable()->after('promotional_discount_id')->comment('Foreign key on sn_discounts table')->constrained()->nullOnDelete()->cascadeOnUpdate();
 
             $table->decimal('custom_discount')->nullable()->after('quote_expiry_date')->comment('Custom discount value');
-
         });
     }
 
@@ -44,7 +42,7 @@ class AddMultiYearDiscountIdPromotionalDiscountIdPrePayDiscountIdSnDiscountIdCus
                 'promotional_discount_id',
                 'sn_discount_id',
 
-                'custom_discount'
+                'custom_discount',
             ]);
         });
     }

@@ -26,3 +26,7 @@
 @if (filled($asset_notes))
     <p class="mt-1" style="white-space: pre-line;">{{ $asset_notes }}</p>
 @endif
+
+@if (!blank_html($additional_details))
+    <div class="mt-2" style="white-space: pre-line;">{{ $additional_details }}</div>
+@endif

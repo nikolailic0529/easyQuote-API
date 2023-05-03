@@ -27,7 +27,7 @@ class AddActiveVersionIdQuotesTable extends Migration
     public function down()
     {
         Schema::disableForeignKeyConstraints();
-        
+
         Schema::table('quotes', function (Blueprint $table) {
             $table->dropForeign(['active_version_id']);
             $table->dropColumn('active_version_id');

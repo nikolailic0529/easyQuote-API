@@ -13,6 +13,7 @@ class ImportableColumnSeeder extends Seeder
      * Run the database seeders.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
@@ -23,7 +24,6 @@ class ImportableColumnSeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         $seeds = array_map(function (array $seed) use ($connection) {
-
             $country = $connection
                 ->table('countries')
                 ->where('iso_3166_2', Arr::pull($seed, 'country'))
@@ -41,7 +41,7 @@ class ImportableColumnSeeder extends Seeder
 
             $aliases = array_map(function (string $aliasName) {
                 return [
-                    'id' => (string)Uuid::generate(4),
+                    'id' => (string) Uuid::generate(4),
                     'alias' => $aliasName,
                 ];
             }, $missingAliases);
@@ -50,12 +50,10 @@ class ImportableColumnSeeder extends Seeder
                 'country_id' => $country->id,
                 'aliases' => $aliases,
             ]);
-
         }, $seeds);
 
         $connection->transaction(function () use ($seeds, $connection) {
             foreach ($seeds as $seed) {
-
                 $connection->table('importable_columns')
                     ->insertOrIgnore([
                         'id' => $seed['id'],
@@ -72,7 +70,6 @@ class ImportableColumnSeeder extends Seeder
                     ]);
 
                 foreach ($seed['aliases'] as $aliasData) {
-
                     $connection->table('importable_column_aliases')
                         ->insertOrIgnore([
                             'id' => $aliasData['id'],
@@ -81,12 +78,8 @@ class ImportableColumnSeeder extends Seeder
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-
                 }
-
             }
         });
-
-
     }
 }

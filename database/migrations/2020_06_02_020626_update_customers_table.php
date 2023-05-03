@@ -1,12 +1,12 @@
 <?php
 
-use App\Models\Customer\Customer;
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
+use App\Domain\Rescue\Models\Customer;
 use Doctrine\DBAL\Types\StringType;
 use Doctrine\DBAL\Types\Type;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class UpdateCustomersTable extends Migration
 {
@@ -26,8 +26,7 @@ class UpdateCustomersTable extends Migration
             Type::addType('char', StringType::class);
         }
 
-        DB::transaction(fn () =>
-        Customer::query()->whereSource('easyQuote')->update(['source' => Customer::EQ_SOURCE]));
+        DB::transaction(fn () => Customer::query()->whereSource('easyQuote')->update(['source' => Customer::EQ_SOURCE]));
 
         Schema::table('customers', function (Blueprint $table) {
             $table->dropIndex(['source']);

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Company\Models\Company;
 use Illuminate\Database\Seeder;
 
 class CompanySeeder extends Seeder
@@ -10,6 +11,7 @@ class CompanySeeder extends Seeder
      * Run the database seeders.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
@@ -30,14 +32,12 @@ class CompanySeeder extends Seeder
 
             return array_merge($company, [
                 'vendor_model_keys' => $vendorKeys,
-                'default_vendor_id' => $defaultVendorKey
+                'default_vendor_id' => $defaultVendorKey,
             ]);
         }, $companies);
 
         $connection->transaction(function () use ($connection, $companies) {
-
             foreach ($companies as $company) {
-
                 $connection->table('companies')
                     ->insertOrIgnore([
                         'id' => $company['id'],
@@ -50,26 +50,20 @@ class CompanySeeder extends Seeder
                         'email' => $company['email'],
                         'phone' => $company['phone'],
                         'website' => $company['website'],
-                        'is_system' => true,
+                        'flags' => Company::SYSTEM | Company::SYNC_PROTECTED,
                         'created_at' => now(),
                         'updated_at' => now(),
                         'activated_at' => now(),
                     ]);
 
                 foreach ($company['vendor_model_keys'] as $vendorKey) {
-
                     $connection->table('company_vendor')
                         ->insertOrIgnore([
                             'company_id' => $company['id'],
-                            'vendor_id' => $vendorKey
+                            'vendor_id' => $vendorKey,
                         ]);
-
                 }
-
             }
-
         });
-
-
     }
 }

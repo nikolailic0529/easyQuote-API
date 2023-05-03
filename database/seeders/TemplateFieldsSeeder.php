@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 class TemplateFieldsSeeder extends Seeder
 {
@@ -16,7 +15,7 @@ class TemplateFieldsSeeder extends Seeder
      */
     public function run()
     {
-        $seeds = json_decode(file_get_contents(__DIR__ . '/models/template_fields.json'), true);
+        $seeds = json_decode(file_get_contents(__DIR__.'/models/template_fields.json'), true);
 
         $types = DB::table('template_field_types')->whereIn('name', array_unique(Arr::pluck($seeds, 'type')))->pluck('id', 'name');
 
@@ -28,7 +27,7 @@ class TemplateFieldsSeeder extends Seeder
                 'is_required' => $attributes['is_required'] ?? false,
                 'is_system' => true,
                 'order' => $attributes['order'],
-                'template_field_type_id' => $types[$attributes['type']]
+                'template_field_type_id' => $types[$attributes['type']],
             ];
         }, $seeds);
 
@@ -40,7 +39,7 @@ class TemplateFieldsSeeder extends Seeder
             );
 
             DB::commit();
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
             throw $e;

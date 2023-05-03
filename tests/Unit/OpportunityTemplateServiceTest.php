@@ -2,12 +2,15 @@
 
 namespace Tests\Unit;
 
-use App\Services\Opportunity\OpportunityTemplateService;
+use App\Domain\Worldwide\Services\Opportunity\OpportunityTemplateService;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group opportunity
+ */
 class OpportunityTemplateServiceTest extends TestCase
 {
     /**
@@ -15,6 +18,7 @@ class OpportunityTemplateServiceTest extends TestCase
      * if the template schema file is missing.
      *
      * @return void
+     *
      * @throws BindingResolutionException
      */
     public function testWritesDefaultTemplateSchemaWhenConstructs()

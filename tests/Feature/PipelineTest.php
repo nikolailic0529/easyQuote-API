@@ -2,22 +2,23 @@
 
 namespace Tests\Feature;
 
-use App\Models\Pipeline\Pipeline;
+use App\Domain\Pipeline\Models\Pipeline;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class PipelineTest extends TestCase
 {
     use DatabaseTransactions;
 
     /**
      * Test an ability to view paginated pipeline entities.
-     *
-     * @return void
      */
-    public function testCanViewPaginatedPipelines()
+    public function testCanViewPaginatedPipelines(): void
     {
         $this->authenticateApi();
 
@@ -36,12 +37,12 @@ class PipelineTest extends TestCase
                         'permissions' => [
                             'view',
                             'update',
-                            'delete'
+                            'delete',
                         ],
 
                         'created_at',
-                        'updated_at'
-                    ]
+                        'updated_at',
+                    ],
                 ],
                 'meta' => [
                     'current_page',
@@ -49,8 +50,8 @@ class PipelineTest extends TestCase
                     'last_page',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->getJson('api/pipelines?order_by_created_at=desc')->assertOk();
@@ -63,10 +64,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view list of pipeline entities.
-     *
-     * @return void
      */
-    public function testCanViewListOfPipelines()
+    public function testCanViewListOfPipelines(): void
     {
         $this->authenticateApi();
 
@@ -78,8 +77,9 @@ class PipelineTest extends TestCase
                     'id',
                     'space_id',
                     'pipeline_name',
-                    'is_default'
-                ]
+                    'is_default',
+                    'opportunity_form_exists',
+                ],
             ]);
 
         // Test with includes.
@@ -98,16 +98,16 @@ class PipelineTest extends TestCase
                             'pipeline_id',
                             'stage_name',
                             'stage_order',
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ]);
 
         // Test with filtering by space.
         $this->getJson('api/pipelines/list?'.Arr::query([
                 'filter' => [
                     'space_id' => SP_EPD,
-                ]
+                ],
             ]))
 //            ->dump()
             ->assertOk()
@@ -117,16 +117,14 @@ class PipelineTest extends TestCase
                     'space_id',
                     'pipeline_name',
                     'is_default',
-                ]
+                ],
             ]);
     }
 
     /**
      * Test an ability to view list of pipeline entities with opportunity form.
-     *
-     * @return void
      */
-    public function testCanViewListOfPipelinesWithoutOpportunityForm()
+    public function testCanViewListOfPipelinesWithoutOpportunityForm(): void
     {
         factory(Pipeline::class, 10)->create();
 
@@ -138,17 +136,15 @@ class PipelineTest extends TestCase
             ->assertJsonStructure([
                 '*' => [
                     'id',
-                    'pipeline_name'
-                ]
+                    'pipeline_name',
+                ],
             ]);
     }
 
     /**
      * Test an ability to create a new pipeline entity.
-     *
-     * @return void
      */
-    public function testCanCreateNewPipeline()
+    public function testCanCreateNewPipeline(): void
     {
         $this->authenticateApi();
 
@@ -158,9 +154,10 @@ class PipelineTest extends TestCase
             'pipeline_stages' => [
                 [
                     'id' => null,
-                    'stage_name' => Str::random(40)
-                ]
-            ]
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 10,
+                ],
+            ],
         ])
 //            ->dump()
             ->assertCreated()
@@ -173,20 +170,18 @@ class PipelineTest extends TestCase
                         'id',
                         'pipeline_id',
                         'stage_name',
-                        'stage_order'
-                    ]
+                        'stage_order',
+                    ],
                 ],
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
     }
 
     /**
      * Test an ability to create an existing pipeline entity.
-     *
-     * @return void
      */
-    public function testCanUpdateExistingPipeline()
+    public function testCanUpdateExistingPipeline(): void
     {
         $this->authenticateApi();
 
@@ -196,9 +191,10 @@ class PipelineTest extends TestCase
             'pipeline_stages' => [
                 [
                     'id' => null,
-                    'stage_name' => Str::random(40)
-                ]
-            ]
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 12.5,
+                ],
+            ],
         ])
 //            ->dump()
             ->assertCreated()
@@ -211,11 +207,11 @@ class PipelineTest extends TestCase
                         'id',
                         'pipeline_id',
                         'stage_name',
-                        'stage_order'
-                    ]
+                        'stage_order',
+                    ],
                 ],
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
 
         $updatePipelineData = [
@@ -224,14 +220,15 @@ class PipelineTest extends TestCase
             'pipeline_stages' => [
                 [
                     'id' => null,
-                    'stage_name' => Str::random(40)
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 1,
                 ],
                 [
                     'id' => $existingStageKey = $response->json('pipeline_stages.0.id'),
-                    'stage_name' => Str::random(40)
+                    'stage_name' => Str::random(40),
+                    'stage_percentage' => 100,
                 ],
-            ]
-
+            ],
         ];
 
         $response = $this->patchJson('api/pipelines/'.$response->json('id'), $updatePipelineData)
@@ -246,11 +243,11 @@ class PipelineTest extends TestCase
                         'id',
                         'pipeline_id',
                         'stage_name',
-                        'stage_order'
-                    ]
+                        'stage_order',
+                    ],
                 ],
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
 
         $this->assertNotEmpty($response->json('pipeline_stages'));
@@ -272,14 +269,12 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to batch put pipeline entities.
-     *
-     * @return void
      */
-    public function testCanBatchPutPipelines()
+    public function testCanBatchPutPipelines(): void
     {
         $this->authenticateApi();
 
-        /** @var Pipeline $existingPipeline */
+        /** @var \App\Domain\Pipeline\Models\Pipeline $existingPipeline */
         $existingPipeline = factory(Pipeline::class)->create();
 
         $pipelinesData = [
@@ -290,8 +285,9 @@ class PipelineTest extends TestCase
                 'pipeline_stages' => [
                     [
                         'id' => null,
-                        'stage_name' => Str::random(40)
-                    ]
+                        'stage_name' => Str::random(40),
+                        'stage_percentage' => 1,
+                    ],
                 ],
                 'is_default' => false,
             ],
@@ -302,15 +298,16 @@ class PipelineTest extends TestCase
                 'pipeline_stages' => [
                     [
                         'id' => null,
-                        'stage_name' => Str::random(40)
-                    ]
+                        'stage_name' => Str::random(40),
+                        'stage_percentage' => 1,
+                    ],
                 ],
                 'is_default' => true,
-            ]
+            ],
         ];
 
         $this->putJson('api/pipelines', [
-            'pipelines' => $pipelinesData
+            'pipelines' => $pipelinesData,
         ])
 //            ->dump()
             ->assertOk()
@@ -327,22 +324,19 @@ class PipelineTest extends TestCase
                             'stage_name',
                             'stage_order',
                             'created_at',
-                            'updated_at'
-                        ]
+                            'updated_at',
+                        ],
                     ],
                     'created_at',
-                    'updated_at'
-                ]
+                    'updated_at',
+                ],
             ]);
-
     }
 
     /**
      * Test an ability to mark pipeline entity as default.
-     *
-     * @return void
      */
-    public function testCanMarkPipelineAsDefault()
+    public function testCanMarkPipelineAsDefault(): void
     {
         $pipelines = factory(Pipeline::class, 2)->create();
 
@@ -355,20 +349,20 @@ class PipelineTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'is_default'
+                'is_default',
             ])
             ->assertJsonFragment([
-                'is_default' => true
+                'is_default' => true,
             ]);
 
         $this->getJson('api/pipelines/'.$pipelines[1]->getKey())
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'is_default'
+                'is_default',
             ])
             ->assertJsonFragment([
-                'is_default' => false
+                'is_default' => false,
             ]);
 
         $this->patchJson('api/pipelines/'.$pipelines[1]->getKey().'/default')
@@ -378,29 +372,27 @@ class PipelineTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'is_default'
+                'is_default',
             ])
             ->assertJsonFragment([
-                'is_default' => true
+                'is_default' => true,
             ]);
 
         $this->getJson('api/pipelines/'.$pipelines[0]->getKey())
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'is_default'
+                'is_default',
             ])
             ->assertJsonFragment([
-                'is_default' => false
+                'is_default' => false,
             ]);
     }
 
     /**
      * Test an ability to delete an existing pipeline entity.
-     *
-     * @return void
      */
-    public function testCanDeleteExistingPipeline()
+    public function testCanDeleteExistingPipeline(): void
     {
         $pipeline = factory(Pipeline::class)->create();
 
@@ -420,10 +412,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view opportunity form schema of an existing pipeline entity.
-     *
-     * @return void
      */
-    public function testCanViewOpportunityFormSchemaOfExistingPipeline()
+    public function testCanViewOpportunityFormSchemaOfExistingPipeline(): void
     {
         $this->authenticateApi();
 
@@ -433,8 +423,8 @@ class PipelineTest extends TestCase
             ->assertJsonStructure([
                 '*' => [
                     'id',
-                    'pipeline_name'
-                ]
+                    'pipeline_name',
+                ],
             ]);
 
         $this->assertNotEmpty($pipelineKey = $response->json('0.id'));
@@ -443,7 +433,7 @@ class PipelineTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'form_data'
+                'form_data',
             ]);
 
         $this->assertIsArray($response->json('form_data'));
@@ -451,10 +441,8 @@ class PipelineTest extends TestCase
 
     /**
      * Test an ability to view opportunity form schema of the default pipeline entity.
-     *
-     * @return void
      */
-    public function testCanViewOpportunityFormSchemaOfDefaultPipeline()
+    public function testCanViewOpportunityFormSchemaOfDefaultPipeline(): void
     {
         $this->authenticateApi();
 
@@ -462,18 +450,18 @@ class PipelineTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'form_data'
+                'form_data',
+                'sidebar_0',
             ]);
 
         $this->assertIsArray($response->json('form_data'));
+        $this->assertIsArray($response->json('sidebar_0'));
     }
 
     /**
      * Test an ability to view the default pipeline entity.
-     *
-     * @return void
      */
-    public function testCanViewDefaultPipeline()
+    public function testCanViewDefaultPipeline(): void
     {
         $this->authenticateApi();
 
@@ -489,18 +477,18 @@ class PipelineTest extends TestCase
                         'id',
                         'pipeline_id',
                         'stage_name',
-                        'stage_order'
-                    ]
+                        'stage_order',
+                    ],
                 ],
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
     }
 
     /**
      * Test an ability to view the specified pipeline entity.
      */
-    public function testCanViewSpecifiedPipeline()
+    public function testCanViewSpecifiedPipeline(): void
     {
         $pipeline = factory(Pipeline::class)->create();
 
@@ -517,11 +505,11 @@ class PipelineTest extends TestCase
                         'id',
                         'pipeline_id',
                         'stage_name',
-                        'stage_order'
-                    ]
+                        'stage_order',
+                    ],
                 ],
                 'created_at',
-                'updated_at'
+                'updated_at',
             ]);
     }
 }

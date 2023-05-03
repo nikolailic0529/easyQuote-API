@@ -4,7 +4,6 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Default Log Channel
@@ -120,6 +119,78 @@ return [
             'permission' => 0777
         ],
 
+        'opportunities' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/opportunities.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'pipeliner' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/pipeliner.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'pipeliner-requests' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/pipeliner-requests.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'tasks' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/tasks.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'appointments' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/appointments.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'addresses' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/addresses.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'companies' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/companies.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'google-requests' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/google-requests.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
+        'search' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/search.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
@@ -158,6 +229,7 @@ return [
             'with' => [
                 'stream' => 'php://stdout',
             ],
+            'level' => 'debug',
         ],
 
         'syslog' => [
@@ -170,5 +242,4 @@ return [
             'level' => 'debug',
         ],
     ],
-
 ];

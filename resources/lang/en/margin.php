@@ -1,11 +1,8 @@
 <?php
 
 return [
-    'types' => [
-        'By Country'
+    'validation' => [
+        'vendor_exists' => 'The chosen vendor should belong to the chosen country.',
+        'value_unique' => 'The same margin already exists.',
     ],
-    'methods' => [
-        'No Margin',
-        'Standard'
-    ]
 ];

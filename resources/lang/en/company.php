@@ -2,9 +2,9 @@
 
 return [
     'types' => [
-        'Internal', 'External'
+        'Internal', 'External',
     ],
     'categories' => [
-        'End User', 'Reseller', 'Business Partner'
-    ]
+        'End User', 'Reseller', 'Business Partner',
+    ],
 ];

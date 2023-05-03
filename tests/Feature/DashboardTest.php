@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Enum\QuoteStatus;
-use App\Models\Data\Country;
-use App\Models\Quote\Quote;
-use App\Models\Quote\QuoteTotal;
-use App\Models\Role;
-use App\Models\User;
+use App\Domain\Authorization\Models\Role;
+use App\Domain\Country\Models\Country;
+use App\Domain\Rescue\Models\Quote;
+use App\Domain\Stats\Models\QuoteTotal;
+use App\Domain\User\Models\User;
+use App\Domain\Worldwide\Enum\QuoteStatus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -41,12 +42,12 @@ class DashboardTest extends TestCase
                 'opportunities_count',
                 'opportunities_value',
                 'lost_opportunities_count',
-                'lost_opportunities_value'
+                'lost_opportunities_value',
             ],
             'period' => [
-                'start_date', 'end_date'
+                'start_date', 'end_date',
             ],
-            'base_currency'
+            'base_currency',
         ];
 
         $response = $this->getJson('api/stats')
@@ -108,10 +109,10 @@ class DashboardTest extends TestCase
      */
     public function testCanViewStatsAsSalesManager()
     {
-        /** @var Role $role */
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
         /** @var User $user */
-        $user = factory(User::class)->create();
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
@@ -133,12 +134,12 @@ class DashboardTest extends TestCase
                 'opportunities_count',
                 'opportunities_value',
                 'lost_opportunities_count',
-                'lost_opportunities_value'
+                'lost_opportunities_value',
             ],
             'period' => [
-                'start_date', 'end_date'
+                'start_date', 'end_date',
             ],
-            'base_currency'
+            'base_currency',
         ];
 
         $response = $this->getJson('api/stats')
@@ -195,7 +196,9 @@ class DashboardTest extends TestCase
 
     public function testCanViewStatsOfUserOwnEntities()
     {
-        /** @var Role $role */
+        DB::table('system_settings')->where('key', 'base_currency')->update(['value' => 'GBP']);
+
+        /** @var \App\Domain\Authorization\Models\Role $role */
         $role = factory(Role::class)->create();
 
         $role->syncPermissions([
@@ -239,14 +242,14 @@ class DashboardTest extends TestCase
             'view_quote_files',
             'delete_own_hpe_contracts']);
 
-        /** @var User $user */
-        $user = factory(User::class)->create();
+        /** @var \App\Domain\User\Models\User $user */
+        $user = User::factory()->create();
 
         $user->syncRoles($role);
 
         $this->actingAs($user, 'api');
 
-        /** @var Quote $quote */
+        /** @var \App\Domain\Rescue\Models\Quote $quote */
         $quote = factory(Quote::class)->create([
             'user_id' => $user->getKey(),
             'submitted_at' => null,
@@ -286,12 +289,12 @@ class DashboardTest extends TestCase
                     'lost_opportunities_count',
                     'lost_opportunities_value',
                     'lost_opportunities_count',
-                    'lost_opportunities_value'
+                    'lost_opportunities_value',
                 ],
                 'period' => [
-                    'start_date', 'end_date'
+                    'start_date', 'end_date',
                 ],
-                'base_currency'
+                'base_currency',
             ]);
 
         $validateTotalsFromResponse = function (TestResponse $response) {

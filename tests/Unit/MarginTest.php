@@ -2,35 +2,33 @@
 
 namespace Tests\Unit;
 
-use App\Models\Data\Country;
-use App\Models\Vendor;
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeUser,
-    AssertsListing,
-};
-use App\Models\Quote\Margin\CountryMargin;
+use App\Domain\Country\Models\Country;
+use App\Domain\Margin\Models\CountryMargin;
+use App\Domain\Vendor\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use Tests\TestCase;
+use Tests\Unit\Traits\AssertsListing;
 
 /**
  * @group build
  */
 class MarginTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     protected array $truncatableTables = [
-        'country_margins'
+        'country_margins',
     ];
 
     /**
-     * Test Margin listing.
-     *
-     * @return void
+     * Test an ability to view margin listing.
      */
-    public function testMarginListing()
+    public function testCanViewMarginListing(): void
     {
+        $this->authenticateApi();
+
         $response = $this->getJson(url('api/margins'));
 
         $this->assertListing($response);
@@ -39,19 +37,54 @@ class MarginTest extends TestCase
             'search' => Str::random(10),
             'order_by_created_at' => 'asc',
             'order_by_value' => 'asc',
-            'order_by_country' => 'asc'
+            'order_by_country' => 'asc',
         ]);
 
-        $this->getJson(url('api/margins?' . $query))->assertOk();
+        $this->getJson(url('api/margins?'.$query))->assertOk();
     }
 
     /**
-     * Test Margin creating with valid attributes.
-     *
-     * @return void
+     * Test an ability to view an existing margin.
      */
-    public function testMarginCreating()
+    public function testCanViewMargin(): void
     {
+        $this->authenticateApi();
+
+        $margin = factory(CountryMargin::class)->create();
+
+        $this->getJson('api/margins/'.$margin->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'value',
+                'is_fixed',
+                'vendor_id',
+                'vendor' => [
+                    'id',
+                    'name',
+                ],
+                'country_id',
+                'country' => [
+                    'id',
+                    'name',
+                ],
+                'quote_type',
+                'method',
+                'user_id',
+                'created_at',
+                'updated_at',
+                'activated_at',
+            ]);
+    }
+
+    /**
+     * Test an ability to create a margin with valid attributes.
+     */
+    public function testCanCreateMarginWithValidAttributes(): void
+    {
+        $this->authenticateApi();
+
         $attributes = factory(CountryMargin::class)->raw();
 
         $keys = array_diff(array_keys($attributes), ['user_id']);
@@ -62,28 +95,28 @@ class MarginTest extends TestCase
     }
 
     /**
-     * Test Margin creating with percentage value greater than 100.
-     *
-     * @return void
+     * Test an ability to create a margin with value greater than 100.
      */
-    public function testMarginCreatingWithValueGreaterThan100()
+    public function testCanNotCreateMarginWithValueGreaterThan100(): void
     {
+        $this->authenticateApi();
+
         $attributes = factory(CountryMargin::class)->raw(['value' => 150]);
 
         $this->postJson(url('api/margins'), $attributes)
             ->assertStatus(422)
             ->assertJsonStructure([
-                'Error' => ['original' => ['value']]
+                'Error' => ['original' => ['value']],
             ]);
     }
 
     /**
-     * Test Margin creating with Country non-related to the Vendor.
-     *
-     * @return void
+     * Test an ability to create a margin with country non-related to the selected vendor.
      */
-    public function testMarginCreatingWithCountryNonRelatedToVendor()
+    public function testCanNotCreateMarginWithCountryNonRelatedToVendor(): void
     {
+        $this->authenticateApi();
+
         $vendor = factory(Vendor::class)->create();
 
         $country = Country::query()->whereNotIn('id', $vendor->countries->pluck('id'))->first();
@@ -96,12 +129,12 @@ class MarginTest extends TestCase
     }
 
     /**
-     * Test Margin Updating.
-     *
-     * @return void
+     * Test an ability to update a margin.
      */
-    public function testMarginUpdating()
+    public function testCanUpdateMargin(): void
     {
+        $this->authenticateApi();
+
         $margin = factory(CountryMargin::class)->create();
 
         $attributes = factory(CountryMargin::class)->raw();
@@ -114,12 +147,12 @@ class MarginTest extends TestCase
     }
 
     /**
-     * Test Margin Activating.
-     *
-     * @return void
+     * Test an ability to mark margin as active.
      */
-    public function testMarginActivating()
+    public function testCanMarkMarkAsActive(): void
     {
+        $this->authenticateApi();
+
         $margin = tap(factory(CountryMargin::class)->create())->deactivate();
 
         $this->putJson(url("api/margins/activate/{$margin->id}"))
@@ -129,12 +162,12 @@ class MarginTest extends TestCase
     }
 
     /**
-     * Test Margin Deactivating.
-     *
-     * @return void
+     * Test an ability to mark margin as inactive.
      */
-    public function testMarginDeactivating()
+    public function testCanMarkMarginAsInactive(): void
     {
+        $this->authenticateApi();
+
         $margin = tap(factory(CountryMargin::class)->create())->activate();
 
         $this->putJson(url("api/margins/deactivate/{$margin->id}"))
@@ -145,12 +178,12 @@ class MarginTest extends TestCase
     }
 
     /**
-     * Test Margin Deleting.
-     *
-     * @return void
+     * Test an ability to delete margin.
      */
-    public function testMarginDeleting()
+    public function testCanDeleteMargin(): void
     {
+        $this->authenticateApi();
+
         $margin = factory(CountryMargin::class)->create();
 
         $this->deleteJson(url("api/margins/{$margin->id}"))

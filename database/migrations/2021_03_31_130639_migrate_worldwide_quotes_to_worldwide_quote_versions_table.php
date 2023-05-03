@@ -16,7 +16,7 @@ class MigrateWorldwideQuotesToWorldwideQuoteVersionsTable extends Migration
 
         DB::transaction(function () use ($worldwideQuotes) {
             foreach ($worldwideQuotes as $quote) {
-                $versionId = (string)\Webpatser\Uuid\Uuid::generate(4);
+                $versionId = (string) \Webpatser\Uuid\Uuid::generate(4);
 
                 DB::table('worldwide_quote_versions')
                     ->insert([
@@ -53,21 +53,21 @@ class MigrateWorldwideQuotesToWorldwideQuoteVersionsTable extends Migration
                         'created_at' => $quote->created_at,
                         'updated_at' => $quote->updated_at,
                         'deleted_at' => $quote->deleted_at,
-                        'assets_migrated_at' => $quote->assets_migrated_at
+                        'assets_migrated_at' => $quote->assets_migrated_at,
                     ]);
 
                 DB::table('worldwide_quote_assets')
                     ->where('worldwide_quote_id', $quote->id)
                     ->update([
                         'worldwide_quote_id' => $versionId,
-                        'worldwide_quote_type' => '9d7c91c4-5308-4a40-b49e-f10ae552e480'
+                        'worldwide_quote_type' => '9d7c91c4-5308-4a40-b49e-f10ae552e480',
                     ]);
 
                 DB::table('worldwide_distributions')
                     ->where('worldwide_quote_id', $quote->id)
                     ->update([
                         'worldwide_quote_id' => $versionId,
-                        'worldwide_quote_type' => '9d7c91c4-5308-4a40-b49e-f10ae552e480'
+                        'worldwide_quote_type' => '9d7c91c4-5308-4a40-b49e-f10ae552e480',
                     ]);
 
                 DB::table('worldwide_quotes')
@@ -84,6 +84,5 @@ class MigrateWorldwideQuotesToWorldwideQuoteVersionsTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

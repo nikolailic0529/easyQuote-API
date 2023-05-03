@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
      * If set to false, no activities will be saved to the database.
      */
@@ -35,7 +34,7 @@ return [
      * It should be implements the Spatie\Activitylog\Contracts\Activity interface
      * and extend Illuminate\Database\Eloquent\Model.
      */
-    'activity_model' => \App\Models\System\Activity::class,
+    'activity_model' => \App\Domain\Activity\Models\Activity::class,
 
     /*
      * This is the name of the table that will be created by the migration and
@@ -52,39 +51,41 @@ return [
 
     'subject_types' => [
         'quote' => [
-            \App\Models\Quote\Quote::class,
-            \App\Models\Quote\QuoteVersion::class
+            \App\Domain\Rescue\Models\Quote::class,
+            \App\Domain\Rescue\Models\QuoteVersion::class,
         ],
-        'worldwide_quote' => \App\Models\Quote\WorldwideQuote::class,
-        'opportunity' => \App\Models\Opportunity::class,
-        'quote_note' => \App\Models\Quote\QuoteNote::class,
-        'task' => \App\Models\Task::class,
+        'worldwide_quote' => \App\Domain\Worldwide\Models\WorldwideQuote::class,
+        'opportunity' => \App\Domain\Worldwide\Models\Opportunity::class,
+//        'quote_note' => \App\Models\Note\QuoteNote::class,
+        'note' => \App\Domain\Note\Models\Note::class,
+        'task' => \App\Domain\Task\Models\Task::class,
+        'appointment' => \App\Domain\Appointment\Models\Appointment::class,
         'contract' => [
-            \App\Models\Quote\Contract::class,
-            \App\Models\HpeContract::class,
+            \App\Domain\Rescue\Models\Contract::class,
+            \App\Domain\HpeContract\Models\HpeContract::class,
         ],
-        'customer' => \App\Models\Customer\Customer::class,
+        'customer' => \App\Domain\Rescue\Models\Customer::class,
         'discount' => [
-            \App\Models\Quote\Discount\MultiYearDiscount::class,
-            \App\Models\Quote\Discount\PrePayDiscount::class,
-            \App\Models\Quote\Discount\PromotionalDiscount::class,
-            \App\Models\Quote\Discount\SND::class
+            \App\Domain\Discount\Models\MultiYearDiscount::class,
+            \App\Domain\Discount\Models\PrePayDiscount::class,
+            \App\Domain\Discount\Models\PromotionalDiscount::class,
+            \App\Domain\Discount\Models\SND::class,
         ],
-        'margin' => \App\Models\Quote\Margin\CountryMargin::class,
-        'vendor' => \App\Models\Vendor::class,
-        'company' => \App\Models\Company::class,
+        'margin' => \App\Domain\Margin\Models\CountryMargin::class,
+        'vendor' => \App\Domain\Vendor\Models\Vendor::class,
+        'company' => \App\Domain\Company\Models\Company::class,
         'template' => [
-            \App\Models\Template\QuoteTemplate::class,
-            \App\Models\Template\ContractTemplate::class
+            \App\Domain\Rescue\Models\QuoteTemplate::class,
+            \App\Domain\Rescue\Models\ContractTemplate::class,
         ],
-        'country' => \App\Models\Data\Country::class,
-        'address' => \App\Models\Address::class,
-        'contact' => \App\Models\Contact::class,
-        'user' => \App\Models\User::class,
-        'role' => \App\Models\Role::class,
-        'setting' => \App\Models\System\SystemSetting::class,
-        'importable_column' => \App\Models\QuoteFile\ImportableColumn::class,
-        'invitation' => \App\Models\Collaboration\Invitation::class
+        'country' => \App\Domain\Country\Models\Country::class,
+        'address' => \App\Domain\Address\Models\Address::class,
+        'contact' => \App\Domain\Contact\Models\Contact::class,
+        'user' => \App\Domain\User\Models\User::class,
+        'role' => \App\Domain\Authorization\Models\Role::class,
+        'setting' => \App\Domain\Settings\Models\SystemSetting::class,
+        'importable_column' => \App\Domain\QuoteFile\Models\ImportableColumn::class,
+        'invitation' => \App\Domain\Invitation\Models\Invitation::class,
     ],
     'types' => [
         'created',
@@ -100,7 +101,7 @@ return [
         'created_version',
         'deleted_version',
         'authenticated',
-        'unauthenticated'
+        'unauthenticated',
     ],
     'periods' => [
         'today',
@@ -109,6 +110,6 @@ return [
         'last_week',
         'this_month',
         'last_month',
-        'this_year'
-    ]
+        'this_year',
+    ],
 ];

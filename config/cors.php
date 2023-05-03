@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
      * You can enable CORS for 1 or multiple paths.
      * Example: ['api/*']
@@ -42,5 +41,4 @@ return [
      * Sets the Access-Control-Allow-Credentials header.
      */
     'supports_credentials' => true,
-
 ];

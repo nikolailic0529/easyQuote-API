@@ -52,7 +52,7 @@
     "grand_total": {
         "key": "grand_total",
         "label": "Grand Total",
-        "value": "Grand Total"
+        "value": "Total (excl. Tax)"
     },
     "service_sku": {
         "key": "service_sku",

@@ -21,7 +21,7 @@ class CreateWorldwideCustomersTable extends Migration
             $table->string('customer_name')->comment('Customer name');
             $table->string('rfq_number')->comment('Request for quote number');
             $table->string('source')->comment('Customer Source');
-            
+
             $table->date('valid_until_date')->comment('Quote valid until date');
             $table->date('support_start_date')->comment('Quote support start date');
             $table->date('support_end_date')->comment('Quote support end date');

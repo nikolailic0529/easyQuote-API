@@ -19,12 +19,10 @@ class AddBuyCurrencyIdWorldwideQuoteVersionsTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('worldwide_quote_versions')
                 ->update([
-                    'buy_currency_id' => DB::raw('quote_currency_id')
+                    'buy_currency_id' => DB::raw('quote_currency_id'),
                 ]);
-
         });
     }
 

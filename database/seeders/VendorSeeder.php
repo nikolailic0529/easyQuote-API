@@ -10,6 +10,7 @@ class VendorSeeder extends Seeder
      * Run the database seeders.
      *
      * @return void
+     *
      * @throws \Throwable
      */
     public function run()
@@ -25,7 +26,7 @@ class VendorSeeder extends Seeder
                 ->all();
 
             return array_merge($vendor, [
-                'country_model_keys' => $countryModelKeys
+                'country_model_keys' => $countryModelKeys,
             ]);
         }, $vendors);
 
@@ -34,7 +35,6 @@ class VendorSeeder extends Seeder
             ->pluck('id');
 
         $connection->transaction(function () use ($countries, $connection, $vendors) {
-
             foreach ($vendors as $vendor) {
                 $connection->table('vendors')
                     ->insertOrIgnore([
@@ -44,19 +44,17 @@ class VendorSeeder extends Seeder
                         'is_system' => true,
                         'created_at' => now(),
                         'updated_at' => now(),
-                        'activated_at' => now()
+                        'activated_at' => now(),
                     ]);
 
                 foreach ($countries as $countryModelKey) {
                     $connection->table('country_vendor')
                         ->insertOrIgnore([
                             'vendor_id' => $vendor['id'],
-                            'country_id' => $countryModelKey
+                            'country_id' => $countryModelKey,
                         ]);
                 }
-
             }
-
         });
     }
 }

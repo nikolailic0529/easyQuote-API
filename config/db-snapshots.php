@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
      * The name of the disk on which the snapshots are stored.
      */
@@ -16,7 +15,7 @@ return [
     /*
      * The directory where temporary files will be stored.
      */
-    'temporary_directory_path' => env('STORAGE_PATH', storage_path('app')) . '/temp',
+    'temporary_directory_path' => env('STORAGE_PATH', storage_path('app')).'/temp',
 
     /*
      * Create dump files that are gzipped

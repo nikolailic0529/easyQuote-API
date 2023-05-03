@@ -1,25 +1,35 @@
 <?php
 
-/** @var \Illuminate\Database\Eloquent\Factory $factory */
+namespace Database\Factories;
 
-use App\Models\SalesOrder;
-use Faker\Generator as Faker;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\SalesOrderTemplate;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
-$factory->define(SalesOrder::class, function (Faker $faker) {
-    $quote = factory(\App\Models\Quote\WorldwideQuote::class)->create([
-        'contract_type_id' => CT_CONTRACT,
-        'submitted_at' => now()
-    ]);
-    $salesOrderTemplate = factory(\App\Models\Template\SalesOrderTemplate::class)->create([
-        'business_division_id' => BD_WORLDWIDE,
-        'contract_type_id' => CT_CONTRACT
-    ]);
+class SalesOrderFactory extends Factory
+{
+    protected $model = SalesOrder::class;
 
-    return [
-        'worldwide_quote_id' => $quote->getKey(),
-        'order_number' => sprintf("EPD-WW-DP-CSO%'.07d", $quote->sequence_number),
-        'sales_order_template_id' => $salesOrderTemplate->getKey(),
-        'vat_number' => \Illuminate\Support\Str::random(40),
-        'customer_po' => \Illuminate\Support\Str::random(35)
-    ];
-});
+    public function definition(): array
+    {
+        return [
+            'worldwide_quote_id' => WorldwideQuote::factory()->state([
+                'submitted_at' => now(),
+                'contract_type_id' => CT_CONTRACT,
+            ]),
+            'order_number' => static function (array $attributes): string {
+                return sprintf(
+                    "EPD-WW-DP-CSO%'.07d",
+                    WorldwideQuote::query()
+                        ->whereKey($attributes['worldwide_quote_id'])
+                        ->value('sequence_number')
+                );
+            },
+            'sales_order_template_id' => SalesOrderTemplate::factory(),
+            'vat_number' => Str::random(40),
+            'customer_po' => Str::random(35),
+        ];
+    }
+}

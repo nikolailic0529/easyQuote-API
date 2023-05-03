@@ -2,17 +2,17 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use App\Events\{
-    MaintenanceCompleted,
-    MaintenanceScheduled,
-    MaintenanceStarted,
-};
-use App\Events\Slack\Sent;
-use App\Jobs\UpMaintenance;
-use App\Models\{User, System\Build};
+use App\Domain\Build\Models\Build;
+use App\Domain\Maintenance\Events\MaintenanceCompleted;
+use App\Domain\Maintenance\Events\MaintenanceScheduled;
+use App\Domain\Maintenance\Events\MaintenanceStarted;
+use App\Domain\Maintenance\Jobs\DownIntoMaintenanceMode;
+use App\Domain\Slack\Events\Sent;
+use App\Domain\User\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Carbon, Facades\Event};
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
+use Tests\TestCase;
 
 class MaintenanceTest extends TestCase
 {
@@ -37,10 +37,10 @@ class MaintenanceTest extends TestCase
 
         Build::latest()->firstOrCreate([
             'start_time' => $startTime,
-            'end_time' => $endTime
+            'end_time' => $endTime,
         ]);
 
-        UpMaintenance::dispatchNow(
+        DownIntoMaintenanceMode::dispatchNow(
             $startTime,
             $endTime,
             $autoComplete

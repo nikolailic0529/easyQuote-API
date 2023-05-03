@@ -13,7 +13,7 @@ trait AssertsListing
 
         if (Arr::has($json, 'meta')) {
             $this->assertCollectionListing($response);
-            
+
             return;
         }
 
@@ -30,7 +30,7 @@ trait AssertsListing
                 'to',
                 'total',
                 'per_page',
-                'last_page'
+                'last_page',
             ]);
     }
 
@@ -45,8 +45,8 @@ trait AssertsListing
                     'to',
                     'total',
                     'per_page',
-                    'last_page'
-                ]
+                    'last_page',
+                ],
             ]);
     }
 }

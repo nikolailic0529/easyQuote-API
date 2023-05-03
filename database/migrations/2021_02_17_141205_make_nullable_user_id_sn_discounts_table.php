@@ -33,7 +33,6 @@ class MakeNullableUserIdSnDiscountsTable extends Migration
         });
 
         Schema::table('sn_discounts', function (Blueprint $table) {
-
             $table->uuid('user_id')->nullable(false)->change();
 
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete()->cascadeOnUpdate();

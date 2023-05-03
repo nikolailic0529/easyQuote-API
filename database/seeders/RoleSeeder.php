@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\{Company, Role};
+use App\Domain\Authorization\Models\{Role};
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Seeder;
 
@@ -12,9 +12,10 @@ class RoleSeeder extends Seeder
      * Run the database seeders.
      *
      * @return void
+     *
      * @throws \Throwable
      */
-    public function run()
+    public function run(): void
     {
         /** @var array $seeds */
         $seeds = require database_path('seeders/models/roles.php');
@@ -23,26 +24,22 @@ class RoleSeeder extends Seeder
         $connection = $this->container['db.connection'];
 
         foreach ($seeds as $seed) {
-
             $role = Role::query()
                 ->where('name', $seed['name'])
                 ->where('is_system', true)
                 ->first();
 
-            /** @var Role $role */
-            $role ??= tap(new Role(), function (Role $role) use ($connection, $seed) {
-                $role->name = $seed['name'];
-                $role->is_system = true;
+            $role ??= new Role();
+            $role->name = $seed['name'];
+            $role->is_system = true;
+            if (isset($seed['access'])) {
+                $role->access = $seed['access'];
+            }
 
-                $connection->transaction(fn() => $role->save());
+            $connection->transaction(static function () use ($role, $seed): void {
+                $role->save();
+                $role->syncPermissions($seed['permissions']);
             });
-
-            $connection->transaction(fn() => $role->syncPermissions($seed['permissions']));
-
-            $companyIDs = Company::query()->whereIn('short_code', $seed['companies'])->get()->modelKeys();
-
-            $connection->transaction(fn() => $role->companies()->sync($companyIDs));
-
         }
     }
 }

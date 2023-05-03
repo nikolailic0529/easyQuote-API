@@ -2,12 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\{
-    Address,
-    Contact,
-    Customer\Customer,
-    Data\Country
-};
+use App\Domain\Address\Models\Address;
+use App\Domain\Contact\Models\Contact;
+use App\Domain\Country\Models\Country;
+use App\Domain\Rescue\Models\Customer;
 use Illuminate\Database\Seeder;
 
 class S4ContractSeeder extends Seeder
@@ -19,9 +17,9 @@ class S4ContractSeeder extends Seeder
      */
     public function run()
     {
-        $customers = json_decode(file_get_contents(__DIR__ . '/models/customers.json'), true);
+        $customers = json_decode(file_get_contents(__DIR__.'/models/customers.json'), true);
 
-        $addresses = head(json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true))['addresses'];
+        $addresses = head(json_decode(file_get_contents(__DIR__.'/models/customers_addresses.json'), true))['addresses'];
         $addresses = collect($addresses)->transform(function ($address) {
             $country_id = Country::code(data_get($address, 'country_code'))->firstOrFail()->id;
             data_set($address, 'country_id', $country_id);
@@ -29,22 +27,22 @@ class S4ContractSeeder extends Seeder
 
             return $address;
         })->keyBy('address_type');
-        $contacts = head(json_decode(file_get_contents(__DIR__ . '/models/customers_contacts.json'), true))['contacts'];
+        $contacts = head(json_decode(file_get_contents(__DIR__.'/models/customers_contacts.json'), true))['contacts'];
         $contacts = collect($contacts)->keyBy('contact_type');
 
         $addresses = collect([
             Address::type('Software')->firstOrCreate($addresses->get('Software'))->id,
-            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))->id
+            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))->id,
         ]);
 
         $contacts = collect([
             Contact::type('Software')->firstOrCreate($contacts->get('Software'))->id,
-            Contact::type('Hardware')->firstOrCreate($contacts->get('Hardware'))->id
+            Contact::type('Hardware')->firstOrCreate($contacts->get('Hardware'))->id,
         ]);
 
         collect($customers)->each(function ($customer) use ($addresses, $contacts) {
             collect()->times(100)->each(function ($time) use ($customer, $addresses, $contacts) {
-                $rfq = "CQ00" . mb_strtoupper(uniqid());
+                $rfq = 'CQ00'.mb_strtoupper(uniqid());
 
                 $customer = Customer::create([
                     'name' => $customer['name'],
@@ -54,7 +52,7 @@ class S4ContractSeeder extends Seeder
                     'support_end' => now()->create($customer['support_end'])->addDays(rand(101, 300))->toDateTimeString(),
                     'payment_terms' => $customer['payment_terms'],
                     'invoicing_terms' => $customer['invoicing_terms'],
-                    'service_levels' => json_encode($customer['service_level'])
+                    'service_levels' => json_encode($customer['service_level']),
                 ]);
 
                 $customer->addresses()->sync($addresses);

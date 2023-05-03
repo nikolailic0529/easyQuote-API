@@ -22,9 +22,9 @@ class UpdateCustomerContactsRelatedColumnsHpeContractsTable extends Migration
                 'pr_support_contact_name',
                 'pr_support_contact_phone',
             ]);
-            
+
             $table->json('sold_contact')->nullable()->comment('Customer Sold Contact');
-            $table->json('bill_contact')->nullable()->comment('Customer Bill Contact'); 
+            $table->json('bill_contact')->nullable()->comment('Customer Bill Contact');
             $table->json('hw_delivery_contact')->nullable()->comment('Customer HW Delivery Contact');
             $table->json('sw_delivery_contact')->nullable()->comment('Customer SW Delivery Contact');
             $table->json('pr_support_contact')->nullable()->comment('Customer Primary Support Contact');
@@ -48,7 +48,7 @@ class UpdateCustomerContactsRelatedColumnsHpeContractsTable extends Migration
                 'entitled_party_contact',
                 'end_customer_contact',
                 'sold_contact',
-                'bill_contact'
+                'bill_contact',
             ]);
 
             $table->string('hw_delivery_contact_name', 250)->nullable()->after('customer_country_code')->comment('Customer HW Delivery Contact Name');

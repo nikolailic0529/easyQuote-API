@@ -2,20 +2,18 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeUser,
-    AssertsListing
-};
-use App\Models\System\Notification;
+use App\Domain\Notification\Models\Notification;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
+use Tests\Unit\Traits\{AssertsListing};
 
 /**
  * @group build
  */
 class NotificationTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use AssertsListing;
+    use DatabaseTransactions;
 
     /**
      * Test Notification listing.
@@ -24,16 +22,18 @@ class NotificationTest extends TestCase
      */
     public function testNotificationListing()
     {
+        $this->authenticateApi();
+
         $response = $this->getJson(url('api/notifications'));
 
         $this->assertListing($response);
 
         $query = http_build_query([
             'order_by_created_at' => 'asc',
-            'order_by_priority' => 'asc'
+            'order_by_priority' => 'asc',
         ]);
 
-        $response = $this->getJson(url('api/companies?' . $query));
+        $response = $this->getJson(url('api/companies?'.$query));
 
         $this->assertListing($response);
     }
@@ -45,6 +45,8 @@ class NotificationTest extends TestCase
      */
     public function testLatestNotificationListing()
     {
+        $this->authenticateApi();
+
         $this->getJson(url('api/notifications/latest'))
             ->assertOk()
             ->assertJsonStructure(['data', 'total']);
@@ -57,6 +59,8 @@ class NotificationTest extends TestCase
      */
     public function testNotificationDeleting()
     {
+        $this->authenticateApi();
+
         $notification = $this->createFakeNotification();
 
         $this->deleteJson(url("api/notifications/{$notification->id}"))
@@ -73,6 +77,8 @@ class NotificationTest extends TestCase
      */
     public function testNotificationDeletingAll()
     {
+        $this->authenticateApi();
+
         $this->createFakeNotification();
 
         $this->deleteJson(url('api/notifications'))
@@ -85,7 +91,7 @@ class NotificationTest extends TestCase
                 'data' => [],
                 'total' => 0,
                 'read' => 0,
-                'unread' => 0
+                'unread' => 0,
             ]);
     }
 
@@ -96,6 +102,8 @@ class NotificationTest extends TestCase
      */
     public function testNotificationReading()
     {
+        $this->authenticateApi();
+
         $notification = $this->createFakeNotification();
 
         $this->putJson(url("api/notifications/{$notification->id}"))
@@ -107,6 +115,8 @@ class NotificationTest extends TestCase
 
     public function testNotificationReadingAll()
     {
+        $this->authenticateApi();
+
         $this->createFakeNotification();
 
         $this->putJson(url('api/notifications'))
@@ -123,10 +133,10 @@ class NotificationTest extends TestCase
     protected function createFakeNotification(): Notification
     {
         return notification()
-            ->for($this->user)
+            ->for($this->app['auth']->user())
             ->message('Test Notification')
             ->url(ui_route('users.profile'))
-            ->subject($this->user)
-            ->store();
+            ->subject($this->app['auth']->user())
+            ->push();
     }
 }

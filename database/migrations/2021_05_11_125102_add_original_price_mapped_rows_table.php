@@ -19,10 +19,8 @@ class AddOriginalPriceMappedRowsTable extends Migration
         });
 
         DB::transaction(function () {
-
             DB::table('mapped_rows')
-                ->update(['original_price' => DB::raw("coalesce((mapped_rows.price / (select worldwide_distributions.distribution_exchange_rate from worldwide_distributions where worldwide_distributions.distributor_file_id = mapped_rows.quote_file_id limit 1)), mapped_rows.price)")]);
-
+                ->update(['original_price' => DB::raw('coalesce((mapped_rows.price / (select worldwide_distributions.distribution_exchange_rate from worldwide_distributions where worldwide_distributions.distributor_file_id = mapped_rows.quote_file_id limit 1)), mapped_rows.price)')]);
         });
     }
 

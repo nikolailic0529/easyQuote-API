@@ -20,7 +20,7 @@ class CreateContractFieldColumnTable extends Migration
 
             $table->boolean('is_default_enabled')->default(false)->comment('Whether is default field value enabled');
             $table->string('default_value', 250)->nullable()->comment('Field default value');
-            
+
             $table->boolean('is_preview_visible')->default(true)->comment('Whether is field visible on preview screen');
 
             $table->string('sort')->nullable()->comment('Field sorting ascending/descending');

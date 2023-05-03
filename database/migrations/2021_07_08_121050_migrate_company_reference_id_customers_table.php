@@ -1,9 +1,7 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class MigrateCompanyReferenceIdCustomersTable extends Migration
 {
@@ -16,7 +14,7 @@ class MigrateCompanyReferenceIdCustomersTable extends Migration
     {
         $customers = DB::table('customers')
             ->whereNull('customers.deleted_at')
-            ->join('companies', function (\Illuminate\Database\Query\JoinClause $join) {
+            ->join('companies', function (Illuminate\Database\Query\JoinClause $join) {
                 $join->on('companies.name', 'customers.name')
                     ->whereNull('companies.deleted_at')
                     ->where('companies.type', 'External')
@@ -34,17 +32,12 @@ class MigrateCompanyReferenceIdCustomersTable extends Migration
         }
 
         DB::transaction(function () use ($customers) {
-
             foreach ($customers as $customer) {
-
                 DB::table('customers')
                     ->where('id', $customer->id)
                     ->update(['company_reference_id' => $customer->company_reference_id]);
-
             }
-
         });
-
     }
 
     /**
@@ -54,6 +47,5 @@ class MigrateCompanyReferenceIdCustomersTable extends Migration
      */
     public function down()
     {
-        //
     }
 }

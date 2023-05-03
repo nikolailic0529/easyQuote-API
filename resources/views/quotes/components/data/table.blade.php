@@ -1,4 +1,4 @@
-<table class="table table-striped table-bordered">
+<table class="table table-striped table-bordered" style="font-size:12px;">
     <thead>
         <tr>
             @each ('quotes.components.data.header', $data[$page_name]['rows_header'], 'header')

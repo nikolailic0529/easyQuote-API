@@ -35,3 +35,5 @@ patch.sh
 patch-uat.sh
 archive-changes.sh
 /docker
+rr
+.rr.yaml

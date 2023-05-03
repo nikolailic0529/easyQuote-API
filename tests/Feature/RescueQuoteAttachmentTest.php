@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Attachment;
-use App\Models\Quote\Quote;
+use App\Domain\Attachment\Models\Attachment;
+use App\Domain\Rescue\Models\Quote;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -15,12 +15,10 @@ class RescueQuoteAttachmentTest extends TestCase
 {
     /**
      * Test an ability to view a list of the existing attachments of quote.
-     *
-     * @return void
      */
-    public function testCanViewListOfAttachmentsOfQuote()
+    public function testCanViewListOfAttachmentsOfQuote(): void
     {
-        /** @var Quote $quote */
+        /** @var \App\Domain\Rescue\Models\Quote $quote */
         $quote = factory(Quote::class)->create();
 
         $attachments = factory(Attachment::class, 2)->create();
@@ -36,6 +34,7 @@ class RescueQuoteAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'parent_entity_type',
                         'filepath',
@@ -50,20 +49,16 @@ class RescueQuoteAttachmentTest extends TestCase
         $response->assertJsonCount(2, 'data');
 
         foreach ($attachments as $attachment) {
-
             $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
-
         }
     }
 
     /**
      * Test an ability to create a new attachment for quote.
-     *
-     * @return void
      */
-    public function testCanCreateNewAttachmentForQuote()
+    public function testCanCreateNewAttachmentForQuote(): void
     {
-        /** @var Quote $quote */
+        /** @var \App\Domain\Rescue\Models\Quote $quote */
         $quote = factory(Quote::class)->create();
 
         $file = UploadedFile::fake()->create(Str::random(40).'.txt', 1_000);
@@ -78,6 +73,7 @@ class RescueQuoteAttachmentTest extends TestCase
             ->assertCreated()
             ->assertJsonStructure([
                 'id',
+                'user',
                 'type',
                 'filepath',
                 'filename',
@@ -94,6 +90,7 @@ class RescueQuoteAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'filepath',
                         'filename',
@@ -110,7 +107,7 @@ class RescueQuoteAttachmentTest extends TestCase
     /**
      * Test an ability to delete an existing attachment of quote.
      */
-    public function testCanDeleteAttachmentOfQuote()
+    public function testCanDeleteAttachmentOfQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create();
@@ -128,6 +125,7 @@ class RescueQuoteAttachmentTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
+                        'user',
                         'type',
                         'filepath',
                         'filename',

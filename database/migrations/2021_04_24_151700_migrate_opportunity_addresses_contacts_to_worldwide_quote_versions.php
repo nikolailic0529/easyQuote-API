@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 class MigrateOpportunityAddressesContactsToWorldwideQuoteVersions extends Migration
 {
@@ -16,7 +14,6 @@ class MigrateOpportunityAddressesContactsToWorldwideQuoteVersions extends Migrat
         // Migrate addresses from opportunity entities
         // to the corresponding versions of worldwide quote entities.
         DB::transaction(function () {
-
             $addressPivotQuery = DB::table('opportunities')
                 ->select('address_opportunity.address_id as address_id', 'worldwide_quote_versions.id as worldwide_quote_version_id')
                 ->join('worldwide_quotes', 'worldwide_quotes.opportunity_id', 'opportunities.id')
@@ -34,7 +31,6 @@ class MigrateOpportunityAddressesContactsToWorldwideQuoteVersions extends Migrat
 
             DB::table('contact_worldwide_quote_version')
                 ->insertUsing(['contact_id', 'worldwide_quote_version_id'], $contactPivotQuery);
-
         });
     }
 
@@ -45,6 +41,5 @@ class MigrateOpportunityAddressesContactsToWorldwideQuoteVersions extends Migrat
      */
     public function down()
     {
-        //
     }
 }

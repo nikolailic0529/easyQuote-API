@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -46,7 +45,7 @@ return [
 
     'recaptcha' => [
         'skip_key' => env('RECAPTCHA_SKIP_KEY'),
-        'skip_enabled' => env('RECAPTCHA_SKIP_ENABLED', false)
+        'skip_enabled' => env('RECAPTCHA_SKIP_ENABLED', false),
     ],
 
     'recaptcha_v3' => [
@@ -65,7 +64,7 @@ return [
         'url' => env('VS_API_URL'),
 
         'token_route' => 'api/oauth/token',
-        'submit_sales_order_route' => 'nav-data',
+        'submit_sales_order_route' => 'eq-data',
         'check_sales_order_route' => 'bc-data/{id}',
         'cancel_sales_order_route' => 'bc-data/{id}/cancel',
 
@@ -78,7 +77,7 @@ return [
 
         'support_lookup_routes' => [
             'HPE' => 'hpe-data/sku/{sku}/country/{country}',
-            'LEN' => 'lenovo-data/sku/{sku}/country/{country}/currency/{currency}'
+            'LEN' => 'lenovo-data/sku/{sku}/country/{country}/currency/{currency}',
         ],
 
         'client_id' => env('VS_API_CLIENT_ID'),
@@ -97,4 +96,17 @@ return [
         'client_secret' => env('DOCUMENT_API_CLIENT_SECRET'),
     ],
 
+    'pipeliner' => [
+        'url' => env('PIPELINER_URL', 'https://eu-central.pipelinersales.com'),
+        'username' => env('PIPELINER_USERNAME', ''),
+        'password' => env('PIPELINER_PASSWORD', ''),
+        'space_id' => env('PIPELINER_SPACE_ID', ''),
+        'space_endpoint' => env('PIPELINER_SPACE_ENDPOINT', 'https://eu-central.pipelinersales.com/api/v100/app/space/{space_id}/graphql/public'),
+    ],
+
+    'companies_house' => [
+        'url' => env('COMPANIES_HOUSE_URL', 'https://api.companieshouse.gov.uk'),
+        'username' => env('COMPANIES_HOUSE_USERNAME', ''),
+        'password' => env('COMPANIES_HOUSE_PASSWORD', ''),
+    ],
 ];

@@ -2,10 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Query\JoinClause;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class MigrateContractsToContractsTable extends Migration
@@ -95,7 +93,6 @@ class MigrateContractsToContractsTable extends Migration
                     DB::table('contracts')->insert($rows);
                 });
 
-
             $mappingPivot = DB::table('quote_field_column')
                 ->whereIn('quote_id', DB::table('contracts')->select('id'))
                 ->get();
@@ -113,7 +110,6 @@ class MigrateContractsToContractsTable extends Migration
             foreach (array_chunk($mappingPivot, 100) as $mappingChunk) {
                 DB::table('contract_field_column')->insert($mappingChunk);
             }
-
         } catch (Throwable $e) {
             DB::rollBack();
 
@@ -130,6 +126,5 @@ class MigrateContractsToContractsTable extends Migration
      */
     public function down()
     {
-        // 
     }
 }
