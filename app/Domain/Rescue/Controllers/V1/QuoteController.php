@@ -11,7 +11,7 @@ use App\Domain\QuoteFile\Services\QuoteFileService;
 use App\Domain\Rescue\Contracts\QuoteState;
 use App\Domain\Rescue\Models\Quote;
 use App\Domain\Rescue\Queries\QuoteQueries;
-use App\Domain\Rescue\Requests\{MappingReviewRequest};
+use App\Domain\Rescue\Requests\{MappingReviewRequest, ShowThirdStepDataRequest};
 use App\Domain\Rescue\Requests\FirstStepRequest;
 use App\Domain\Rescue\Requests\GivePermissionRequest;
 use App\Domain\Rescue\Requests\MoveGroupDescriptionRowsRequest;
@@ -150,10 +150,10 @@ class QuoteController extends Controller
     /**
      * Show form data for the 3rd step.
      */
-    public function step3(): JsonResponse
+    public function step3(ShowThirdStepDataRequest $request): JsonResponse
     {
         return response()->json(
-            $this->margins->data()
+            $request->getData()
         );
     }
 

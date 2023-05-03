@@ -28,8 +28,8 @@ use App\Domain\Rescue\Queries\QuoteQueries;
 use App\Domain\Rescue\Requests\StoreQuoteStateRequest;
 use App\Domain\Rescue\Requests\TryDiscountsRequest;
 use App\Domain\Rescue\Resources\V1\QuoteReviewResource;
-use App\Domain\Shared\Eloquent\Repository\Concerns\{ResolvesImplicitModel};
 use App\Domain\Shared\Eloquent\Repository\Concerns\ResolvesTargetModel;
+use App\Domain\Shared\Eloquent\Repository\Concerns\{ResolvesImplicitModel};
 use App\Domain\Sync\Enum\Lock;
 use App\Domain\User\Models\{User};
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
@@ -191,7 +191,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
                                                 ?int $importablePageNumber = null,
                                                 ?string $dataSeparatorReference = null): bool
     {
-        $shouldProcess = \value(function () use ($quoteFile): bool {
+        $shouldProcess = \value(static function () use ($quoteFile): bool {
             if ($quoteFile->hasException()) {
                 return false;
             }
@@ -207,7 +207,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
         $this->lockProvider
             ->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10)
-            ->block(30, function () use ($version, $quoteFile, $importablePageNumber) {
+            ->block(30, static function () use ($version, $quoteFile, $importablePageNumber): void {
                 if (false === is_null($importablePageNumber)) {
                     $quoteFile->setImportedPage($importablePageNumber);
                 }
@@ -240,10 +240,10 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
             $this->lockProvider
                 ->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10)
-                ->block(30, function () use ($quoteFile) {
+                ->block(30, function () use ($quoteFile): void {
                     $quoteFile->automapped_at = \now();
 
-                    $this->connection->transaction(fn () => $quoteFile->save());
+                    $this->connection->transaction(static fn () => $quoteFile->save());
                 });
         }
 
@@ -287,7 +287,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
         foreach ($importableColumnKeys as $columnKey) {
             /** @var \App\Domain\Worldwide\Models\DistributionFieldColumn|null $possibleMapping */
-            $possibleMapping = $possibleMappings->first(function (Model $columnMapping) use ($columnKey) {
+            $possibleMapping = $possibleMappings->first(static function (Model $columnMapping) use ($columnKey) {
                 return $columnMapping->importable_column_id === $columnKey;
             });
 
@@ -307,14 +307,14 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
         }
 
         $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10)
-            ->block(30, function () use ($guessedMapping, $activeVersion) {
-                $this->connection->transaction(fn () => $activeVersion->templateFields()->sync($guessedMapping));
+            ->block(30, function () use ($guessedMapping, $activeVersion): void {
+                $this->connection->transaction(static fn () => $activeVersion->templateFields()->sync($guessedMapping));
             });
     }
 
     public function userQuery(): Builder
     {
-        return \tap(Quote::query(), function (Builder $query) {
+        return \tap(Quote::query(), static function (Builder $query): void {
             !app()->runningUnitTests() && $query->currentUserWhen(
                 request()->user()->cant('view_quotes')
             );
@@ -346,7 +346,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
     public function create(array $attributes): Quote
     {
-        return \tap(new Quote(), function (Quote $quote) use ($attributes) {
+        return \tap(new Quote(), static function (Quote $quote) use ($attributes): void {
             $quote->fill($attributes);
             $quote->saveOrFail();
         });
@@ -357,12 +357,12 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
         $quote = $this->findVersion($id);
 
         $discounts = MorphDiscount::query()
-            ->whereHasMorph('discountable', $quote->discountsOrder(), fn ($query) => $query->quoteAcceptable($quote)->activated())
+            ->whereHasMorph('discountable', $quote->discountsOrder(), static fn ($query) => $query->quoteAcceptable($quote)->activated())
             ->get()->pluck('discountable');
 
         $expectingDiscounts = ['multi_year' => [], 'pre_pay' => [], 'promotions' => [], 'snd' => []];
 
-        return $discounts->groupBy(function ($discount) {
+        return $discounts->groupBy(static function ($discount) {
             switch ($discount->discount_type) {
                 case 'PromotionalDiscount':
                     $type = 'PromotionsDiscount';
@@ -389,7 +389,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             $attributes = $attributes->validated();
         }
 
-        $durationsSelect = collect($attributes)->transform(function ($discount) {
+        $durationsSelect = collect($attributes)->transform(static function ($discount) {
             return sprintf("when '%s' then %s", $discount['id'], $discount['duration'] ?? 'null');
         })->prepend('case `discountable_id`')->push('else null end')->implode(' ');
 
@@ -422,7 +422,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             return $interactedDiscounts;
         }
 
-        return $interactedDiscounts->groupBy(function (MorphDiscount $discount) {
+        return $interactedDiscounts->groupBy(static function (MorphDiscount $discount) {
             return match ($discount->discountable::class) {
                 \App\Domain\Discount\Models\SND::class => 's_n_d',
                 \App\Domain\Discount\Models\PromotionalDiscount::class => 'promotions',
@@ -453,7 +453,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
         $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
 
-        return $lock->block(30, function () use ($quote, $versionId) {
+        return $lock->block(30, static function () use ($quote, $versionId) {
             $oldVersion = $quote->activeVersionOrCurrent;
 
             if ($oldVersion->getKey() === $versionId) {
@@ -566,12 +566,12 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             return;
         }
 
-        $quote->fieldsColumns()->whereHas('templateField', function ($query) use ($hidden) {
+        $quote->fieldsColumns()->whereHas('templateField', static function ($query) use ($hidden): void {
             $query->whereIn('name', $hidden);
         })
             ->update(['is_preview_visible' => false]);
 
-        $quote->fieldsColumns()->whereHas('templateField', function ($query) use ($hidden) {
+        $quote->fieldsColumns()->whereHas('templateField', static function ($query) use ($hidden): void {
             $query->whereNotIn('name', $hidden);
         })
             ->update(['is_preview_visible' => true]);
@@ -589,8 +589,8 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             return;
         }
 
-        collect($sort)->groupBy('direction')->each(function ($sort, $direction) use ($quote) {
-            $quote->fieldsColumns()->whereHas('templateField', function ($query) use ($sort) {
+        collect($sort)->groupBy('direction')->each(static function ($sort, $direction) use ($quote): void {
+            $quote->fieldsColumns()->whereHas('templateField', static function ($query) use ($sort): void {
                 $query->whereIn('name', Arr::pluck($sort, 'name'));
             })
                 ->update(['sort' => $direction]);
@@ -603,7 +603,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
     {
         $discounts = $quote->load('discounts')->discounts;
 
-        $discounts = $discounts->map(function ($discount) {
+        $discounts = $discounts->map(static function ($discount) {
             return $discount->toDiscountableArray();
         })->toArray();
 
@@ -711,7 +711,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             $replicatedQuote->forceFill(['submitted_at' => null])->save();
 
             if (null !== $version->note) {
-                \tap($version->note->replicate(), function (Note $note) use ($replicatedQuote) {
+                \tap($version->note->replicate(), function (Note $note) use ($replicatedQuote): void {
                     $note->{$note->getKeyName()} = (string) Uuid::generate(4);
                     $note->owner()->associate($replicatedQuote->user_id);
 
@@ -733,7 +733,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             }
 
             if ($version->paymentSchedule->exists) {
-                \tap($version->paymentSchedule->replicate(), function ($schedule) use ($replicatedQuote, $version) {
+                \tap($version->paymentSchedule->replicate(), static function ($schedule) use ($replicatedQuote, $version): void {
                     $schedule->save();
                     $schedule->scheduleData()->save($version->paymentSchedule->scheduleData->replicate());
                     $replicatedQuote->schedule_file_id = $schedule->getKey();
@@ -777,7 +777,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             $pass = $replicatedVersion->save();
 
             if (null !== $version->note) {
-                \tap($version->note->replicate(), function (Note $note) use ($user, $replicatedVersion) {
+                \tap($version->note->replicate(), function (Note $note) use ($user, $replicatedVersion): void {
                     $note->{$note->getKeyName()} = (string) Uuid::generate(4);
                     $note->owner()->associate($user);
 
@@ -788,7 +788,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
                     });
                 });
             } elseif (trim(strip_tags((string) $replicatedVersion->additional_notes)) !== '') {
-                \tap(new Note(), function (Note $note) use ($parent, $user, $replicatedVersion) {
+                \tap(new Note(), function (Note $note) use ($parent, $user, $replicatedVersion): void {
                     $note->{$note->getKeyName()} = (string) Uuid::generate(4);
                     $note->owner()->associate($user);
                     $note->note = $replicatedVersion->additional_notes;
@@ -815,7 +815,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             }
 
             if (!is_null($version->paymentSchedule) && $version->paymentSchedule->exists && !is_null($version->paymentSchedule->scheduleData)) {
-                \tap($version->paymentSchedule->replicate(), function ($schedule) use ($replicatedVersion, $version) {
+                \tap($version->paymentSchedule->replicate(), static function ($schedule) use ($replicatedVersion, $version): void {
                     $schedule->save();
                     $schedule->scheduleData()->save($version->paymentSchedule->scheduleData->replicate());
                     $replicatedVersion->schedule_file_id = $schedule->getKey();
@@ -828,7 +828,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
                 /** @var \Illuminate\Database\Eloquent\Collection */
                 $replicatedRows = $replicatedVersion->rowsData()->getQuery()->toBase()->whereIn('imported_rows.replicated_row_id', $rowsIds)->get(['imported_rows.id', 'imported_rows.replicated_row_id']);
 
-                $replicatedVersion->group_description->each(function (RowsGroup $group) use ($replicatedRows) {
+                $replicatedVersion->group_description->each(static function (RowsGroup $group) use ($replicatedRows): void {
                     $rowsIds = $replicatedRows->whereIn('replicated_row_id', $group->rows_ids)->pluck('id');
 
                     $group->rows_ids = $rowsIds->toArray();
@@ -877,8 +877,8 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             ->where('is_fixed', $state['margin']['is_fixed'] ?? null)
             ->where('value', $state['margin']['value'] ?? null)
             ->where('method', $state['margin']['method'] ?? null)
-            ->firstOr(function () use ($state, $quote) {
-                return \tap(new CountryMargin(), function (CountryMargin $countryMargin) use ($quote, $state) {
+            ->firstOr(static function () use ($state, $quote) {
+                return \tap(new CountryMargin(), static function (CountryMargin $countryMargin) use ($quote, $state): void {
                     $countryMargin->vendor_id = $quote->vendor_id;
                     $countryMargin->country_id = $quote->country_id;
                     $countryMargin->quote_type = $state['margin']['quote_type'] ?? null;
@@ -933,7 +933,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
         $discounts = $this->tryDiscounts($discountsState, $quote, false);
 
-        $attachableDiscounts = $discounts->map(function ($discount) {
+        $attachableDiscounts = $discounts->map(static function ($discount) {
             return $discount->toAttachableArray();
         })->collapse()->toArray();
 
@@ -959,16 +959,15 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             return;
         }
 
-        /** @var \App\Domain\Note\Models\Note $note */
+        /** @var Note $note */
         $note = \tap($version->notes()
             ->where('flags', '&', Note::FROM_ENTITY_WIZARD)
-            ->firstOrNew([]), function (Note $note) use ($version) {
+            ->firstOrNew([]), static function (Note $note) use ($version): void {
                 if (false === $note->exists) {
-                    $note->{$note->getKeyName()} = (string) Uuid::generate(4);
+                    $note->setId();
                 }
 
                 $note->owner()->associate($version->user()->getParentKey());
-
                 $note->note = $version->additional_notes;
 
                 if (false === $note->from_entity_wizard) {
@@ -976,12 +975,12 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
                 }
             });
 
-        $quoteNoteIsEmpty = trim(strip_tags((string) $note->text)) === '';
+        $quoteNoteIsEmpty = trim(strip_tags((string) $note->note)) === '';
 
         if ($quoteNoteIsEmpty) {
             $note->delete();
         } else {
-            $this->connection->transaction(static function () use ($quote, $note, $version) {
+            $this->connection->transaction(static function () use ($quote, $note, $version): void {
                 $note->save();
 
                 $quote->notes()->syncWithoutDetaching($note);
@@ -1004,7 +1003,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
             return false;
         }
 
-        \tap($quote, function (Quote $quote) use ($state, $version) {
+        \tap($quote, function (Quote $quote) use ($state, $version): void {
             $quote->submitted_at = $quote->freshTimestampString();
             $this->updateQuoteNote($state, $quote, $version);
             $quote->save();
@@ -1062,7 +1061,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
         $oldFieldsColumns = $quote->fieldsColumns;
 
-        $syncData = $fieldsColumns->filter(function ($fieldColumn) {
+        $syncData = $fieldsColumns->filter(static function ($fieldColumn) {
             return filled(data_get($fieldColumn, 'importable_column_id')) || data_get($fieldColumn, 'is_default_enabled', false);
         })->keyBy('template_field_id')->exceptEach('template_field_id')->toArray();
 
@@ -1070,7 +1069,7 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
         $newFieldsColumns = $quote->load('fieldsColumns')->fieldsColumns;
 
-        $hasChanges = $newFieldsColumns->contains(function ($newFieldColumn) use ($oldFieldsColumns) {
+        $hasChanges = $newFieldsColumns->contains(static function ($newFieldColumn) use ($oldFieldsColumns) {
             $oldFieldColumn = $oldFieldsColumns->firstWhere('template_field_id', $newFieldColumn['template_field_id']);
 
             if (blank($oldFieldColumn)) {
@@ -1172,8 +1171,8 @@ class QuoteStateProcessor implements \App\Domain\Rescue\Contracts\QuoteState
 
         $quote->submitted_at = null;
 
-        $lock->block(30, function () use ($quote) {
-            $this->connection->transaction(fn () => $quote->save());
+        $lock->block(30, function () use ($quote): void {
+            $this->connection->transaction(static fn () => $quote->save());
         });
 
         $this->eventDispatcher->dispatch(new RescueQuoteUnravelled($quote));
