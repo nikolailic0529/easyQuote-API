@@ -13,8 +13,8 @@ use App\Domain\Discount\Models\SND;
 use App\Domain\Note\Models\ModelHasNotes;
 use App\Domain\Note\Models\Note;
 use App\Domain\Rescue\Models\QuoteTemplate;
-use App\Domain\User\Models\User;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
+use App\Domain\User\Models\User;
 use Database\Factories\WorldwideQuoteVersionFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -96,6 +96,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \App\Domain\Note\Models\Note|null                                                        $submitNote
  * @property Collection<WorldwideQuoteAssetsGroup>|WorldwideQuoteAssetsGroup[]                        $assetsGroups
  * @property \DateTimeInterface|null                                                                  $created_at
+ * @property Address|null                                                                             $submittedPaInvoiceAddress
  */
 class WorldwideQuoteVersion extends Model
 {
@@ -117,7 +118,7 @@ class WorldwideQuoteVersion extends Model
 
     public function assets(): MorphMany
     {
-        return tap($this->morphMany(WorldwideQuoteAsset::class, 'worldwide_quote'), function (MorphMany $relation) {
+        return tap($this->morphMany(WorldwideQuoteAsset::class, 'worldwide_quote'), static function (MorphMany $relation): void {
             $relation->addSelect([
                 'vendor_short_code' => \App\Domain\Vendor\Models\Vendor::query()->select('short_code')
                     ->from('vendors')
@@ -130,7 +131,7 @@ class WorldwideQuoteVersion extends Model
 
     public function assetsGroups(): HasMany
     {
-        return tap($this->hasMany(WorldwideQuoteAssetsGroup::class), function (HasMany $relation) {
+        return tap($this->hasMany(WorldwideQuoteAssetsGroup::class), static function (HasMany $relation): void {
             $relation
                 ->withCount('assets')
                 ->withSum('assets', 'price')
@@ -199,6 +200,11 @@ class WorldwideQuoteVersion extends Model
     public function addresses(): BelongsToMany
     {
         return $this->belongsToMany(Address::class);
+    }
+
+    public function submittedPaInvoiceAddress(): BelongsTo
+    {
+        return $this->belongsTo(Address::class)->withTrashed();
     }
 
     public function contacts(): BelongsToMany
