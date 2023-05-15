@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Address\Models\Address;
 use App\Domain\Appointment\Models\Appointment;
 use App\Domain\Attachment\Models\Attachment;
 use App\Domain\Authorization\Models\Role;
@@ -165,8 +166,8 @@ class OpportunityOwnershipTest extends TestCase
         /** @var Opportunity $opp */
         $opp = Opportunity::factory()
             ->for(User::factory(), 'owner')
-            ->for(Company::factory(), 'primaryAccount')
-            ->for(Company::factory(), 'endUser')
+            ->for(Company::factory()->hasAttached(Address::factory()->for(User::factory())), 'primaryAccount')
+            ->for(Company::factory()->hasAttached(Address::factory()->for(User::factory())), 'endUser')
             ->for(Contact::factory(), 'primaryAccountContact')
             ->hasAttached(Note::factory(2))
             ->hasAttached(Task::factory(2))
@@ -218,6 +219,7 @@ class OpportunityOwnershipTest extends TestCase
         $this->assertNotEquals($opp2UpdatedAt, $opp2UpdatedAtAfter);
 
         $r = $this->getJson('api/opportunities/'.$opp->getKey())
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
@@ -226,10 +228,34 @@ class OpportunityOwnershipTest extends TestCase
                 'primary_account' => [
                     'id',
                     'user_id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                            'user_id',
+                        ],
+                    ],
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                            'user_id',
+                        ],
+                    ],
                 ],
                 'end_user' => [
                     'id',
                     'user_id',
+                    'addresses' => [
+                        '*' => [
+                            'id',
+                            'user_id',
+                        ],
+                    ],
+                    'contacts' => [
+                        '*' => [
+                            'id',
+                            'user_id',
+                        ],
+                    ],
                 ],
             ])
             ->assertJsonPath('user_id', $data['owner_id'])
@@ -238,6 +264,22 @@ class OpportunityOwnershipTest extends TestCase
             ->assertJsonPath('primary_account.sales_unit_id', $data['sales_unit_id'])
             ->assertJsonPath('end_user.user_id', $data['owner_id'])
             ->assertJsonPath('end_user.sales_unit_id', $data['sales_unit_id']);
+
+        foreach ($r->json('primary_account.addresses') as $address) {
+            $this->assertSame($data['owner_id'], $address['user_id']);
+        }
+
+        foreach ($r->json('primary_account.contacts') as $contact) {
+            $this->assertSame($data['owner_id'], $contact['user_id']);
+        }
+
+        foreach ($r->json('end_user.addresses') as $address) {
+            $this->assertSame($data['owner_id'], $address['user_id']);
+        }
+
+        foreach ($r->json('end_user.contacts') as $contact) {
+            $this->assertSame($data['owner_id'], $contact['user_id']);
+        }
 
         $r = $this->getJson('api/opportunities/'.$opp->getKey().'/notes')
 //            ->dump()
