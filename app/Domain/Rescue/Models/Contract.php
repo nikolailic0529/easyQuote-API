@@ -38,8 +38,9 @@ use Illuminate\Support\Traits\Tappable;
 
 /**
  * @property Quote|null $quote
- * @property User $user
- * @property string $contract_number
+ * @property User       $user
+ * @property string     $contract_number
+ * @property Customer   $customer
  */
 class Contract extends Model implements SearchableEntity
 {
