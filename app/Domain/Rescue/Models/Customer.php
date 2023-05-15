@@ -13,6 +13,7 @@ use App\Domain\Contact\Concerns\HasContactTypes;
 use App\Domain\Contact\Models\Contact;
 use App\Domain\Country\Concerns\BelongsToCountry;
 use App\Domain\Country\Models\Country;
+use App\Domain\Location\Models\Location;
 use App\Domain\Rescue\Quote\HasQuotes;
 use App\Domain\Shared\Eloquent\Concerns\Submittable;
 use App\Domain\Shared\Eloquent\Concerns\Uuid;
@@ -53,6 +54,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Collection<Address>|Address[]                            $addresses
  * @property Collection<\App\Domain\Contact\Models\Contact>|Contact[] $contacts
  * @property Country                                                  $country
+ * @property Company|null                                             $referencedCompany
+ * @property Location|null                                            $equipmentLocation
  */
 class Customer extends Model
 {

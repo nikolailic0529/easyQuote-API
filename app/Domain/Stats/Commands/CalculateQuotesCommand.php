@@ -21,22 +21,7 @@ class CalculateQuotesCommand extends Command
      */
     protected $description = 'Calculate quotes totals';
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
-    public function handle(Stats $service)
+    public function handle(Stats $service): int
     {
         $this->output->title('Quote totals calculation started');
 
@@ -46,6 +31,6 @@ class CalculateQuotesCommand extends Command
 
         $this->output->success('Quote totals calculation successfully finished');
 
-        return Command::SUCCESS;
+        return self::SUCCESS;
     }
 }

@@ -3,12 +3,12 @@
 namespace App\Domain\Stats\Services;
 
 use App\Domain\Asset\Models\Asset;
-use App\Domain\Company\Enum\AccountCategory;
 use App\Domain\Company\Models\Company;
 use App\Domain\Currency\Models\Currency;
+use App\Domain\Rescue\Models\Quote;
 use App\Domain\Stats\DataTransferObjects\CustomersSummary;
+use App\Domain\Stats\DataTransferObjects\Summary;
 use App\Domain\Stats\DataTransferObjects\SummaryRequestData;
-use App\Domain\Stats\DataTransferObjects\{Summary};
 use App\Domain\Stats\Models\AssetTotal;
 use App\Domain\Stats\Models\CustomerTotal;
 use App\Domain\Stats\Models\QuoteLocationTotal;
@@ -17,9 +17,15 @@ use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Enum\OpportunityStatus;
 use App\Domain\Worldwide\Enum\QuoteStatus;
 use App\Domain\Worldwide\Models\Opportunity;
+use App\Domain\Worldwide\Models\SalesOrder;
+use App\Domain\Worldwide\Models\WorldwideQuote;
+use Carbon\CarbonPeriod;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Grimzy\LaravelMysqlSpatial\Types\Polygon;
+use Illuminate\Contracts\Auth\Access\Gate;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\JoinClause;
 
 class StatsAggregationService
@@ -28,30 +34,61 @@ class StatsAggregationService
 
     protected ?float $baseRateCache = null;
 
+    protected array $userCache = [];
+
+    public function __construct(
+        protected readonly Gate $gate,
+        protected readonly Guard $guard,
+    ) {
+    }
+
     public function getQuotesSummary(SummaryRequestData $summaryRequestData): Summary
     {
-        $quoteTotals = QuoteTotal::query()
+        $quoteTotalModel = new QuoteTotal();
+
+        $user = $this->resolveUser($summaryRequestData->userId);
+        $gate = $this->gate->forUser($user);
+
+        $quoteTotals = $quoteTotalModel->newQuery()
             ->selectRaw('COUNT(ISNULL(quote_submitted_at) AND quote_status = ? OR NULL) AS drafted_quotes_count', [QuoteStatus::ALIVE])
             ->selectRaw('COUNT(quote_submitted_at IS NOT NULL AND quote_status = ? OR NULL) AS submitted_quotes_count', [QuoteStatus::ALIVE])
-            ->selectRaw('SUM(CASE WHEN ISNULL(`quote_submitted_at`) AND quote_status = ? THEN `total_price` END) AS drafted_quotes_value', [QuoteStatus::ALIVE])
-            ->selectRaw('SUM(CASE WHEN quote_submitted_at IS NOT NULL AND quote_status = ? THEN total_price END) AS submitted_quotes_value', [QuoteStatus::ALIVE])
+            ->selectRaw('SUM(CASE WHEN ISNULL(`quote_submitted_at`) AND quote_status = ? THEN `total_price` END) AS drafted_quotes_value',
+                [QuoteStatus::ALIVE])
+            ->selectRaw('SUM(CASE WHEN quote_submitted_at IS NOT NULL AND quote_status = ? THEN total_price END) AS submitted_quotes_value',
+                [QuoteStatus::ALIVE])
             ->selectRaw('COUNT(quote_status = ? OR NULL) AS dead_quotes_count', [QuoteStatus::DEAD])
             ->selectRaw('SUM(CASE WHEN quote_status = ? THEN total_price END) AS dead_quotes_value', [QuoteStatus::DEAD])
-            ->when(!is_null($summaryRequestData->period), function (Builder $builder) use ($summaryRequestData) {
+            ->when($summaryRequestData->period instanceof CarbonPeriod, static function (Builder $builder) use ($summaryRequestData): void {
                 $builder->whereBetween('quote_created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
             })
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
-                    $relation->whereKey($summaryRequestData->country_id);
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->whereHas('countries', static function (Builder $relation) use ($summaryRequestData): void {
+                    $relation->whereKey($summaryRequestData->countryId);
                 });
             })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
+            ->where(static function (Builder $builder) use ($gate, $user, $quoteTotalModel): void {
+                $builder->where(static function (Builder $builder) use ($gate, $user, $quoteTotalModel): void {
+                    $builder->where($quoteTotalModel->quote()->getMorphType(), (new WorldwideQuote())->getMorphClass());
+
+                    if ($gate->denies('viewAll', WorldwideQuote::class)) {
+                        $builder->whereIn(
+                            $quoteTotalModel->salesUnit()->getQualifiedForeignKeyName(),
+                            $user->salesUnits->merge($user->salesUnitsFromLedTeams)->modelKeys()
+                        );
+                    }
+
+                    if ($gate->denies('viewCurrentUnitsEntities', WorldwideQuote::class)) {
+                        $builder->where($quoteTotalModel->user()->getQualifiedForeignKeyName(), $user->getKey());
+                    }
+                })
+                    ->orWhere(static function (Builder $builder) use ($gate, $user, $quoteTotalModel): void {
+                        $builder->where($quoteTotalModel->quote()->getMorphType(), (new Quote())->getMorphClass());
+
+                        if ($gate->denies('viewAll', Quote::class)) {
+                            $builder->where($quoteTotalModel->user()->getQualifiedForeignKeyName(), $user->getKey());
+                        }
+                    });
             })
-            ->whereIn('quote_type', $summaryRequestData->entity_types)
             ->toBase()
             ->first();
 
@@ -63,8 +100,8 @@ class StatsAggregationService
 
         $assetsSummary = $this->getAssetsSummary($summaryRequestData);
 
-        $salesOrderSummary = QuoteTotal::query()
-            ->join('sales_orders', function (JoinClause $joinClause) {
+        $salesOrderSummary = $quoteTotalModel->newQuery()
+            ->join('sales_orders', static function (JoinClause $joinClause): void {
                 $joinClause->on('sales_orders.worldwide_quote_id', 'quote_totals.quote_id');
             })
             ->whereNull('sales_orders.deleted_at')
@@ -72,21 +109,27 @@ class StatsAggregationService
             ->selectRaw('SUM(CASE WHEN sales_orders.submitted_at IS NOT NULL THEN quote_totals.total_price END) as submitted_sales_orders_value')
             ->selectRaw('COUNT(sales_orders.submitted_at IS NULL OR NULL) as drafted_sales_orders_count')
             ->selectRaw('COUNT(sales_orders.submitted_at IS NOT NULL OR NULL) as submitted_sales_orders_count')
-            ->when(!is_null($summaryRequestData->period), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereBetween('sales_orders.created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
+            ->when(null !== $summaryRequestData->period, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->whereBetween('sales_orders.created_at',
+                    [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
             })
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
-                    $relation->whereKey($summaryRequestData->country_id);
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->whereHas('countries', static function (Builder $relation) use ($summaryRequestData): void {
+                    $relation->whereKey($summaryRequestData->countryId);
                 });
             })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('sales_orders.user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('sales_orders.user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
+            ->where(static function (Builder $builder) use ($gate, $user, $quoteTotalModel): void {
+                if ($gate->denies('viewAll', SalesOrder::class)) {
+                    $builder->whereIn(
+                        $quoteTotalModel->salesUnit()->getQualifiedForeignKeyName(),
+                        $user->salesUnits->merge($user->salesUnitsFromLedTeams)->modelKeys()
+                    );
+                }
+
+                if ($gate->denies('viewCurrentUnitsEntities', SalesOrder::class)) {
+                    $builder->where('sales_orders.user_id', $user->getKey());
+                }
             })
-            ->whereIn('quote_type', $summaryRequestData->entity_types)
             ->toBase()
             ->first();
 
@@ -102,7 +145,7 @@ class StatsAggregationService
 
         return Summary::fromArrayOfTotals(
             $totals,
-            $this->currencyRate($summaryRequestData->currency_id),
+            $this->currencyRate($summaryRequestData->currencyId),
             setting('base_currency'),
             $summaryRequestData->period
         );
@@ -110,55 +153,49 @@ class StatsAggregationService
 
     public function getOpportunitySummary(SummaryRequestData $summaryRequestData): object
     {
-        $lostOpportunitySummary = Opportunity::query()
-            ->selectRaw('COUNT(0) as lost_opportunities_count')
-            ->selectRaw('SUM(base_opportunity_amount) as lost_opportunities_value')
-            ->where('status', OpportunityStatus::LOST)
-            ->doesntHave('worldwideQuotes')
-            ->when(!is_null($summaryRequestData->period), function (Builder $builder) use ($summaryRequestData) {
+        $oppModel = new Opportunity();
+
+        $user = $this->resolveUser($summaryRequestData->userId);
+        $gate = $this->gate->forUser($user);
+
+        $summary = $oppModel->newQuery()
+            ->selectRaw('COUNT(status = ? OR NULL) AS lost_opportunities_count', [OpportunityStatus::LOST->value])
+            ->selectRaw('COUNT(status = ? OR NULL) AS alive_opportunities_count', [OpportunityStatus::NOT_LOST->value])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN base_opportunity_amount END) as lost_opportunities_value', [OpportunityStatus::LOST->value])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN base_opportunity_amount END) as alive_opportunities_value',
+                [OpportunityStatus::NOT_LOST->value])
+            ->when($summaryRequestData->period instanceof CarbonPeriod, static function (Builder $builder) use ($summaryRequestData): void {
                 $builder->whereBetween('created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
             })
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
-                    $relation->whereKey($summaryRequestData->country_id);
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->whereHas('countries', static function (Builder $relation) use ($summaryRequestData): void {
+                    $relation->whereKey($summaryRequestData->countryId);
                 });
             })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhere($builder->qualifyColumn('account_manager_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams))
-                        ->orWhereIn($builder->qualifyColumn('account_manager_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
+            ->where(static function (Builder $builder) use ($gate, $user, $oppModel): void {
+                if ($gate->allows('viewAll', Opportunity::class)) {
+                    return;
+                }
+
+                $builder->whereIn(
+                    $oppModel->salesUnit()->getQualifiedForeignKeyName(),
+                    $user->salesUnits->merge($user->salesUnitsFromLedTeams)->modelKeys()
+                );
+
+                if ($gate->denies('viewCurrentUnitsEntities', Opportunity::class)) {
+                    $builder->where(static function (Builder $builder) use ($oppModel, $user): void {
+                        $builder->where($oppModel->user()->getQualifiedForeignKeyName(), $user->getKey())
+                            ->orWhere($oppModel->accountManager()->getQualifiedForeignKeyName(), $user->getKey());
+                    });
+                }
             })
             ->toBase()
             ->first();
 
-        $aliveOpportunitySummary = Opportunity::query()
-            ->selectRaw('COUNT(0) as opportunities_count')
-            ->selectRaw('SUM(base_opportunity_amount) as opportunities_value')
-            ->where('status', OpportunityStatus::NOT_LOST)
-            ->doesntHave('worldwideQuotes')
-            ->when(!is_null($summaryRequestData->period), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereBetween('created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
-            })
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
-                    $relation->whereKey($summaryRequestData->country_id);
-                });
-            })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhere($builder->qualifyColumn('account_manager_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams))
-                        ->orWhereIn($builder->qualifyColumn('account_manager_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
-            })
-            ->toBase()
-            ->first();
+        $summary->opportunities_count = $summary->alive_opportunities_count;
+        $summary->opportunities_value = $summary->alive_opportunities_value;
 
-        return (object) array_merge((array) $lostOpportunitySummary, (array) $aliveOpportunitySummary);
+        return $summary;
     }
 
     public function getQuoteLocations(Point $center, Polygon $polygon, ?string $userId = null)
@@ -174,37 +211,7 @@ class StatsAggregationService
             ->append(['total_value', 'total_count']);
     }
 
-    public function getCustomersSummaryList(SummaryRequestData $summaryRequestData): array
-    {
-        $result = QuoteTotal::query()
-            ->selectRaw('SUM(`total_price`) AS `total_value`')
-            ->selectRaw('COUNT(*) AS `total_count`')
-            ->addSelect('company_id', 'customer_name')
-            ->groupBy('customer_name')
-            ->orderByDesc('total_value')
-            ->where('customer_name', '<>', '')
-            ->when(!is_null($summaryRequestData->period), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereBetween('quote_created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
-            })
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereHas('countries', function (Builder $builder) use ($summaryRequestData) {
-                    $builder->whereKey($summaryRequestData->country_id);
-                });
-            })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
-            })
-            ->take(15)
-            ->toBase()
-            ->get();
-
-        return CustomersSummary::create($result, $this->currencyRate($summaryRequestData->currency_id))->toArray();
-    }
-
-    public function getCustomerTotalLocations(Polygon $polygon, ?string $userId = null)
+    public function getCustomerTotalLocations(Polygon $polygon, ?string $userId = null): Collection
     {
         /** @var Builder $query */
         $query = CustomerTotal::query()
@@ -215,7 +222,7 @@ class StatsAggregationService
         return $query
             ->orderByDesc('total_count')
             ->groupBy('location_id')
-            ->when(!is_null($userId), function (Builder $builder) use ($userId) {
+            ->when(null !== $userId, static function (Builder $builder) use ($userId): void {
                 $builder->where('user_id', $userId);
             })
             ->limit(static::MAP_BOUNDS_LIMIT)
@@ -229,7 +236,7 @@ class StatsAggregationService
             ->selectRaw('`total_value` * ? AS `total_value`', [$this->baseRate()])
             ->intersects('location_coordinates', $polygon)
             ->orderByDistance('location_coordinates', $center)
-            ->when(!is_null($userId), function (Builder $builder) use ($userId) {
+            ->when(null !== $userId, static function (Builder $builder) use ($userId): void {
                 $builder->where('user_id', $userId);
             })
             ->limit(static::MAP_BOUNDS_LIMIT)
@@ -239,24 +246,52 @@ class StatsAggregationService
             ->get();
     }
 
+    private function resolveUser(string $id): User
+    {
+        /* @noinspection PhpIncompatibleReturnTypeInspection */
+        return $this->userCache[$id] ??= User::query()->findOrFail($id);
+    }
+
     public function getExpiringQuotesSummary(SummaryRequestData $summaryRequestData): object
     {
+        $quoteTotalModel = new QuoteTotal();
+
+        $user = $this->resolveUser($summaryRequestData->userId);
+
+        $gate = $this->gate->forUser($user);
+
         return QuoteTotal::query()
             ->selectRaw('COUNT(*) AS `expiring_quotes_count`')
             ->selectRaw('SUM(`total_price`) AS `expiring_quotes_value`')
             ->where('quote_status', QuoteStatus::ALIVE)
             ->where('valid_until_date', '<=', today())
-            ->whereIn('quote_type', $summaryRequestData->entity_types)
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
-                    $relation->whereKey($summaryRequestData->country_id);
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->whereHas('countries', static function (Builder $relation) use ($summaryRequestData): void {
+                    $relation->whereKey($summaryRequestData->countryId);
                 });
             })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
+            ->where(static function (Builder $builder) use ($gate, $user, $quoteTotalModel): void {
+                $builder->where(static function (Builder $builder) use ($gate, $user, $quoteTotalModel): void {
+                    $builder->where($quoteTotalModel->quote()->getMorphType(), (new WorldwideQuote())->getMorphClass());
+
+                    if ($gate->denies('viewAll', WorldwideQuote::class)) {
+                        $builder->whereIn(
+                            $quoteTotalModel->salesUnit()->getQualifiedForeignKeyName(),
+                            $user->salesUnits->merge($user->salesUnitsFromLedTeams)->modelKeys()
+                        );
+                    }
+
+                    if ($gate->denies('viewCurrentUnitsEntities', WorldwideQuote::class)) {
+                        $builder->where($quoteTotalModel->user()->getQualifiedForeignKeyName(), $user->getKey());
+                    }
+                })
+                    ->orWhere(static function (Builder $builder) use ($gate, $user, $quoteTotalModel): void {
+                        $builder->where($quoteTotalModel->quote()->getMorphType(), (new Quote())->getMorphClass());
+
+                        if ($gate->denies('viewAll', Quote::class)) {
+                            $builder->where($quoteTotalModel->user()->getQualifiedForeignKeyName(), $user->getKey());
+                        }
+                    });
             })
             ->toBase()
             ->first();
@@ -264,17 +299,27 @@ class StatsAggregationService
 
     public function getLocationsSummary(SummaryRequestData $summaryRequestData): object
     {
-        return CustomerTotal::query()
+        $totalModel = new CustomerTotal();
+        $user = $this->resolveUser($summaryRequestData->userId);
+        $gate = $this->gate->forUser($user);
+
+        return $totalModel->newQuery()
             ->selectRaw('COUNT(*) AS `locations_total`')
             ->distinct('address_id')
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('country_id', $summaryRequestData->country_id);
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->where('country_id', $summaryRequestData->countryId);
             })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
+            ->where(static function (Builder $builder) use ($gate, $user, $totalModel): void {
+                if ($gate->denies('viewAll', Company::class)) {
+                    $builder->whereIn(
+                        $totalModel->salesUnit()->getQualifiedForeignKeyName(),
+                        $user->salesUnits->merge($user->salesUnitsFromLedTeams)->modelKeys()
+                    );
+                }
+
+                if ($gate->denies('viewCurrentUnitsEntities', Company::class)) {
+                    $builder->where($totalModel->user()->getQualifiedForeignKeyName(), $user->getKey());
+                }
             })
             ->toBase()
             ->first();
@@ -282,52 +327,106 @@ class StatsAggregationService
 
     public function getCustomersSummary(SummaryRequestData $summaryRequestData): object
     {
-        $count = Company::query()
-            ->where('type', 'External')
-            ->whereRelation('categories', 'name', AccountCategory::END_USER)
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('default_country_id', $summaryRequestData->country_id);
+        $companyModel = new Company();
+        $user = $this->resolveUser($summaryRequestData->userId);
+        $gate = $this->gate->forUser($user);
+
+        $count = $companyModel->newQuery()
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->where('default_country_id', $summaryRequestData->countryId);
             })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
+            ->where(static function (Builder $builder) use ($gate, $user, $companyModel): void {
+                if ($gate->denies('viewAll', Company::class)) {
+                    $builder->whereIn(
+                        $companyModel->salesUnit()->getQualifiedForeignKeyName(),
+                        $user->salesUnits->merge($user->salesUnitsFromLedTeams)->modelKeys()
+                    );
+                }
+
+                if ($gate->denies('viewCurrentUnitsEntities', Company::class)) {
+                    $builder->where($companyModel->user()->getQualifiedForeignKeyName(), $user->getKey());
+                }
             })
             ->count();
 
         return (object) ['customers_count' => $count];
     }
 
+    public function getCustomersSummaryList(SummaryRequestData $summaryRequestData): array
+    {
+        $totalModel = new QuoteTotal();
+        $companyModel = new Company();
+
+        $user = $this->resolveUser($summaryRequestData->userId);
+        $gate = $this->gate->forUser($user);
+
+        $result = $totalModel->newQuery()
+            ->selectRaw("SUM({$totalModel->qualifyColumn('total_price')}) AS `total_value`")
+            ->selectRaw('COUNT(*) AS `total_count`')
+            ->addSelect([
+                $totalModel->company()->getQualifiedForeignKeyName(),
+                $totalModel->qualifyColumn('customer_name'),
+            ])
+            ->groupBy($totalModel->qualifyColumn('company_id'))
+            ->orderByDesc('total_value')
+            ->where($totalModel->qualifyColumn('customer_name'), '<>', '')
+            ->join($companyModel->getTable(), $companyModel->getQualifiedKeyName(), $totalModel->company()->getQualifiedForeignKeyName())
+            ->when($summaryRequestData->period instanceof CarbonPeriod,
+                static function (Builder $builder) use ($totalModel, $summaryRequestData): void {
+                    $builder->whereBetween(
+                        $totalModel->qualifyColumn('quote_created_at'),
+                        [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]
+                    );
+                })
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $builder) use ($summaryRequestData): void {
+                $builder->whereHas('countries', static function (Builder $builder) use ($summaryRequestData): void {
+                    $builder->whereKey($summaryRequestData->countryId);
+                });
+            })
+            ->where(static function (Builder $builder) use ($gate, $user, $companyModel): void {
+                if ($gate->denies('viewAll', Company::class)) {
+                    $builder->whereIn(
+                        $companyModel->salesUnit()->getQualifiedForeignKeyName(),
+                        $user->salesUnits->merge($user->salesUnitsFromLedTeams)->modelKeys()
+                    );
+                }
+
+                if ($gate->denies('viewCurrentUnitsEntities', Company::class)) {
+                    $builder->where($companyModel->user()->getQualifiedForeignKeyName(), $user->getKey());
+                }
+            })
+            ->take(15)
+            ->toBase()
+            ->get();
+
+        return CustomersSummary::create($result, $this->currencyRate($summaryRequestData->currencyId))->toArray();
+    }
+
     public function getAssetsSummary(SummaryRequestData $summaryRequestData): object
     {
         $result = Asset::query()
             ->when(
-                !is_null($summaryRequestData->period),
-                function (Builder $query) use ($summaryRequestData) {
-                    $query->selectRaw('COUNT(`active_warranty_end_date` <= ? AND `active_warranty_end_date` >= ? OR NULL) AS `assets_renewals_count`', [
-                        $summaryRequestData->period->getEndDate()->endOfDay(), $summaryRequestData->period->getStartDate()->endOfDay(),
-                    ])
-                        ->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= ? AND `active_warranty_end_date` >= ? THEN `unit_price` END) AS `assets_renewals_value`', [
+                $summaryRequestData->period instanceof CarbonPeriod,
+                static function (Builder $query) use ($summaryRequestData): void {
+                    $query->selectRaw('COUNT(`active_warranty_end_date` <= ? AND `active_warranty_end_date` >= ? OR NULL) AS `assets_renewals_count`',
+                        [
                             $summaryRequestData->period->getEndDate()->endOfDay(), $summaryRequestData->period->getStartDate()->endOfDay(),
-                        ]);
+                        ])
+                        ->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= ? AND `active_warranty_end_date` >= ? THEN `unit_price` END) AS `assets_renewals_value`',
+                            [
+                                $summaryRequestData->period->getEndDate()->endOfDay(), $summaryRequestData->period->getStartDate()->endOfDay(),
+                            ]);
                 },
-                function (Builder $query) {
+                static function (Builder $query): void {
                     $query->selectRaw('COUNT(`active_warranty_end_date` <= NOW() OR NULL) AS `assets_renewals_count`')
                         ->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= NOW() THEN `unit_price` END) AS `assets_renewals_value`');
                 }
             )
             ->selectRaw('COUNT(*) AS `assets_count`')
             ->selectRaw('SUM(`unit_price`) AS `assets_value`')
-            ->when(!is_null($summaryRequestData->country_id), function (Builder $q) use ($summaryRequestData) {
-                $q->whereHas('country', function (Builder $relation) use ($summaryRequestData) {
-                    $relation->whereKey($summaryRequestData->country_id);
-                });
-            })
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
+            ->when(null !== $summaryRequestData->countryId, static function (Builder $q) use ($summaryRequestData): void {
+                $q->whereHas('country', static function (Builder $relation) use ($summaryRequestData): void {
+                    $relation->whereKey($summaryRequestData->countryId);
                 });
             })
             ->toBase()
@@ -336,30 +435,19 @@ class StatsAggregationService
         $result->assets_locations_count = AssetTotal::query()
             ->whereNotNull('location_id')
             ->distinct('location_id')
-            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where(function (Builder $builder) use ($summaryRequestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
-                });
-            })
             ->toBase()
             ->count();
 
         return $result;
     }
 
-    /**
-     * Retrieve quote totals by specific location.
-     *
-     * @return mixed
-     */
-    public function getQuoteTotalLocations(string $locationId, ?string $userId = null)
+    public function getQuoteTotalLocations(string $locationId, ?string $userId = null): Collection
     {
         return QuoteTotal::query()
             ->where('location_id', $locationId)
             ->select('quote_id', 'customer_name', 'rfq_number', 'quote_created_at', 'quote_submitted_at', 'valid_until_date')
             ->selectRaw('`total_price` * ? as total_price', [$this->baseRate()])
-            ->when(!is_null($userId), function (Builder $builder) use ($userId) {
+            ->when(!is_null($userId), static function (Builder $builder) use ($userId): void {
                 $builder->where('user_id', $userId);
             })
             ->withCasts([

@@ -5,7 +5,6 @@ namespace App\Domain\Stats\Services;
 use App\Domain\Address\Models\Address;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Asset\Queries\AssetQueries;
-use App\Domain\Company\Enum\CompanyCategoryEnum;
 use App\Domain\Company\Models\Company;
 use App\Domain\ExchangeRate\Contracts\ManagesExchangeRates;
 use App\Domain\Location\Models\Location;
@@ -21,7 +20,6 @@ use App\Domain\Worldwide\Enum\QuoteStatus;
 use App\Domain\Worldwide\Models\WorldwideQuote;
 use App\Domain\Worldwide\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\{Collection as BaseCollection};
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -33,18 +31,18 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
     protected OutputInterface $output;
 
     public function __construct(protected LoggerInterface $logger,
-                                protected AssetQueries $assetQueries,
-                                protected RescueQuoteCalc $rescueQuoteCalc,
-                                protected WorldwideQuoteCalc $worldwideQuoteCalc,
-                                protected ManagesExchangeRates $exchangeRateService,
-                                OutputInterface $output = null)
+        protected AssetQueries $assetQueries,
+        protected RescueQuoteCalc $rescueQuoteCalc,
+        protected WorldwideQuoteCalc $worldwideQuoteCalc,
+        protected ManagesExchangeRates $exchangeRateService,
+        OutputInterface $output = null)
     {
         $this->output = $output ?? new NullOutput();
     }
 
     public function setOutput(OutputInterface $output): Stats
     {
-        return tap($this, function () use ($output) {
+        return tap($this, function () use ($output): void {
             $this->output = $output;
         });
     }
@@ -57,23 +55,15 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
          * Truncate quote totals with deleted quote parents.
          */
         QuoteTotal::query()
-            ->leftJoin('quotes', function (JoinClause $join) {
-                $join->on('quotes.id', 'quote_totals.quote_id')
-                    ->whereNull('quotes.deleted_at');
-            })
-            ->leftJoin('worldwide_quotes', function (JoinClause $join) {
-                $join->on('worldwide_quotes.id', 'quote_totals.quote_id')
-                    ->whereNull('worldwide_quotes.deleted_at');
-            })
-            ->whereNull(['quotes.id', 'worldwide_quotes.id'])
+            ->doesntHave('quote')
             ->get()
-            ->each(function (QuoteTotal $quoteTotal) {
+            ->each(static function (QuoteTotal $quoteTotal): void {
                 $quoteTotal->delete();
             });
 
         Quote::query()
             ->with('customer.equipmentLocation')
-            ->chunkById(500, function (Collection $chunk) {
+            ->chunkById(500, function (Collection $chunk): void {
                 foreach ($chunk as $quote) {
                     $this->denormalizeSummaryOfRescueQuote($quote);
                     $this->progressAdvance();
@@ -82,7 +72,7 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
 
         WorldwideQuote::query()
             ->with('opportunity.primaryAccount')
-            ->chunkById(500, function (Collection $chunk) {
+            ->chunkById(500, function (Collection $chunk): void {
                 foreach ($chunk as $quote) {
                     $this->denormalizeSummaryOfWorldwideQuote($quote);
                     $this->progressAdvance();
@@ -99,12 +89,6 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
         $opportunity = $worldwideQuote->opportunity;
 
         $primaryAccount = $opportunity->primaryAccount;
-
-        if (is_null($primaryAccount)) {
-            $this->logger->warning("Primary Account is not defined on Opportunity entity, Quote Number: '$worldwideQuote->quote_number'.");
-
-            return;
-        }
 
         if (is_null($worldwideQuote->activeVersion->quoteCurrency)) {
             $this->logger->warning("Quote Currency is not defined on WorldwideQuote entity, Quote Number: '$worldwideQuote->quote_number'.");
@@ -124,17 +108,18 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
             ->where('quote_id', $worldwideQuote->getKey())
             ->firstOrNew();
 
-        tap($quoteTotal, function (QuoteTotal $quoteTotal) use ($primaryAccount, $totalPriceOfQuote, $worldwideQuote) {
+        tap($quoteTotal, static function (QuoteTotal $quoteTotal) use ($primaryAccount, $totalPriceOfQuote, $worldwideQuote): void {
             $quoteTotal->quote()->associate($worldwideQuote);
             $quoteTotal->customer_id = null;
-            $quoteTotal->company_id = $primaryAccount->getKey();
-            $quoteTotal->user_id = $worldwideQuote->user_id;
+            $quoteTotal->company()->associate($primaryAccount);
+            $quoteTotal->user()->associate($worldwideQuote->user);
+            $quoteTotal->salesUnit()->associate($worldwideQuote->salesUnit);
 
             $quoteTotal->location_id = null; // TODO: determine the location entity key
             $quoteTotal->location_address = null; // TODO: determine the machine address
             $quoteTotal->location_coordinates = null; // TODO: determine coordinates of machine address
             $quoteTotal->total_price = $totalPriceOfQuote;
-            $quoteTotal->customer_name = $primaryAccount->name;
+            $quoteTotal->customer_name = $primaryAccount?->name ?? '';
             $quoteTotal->rfq_number = $worldwideQuote->quote_number;
             $quoteTotal->quote_created_at = $worldwideQuote->{$worldwideQuote->getCreatedAtColumn()};
             $quoteTotal->quote_submitted_at = $worldwideQuote->submitted_at;
@@ -143,24 +128,16 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
 
             $quoteTotal->save();
 
-            $countries = $primaryAccount->countries()->pluck('countries.id')->all();
+            $countries = $primaryAccount ? $primaryAccount->countries->modelKeys() : [];
 
-            $quoteTotal->countries()->sync($countries);
+            if ($countries) {
+                $quoteTotal->countries()->sync($countries);
+            }
         });
     }
 
     public function denormalizeSummaryOfRescueQuote(Quote $quote): void
     {
-        $company = Company::query()
-            ->where('name', $quote->customer->name)
-            ->where(['type' => 'External'])
-            ->whereRelation('categories', 'name', '=', CompanyCategoryEnum::EndUser)
-            ->first();
-
-        if (!$company instanceof Company) {
-            return;
-        }
-
         $priceSummary = $this->rescueQuoteCalc->calculatePriceSummaryOfRescueQuote($quote);
 
         $baseRateValue = $this->exchangeRateService->getBaseRate($quote->activeVersionOrCurrent->targetCurrency);
@@ -171,16 +148,16 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
             ->where('quote_id', $quote->getKey())
             ->firstOrNew();
 
-        tap($quoteTotal, function (QuoteTotal $quoteTotal) use ($totalPrice, $company, $quote) {
+        tap($quoteTotal, static function (QuoteTotal $quoteTotal) use ($totalPrice, $quote): void {
             $quoteTotal->quote()->associate($quote);
-            $quoteTotal->customer_id = $quote->customer_id;
-            $quoteTotal->company_id = $company->getKey();
-            $quoteTotal->location_id = $quote->customer->equipmentLocation->id;
+            $quoteTotal->customer()->associate($quote->customer);
+            $quoteTotal->company()->associate($quote->customer?->referencedCompany);
+            $quoteTotal->location_id = $quote->customer?->equipmentLocation?->getKey();
 
             $quoteTotal->user_id = $quote->user_id;
 
-            $quoteTotal->location_address = $quote->customer->equipmentLocation->formatted_address;
-            $quoteTotal->location_coordinates = $quote->customer->equipmentLocation->coordinates;
+            $quoteTotal->location_address = $quote->customer->equipmentLocation?->formatted_address;
+            $quoteTotal->location_coordinates = $quote->customer->equipmentLocation?->coordinates;
             $quoteTotal->total_price = $totalPrice;
             $quoteTotal->customer_name = $quote->customer->name;
             $quoteTotal->rfq_number = $quote->customer->rfq;
@@ -212,7 +189,7 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
             ->addSelect('company_id', 'user_id')
             ->groupBy('company_id', 'user_id')
             ->orderBy('company_id')
-            ->chunk(100, function (BaseCollection $chunk) {
+            ->chunk(100, function (BaseCollection $chunk): void {
                 foreach ($chunk as $total) {
                     $this->denormalizeSummaryOfCustomer($total);
                     $this->progressAdvance();
@@ -232,7 +209,7 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
             ->with('location')
             ->has('location')
             ->groupByRaw('location_id')
-            ->chunk(500, function (Collection $chunk) {
+            ->chunk(500, function (Collection $chunk): void {
                 foreach ($chunk as $quoteTotal) {
                     $this->denormalizeSummaryOfLocation($quoteTotal->location);
                     $this->progressAdvance();
@@ -256,7 +233,7 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
         $this->assetQueries
             ->locationsQuery()
             ->orderBy('locations.id')
-            ->chunk(500, function (Collection $chunk) {
+            ->chunk(500, function (Collection $chunk): void {
                 foreach ($chunk as $asset) {
                     /* @var Asset $asset */
                     $this->denormalizeSummaryOfAsset($asset->location);
@@ -284,7 +261,7 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
             ->whereBelongsTo($location)
             ->firstOrNew();
 
-        tap($quoteLocationTotal ?? new QuoteLocationTotal(), function (QuoteLocationTotal $quoteLocationTotal) use ($location, $totals) {
+        tap($quoteLocationTotal ?? new QuoteLocationTotal(), static function (QuoteLocationTotal $quoteLocationTotal) use ($location, $totals): void {
             $quoteLocationTotal->location()->associate($location);
             $quoteLocationTotal->country()->associate($location->country);
             $quoteLocationTotal->location_coordinates = $location->coordinates;
@@ -308,8 +285,8 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
         /*
          * We are creating aggregates for each asset user.
          */
-        $aggregatedAssetData->each(function (AssetAggregate $aggregate) use ($location) {
-            tap(new AssetTotal(), function (AssetTotal $assetTotal) use ($location, $aggregate) {
+        $aggregatedAssetData->each(static function (AssetAggregate $aggregate) use ($location): void {
+            tap(new AssetTotal(), static function (AssetTotal $assetTotal) use ($location, $aggregate): void {
                 $assetTotal->location_id = $location->getKey();
                 $assetTotal->country_id = $location->country->getKey();
                 $assetTotal->user_id = $aggregate->user_id;
@@ -343,7 +320,7 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
         }
 
         /* Eager load addresses having location */
-        $company->load(['addresses' => function ($q) {
+        $company->load(['addresses' => static function ($q): void {
             $q->has('location');
         }, 'addresses.location']);
 
@@ -353,20 +330,21 @@ class StatsCalculationService implements \App\Domain\Stats\Contracts\Stats
             return;
         }
 
-        $company->addresses->each(function (Address $address) use ($company, $total) {
+        $company->addresses->each(static function (Address $address) use ($company, $total): void {
             $customerTotal = CustomerTotal::query()
                 ->where('company_id', $company->getKey())
                 ->where('user_id', $total->user_id)
                 ->where('location_id', $address->location_id)
                 ->firstOrNew();
 
-            tap($customerTotal, function (CustomerTotal $customerTotal) use ($total, $address, $company) {
+            tap($customerTotal, static function (CustomerTotal $customerTotal) use ($total, $address, $company): void {
                 $customerTotal->customer_name = $company->name;
                 $customerTotal->location_id = $address->location_id;
                 $customerTotal->country_id = $address->location->country->getKey();
                 $customerTotal->address_id = $address->getKey();
                 $customerTotal->company_id = $company->getKey();
-                $customerTotal->user_id = $total->user_id;
+                $customerTotal->user()->associate($total->user_id);
+                $customerTotal->salesUnit()->associate($company->salesUnit);
                 $customerTotal->total_count = $total->total_count;
                 $customerTotal->total_value = $total->total_value;
                 $customerTotal->location_address = $address->location->formatted_address;

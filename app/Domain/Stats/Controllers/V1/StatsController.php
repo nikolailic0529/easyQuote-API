@@ -12,44 +12,37 @@ use Illuminate\Http\JsonResponse;
 
 class StatsController extends Controller
 {
-    protected StatsAggregationService $stats;
-
-    public function __construct(StatsAggregationService $stats)
-    {
-        $this->stats = $stats;
-    }
-
     /**
-     * Display a quotes summary.
+     * Show quotes summary.
      */
-    public function showSummaryOfQuotes(SummaryRequest $request): JsonResponse
+    public function showSummaryOfQuotes(SummaryRequest $request, StatsAggregationService $service): JsonResponse
     {
         return response()->json(
-            $this->stats->getQuotesSummary(
+            $service->getQuotesSummary(
                 $request->getSummaryRequestData()
             )
         );
     }
 
     /**
-     * Display a customers summary.
+     * Show customers summary.
      */
-    public function showSummaryOfCustomers(SummaryRequest $request): JsonResponse
+    public function showSummaryOfCustomers(SummaryRequest $request, StatsAggregationService $service): JsonResponse
     {
         return response()->json(
-            $this->stats->getCustomersSummaryList(
+            $service->getCustomersSummaryList(
                 $request->getSummaryRequestData()
             )
         );
     }
 
     /**
-     * Display customer totals for map.
+     * Show customer locations.
      */
-    public function showCustomerLocations(ShowQuoteLocationsRequest $request): JsonResponse
+    public function showCustomerLocations(ShowQuoteLocationsRequest $request, StatsAggregationService $service): JsonResponse
     {
         return response()->json(
-            $this->stats->getCustomerTotalLocations(
+            $service->getCustomerTotalLocations(
                 $request->getPolygon(),
                 $request->resolveEntityKeyOfActingUser()
             )
@@ -57,12 +50,12 @@ class StatsController extends Controller
     }
 
     /**
-     * Display asset totals for map.
+     * Show asset locations.
      */
-    public function showAssetLocations(ShowQuoteLocationsRequest $request): JsonResponse
+    public function showAssetLocations(ShowQuoteLocationsRequest $request, StatsAggregationService $service): JsonResponse
     {
         return response()->json(
-            $this->stats->getAssetTotalLocations(
+            $service->getAssetTotalLocations(
                 $request->getPointOfCenter(),
                 $request->getPolygon(),
                 $request->resolveEntityKeyOfActingUser()
@@ -71,12 +64,12 @@ class StatsController extends Controller
     }
 
     /**
-     * Display quote totals for map.
+     * Show quote locations.
      */
-    public function showQuoteLocations(ShowQuoteLocationsRequest $request): JsonResponse
+    public function showQuoteLocations(ShowQuoteLocationsRequest $request, StatsAggregationService $service): JsonResponse
     {
         return response()->json(
-            $this->stats->getQuoteLocations(
+            $service->getQuoteLocations(
                 $request->getPointOfCenter(),
                 $request->getPolygon(),
                 $request->resolveEntityKeyOfActingUser()
@@ -85,12 +78,12 @@ class StatsController extends Controller
     }
 
     /**
-     * Display quote totals by specific location.
+     * Show quote location details.
      */
-    public function showQuotesOfLocation(StatsRequest $request, Location $location): JsonResponse
+    public function showQuotesOfLocation(StatsRequest $request, StatsAggregationService $service, Location $location): JsonResponse
     {
         return response()->json(
-            $this->stats->getQuoteTotalLocations(
+            $service->getQuoteTotalLocations(
                 $location->getKey(),
                 $request->resolveEntityKeyOfActingUser()
             )

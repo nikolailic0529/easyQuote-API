@@ -34,28 +34,14 @@ class StatsTest extends TestCase
         unset($this->faker);
     }
 
-//    /**
-//     * Test stats calculation.
-//     *
-//     * @return void
-//     */
-//    public function testStatsCalculation()
-//    {
-//        app(Stats::class)->denormalizeSummaryOfQuotes();
-//
-//        $this->assertDatabaseCount('quote_totals', Quote::query()->count() + WorldwideQuote::query()->count());
-//    }
-
     /**
-     * Test Quotes Stats by Location.
-     *
-     * @return void
+     * Test it aggregates a concrete quote location.
      */
-    public function testQuotesStatsByLocation()
+    public function testQuotesStatsByLocation(): void
     {
         $this->authenticateApi();
 
-        /** @var StatsAggregationService */
+        /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
         $quotes = $aggregator->getQuoteTotalLocations($this->faker->uuid);
@@ -64,18 +50,16 @@ class StatsTest extends TestCase
     }
 
     /**
-     * Test Quotes on Map aggregate.
-     *
-     * @return void
+     * Test it aggregates quote locations.
      */
-    public function testQuotesOnMap()
+    public function testQuotesOnMap(): void
     {
         $this->authenticateApi();
 
         /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var \App\Domain\Geocoding\Contracts\AddressGeocoder $locationService */
+        /** @var AddressGeocoder $locationService */
         $locationService = $this->app->make(AddressGeocoder::class);
 
         $quotes = $aggregator->getQuoteLocations(
@@ -95,18 +79,18 @@ class StatsTest extends TestCase
     }
 
     /**
-     * Test Assets on Map aggregate.
+     * Test it aggregates asset locations.
      *
      * @return void
      */
-    public function testAssetsOnMap()
+    public function testAssetsOnMap(): void
     {
         $this->authenticateApi();
 
         /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var \App\Domain\Geocoding\Contracts\AddressGeocoder $locationService */
+        /** @var AddressGeocoder $locationService */
         $locationService = $this->app->make(AddressGeocoder::class);
 
         $assets = $aggregator->getAssetTotalLocations(
@@ -127,18 +111,18 @@ class StatsTest extends TestCase
     }
 
     /**
-     * Test Customers on Map aggregate.
+     * Test it aggregates customer locations.
      *
      * @return void
      */
-    public function testCustomersOnMap()
+    public function testCustomersOnMap(): void
     {
         $this->authenticateApi();
 
-        /** @var StatsAggregationService */
+        /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var \App\Domain\Geocoding\Contracts\AddressGeocoder */
+        /** @var AddressGeocoder $locationService */
         $locationService = $this->app->make(AddressGeocoder::class);
 
         $customers = $aggregator->getCustomerTotalLocations(
@@ -147,76 +131,49 @@ class StatsTest extends TestCase
                 $this->faker->longitude,
                 $this->faker->latitude,
                 $this->faker->longitude
-            ),
-            null
+            )
         );
 
         $this->assertInstanceOf(Collection::class, $customers);
     }
 
     /**
-     * Test Customers Summary aggregate.
-     *
-     * @return void
-     *
-     * @throws BindingResolutionException
+     * Test it aggregates summary of customers.
      */
-    public function testAggregatesSummaryOfCustomers()
+    public function testAggregatesSummaryOfCustomers(): void
     {
         $this->authenticateApi();
 
-        /** @var StatsAggregationService */
+        /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        $classMap = array_flip(Relation::$morphMap);
+        $country = Country::query()->firstOrFail();
 
-        $entityTypes = [
-            $classMap[Quote::class],
-            $classMap[WorldwideQuote::class],
-        ];
-
-        $customers = $aggregator->getCustomersSummary(new SummaryRequestData([
-                'country_id' => Country::query()->value('id'),
-                'entity_types' => $entityTypes,
-                'any_owner_entities' => true,
-                'acting_user_led_teams' => [],
-            ])
-        );
+        $customers = $aggregator->getCustomersSummary(new SummaryRequestData(
+            userId: $this->app['auth.driver']->id(),
+            countryId: $country->getKey()
+        ));
 
         $this->assertIsObject($customers);
         $this->assertTrue(property_exists($customers, 'customers_count'));
     }
 
     /**
-     * Test Quotes Summary aggregate.
-     *
-     * @return void
-     *
-     * @throws BindingResolutionException
+     * Test it aggregates summary of quotes.
      */
-    public function testAggregatesSummaryOfQuotes()
+    public function testAggregatesSummaryOfQuotes(): void
     {
         $this->authenticateApi();
 
-        /** @var StatsAggregationService */
+        /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
         $period = CarbonPeriod::create(Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth());
 
-        $classMap = array_flip(Relation::$morphMap);
-
-        $entityTypes = [
-            $classMap[Quote::class],
-            $classMap[WorldwideQuote::class],
-        ];
-
-        /** @var Summary */
-        $quotes = $aggregator->getQuotesSummary(new SummaryRequestData([
-            'period' => $period,
-            'entity_types' => $entityTypes,
-            'any_owner_entities' => true,
-            'acting_user_led_teams' => [],
-        ]));
+        $quotes = $aggregator->getQuotesSummary(new SummaryRequestData(
+            userId: $this->app['auth.driver']->id(),
+            period: $period,
+        ));
 
         $this->assertInstanceOf(Summary::class, $quotes);
 

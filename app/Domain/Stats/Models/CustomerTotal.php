@@ -6,6 +6,8 @@ use App\Domain\Address\Models\Address;
 use App\Domain\Company\Models\Company;
 use App\Domain\Country\Models\Country;
 use App\Domain\Location\Models\Location;
+use App\Domain\SalesUnit\Models\SalesUnit;
+use App\Domain\User\Models\User;
 use App\Domain\Shared\Eloquent\Concerns\{Uuid};
 use Grimzy\LaravelMysqlSpatial\Eloquent\SpatialTrait;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +41,16 @@ class CustomerTotal extends Model
     protected $casts = [
         'total_value' => 'float',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function salesUnit(): BelongsTo
+    {
+        return $this->belongsTo(SalesUnit::class);
+    }
 
     public function company(): BelongsTo
     {
