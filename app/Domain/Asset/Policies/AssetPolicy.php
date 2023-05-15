@@ -37,9 +37,15 @@ class AssetPolicy
      */
     public function viewAll(User $user): Response
     {
-        return $user->hasRole(R_SUPER)
-            ? $this->allow()
-            : $this->deny();
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('view_assets')) {
+            return $this->allow();
+        }
+
+        return $this->deny();
     }
 
     /**
@@ -70,15 +76,7 @@ class AssetPolicy
                 ->toResponse();
         }
 
-        if ($asset->user()->is($user) || $this->userInSharingUsers($asset, $user)) {
-            return $this->allow();
-        }
-
-        return ResponseBuilder::deny()
-            ->action('view')
-            ->item('asset')
-            ->reason('You must be either an owner or editor')
-            ->toResponse();
+        return $this->allow();
     }
 
     /**
