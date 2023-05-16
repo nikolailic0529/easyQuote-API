@@ -4,6 +4,7 @@ namespace App\Foundation\Http\Services;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class HttpService implements \App\Foundation\Http\Contracts\HttpInterface
@@ -20,19 +21,19 @@ class HttpService implements \App\Foundation\Http\Contracts\HttpInterface
         return new JsonResponse($data, $status, $headers);
     }
 
-    public function invalidJson(Request $request, ValidationException $exception): JsonResponse
+    public function invalidJson(Request $request, ValidationException $e): JsonResponse
     {
         return new JsonResponse([
             'ErrorUrl' => $request->fullUrl(),
             'ErrorCode' => 'EQ_INV_DP_01',
             'Error' => [
-                'headers' => $request->headers->all(),
-                'original' => $exception->errors(),
-                'exception' => get_class($exception),
+                'headers' => Arr::except($request->headers->all(), ['authorization']),
+                'original' => $e->errors(),
+                'exception' => get_class($e),
             ],
             'ErrorDetails' => EQ_INV_DP_01,
-            'message' => optional($exception->validator->errors())->first(),
-        ], $exception->status);
+            'message' => optional($e->validator->errors())->first(),
+        ], $e->status);
     }
 
     public function isInvalidRequestException(\Throwable $exception): bool
