@@ -2463,6 +2463,7 @@
               "is_required": false,
               "placeholder": null,
               "field_required": false,
+              "possible_values": "New Hardware,Installed Hardware",
               "attached_child_id": "d66d6ae6-bc66-4b19-80a7-05c0f66d877d",
               "attached_element_id": "a4cf5da8-4c34-40e0-9230-5c788407a24c"
             }
