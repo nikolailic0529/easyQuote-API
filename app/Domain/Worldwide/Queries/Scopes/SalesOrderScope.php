@@ -80,7 +80,7 @@ class SalesOrderScope
                 ->where(static function (Builder $builder) use ($gate, $foreignKeyForSalesUnitRelation, $user): void {
                     $builder
                         // when user has access to own entities only
-                        ->when($gate->denies('viewCurrentUnitsEntities'), static function (Builder $builder) use ($user): void {
+                        ->when($gate->denies('viewCurrentUnitsEntities', SalesOrder::class), static function (Builder $builder) use ($user): void {
                             $builder->where(static function (Builder $builder) use ($user): void {
                                 $builder->where($builder->qualifyColumn('user_id'), $user->getKey());
                             });
