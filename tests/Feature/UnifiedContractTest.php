@@ -25,7 +25,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewListOfContractUserNames()
+    public function testCanViewListOfContractUserNames(): void
     {
         $this->authenticateApi();
 
@@ -51,7 +51,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewListOfContractCustomerNames()
+    public function testCanViewListOfContractCustomerNames(): void
     {
         $this->authenticateApi();
 
@@ -77,7 +77,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewListOfContractNumbers()
+    public function testCanViewListOfContractNumbers(): void
     {
         $this->authenticateApi();
 
@@ -103,7 +103,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewListOfContractCompanyNames()
+    public function testCanViewListOfContractCompanyNames(): void
     {
         $this->authenticateApi();
 
@@ -129,7 +129,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewPaginatedDraftedContracts()
+    public function testCanViewPaginatedDraftedContracts(): void
     {
         $this->authenticateApi();
 
@@ -194,7 +194,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewOwnPaginatedDraftedContracts()
+    public function testCanViewOwnPaginatedDraftedContracts(): void
     {
         $this->app['db.connection']->table('quotes')->delete();
         $this->app['db.connection']->table('hpe_contracts')->delete();
@@ -276,11 +276,15 @@ class UnifiedContractTest extends TestCase
                 'total',
             ]);
 
-        $this->assertCount(2, $response->json('data'));
+        // Contract viewing is allowed regardless of ownership
+        $this->assertCount(4, $response->json('data'));
 
-        foreach ($response->json('data.*.user.id') as $userKey) {
-            $this->assertSame($user->getKey(), $userKey);
-        }
+        $countWhereOwner = collect($response->json('data'))
+            ->lazy()
+            ->whereStrict('user.id', $user->getKey())
+            ->count();
+
+        $this->assertSame(2, $countWhereOwner);
     }
 
     /**
@@ -288,7 +292,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanFilterDraftedContracts()
+    public function testCanFilterDraftedContracts(): void
     {
         $this->authenticateApi();
 
@@ -297,7 +301,7 @@ class UnifiedContractTest extends TestCase
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, json_encode([
             'hits' => [
-                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all()),
+                'hits' => array_map(static fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all()),
             ],
         ]));
         rewind($stream);
@@ -318,7 +322,7 @@ class UnifiedContractTest extends TestCase
 
         $this->app->instance(Elasticsearch::class, $esClient);
 
-        $customerNames = $contracts->map(fn (Contract $contract) => $contract->customer->name)->all();
+        $customerNames = $contracts->map(static fn (Contract $contract) => $contract->customer->name)->all();
 
         $this->getJson('api/contracts/drafted?'.Arr::query([
                 'filter' => [
@@ -384,7 +388,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanFilterSubmittedContracts()
+    public function testCanFilterSubmittedContracts(): void
     {
         $this->authenticateApi();
 
@@ -395,7 +399,7 @@ class UnifiedContractTest extends TestCase
         $stream = fopen('php://memory', 'r+');
         fwrite($stream, json_encode([
             'hits' => [
-                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all()),
+                'hits' => array_map(static fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all()),
             ],
         ]));
         rewind($stream);
@@ -416,7 +420,7 @@ class UnifiedContractTest extends TestCase
 
         $this->app->instance(Elasticsearch::class, $esClient);
 
-        $customerNames = $contracts->map(fn (Contract $contract) => $contract->customer->name)->all();
+        $customerNames = $contracts->map(static fn (Contract $contract) => $contract->customer->name)->all();
 
         $this->getJson('api/contracts/submitted?'.Arr::query([
                 'filter' => [
@@ -476,7 +480,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewPaginatedSubmittedContracts()
+    public function testCanViewPaginatedSubmittedContracts(): void
     {
         $this->authenticateApi();
 
@@ -542,7 +546,7 @@ class UnifiedContractTest extends TestCase
      *
      * @return void
      */
-    public function testCanViewOwnPaginatedSubmittedContracts()
+    public function testCanViewOwnPaginatedSubmittedContracts(): void
     {
         $this->app['db.connection']->table('quotes')->delete();
         $this->app['db.connection']->table('hpe_contracts')->delete();
@@ -625,10 +629,14 @@ class UnifiedContractTest extends TestCase
                 'total',
             ]);
 
-        $this->assertCount(2, $response->json('data'));
+        // Contract viewing is allowed regardless of ownership
+        $this->assertCount(4, $response->json('data'));
 
-        foreach ($response->json('data.*.user.id') as $userKey) {
-            $this->assertSame($user->getKey(), $userKey);
-        }
+        $countWhereOwner = collect($response->json('data'))
+            ->lazy()
+            ->whereStrict('user.id', $user->getKey())
+            ->count();
+
+        $this->assertSame(2, $countWhereOwner);
     }
 }
