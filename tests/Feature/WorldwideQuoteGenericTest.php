@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Address\Enum\AddressType;
 use App\Domain\Address\Models\Address;
 use App\Domain\Authorization\Models\Role;
+use App\Domain\Company\Models\Company;
 use App\Domain\QuoteFile\Models\QuoteFile;
+use App\Domain\Rescue\Models\QuoteTemplate;
 use App\Domain\SalesUnit\Models\SalesUnit;
 use App\Domain\User\Models\User;
 use App\Domain\Worldwide\Models\Opportunity;
@@ -13,6 +16,7 @@ use App\Domain\Worldwide\Models\SalesOrder;
 use App\Domain\Worldwide\Models\WorldwideDistribution;
 use App\Domain\Worldwide\Models\WorldwideQuote;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
@@ -682,5 +686,60 @@ class WorldwideQuoteGenericTest extends TestCase
             $this->assertSame($user->getKey(), $quote['user_id']);
             $this->assertContains($quote['sales_unit_id'], $user->salesUnits->modelKeys());
         }
+    }
+
+    public function testItPreservesPrimaryAccountInvoiceAddressOnSubmission(): void
+    {
+        /** @var Address $invoiceAddress */
+        $invoiceAddress = Address::factory([
+            'address_type' => AddressType::INVOICE,
+            'address_1' => Str::random(40),
+            'address_2' => Str::random(40),
+        ])->create();
+
+        /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
+        $wwQuote = WorldwideQuote::factory()
+            ->for(
+                Opportunity::factory()
+                    ->for(
+                        Company::factory()->hasAttached(
+                            $invoiceAddress,
+                            pivot: ['is_default' => true]
+                        ),
+                        relationship: 'primaryAccount'
+                    )
+            )
+            ->create([
+                'contract_type_id' => CT_CONTRACT,
+            ]);
+
+        $wwQuote->activeVersion->quoteTemplate()->associate(QuoteTemplate::query()->first());
+        $wwQuote->activeVersion->save();
+
+        $this->authenticateApi();
+
+        $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/submit', [
+            'quote_closing_date' => now()->addDays(10)->toDateString(),
+            'additional_notes' => 'Note for submitted quote',
+        ])
+//            ->dump()
+            ->assertNoContent();
+
+        $wwQuote->opportunity->primaryAccount->addresses()->detach();
+
+        $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/preview')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'quote_summary' => [
+                    'primary_account_inv_address_1',
+                    'primary_account_inv_address_2',
+                    'primary_account_inv_country',
+                    'primary_account_inv_state',
+                    'primary_account_inv_state_code',
+                    'primary_account_inv_post_code',
+                ],
+            ])
+            ->assertJsonPath('quote_summary.primary_account_inv_address_1', $invoiceAddress->address_1);
     }
 }

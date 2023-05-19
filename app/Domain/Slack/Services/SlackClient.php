@@ -6,9 +6,6 @@ use App\Domain\Slack\Contracts\SlackInterface;
 use App\Domain\Slack\Events\FailedSend;
 use App\Domain\Slack\Events\Sent;
 use App\Domain\Slack\Jobs\SendSlackNotification;
-
-use const App\Services\PHP_EOL;
-
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -59,7 +56,7 @@ class SlackClient implements SlackInterface
         }
     }
 
-    public function queue(?array $attributes = null)
+    public function queue(?array $attributes = null): void
     {
         if ($this->disabled()) {
             return;
@@ -120,8 +117,8 @@ class SlackClient implements SlackInterface
         if (is_iterable($status)) {
             $status = Collection::wrap($status)
                 ->map(
-                    fn ($value, $key) => (string) Str::of($value)
-                        ->when(is_string($key), fn (Stringable $string) => $string->prepend($key, ': '))
+                    static fn ($value, $key) => (string) Str::of($value)
+                        ->when(is_string($key), static fn (Stringable $string) => $string->prepend($key, ': '))
                         ->finish('.')
                 )->implode(PHP_EOL);
         }
@@ -176,14 +173,14 @@ class SlackClient implements SlackInterface
         return Http::asJson()->post(config('services.slack.endpoint'), $payload);
     }
 
-    protected function success()
+    protected function success(): void
     {
         event(new Sent($this->toArray()));
 
         customlog(['message' => SNS_01], ['payload' => $this->toArray()]);
     }
 
-    protected function error()
+    protected function error(): void
     {
         event(new FailedSend($this->toArray()));
 
@@ -215,7 +212,7 @@ class SlackClient implements SlackInterface
             ],
         ];
 
-        $json = array_map(fn ($block) => array_filter($block), $json);
+        $json = array_map(static fn ($block) => array_filter($block), $json);
 
         return ['blocks' => $json];
     }

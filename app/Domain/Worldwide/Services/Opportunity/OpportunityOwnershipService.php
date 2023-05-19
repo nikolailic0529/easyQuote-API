@@ -3,6 +3,7 @@
 namespace App\Domain\Worldwide\Services\Opportunity;
 
 use App\Domain\Authentication\Contracts\CauserAware;
+use App\Domain\Company\Models\Company;
 use App\Domain\Note\Models\Note;
 use App\Domain\Shared\Ownership\Contracts\ChangeOwnershipStrategy;
 use App\Domain\Shared\Ownership\Contracts\ProvidesLinkedModels;
@@ -68,11 +69,29 @@ class OpportunityOwnershipService implements ChangeOwnershipStrategy, ProvidesLi
         yield from $model->ownAppointments;
         yield from $model->attachments;
 
-        yield from Collection::make([
+        $companies = Collection::make([
             $model->primaryAccount,
             $model->endUser,
         ])
             ->filter()
+            ->unique()
+            ->values();
+
+        yield from $companies;
+
+        yield from $companies
+            ->map(static function (Company $company): Collection {
+                return $company->addresses;
+            })
+            ->collapse()
+            ->unique()
+            ->values();
+
+        yield from $companies
+            ->map(static function (Company $company): Collection {
+                return $company->contacts;
+            })
+            ->collapse()
             ->unique()
             ->values();
     }

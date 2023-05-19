@@ -4,7 +4,9 @@ namespace App\Domain\Rescue\Policies;
 
 use App\Domain\Rescue\Models\Contract;
 use App\Domain\User\Models\User;
+use App\Foundation\Auth\Access\Response\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 class ContractPolicy
 {
@@ -12,125 +14,175 @@ class ContractPolicy
 
     /**
      * Determine whether the user can view any contracts.
-     *
-     * @return mixed
      */
-    public function viewAny(User $user)
+    public function viewAny(User $user): Response
     {
-        return $user->can('view_contracts') || $user->can('view_own_contracts');
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->canAny(['view_contracts', 'view_own_contracts'])) {
+            return $this->allow();
+        }
+
+        return ResponseBuilder::deny()
+            ->action('view')
+            ->item('contracts')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can view the contract.
-     *
-     * @return mixed
      */
-    public function view(User $user, Contract $contract)
+    public function view(User $user, Contract $contract): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->can("contracts.read.{$contract->id}")) {
-            return true;
+        if ($user->canAny(['view_contracts', 'view_own_contracts'])) {
+            return $this->allow();
         }
 
-        if ($user->can("contracts.read.user.{$contract->user_id}")) {
-            return true;
-        }
-
-        if ($user->can('view_own_contracts')) {
-            return $user->id === $contract->user_id;
-        }
+        return ResponseBuilder::deny()
+            ->action('view')
+            ->item('contract')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can create contracts.
-     *
-     * @return mixed
      */
-    public function create(User $user)
+    public function create(User $user): Response
     {
-        return $user->can('create_contracts');
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        if ($user->can('create_contracts')) {
+            return $this->allow();
+        }
+
+        return ResponseBuilder::deny()
+            ->action('create')
+            ->item('contract')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can update the contract.
-     *
-     * @return mixed
      */
-    public function update(User $user, Contract $contract)
+    public function update(User $user, Contract $contract): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->can("contracts.update.{$contract->id}")) {
-            return true;
+        if ($user->can("contracts.update.{$contract->getKey()}")) {
+            return $this->allow();
         }
 
-        if ($user->can("contracts.update.user.{$contract->user_id}")) {
-            return true;
+        if ($user->can("contracts.update.user.{$contract->user()->getParentKey()}")) {
+            return $this->allow();
         }
 
-        if ($user->can('update_own_contracts')) {
-            return $user->id === $contract->user_id;
+        if ($user->cant('update_own_contracts')) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('contract')
+                ->toResponse();
         }
+
+        if ($contract->user()->isNot($user)) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('contract')
+                ->reason('You must be an owner')
+                ->toResponse();
+        }
+
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can update the contract state.
-     *
-     * @return mixed
      */
-    public function state(User $user, Contract $contract)
+    public function state(User $user, Contract $contract): Response
     {
-        if ($contract->isSubmitted()) {
-            return $this->deny(CTSU_01);
+        $updateResponse = $this->update($user, $contract);
+
+        if ($updateResponse->denied()) {
+            return $updateResponse;
         }
 
-        return $this->update($user, $contract);
+        if ($contract->isSubmitted()) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('contract')
+                ->reason('Contract is submitted')
+                ->toResponse();
+        }
+
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can update the contract.
-     *
-     * @return mixed
      */
-    public function submit(User $user, Contract $contract)
+    public function submit(User $user, Contract $contract): Response
     {
-        if (!$this->update($user, $contract)) {
-            return false;
+        $updateResponse = $this->update($user, $contract);
+
+        if ($updateResponse->denied()) {
+            return $updateResponse;
         }
 
-        if ($contract->query()->submitted()->activated()
-            ->where('id', '!=', $contract->id)
-            ->rfq($contract->customer->rfq)
-            ->doesntExist()
-        ) {
-            return true;
+        $activeSubmittedContractExists = $contract->newQuery()
+            ->whereNotNull('submitted_at')
+            ->whereNotNull('activated_at')
+            ->whereKeyNot($contract->getKey())
+            ->whereRelation('customer', 'rfq', '=', $contract->customer->rfq)
+            ->exists();
+
+        if (!$activeSubmittedContractExists) {
+            return $this->allow();
         }
 
-        return $this->deny(CTSE_01);
+        return ResponseBuilder::deny()
+            ->action('submit')
+            ->item('contract')
+            ->reason('An active submitted contract for the same number already exists')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can delete the contract.
-     *
-     * @return mixed
      */
-    public function delete(User $user, Contract $contract)
+    public function delete(User $user, Contract $contract): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->can("contracts.delete.user.{$contract->user_id}")) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->can('delete_own_contracts')) {
-            return $user->id === $contract->user_id;
+        if ($user->cant('delete_own_contracts')) {
+            return ResponseBuilder::deny()
+                ->action('delete')
+                ->item('contract')
+                ->toResponse();
         }
+
+        if ($contract->user()->isNot($user)) {
+            return ResponseBuilder::deny()
+                ->action('update')
+                ->item('contract')
+                ->reason('You must be an owner')
+                ->toResponse();
+        }
+
+        return $this->allow();
     }
 }

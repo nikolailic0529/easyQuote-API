@@ -36,10 +36,6 @@ class SubmitSalesOrderService
 
         $violations->addAll($this->validator->validate($data->customer_data));
 
-        foreach ($data->addresses_data as $addressData) {
-            $violations->addAll($this->validator->validate($addressData));
-        }
-
         foreach ($data->order_lines_data as $lineData) {
             $violations->addAll($this->validator->validate($lineData));
         }
@@ -104,12 +100,6 @@ class SubmitSalesOrderService
 
     protected function mapSubmitSalesOrderDataToPostData(SubmitSalesOrderData $salesOrderData): array
     {
-        /** @var SubmitOrderAddressData|null $invoiceAddress */
-        $invoiceAddress = collect($salesOrderData->addresses_data)
-            ->lazy()
-            ->whereStrict('address_type', AddressType::INVOICE)
-            ->first();
-
         return [
             'data' => [
                 'said' => $salesOrderData->service_agreement_id,
@@ -117,12 +107,12 @@ class SubmitSalesOrderService
                 'to_date' => $salesOrderData->to_date,
                 'post_sales_id' => $salesOrderData->post_sales_id,
                 'company_id' => $salesOrderData->company_id,
-                'address_1' => $invoiceAddress->address_1 ?? null,
-                'address_2' => $invoiceAddress->address_2 ?? null,
-                'city' => $invoiceAddress->city ?? null,
-                'state' => $invoiceAddress->state ?? null,
-                'post_code' => $invoiceAddress->post_code ?? null,
-                'country_code' => $invoiceAddress->country_code ?? null,
+                'address_1' => $salesOrderData->invoice_address?->address_1 ?? null,
+                'address_2' => $salesOrderData->invoice_address?->address_2 ?? null,
+                'city' => $salesOrderData->invoice_address?->city ?? null,
+                'state' => $salesOrderData->invoice_address?->state ?? null,
+                'post_code' => $salesOrderData->invoice_address?->post_code ?? null,
+                'country_code' => $salesOrderData->invoice_address?->country_code ?? null,
                 'phone_no' => $salesOrderData->customer_data->phone_no,
                 'email' => $salesOrderData->customer_data->email,
                 'company_reg_no' => $salesOrderData->customer_data->company_reg_no,

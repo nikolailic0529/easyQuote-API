@@ -169,7 +169,7 @@ class CompanyEventAuditor implements ShouldQueue
         $newAttributes = $this->changesDetector->getModelChanges($company, self::$logAttributes);
 
         return array_merge($newAttributes, [
-            'status' => $company->status->name,
+            'status' => $company->status?->name,
             'addresses' => $company->addresses->map(static function (Address $address): string {
                 return sprintf('[%s `%s` %s]', $address->address_type, $address->getIdForHumans(),
                     $address->pivot->is_default ? 'default' : 'not default');

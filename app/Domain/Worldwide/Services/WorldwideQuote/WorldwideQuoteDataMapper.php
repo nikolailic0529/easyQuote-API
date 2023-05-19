@@ -571,14 +571,14 @@ class WorldwideQuoteDataMapper
                 'equipment_address' => self::formatAddressToString($quoteHardwareAddress),
                 'hardware_phone' => $quoteHardwareContact->phone ?? ND_02,
                 'hardware_contact' => \transform($quoteHardwareContact, static function (Contact $contact) {
-                        return implode(' ', [$contact->first_name, $contact->last_name]);
-                    }) ?? ND_02,
+                    return implode(' ', [$contact->first_name, $contact->last_name]);
+                }) ?? ND_02,
 
                 'software_address' => self::formatAddressToString($quoteSoftwareAddress),
                 'software_phone' => $quoteSoftwareContact->phone ?? ND_02,
                 'software_contact' => \transform($quoteSoftwareContact, static function (Contact $contact) {
-                        return implode(' ', [$contact->first_name, $contact->last_name]);
-                    }) ?? ND_02,
+                    return implode(' ', [$contact->first_name, $contact->last_name]);
+                }) ?? ND_02,
 
                 'service_levels' => $serviceLevels,
                 'coverage_period' => $this->formatCoveragePeriod($opportunity),
@@ -1454,9 +1454,15 @@ class WorldwideQuoteDataMapper
             ->first(static fn (Address $address) => in_array($address->address_type,
                 [AddressType::MACHINE, AddressType::HARDWARE, AddressType::EQUIPMENT], true));
 
-        /** @var Address|null $quoteInvoiceAddress */
-        $quoteInvoiceAddress = $defaultPrimaryAccountAddresses
-            ->first(static fn (Address $address) => in_array($address->address_type, [AddressType::INVOICE], true));
+        /* @var Address|null $quoteInvoiceAddress */
+        if (null !== $worldwideQuote->submitted_at && null !== $activeVersion->submittedPaInvoiceAddress) {
+            $quoteInvoiceAddress = $activeVersion->submittedPaInvoiceAddress;
+        } else {
+            $quoteInvoiceAddress = $defaultPrimaryAccountAddresses
+                ->lazy()
+                ->whereStrict('address_type', AddressType::INVOICE)
+                ->first();
+        }
 
         /** @var \App\Domain\Address\Models\Address|null $quoteSoftwareAddress */
         $quoteSoftwareAddress = $defaultPrimaryAccountAddresses
@@ -1527,6 +1533,13 @@ class WorldwideQuoteDataMapper
             'contact_email' => $opportunity->primaryAccountContact?->email ?? ND_02,
             'contact_phone' => $opportunity->primaryAccountContact?->phone ?? ND_02,
             'contact_country' => ($quoteInvoiceAddress ?? $quoteHardwareAddress)?->country?->iso_3166_2 ?? ND_02,
+
+            'primary_account_inv_address_1' => $quoteInvoiceAddress?->address_1,
+            'primary_account_inv_address_2' => $quoteInvoiceAddress?->address_2,
+            'primary_account_inv_country' => $quoteInvoiceAddress?->country?->iso_3166_2,
+            'primary_account_inv_state' => $quoteInvoiceAddress?->state,
+            'primary_account_inv_state_code' => $quoteInvoiceAddress?->state_code,
+            'primary_account_inv_post_code' => $quoteInvoiceAddress?->post_code,
 
             'end_user_name' => $opportunity->endUser?->name ?? ND_02,
             'end_user_contact_country' => collect($quoteDataAggregation)->map->country_code->unique()->implode(', '),

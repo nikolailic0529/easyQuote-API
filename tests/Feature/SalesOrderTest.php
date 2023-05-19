@@ -22,6 +22,7 @@ use App\Domain\Template\Models\TemplateField;
 use App\Domain\User\Models\User;
 use App\Domain\Vendor\Models\Vendor;
 use App\Domain\VendorServices\Services\CheckSalesOrderService;
+use App\Domain\VendorServices\Services\OauthClient;
 use App\Domain\VendorServices\Services\OauthClient as VSOauthClient;
 use App\Domain\Worldwide\Models\DistributionRowsGroup;
 use App\Domain\Worldwide\Models\Opportunity;
@@ -33,12 +34,9 @@ use App\Domain\Worldwide\Models\WorldwideQuote;
 use App\Domain\Worldwide\Models\WorldwideQuoteAsset;
 use App\Domain\Worldwide\Services\SalesOrder\CancelSalesOrderService;
 use App\Domain\Worldwide\Services\SalesOrder\SubmitSalesOrderService;
-use GuzzleHttp\Client;
-use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
@@ -128,6 +126,9 @@ class SalesOrderTest extends TestCase
             'access_sales_order_direction' => AccessEntityDirection::CurrentUnits,
         ];
         $role->save();
+        $user->syncRoles($role);
+
+        $this->actingAs($user, 'api');
 
         $orderForAssignedUnitButDifferentOwner = SalesOrder::factory()
             ->for(User::factory())
@@ -149,8 +150,6 @@ class SalesOrderTest extends TestCase
                             ->for(SalesUnit::factory())
                     )
             );
-
-        $this->actingAs($user, 'api');
 
         $this->getJson('api/sales-orders/drafted')
 //            ->dump()
@@ -914,6 +913,10 @@ class SalesOrderTest extends TestCase
             'opportunity_id' => $opportunity->getKey(),
         ]);
 
+        $opportunity->primaryAccount->addresses()->sync([
+            $invoiceAddress->getKey(), $machineAddress->getKey(),
+        ]);
+
         $quote->activeVersion->addresses()->sync([
             $invoiceAddress->getKey(), $machineAddress->getKey(),
         ]);
@@ -961,22 +964,25 @@ class SalesOrderTest extends TestCase
             'worldwide_quote_id' => $quote->getKey(), 'submitted_at' => null, 'vat_number' => '1234',
         ]);
 
-        $this->app->when(SubmitSalesOrderService::class)->needs(ClientInterface::class)
-            ->give(static function () {
-                $mock = new MockHandler([
-                    new \GuzzleHttp\Psr7\Response(200, [],
-                        json_encode(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234'])),
-                    new \GuzzleHttp\Psr7\Response(200, [],
-                        json_encode(['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'])),
-                ]);
+        $oauthClient = $this->app->make(Factory::class);
+        $oauthClient->fake([
+            '*' => ['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234'],
+        ]);
+        $this->app->when(OauthClient::class)->needs(Factory::class)->give(static function () use ($oauthClient): mixed {
+            return $oauthClient;
+        });
 
-                $handlerStack = HandlerStack::create($mock);
+        $submitClient = $this->app->make(Factory::class);
+        $submitClient->fake([
+            '*' => ['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'],
+        ]);
 
-                return new Client(['handler' => $handlerStack]);
+        $this->app->when(SubmitSalesOrderService::class)->needs(Factory::class)
+            ->give(static function () use ($submitClient): mixed {
+                return $submitClient;
             });
 
-        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')//            ->dump()
-        ;
+        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit');
 
         $this->assertContainsEquals($response->status(),
             [Response::HTTP_UNPROCESSABLE_ENTITY, Response::HTTP_ACCEPTED]);

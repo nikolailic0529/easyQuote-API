@@ -3,10 +3,10 @@
 namespace App\Domain\HpeContract\Policies;
 
 use App\Domain\HpeContract\Models\HpeContract;
-use App\Domain\User\Models\{
-    User
-};
+use App\Domain\User\Models\{User};
+use App\Foundation\Auth\Access\Response\ResponseBuilder;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access\Response;
 
 class HpeContractPolicy
 {
@@ -14,109 +14,126 @@ class HpeContractPolicy
 
     /**
      * Determine whether the user can view any contracts.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function viewAny(User $user)
+    public function viewAny(User $user): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->hasAnyPermission('view_contracts', 'view_own_contracts')) {
-            return true;
+        if ($user->canAny(['view_contracts', 'view_own_contracts'])) {
+            return $this->allow();
         }
+
+        return $this->deny();
     }
 
     /**
      * Determine whether the user can view the contract.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function view(User $user, HpeContract $contract)
+    public function view(User $user, HpeContract $contract): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->can('view_own_contracts') && $user->getKey() === $contract->user_id) {
-            return true;
+        if ($user->canAny(['view_contracts', 'view_own_contracts'])) {
+            return $this->allow();
         }
+
+        return ResponseBuilder::deny()
+            ->action('view')
+            ->item('hpe contract')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can create contracts.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function create(User $user)
+    public function create(User $user): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
         if ($user->can('create_contracts')) {
-            return true;
+            return $this->allow();
         }
+
+        return ResponseBuilder::deny()
+            ->action('create')
+            ->item('hpe contract')
+            ->toResponse();
     }
 
     /**
      * Determine whether the user can update the contract.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function update(User $user, HpeContract $contract)
+    public function update(User $user, HpeContract $contract): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->can('update_own_contracts') && $user->getKey() === $contract->user_id) {
-            return true;
+        if ($user->cant('update_own_contracts')) {
+            return ResponseBuilder::deny()
+                ->action('create')
+                ->item('hpe contract')
+                ->toResponse();
         }
+
+        if ($contract->user()->isNot($user)) {
+            return ResponseBuilder::deny()
+                ->action('create')
+                ->item('hpe contract')
+                ->reason('You must be an owner')
+                ->toResponse();
+        }
+
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can delete the contract.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function delete(User $user, HpeContract $contract)
+    public function delete(User $user, HpeContract $contract): Response
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
+            return $this->allow();
         }
 
-        if ($user->can('delete_own_contracts') && $user->getKey() === $contract->user_id) {
-            return true;
+        if ($user->cant('delete_own_contracts')) {
+            return ResponseBuilder::deny()
+                ->action('create')
+                ->item('hpe contract')
+                ->toResponse();
         }
+
+        if ($contract->user()->isNot($user)) {
+            return ResponseBuilder::deny()
+                ->action('create')
+                ->item('hpe contract')
+                ->reason('You must be an owner')
+                ->toResponse();
+        }
+
+        return $this->allow();
     }
 
     /**
      * Determine whether the user can make a new copy of the contract.
-     *
-     * @param \App\Domain\User\Models\User $user
-     *
-     * @return mixed
      */
-    public function copy(User $user, HpeContract $contract)
+    public function copy(User $user, HpeContract $contract): Response
     {
-        if ($user->hasRole(R_SUPER)) {
-            return true;
+        $createResponse = $this->create($user);
+
+        if ($createResponse->denied()) {
+            return ResponseBuilder::deny()
+                ->action('copy')
+                ->item('hpe contract')
+                ->toResponse();
         }
 
-        if ($user->can('update_own_contracts')) {
-            return true;
-        }
+        return $this->allow();
     }
 }

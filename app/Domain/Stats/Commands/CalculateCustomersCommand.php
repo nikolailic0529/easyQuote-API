@@ -21,22 +21,7 @@ class CalculateCustomersCommand extends Command
      */
     protected $description = 'Calculate customers totals';
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
-    public function handle(Stats $service)
+    public function handle(Stats $service): int
     {
         $this->output->title('Customer totals calculation started');
 
@@ -46,6 +31,6 @@ class CalculateCustomersCommand extends Command
 
         $this->output->success('Calculation of Customer totals successfully finished');
 
-        return Command::SUCCESS;
+        return self::SUCCESS;
     }
 }

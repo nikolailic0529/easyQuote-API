@@ -50,20 +50,12 @@ class SalesOrderDataMapper
 {
     const EXCLUDED_ASSET_FIELDS = ['price'];
 
-    protected ManagesExchangeRates $exchangeRateService;
-    protected AssetServiceLookupService $lookupService;
-    protected WorldwideQuoteCalc $quoteCalc;
-    protected WorldwideDistributorQuoteCalc $distributorQuoteCalc;
-
-    public function __construct(ManagesExchangeRates $exchangeRateService,
-                                AssetServiceLookupService $lookupService,
-                                WorldwideQuoteCalc $quoteCalc,
-                                WorldwideDistributorQuoteCalc $distributorQuoteCalc)
-    {
-        $this->exchangeRateService = $exchangeRateService;
-        $this->lookupService = $lookupService;
-        $this->quoteCalc = $quoteCalc;
-        $this->distributorQuoteCalc = $distributorQuoteCalc;
+    public function __construct(
+        protected ManagesExchangeRates $exchangeRateService,
+        protected AssetServiceLookupService $lookupService,
+        protected WorldwideQuoteCalc $quoteCalc,
+        protected WorldwideDistributorQuoteCalc $distributorQuoteCalc
+    ) {
     }
 
     public function mapSalesOrderToSubmitSalesOrderData(SalesOrder $salesOrder): SubmitSalesOrderData
@@ -99,13 +91,15 @@ class SalesOrderDataMapper
 
         $quotePriceData = $this->getSalesOrderPriceData($salesOrder);
 
-        $activeQuoteVersion->worldwideDistributions->load(['mappedRows' => function (Relation $relation) {
-            $relation->where('is_selected', true);
-        }, 'rowsGroups' => function (Relation $relation) {
-            $relation->where('is_selected', true);
-        }, 'rowsGroups.rows']);
+        $activeQuoteVersion->worldwideDistributions->load([
+            'mappedRows' => static function (Relation $relation): void {
+                $relation->where('is_selected', true);
+            }, 'rowsGroups' => static function (Relation $relation): void {
+                $relation->where('is_selected', true);
+            }, 'rowsGroups.rows',
+        ]);
 
-        $activeQuoteVersion->worldwideDistributions->each(function (WorldwideDistribution $distributorQuote) {
+        $activeQuoteVersion->worldwideDistributions->each(static function (WorldwideDistribution $distributorQuote): void {
             $supplierName = $distributorQuote->opportunitySupplier->supplier_name;
 
             if ($distributorQuote->vendors->isEmpty()) {
@@ -120,7 +114,7 @@ class SalesOrderDataMapper
         $orderLinesData = $activeQuoteVersion->worldwideDistributions->reduce(function (array $orderLines, WorldwideDistribution $distribution) use ($quoteCurrency) {
             $priceSummaryOfDistributorQuote = $this->distributorQuoteCalc->calculatePriceSummaryOfDistributorQuote($distribution);
 
-            $priceValueCoeff = with($priceSummaryOfDistributorQuote, function (ImmutablePriceSummaryData $priceSummaryData): float {
+            $priceValueCoeff = with($priceSummaryOfDistributorQuote, static function (ImmutablePriceSummaryData $priceSummaryData): float {
                 if ($priceSummaryData->total_price !== 0.0) {
                     return $priceSummaryData->final_total_price_excluding_tax / $priceSummaryData->total_price;
                 }
@@ -128,15 +122,27 @@ class SalesOrderDataMapper
                 return 0.0;
             });
 
-            $distributorQuoteLines = value(function () use ($priceSummaryOfDistributorQuote, $priceValueCoeff, $quoteCurrency, $distribution): array {
+            $distributorQuoteLines = value(static function () use (
+                $priceSummaryOfDistributorQuote,
+                $priceValueCoeff,
+                $quoteCurrency,
+                $distribution
+            ): array {
                 /** @var \App\Domain\Vendor\Models\Vendor $quoteVendor */
                 $quoteVendor = $distribution->vendors->first();
 
                 $supplier = $distribution->opportunitySupplier;
 
                 if ($distribution->use_groups) {
-                    return $distribution->rowsGroups->reduce(function (array $rows, DistributionRowsGroup $rowsGroup) use ($supplier, $quoteVendor, $priceValueCoeff, $priceSummaryOfDistributorQuote, $quoteCurrency, $distribution) {
-                        $rowsOfGroup = $rowsGroup->rows->map(fn (MappedRow $row) => new SubmitOrderLineData([
+                    return $distribution->rowsGroups->reduce(static function (array $rows, DistributionRowsGroup $rowsGroup) use (
+                        $supplier,
+                        $quoteVendor,
+                        $priceValueCoeff,
+                        $priceSummaryOfDistributorQuote,
+                        $quoteCurrency,
+                        $distribution
+                    ) {
+                        $rowsOfGroup = $rowsGroup->rows->map(static fn (MappedRow $row) => new SubmitOrderLineData([
                             'line_id' => $row->getKey(),
                             'unit_price' => $row->price,
                             'sku' => $row->product_no ?? '',
@@ -149,7 +155,7 @@ class SalesOrderDataMapper
                             'vendor_short_code' => $quoteVendor->short_code ?? '',
                             'distributor_name' => $supplier->supplier_name ?? '',
                             'discount_applied' => $priceSummaryOfDistributorQuote->applicable_discounts_value > 0,
-                            'machine_country_code' => transform($distribution->country, fn (Country $country) => $country->iso_3166_2) ?? '',
+                            'machine_country_code' => transform($distribution->country, static fn (Country $country) => $country->iso_3166_2) ?? '',
                             'currency_code' => $quoteCurrency->code,
                         ]))->all();
 
@@ -157,7 +163,14 @@ class SalesOrderDataMapper
                     }, []);
                 }
 
-                return $distribution->mappedRows->map(function (MappedRow $row) use ($distribution, $quoteCurrency, $supplier, $quoteVendor, $priceValueCoeff, $priceSummaryOfDistributorQuote) {
+                return $distribution->mappedRows->map(static function (MappedRow $row) use (
+                    $distribution,
+                    $quoteCurrency,
+                    $supplier,
+                    $quoteVendor,
+                    $priceValueCoeff,
+                    $priceSummaryOfDistributorQuote
+                ) {
                     return new SubmitOrderLineData([
                         'line_id' => $row->getKey(),
                         'unit_price' => $row->price,
@@ -171,7 +184,7 @@ class SalesOrderDataMapper
                         'vendor_short_code' => $quoteVendor->short_code ?? '',
                         'distributor_name' => $supplier->supplier_name ?? '',
                         'discount_applied' => $priceSummaryOfDistributorQuote->applicable_discounts_value > 0,
-                        'machine_country_code' => transform($distribution->country, fn (Country $country) => $country->iso_3166_2) ?? '',
+                        'machine_country_code' => transform($distribution->country, static fn (Country $country) => $country->iso_3166_2) ?? '',
                         'currency_code' => $quoteCurrency->code,
                     ]);
                 })->all();
@@ -184,34 +197,25 @@ class SalesOrderDataMapper
             throw new \InvalidArgumentException('At least one Order Line must exist on the Quote.');
         }
 
-        $addresses = [];
+        $primaryAccount = $activeQuoteVersion->worldwideQuote->opportunity->primaryAccount;
 
-        $addresses[] = $activeQuoteVersion->worldwideQuote->opportunity->primaryAccount->addresses
+        $hardwareAddress = $primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(function (Address $address) {
+            ->first(static function (Address $address) {
                 return in_array($address->address_type, [AddressType::HARDWARE, AddressType::MACHINE]);
             });
+        if ($hardwareAddress) {
+            $hardwareAddress = $this->mapAddressData($hardwareAddress);
+        }
 
-        $addresses[] = $activeQuoteVersion->worldwideQuote->opportunity->primaryAccount->addresses
+        $invoiceAddress = $activeQuoteVersion->submittedPaInvoiceAddress ?? $primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(function (Address $address) {
+            ->first(static function (Address $address) {
                 return $address->address_type === AddressType::INVOICE;
             });
-
-        $submitAddressDataMapper = function (Address $address): SubmitOrderAddressData {
-            return new SubmitOrderAddressData([
-                'address_type' => $address->address_type,
-                'address_1' => $address->address_1 ?? '',
-                'address_2' => $address->address_2,
-                'state' => $address->state,
-                'state_code' => $address->state_code,
-                'country_code' => transform($address->country, fn (Country $country) => $country->iso_3166_2) ?? '',
-                'city' => $address->city,
-                'post_code' => $address->post_code,
-            ]);
-        };
-
-        $addressesData = array_map($submitAddressDataMapper, array_values(array_filter($addresses)));
+        if ($invoiceAddress) {
+            $invoiceAddress = $this->mapAddressData($invoiceAddress);
+        }
 
         $customerData = new SubmitOrderCustomerData([
             'customer_name' => $customer->name,
@@ -234,7 +238,8 @@ class SalesOrderDataMapper
         );
 
         return new SubmitSalesOrderData([
-            'addresses_data' => $addressesData,
+            'invoice_address' => $invoiceAddress,
+            'hardware_address' => $hardwareAddress,
             'customer_data' => $customerData,
             'order_lines_data' => $orderLinesData,
             'vendor_short_code' => $firstVendor->short_code,
@@ -246,12 +251,12 @@ class SalesOrderDataMapper
             'service_agreement_id' => $salesOrder->contract_number,
             'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
-            'bc_company_name' => transform($company, fn (Company $company) => $company->vs_company_code),
-            'company_id' => transform($company, fn (Company $company) => $company->getKey()),
+            'bc_company_name' => transform($company, static fn (Company $company) => $company->vs_company_code),
+            'company_id' => transform($company, static fn (Company $company) => $company->getKey()),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,
-            'sales_person_name' => transform($accountManager, function (User $accountManager) {
+            'sales_person_name' => transform($accountManager, static function (User $accountManager) {
                 return sprintf('%s %s', $accountManager->first_name, $accountManager->last_name);
             }, ''),
         ]);
@@ -261,7 +266,7 @@ class SalesOrderDataMapper
     {
         $quoteActiveVersion = $salesOrder->worldwideQuote->activeVersion;
 
-        $currency = with($quoteActiveVersion, function (WorldwideQuoteVersion $worldwideQuote) {
+        $currency = with($quoteActiveVersion, static function (WorldwideQuoteVersion $worldwideQuote) {
             if (is_null($worldwideQuote->output_currency_id)) {
                 return $worldwideQuote->quoteCurrency;
             }
@@ -269,7 +274,7 @@ class SalesOrderDataMapper
             return $worldwideQuote->outputCurrency;
         });
 
-        return tap($currency, function (Currency $currency) use ($quoteActiveVersion) {
+        return tap($currency, function (Currency $currency) use ($quoteActiveVersion): void {
             $currency->exchange_rate_value = $this->exchangeRateService->getTargetRate(
                 $quoteActiveVersion->quoteCurrency,
                 $quoteActiveVersion->outputCurrency
@@ -279,7 +284,7 @@ class SalesOrderDataMapper
 
     private function getSalesOrderPriceData(SalesOrder $salesOrder): QuotePriceData
     {
-        return tap(new QuotePriceData(), function (QuotePriceData $quotePriceData) use ($salesOrder) {
+        return tap(new QuotePriceData(), function (QuotePriceData $quotePriceData) use ($salesOrder): void {
             $priceSummary = $this->quoteCalc->calculatePriceSummaryOfQuote($salesOrder->worldwideQuote);
 
             $quotePriceData->total_price_value = $priceSummary->total_price;
@@ -324,7 +329,7 @@ class SalesOrderDataMapper
 
         $quotePriceData = $this->getSalesOrderPriceData($salesOrder);
 
-        $quoteAssetToOrderLineData = function (WorldwideQuoteAsset $row) use ($quotePriceData, $quoteCurrency): SubmitOrderLineData {
+        $quoteAssetToOrderLineData = static function (WorldwideQuoteAsset $row) use ($quotePriceData, $quoteCurrency): SubmitOrderLineData {
             return new SubmitOrderLineData([
                 'line_id' => $row->getKey(),
                 'unit_price' => $row->price,
@@ -338,7 +343,7 @@ class SalesOrderDataMapper
                 'vendor_short_code' => $row->vendor_short_code ?? '',
                 'distributor_name' => null,
                 'discount_applied' => $quotePriceData->applicable_discounts_value > 0,
-                'machine_country_code' => transform($row->machineAddress, function (Address $address): string {
+                'machine_country_code' => transform($row->machineAddress, static function (Address $address): string {
                     if (!is_null($address->country)) {
                         return $address->country->iso_3166_2;
                     }
@@ -349,22 +354,28 @@ class SalesOrderDataMapper
             ]);
         };
 
-        $orderLinesData = value(function () use ($quoteAssetToOrderLineData, $quoteActiveVersion) {
+        $orderLinesData = value(static function () use ($quoteAssetToOrderLineData, $quoteActiveVersion) {
             if (!$quoteActiveVersion->use_groups) {
-                $quoteActiveVersion->load(['assets' => function (MorphMany $relation) {
-                    $relation->where('is_selected', true);
-                }, 'assets.machineAddress.country']);
+                $quoteActiveVersion->load([
+                    'assets' => static function (MorphMany $relation): void {
+                        $relation->where('is_selected', true);
+                    }, 'assets.machineAddress.country',
+                ]);
 
                 return $quoteActiveVersion->assets->map($quoteAssetToOrderLineData)->all();
             }
 
-            $quoteActiveVersion->load(['assetsGroups' => function (Relation $relation) {
-                $relation->where('is_selected', true);
-            }, 'assetsGroups.assets.machineAddress.country', 'assetsGroups.assets.vendor:id,short_code']);
+            $quoteActiveVersion->load([
+                'assetsGroups' => static function (Relation $relation): void {
+                    $relation->where('is_selected', true);
+                }, 'assetsGroups.assets.machineAddress.country', 'assetsGroups.assets.vendor:id,short_code',
+            ]);
 
-            return $quoteActiveVersion->assetsGroups->reduce(function (array $assets, WorldwideQuoteAssetsGroup $assetsGroup) use ($quoteAssetToOrderLineData) {
+            return $quoteActiveVersion->assetsGroups->reduce(static function (array $assets, WorldwideQuoteAssetsGroup $assetsGroup) use (
+                $quoteAssetToOrderLineData
+            ) {
                 foreach ($assetsGroup->assets as $asset) {
-                    $asset->setAttribute('vendor_short_code', transform($asset->vendor, fn (Vendor $vendor) => $vendor->short_code));
+                    $asset->setAttribute('vendor_short_code', transform($asset->vendor, static fn (Vendor $vendor) => $vendor->short_code));
                 }
 
                 return array_merge($assets, $assetsGroup->assets->map($quoteAssetToOrderLineData)->all());
@@ -375,34 +386,25 @@ class SalesOrderDataMapper
             throw new \InvalidArgumentException('At least one Pack Asset must be present on the Quote.');
         }
 
-        $addresses = [];
+        $primaryAccount = $quoteActiveVersion->worldwideQuote->opportunity->primaryAccount;
 
-        $addresses[] = $quoteActiveVersion->worldwideQuote->opportunity->primaryAccount->addresses
+        $hardwareAddress = $primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(function (Address $address) {
+            ->first(static function (Address $address) {
                 return in_array($address->address_type, [AddressType::HARDWARE, AddressType::MACHINE]);
             });
+        if ($hardwareAddress) {
+            $hardwareAddress = $this->mapAddressData($hardwareAddress);
+        }
 
-        $addresses[] = $quoteActiveVersion->worldwideQuote->opportunity->primaryAccount->addresses
+        $invoiceAddress = $quoteActiveVersion->submittedPaInvoiceAddress ?? $primaryAccount->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(function (Address $address) {
+            ->first(static function (Address $address) {
                 return $address->address_type === AddressType::INVOICE;
             });
-
-        $submitAddressDataMapper = function (Address $address): SubmitOrderAddressData {
-            return new SubmitOrderAddressData([
-                'address_type' => $address->address_type,
-                'address_1' => $address->address_1 ?? '',
-                'address_2' => $address->address_2,
-                'state' => $address->state,
-                'state_code' => $address->state_code,
-                'country_code' => transform($address->country, fn (Country $country) => $country->iso_3166_2) ?? '',
-                'city' => $address->city,
-                'post_code' => $address->post_code,
-            ]);
-        };
-
-        $addressesData = array_map($submitAddressDataMapper, array_values(array_filter($addresses)));
+        if ($invoiceAddress) {
+            $invoiceAddress = $this->mapAddressData($invoiceAddress);
+        }
 
         $customerData = new SubmitOrderCustomerData([
             'customer_name' => $customer->name,
@@ -422,7 +424,8 @@ class SalesOrderDataMapper
         );
 
         return new SubmitSalesOrderData([
-            'addresses_data' => $addressesData,
+            'invoice_address' => $invoiceAddress,
+            'hardware_address' => $hardwareAddress,
             'customer_data' => $customerData,
             'order_lines_data' => $orderLinesData,
             'vendor_short_code' => $firstAsset->vendor->short_code,
@@ -434,20 +437,36 @@ class SalesOrderDataMapper
             'service_agreement_id' => $quote->quote_number,
             'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
-            'bc_company_name' => transform($company, fn (Company $company) => $company->vs_company_code),
-            'company_id' => transform($company, fn (Company $company) => $company->getKey()),
+            'bc_company_name' => transform($company, static fn (Company $company) => $company->vs_company_code),
+            'company_id' => transform($company, static fn (Company $company) => $company->getKey()),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,
-            'sales_person_name' => transform($accountManager, function (User $accountManager) {
+            'sales_person_name' => transform($accountManager, static function (User $accountManager) {
                 return sprintf('%s %s', $accountManager->first_name, $accountManager->last_name);
             }, ''),
         ]);
     }
 
-    public function mapWorldwideQuotePreviewDataAsSalesOrderPreviewData(SalesOrder $salesOrder, WorldwideQuotePreviewData $quotePreviewData): WorldwideQuotePreviewData
+    private function mapAddressData(Address $address): SubmitOrderAddressData
     {
-        return tap($quotePreviewData, function (WorldwideQuotePreviewData $quotePreviewData) use ($salesOrder) {
+        return new SubmitOrderAddressData([
+            'address_type' => $address->address_type,
+            'address_1' => $address->address_1 ?? '',
+            'address_2' => $address->address_2,
+            'state' => $address->state,
+            'state_code' => $address->state_code,
+            'country_code' => transform($address->country, static fn (Country $country) => $country->iso_3166_2) ?? '',
+            'city' => $address->city,
+            'post_code' => $address->post_code,
+        ]);
+    }
+
+    public function mapWorldwideQuotePreviewDataAsSalesOrderPreviewData(
+        SalesOrder $salesOrder,
+        WorldwideQuotePreviewData $quotePreviewData
+    ): WorldwideQuotePreviewData {
+        return tap($quotePreviewData, function (WorldwideQuotePreviewData $quotePreviewData) use ($salesOrder): void {
             $quote = $salesOrder->worldwideQuote;
 
             $quotePreviewData->pack_asset_fields = static::excludeAssetFields($quotePreviewData->pack_asset_fields, self::EXCLUDED_ASSET_FIELDS);
@@ -468,7 +487,7 @@ class SalesOrderDataMapper
 
     private static function excludeAssetFields(array $assetFields, array $fieldNames): array
     {
-        return array_values(array_filter($assetFields, function (AssetField $assetField) use ($fieldNames) {
+        return array_values(array_filter($assetFields, static function (AssetField $assetField) use ($fieldNames) {
             return !in_array($assetField->field_name, $fieldNames, true);
         }));
     }
@@ -491,7 +510,7 @@ class SalesOrderDataMapper
      */
     private function templatePageSchemaToArrayOfTemplateElement(array $pageSchema): array
     {
-        return array_map(function (array $element) {
+        return array_map(static function (array $element) {
             return new TemplateElement([
                 'children' => $element['child'] ?? [],
                 'class' => $element['class'] ?? '',
@@ -527,7 +546,7 @@ class SalesOrderDataMapper
         $logoSetX2 = [];
         $logoSetX3 = [];
 
-        $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
+        $companyImages = transform($company->image, static function (Image $image) use ($flags, $company) {
             return ThumbHelper::getLogoDimensionsFromImage(
                 $image,
                 $company->thumbnailProperties(),
@@ -539,10 +558,10 @@ class SalesOrderDataMapper
         $templateAssets = array_merge($templateAssets, $companyImages);
 
         /** @var Collection<\App\Domain\Vendor\Models\Vendor>|\App\Domain\Vendor\Models\Vendor[] $vendors */
-        $vendors = with($quote, function (WorldwideQuote $quote) {
+        $vendors = with($quote, static function (WorldwideQuote $quote) {
             if ($quote->contract_type_id === CT_PACK) {
                 return Vendor::query()
-                    ->whereIn((new Vendor())->getQualifiedKeyName(), function (BaseBuilder $builder) use ($quote) {
+                    ->whereIn((new Vendor())->getQualifiedKeyName(), static function (BaseBuilder $builder) use ($quote) {
                         return $builder->selectRaw('distinct(vendor_id)')
                             ->from('worldwide_quote_assets')
                             ->where($quote->assets()->getQualifiedForeignKeyName(), $quote->getKey())
@@ -554,9 +573,11 @@ class SalesOrderDataMapper
             }
 
             if ($quote->contract_type_id === CT_CONTRACT) {
-                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
-                    $relationship->has('image');
-                }])->pluck('vendors')->collapse();
+                $vendors = $quote->activeVersion->worldwideDistributions->load([
+                    'vendors' => static function (BelongsToMany $relationship): void {
+                        $relationship->has('image');
+                    },
+                ])->pluck('vendors')->collapse();
 
                 $vendors = new Collection($vendors);
 
@@ -579,7 +600,7 @@ class SalesOrderDataMapper
             $logoSetX3 = array_merge($logoSetX3, Arr::wrap($vendorImages['x3'] ?? []));
         }
 
-        $composeLogoSet = function (array $logoSet) {
+        $composeLogoSet = static function (array $logoSet) {
             static $whitespaceImg = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAfSURBVHgB7cqxAQAADAEw7f8/4wSDUeYcDYFHaLETBWmaBBDqHm1tAAAAAElFTkSuQmCC';
 
             if (empty($logoSet)) {
@@ -657,7 +678,7 @@ class SalesOrderDataMapper
 
         $lookupResult = $this->lookupService->performBatchWarrantyLookup($lookupCollection);
 
-        $serviceLevelCodeFinder = function (string $serviceLevelDescription, array $serviceLevels): string {
+        $serviceLevelCodeFinder = static function (string $serviceLevelDescription, array $serviceLevels): string {
             $serviceLevelDescription = trim($serviceLevelDescription);
 
             foreach ($serviceLevels as $serviceLevel) {

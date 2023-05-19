@@ -7,7 +7,7 @@ use App\Domain\HpeContract\Models\HpeContract;
 use App\Domain\Rescue\Contracts\ContractSubmittedRepositoryInterface;
 use App\Domain\Rescue\Models\Contract;
 use App\Domain\Rescue\Models\Customer;
-use App\Domain\Shared\Eloquent\Repository\Concerns\{ResolvesImplicitModel};
+use App\Domain\Shared\Eloquent\Repository\Concerns\ResolvesImplicitModel;
 use App\Domain\Shared\Eloquent\Repository\Concerns\ResolvesTargetModel;
 use App\Domain\Shared\Eloquent\Repository\SearchableRepository;
 use App\Domain\UnifiedContract\Builders\UnifiedContractBuilder;
@@ -43,12 +43,12 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
             ->joinSub(
                 Customer::select('customers.id', 'customers.rfq', 'customers.valid_until', 'customers.support_start', 'customers.support_end'),
                 'customer',
-                fn (JoinClause $join) => $join->on('customer.id', '=', 'contracts.customer_id')->limit(1)
+                static fn (JoinClause $join) => $join->on('customer.id', '=', 'contracts.customer_id')->limit(1)
             )
             ->joinSub(
                 User::select('users.id', 'users.first_name', 'users.last_name'),
                 'user',
-                fn (JoinClause $join) => $join->on('user.id', 'contracts.user_id')->limit(1)
+                static fn (JoinClause $join) => $join->on('user.id', 'contracts.user_id')->limit(1)
             )
             ->select(
                 'contracts.id',
@@ -73,18 +73,6 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
             ->addSelect([
                 'company_name' => Company::select('name')->whereColumn('companies.id', 'contracts.company_id')->limit(1),
             ])
-            ->when(
-                /* If user is not super-admin we are retrieving the user's own contracts */
-                $user->cant('view_contracts'),
-                function (Builder $builder) use ($user) {
-                    $builder->where(function (Builder $builder) use ($user) {
-                        $builder->where('quotes.user_id', $user->getKey())
-                            /* Adding contracts that have been granted access to */
-                            ->orWhereIn($builder->qualifyColumn('quote_id'), $user->getPermissionTargets('quotes.read'))
-                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read'));
-                    });
-                }
-            )
             ->whereNotNull('contracts.submitted_at');
 
         $query->unionAll(
@@ -111,21 +99,11 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
             ->joinSub(
                 User::select('users.id', 'users.first_name', 'users.last_name'),
                 'user',
-                fn (JoinClause $join) => $join->on('user.id', '=', 'hpe_contracts.user_id')->limit(1)
+                static fn (JoinClause $join) => $join->on('user.id', '=', 'hpe_contracts.user_id')->limit(1)
             )
             ->addSelect([
                 'company_name' => Company::select('name')->whereColumn('companies.id', 'hpe_contracts.company_id')->limit(1),
             ])
-            ->when(
-                /* If user is not super-admin we are retrieving the user's own contracts */
-                $user->cant('view_contracts'),
-                function (Builder $builder) use ($user) {
-                    $builder->where(function (Builder $builder) use ($user) {
-                        $builder->where($builder->qualifyColumn('user_id'), $user->getKey())
-                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read'));
-                    });
-                }
-            )
             ->whereNotNull('hpe_contracts.submitted_at')
         );
 
@@ -134,12 +112,13 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
 
     public function find(string $id): Contract
     {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->contract->query()->whereKey($id)->firstOrFail();
     }
 
     public function delete(string $id): bool
     {
-        return tap($this->find($id), function ($contract) {
+        return tap($this->find($id), static function ($contract): void {
             $contract->quote->update(['contract_template_id' => null]);
         })->delete();
     }

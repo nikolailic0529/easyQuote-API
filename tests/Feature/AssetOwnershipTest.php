@@ -84,9 +84,10 @@ class AssetOwnershipTest extends TestCase
 //            ->dump()
             ->assertNoContent();
 
+        // Asset viewing is allowed regardless of ownership
         $this->getJson('api/assets/'.$asset->getKey())
 //            ->dump()
-            ->assertForbidden();
+            ->assertOk();
 
         $this->actingAs($newOwner, 'api');
 

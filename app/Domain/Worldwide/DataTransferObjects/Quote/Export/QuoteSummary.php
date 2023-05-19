@@ -60,6 +60,18 @@ final class QuoteSummary extends DataTransferObject
 
     public string $contact_country;
 
+    public ?string $primary_account_inv_address_1;
+
+    public ?string $primary_account_inv_address_2;
+
+    public ?string $primary_account_inv_country;
+
+    public ?string $primary_account_inv_state;
+
+    public ?string $primary_account_inv_state_code;
+
+    public ?string $primary_account_inv_post_code;
+
     public string $end_user_name;
 
     public string $end_user_contact_country;

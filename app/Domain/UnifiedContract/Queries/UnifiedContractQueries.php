@@ -22,8 +22,8 @@ use Illuminate\Support\Facades\DB;
 class UnifiedContractQueries
 {
     public function __construct(protected ConnectionInterface $connection,
-                                protected Elasticsearch $elasticsearch,
-                                protected ElasticContractLookupService $lookupService)
+        protected Elasticsearch $elasticsearch,
+        protected ElasticContractLookupService $lookupService)
     {
     }
 
@@ -36,7 +36,7 @@ class UnifiedContractQueries
             ->select([
                 DB::raw("CONCAT(users.first_name, ' ', users.last_name) as $column"),
             ])
-            ->join('users', function (JoinClause $join) use ($contractModel) {
+            ->join('users', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('users.id', $contractModel->qualifyColumn('user_id'));
             })
             ->whereNull($contractModel->qualifyColumn('submitted_at'));
@@ -45,7 +45,7 @@ class UnifiedContractQueries
             ->select([
                 DB::raw("CONCAT(users.first_name, ' ', users.last_name) as $column"),
             ])
-            ->join('users', function (JoinClause $join) use ($hpeContractModel) {
+            ->join('users', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('users.id', $hpeContractModel->qualifyColumn('user_id'));
             })
             ->whereNull($hpeContractModel->qualifyColumn('submitted_at'));
@@ -66,7 +66,7 @@ class UnifiedContractQueries
             ->select([
                 DB::raw("CONCAT(users.first_name, ' ', users.last_name) as $column"),
             ])
-            ->join('users', function (JoinClause $join) use ($contractModel) {
+            ->join('users', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('users.id', $contractModel->qualifyColumn('user_id'));
             })
             ->whereNotNull($contractModel->qualifyColumn('submitted_at'));
@@ -75,7 +75,7 @@ class UnifiedContractQueries
             ->select([
                 DB::raw("CONCAT(users.first_name, ' ', users.last_name) as $column"),
             ])
-            ->join('users', function (JoinClause $join) use ($hpeContractModel) {
+            ->join('users', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('users.id', $hpeContractModel->qualifyColumn('user_id'));
             })
             ->whereNotNull($hpeContractModel->qualifyColumn('submitted_at'));
@@ -96,7 +96,7 @@ class UnifiedContractQueries
             ->select([
                 "customers.name as $column",
             ])
-            ->join('customers', function (JoinClause $join) use ($contractModel) {
+            ->join('customers', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('customers.id', $contractModel->qualifyColumn('customer_id'));
             })
             ->whereNull($contractModel->qualifyColumn('submitted_at'));
@@ -124,7 +124,7 @@ class UnifiedContractQueries
             ->select([
                 "customers.name as $column",
             ])
-            ->join('customers', function (JoinClause $join) use ($contractModel) {
+            ->join('customers', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('customers.id', $contractModel->qualifyColumn('customer_id'));
             })
             ->whereNotNull($contractModel->qualifyColumn('submitted_at'));
@@ -152,7 +152,7 @@ class UnifiedContractQueries
             ->select([
                 "customers.rfq as $column",
             ])
-            ->join('customers', function (JoinClause $join) use ($contractModel) {
+            ->join('customers', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('customers.id', $contractModel->qualifyColumn('customer_id'));
             })
             ->whereNull($contractModel->qualifyColumn('submitted_at'));
@@ -181,7 +181,7 @@ class UnifiedContractQueries
             ->select([
                 "customers.rfq as $column",
             ])
-            ->join('customers', function (JoinClause $join) use ($contractModel) {
+            ->join('customers', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('customers.id', $contractModel->qualifyColumn('customer_id'));
             })
             ->whereNotNull($contractModel->qualifyColumn('submitted_at'));
@@ -210,7 +210,7 @@ class UnifiedContractQueries
             ->select([
                 "companies.name as $column",
             ])
-            ->join('companies', function (JoinClause $join) use ($contractModel) {
+            ->join('companies', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('companies.id', $contractModel->qualifyColumn('company_id'));
             })
             ->whereNull($contractModel->qualifyColumn('submitted_at'));
@@ -219,7 +219,7 @@ class UnifiedContractQueries
             ->select([
                 "companies.name as $column",
             ])
-            ->join('companies', function (JoinClause $join) use ($hpeContractModel) {
+            ->join('companies', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('companies.id', $hpeContractModel->qualifyColumn('company_id'));
             })
             ->whereNull($hpeContractModel->qualifyColumn('submitted_at'));
@@ -240,7 +240,7 @@ class UnifiedContractQueries
             ->select([
                 "companies.name as $column",
             ])
-            ->join('companies', function (JoinClause $join) use ($contractModel) {
+            ->join('companies', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('companies.id', $contractModel->qualifyColumn('company_id'));
             })
             ->whereNotNull($contractModel->qualifyColumn('submitted_at'));
@@ -249,7 +249,7 @@ class UnifiedContractQueries
             ->select([
                 "companies.name as $column",
             ])
-            ->join('companies', function (JoinClause $join) use ($hpeContractModel) {
+            ->join('companies', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('companies.id', $hpeContractModel->qualifyColumn('company_id'));
             })
             ->whereNotNull($hpeContractModel->qualifyColumn('submitted_at'));
@@ -263,7 +263,7 @@ class UnifiedContractQueries
 
     protected function buildContractLookupQueryDataFromRequest(Request $request, bool $submittedFlag = null): ContractLookupQueryData
     {
-        $searchQuery = with($request->input('search'), function ($searchQuery) {
+        $searchQuery = with($request->input('search'), static function ($searchQuery) {
             if (false === is_string($searchQuery) || trim($searchQuery) === '') {
                 return null;
             }
@@ -279,7 +279,7 @@ class UnifiedContractQueries
             'created_at',
         ], true);
 
-        $fieldValueFormatter = function (FieldValue $fieldValue) {
+        $fieldValueFormatter = static function (FieldValue $fieldValue): void {
             if ($fieldValue->field_name === 'created_at') {
                 return;
             }
@@ -287,7 +287,7 @@ class UnifiedContractQueries
             $fieldValue->field_value = ElasticsearchHelper::escapeReservedChars($fieldValue->field_value);
         };
 
-        $fieldValidator = function (FieldValue $fieldValue): bool {
+        $fieldValidator = static function (FieldValue $fieldValue): bool {
             if ($fieldValue->field_name === 'created_at') {
                 return Carbon::canBeCreatedFromFormat($fieldValue->field_value, 'Y-m-d');
             }
@@ -295,7 +295,7 @@ class UnifiedContractQueries
             return true;
         };
 
-        $fieldValueMapper = function (array $fields) use ($fieldValueFormatter, $fieldValidator, $allowedFields) {
+        $fieldValueMapper = static function (array $fields) use ($fieldValueFormatter, $fieldValidator, $allowedFields) {
             $fieldValues = [];
 
             foreach ($fields as $field => $values) {
@@ -324,7 +324,7 @@ class UnifiedContractQueries
             return $fieldValues;
         };
 
-        $termValueMapper = function (array $fields) use ($allowedFields) {
+        $termValueMapper = static function (array $fields) use ($allowedFields) {
             $terms = [];
 
             foreach ($fields as $field => $values) {
@@ -332,9 +332,9 @@ class UnifiedContractQueries
                     continue;
                 }
 
-                $termValues = array_map(function ($value) {
+                $termValues = array_map(static function ($value) {
                     return (string) $value;
-                }, array_values(array_filter(Arr::wrap($values), fn ($value) => is_scalar($value))));
+                }, array_values(array_filter(Arr::wrap($values), static fn ($value) => is_scalar($value))));
 
                 $terms[] = new TermValue([
                     'term_name' => (string) $field,
@@ -416,13 +416,13 @@ class UnifiedContractQueries
                 $contractModel->qualifyColumn('updated_at'),
                 $contractModel->qualifyColumn('activated_at'),
             ])
-            ->join('customers', function (JoinClause $join) use ($contractModel) {
+            ->join('customers', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('customers.id', $contractModel->qualifyColumn('customer_id'));
             })
-            ->leftJoin('users', function (JoinClause $join) use ($contractModel) {
+            ->leftJoin('users', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('users.id', $contractModel->qualifyColumn('user_id'));
             })
-            ->leftJoin('companies', function (JoinClause $join) use ($contractModel) {
+            ->leftJoin('companies', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('companies.id', $contractModel->qualifyColumn('company_id'));
             })
             ->whereNotNull($contractModel->qualifyColumn('submitted_at'));
@@ -450,21 +450,14 @@ class UnifiedContractQueries
                 $hpeContractModel->qualifyColumn('activated_at'),
             ])
             ->whereNotNull($hpeContractModel->qualifyColumn('submitted_at'))
-            ->leftJoin('users', function (JoinClause $join) use ($hpeContractModel) {
+            ->leftJoin('users', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('users.id', $hpeContractModel->qualifyColumn('user_id'));
             })
-            ->leftJoin('companies', function (JoinClause $join) use ($hpeContractModel) {
+            ->leftJoin('companies', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('companies.id', $hpeContractModel->qualifyColumn('company_id'));
             });
 
-        if (false === is_null($user) && false === $user->hasRole(R_SUPER)) {
-            $rescueContractQuery->whereIn($rescueContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()))
-                ->orWhereIn($rescueContractQuery->qualifyColumn('quote_id'), $user->getPermissionTargets('quotes.read'));
-
-            $hpeContractQuery->whereIn($hpeContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()));
-        }
-
-        with($this->buildContractLookupQueryDataFromRequest($request, true), function (ContractLookupQueryData $data) use ($rescueContractQuery, $hpeContractQuery) {
+        with($this->buildContractLookupQueryDataFromRequest($request, true), function (ContractLookupQueryData $data) use ($rescueContractQuery, $hpeContractQuery): void {
             if ($this->isLookupQueryDataEmpty($data)) {
                 return;
             }
@@ -535,13 +528,13 @@ class UnifiedContractQueries
                 $contractModel->qualifyColumn('updated_at'),
                 $contractModel->qualifyColumn('activated_at'),
             ])
-            ->join('customers', function (JoinClause $join) use ($contractModel) {
+            ->join('customers', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('customers.id', $contractModel->qualifyColumn('customer_id'));
             })
-            ->leftJoin('users', function (JoinClause $join) use ($contractModel) {
+            ->leftJoin('users', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('users.id', $contractModel->qualifyColumn('user_id'));
             })
-            ->leftJoin('companies', function (JoinClause $join) use ($contractModel) {
+            ->leftJoin('companies', static function (JoinClause $join) use ($contractModel): void {
                 $join->on('companies.id', $contractModel->qualifyColumn('company_id'));
             })
             ->whereNull($contractModel->qualifyColumn('submitted_at'));
@@ -569,21 +562,14 @@ class UnifiedContractQueries
                 $hpeContractModel->qualifyColumn('activated_at'),
             ])
             ->whereNull($hpeContractModel->qualifyColumn('submitted_at'))
-            ->leftJoin('users', function (JoinClause $join) use ($hpeContractModel) {
+            ->leftJoin('users', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('users.id', $hpeContractModel->qualifyColumn('user_id'));
             })
-            ->leftJoin('companies', function (JoinClause $join) use ($hpeContractModel) {
+            ->leftJoin('companies', static function (JoinClause $join) use ($hpeContractModel): void {
                 $join->on('companies.id', $hpeContractModel->qualifyColumn('company_id'));
             });
 
-        if (false === is_null($user) && false === $user->hasRole(R_SUPER)) {
-            $rescueContractQuery->whereIn($rescueContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()))
-                ->orWhereIn($rescueContractQuery->qualifyColumn('quote_id'), $user->getPermissionTargets('quotes.read'));
-
-            $hpeContractQuery->whereIn($hpeContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()));
-        }
-
-        with($this->buildContractLookupQueryDataFromRequest($request, false), function (ContractLookupQueryData $data) use ($rescueContractQuery, $hpeContractQuery) {
+        with($this->buildContractLookupQueryDataFromRequest($request, false), function (ContractLookupQueryData $data) use ($rescueContractQuery, $hpeContractQuery): void {
             if ($this->isLookupQueryDataEmpty($data)) {
                 return;
             }

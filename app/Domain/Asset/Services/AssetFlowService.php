@@ -16,9 +16,9 @@ use App\Domain\Rescue\Models\Quote;
 use App\Domain\Rescue\Queries\QuoteQueries;
 use App\Domain\Sync\Enum\Lock;
 use App\Domain\VendorServices\Services\WarrantyLookupService;
+use App\Domain\Worldwide\Models\{WorldwideQuoteAsset};
 use App\Domain\Worldwide\Models\WorldwideDistribution;
 use App\Domain\Worldwide\Models\WorldwideQuoteVersion;
-use App\Domain\Worldwide\Models\{WorldwideQuoteAsset};
 use App\Foundation\Console\Concerns\WithProgress;
 use App\Foundation\Log\Contracts\{LoggerAware};
 use Illuminate\Contracts\Cache\LockProvider;
@@ -37,16 +37,17 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
     protected array $assetCategoryCache = [];
 
     #[Pure]
-    public function __construct(protected ConnectionInterface $connection,
-                                protected LoggerInterface $logger,
-                                protected ValidatorInterface $validator,
-                                protected QuoteQueries $quoteQueries,
-                                protected ManagesExchangeRates $exchangeRateService,
-                                protected MigratesCustomerEntity $customerFlowService,
-                                protected ActivityLogStatus $activityLogStatus,
-                                protected WarrantyLookupService $warrantyLookupService,
-                                protected LockProvider $lockProvider)
-    {
+    public function __construct(
+        protected ConnectionInterface $connection,
+        protected LoggerInterface $logger,
+        protected ValidatorInterface $validator,
+        protected QuoteQueries $quoteQueries,
+        protected ManagesExchangeRates $exchangeRateService,
+        protected MigratesCustomerEntity $customerFlowService,
+        protected ActivityLogStatus $activityLogStatus,
+        protected WarrantyLookupService $warrantyLookupService,
+        protected LockProvider $lockProvider
+    ) {
     }
 
     public function migrateAssets(int $flags = 0): void
@@ -66,7 +67,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
         $migratingAssetsFromQuotes = Quote::query()
             ->where('completeness', '>', 40)
             ->lazyById(100)
-            ->filter(function (Quote $quote) use ($flags) {
+            ->filter(static function (Quote $quote) use ($flags) {
                 if ($flags & self::FRESH_MIGRATE) {
                     return true;
                 }
@@ -85,7 +86,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
         $migratingAssetsFromWorldwideQuotes = WorldwideQuoteVersion::query()
             ->where('completeness', '>', 40)
             ->lazyById(100)
-            ->filter(function (WorldwideQuoteVersion $quoteVersion) use ($flags) {
+            ->filter(static function (WorldwideQuoteVersion $quoteVersion) use ($flags) {
                 if ($flags & self::FRESH_MIGRATE) {
                     return true;
                 }
@@ -107,12 +108,12 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             CT_PACK => $this->migrateAssetsFromWorldwidePackQuote($quote),
         };
 
-        with($quote, function (WorldwideQuoteVersion $version) use ($quote) {
+        with($quote, function (WorldwideQuoteVersion $version) use ($quote): void {
             $version->assets_migrated_at = now();
 
             $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10)
-                ->block(30, function () use ($version) {
-                    $this->connection->transaction(fn () => $version->save());
+                ->block(30, function () use ($version): void {
+                    $this->connection->transaction(static fn () => $version->save());
                 });
         });
 
@@ -162,8 +163,8 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             );
         });
 
-        $dateFrom = transform($mappedRow->date_from, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
-        $dateTo = transform($mappedRow->date_to, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
+        $dateFrom = transform($mappedRow->date_from, static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
+        $dateTo = transform($mappedRow->date_to, static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
         return new QuoteAsset([
             'user_id' => $distributorQuote->worldwideQuote->user_id,
@@ -223,20 +224,23 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             );
         });
 
-        $dateFrom = transform($asset->expiry_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
-        $dateTo = transform($quote->worldwideQuote?->opportunity?->opportunity_end_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
+        $dateFrom = transform($asset->expiry_date, static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
+        $dateTo = transform($quote->worldwideQuote?->opportunity?->opportunity_end_date,
+            static fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
         $productImage = null;
 
         if ($this->determineIfPossibleToGetImageOfAsset($asset->vendor?->short_code)) {
-            $warrantyLookupResult = $this->warrantyLookupService->getWarranty(
-                vendorCode: $asset->vendor->short_code,
-                serial: $asset->serial_no,
-                sku: $asset->sku,
-                countryCode: $asset->country
-            );
+            rescue(function () use ($asset, &$productImage): void {
+                $warrantyLookupResult = $this->warrantyLookupService->getWarranty(
+                    vendorCode: $asset->vendor->short_code,
+                    serial: $asset->serial_no,
+                    sku: $asset->sku,
+                    countryCode: $asset->country
+                );
 
-            $productImage = $warrantyLookupResult?->product_image;
+                $productImage = $warrantyLookupResult?->product_image;
+            });
         }
 
         return new QuoteAsset([
@@ -274,7 +278,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
         $rows = $this->quoteQueries
             ->mappedOrderedRowsQuery($quote->activeVersionOrCurrent)
             ->lazyById()
-            ->filter(function (object $row) {
+            ->filter(static function (object $row) {
                 if (blank($row->product_no ?? null)) {
                     return false;
                 }
@@ -292,12 +296,12 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             );
         }
 
-        with($quote, function (Quote $quote) {
+        with($quote, function (Quote $quote): void {
             $quote->assets_migrated_at = now();
 
             $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10)
-                ->block(30, function () use ($quote) {
-                    $this->connection->transaction(fn () => $quote->save());
+                ->block(30, function () use ($quote): void {
+                    $this->connection->transaction(static fn () => $quote->save());
                 });
         });
 
@@ -345,10 +349,14 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             'pricing_document' => $row->pricing_document ?? null,
             'system_handle' => $row->system_handle ?? null,
             'service_agreement_id' => $row->searchable ?? null,
-            'base_warranty_start_date' => transform($row->date_from ?? null, fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
-            'base_warranty_end_date' => transform($row->date_to ?? null, fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
-            'active_warranty_start_date' => transform($row->date_from ?? null, fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
-            'active_warranty_end_date' => transform($row->date_to ?? null, fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
+            'base_warranty_start_date' => transform($row->date_from ?? null,
+                static fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
+            'base_warranty_end_date' => transform($row->date_to ?? null,
+                static fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
+            'active_warranty_start_date' => transform($row->date_from ?? null,
+                static fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
+            'active_warranty_end_date' => transform($row->date_to ?? null,
+                static fn (string $date) => Carbon::createFromFormat('d/m/Y', $date)->startOfDay()),
             'unit_price' => $baseRate * (float) ($row->price ?? null),
         ]);
     }
@@ -372,7 +380,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             ->where('quote_type', $quoteAsset->quote_type)
             ->firstOrNew();
 
-        with($asset, function (Asset $asset) use ($quoteAsset) {
+        with($asset, function (Asset $asset) use ($quoteAsset): void {
             if ($asset->exists) {
                 return;
             }
@@ -398,21 +406,21 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             $asset->unit_price = $quoteAsset->unit_price;
             $asset->is_migrated = true;
 
-            $this->connection->transaction(fn () => $asset->save());
+            $this->connection->transaction(static fn () => $asset->save());
         });
 
         // Attach referenced company entity to the asset.
-        with($asset, function (Asset $asset) use ($quoteAsset) {
+        with($asset, function (Asset $asset) use ($quoteAsset): void {
             if (is_null($quoteAsset->company_reference_id)) {
                 return;
             }
 
-            $this->connection->transaction(function () use ($asset, $quoteAsset) {
+            $this->connection->transaction(static function () use ($asset, $quoteAsset): void {
                 $asset->companies()->syncWithoutDetaching([$quoteAsset->company_reference_id]);
             });
         });
 
-        return tap($asset, function (Asset $asset) {
+        return tap($asset, static function (Asset $asset): void {
         });
     }
 
@@ -446,7 +454,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
 
     public function setLogger(LoggerInterface $logger): static
     {
-        return tap($this, function () use ($logger) {
+        return tap($this, function () use ($logger): void {
             $this->logger = $logger;
         });
     }

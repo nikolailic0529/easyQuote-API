@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Address\Enum\AddressType;
 use App\Domain\Address\Models\Address;
 use App\Domain\Asset\Models\Asset;
 use App\Domain\Company\Models\Company;
@@ -1863,6 +1864,16 @@ class WorldwideContractQuoteTest extends TestCase
 
         /** @var \App\Domain\Worldwide\Models\WorldwideQuote $wwQuote */
         $wwQuote = WorldwideQuote::factory()
+            ->for(
+                Opportunity::factory()
+                    ->for(
+                        Company::factory()->hasAttached(
+                            Address::factory(['address_type' => AddressType::INVOICE]),
+                            pivot: ['is_default' => true]
+                        ),
+                        relationship: 'primaryAccount'
+                    )
+            )
             ->create([
                 'contract_type_id' => CT_CONTRACT,
             ]);

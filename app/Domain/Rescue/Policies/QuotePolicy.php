@@ -5,6 +5,7 @@ namespace App\Domain\Rescue\Policies;
 use App\Domain\Authentication\Services\UserTeamGate;
 use App\Domain\Rescue\Models\Quote;
 use App\Domain\Rescue\Models\QuoteVersion;
+use Illuminate\Auth\Access\Response;
 use App\Domain\User\Models\{User};
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -31,6 +32,18 @@ class QuotePolicy
         if ($user->can('view_quotes') || $user->can('view_own_quotes')) {
             return true;
         }
+    }
+
+    /**
+     * Determine whether the user can view all quotes.
+     */
+    public function viewAll(User $user): Response
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return $this->allow();
+        }
+
+        return $this->deny();
     }
 
     /**
