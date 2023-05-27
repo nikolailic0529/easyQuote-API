@@ -157,7 +157,7 @@ class WorldwideQuoteExporter
         $assetsPageSchema = [];
 
         foreach ($previewData->distributions as $distribution) {
-            $distributionAssetsSchema = $templateData->assets_page_schema;
+            $distributionAssetsSchema = $this->cloneArray($templateData->assets_page_schema);
 
             foreach ($this->getTemplateControlsIterator($distributionAssetsSchema) as $control) {
                 $this->mapContractTemplateControlForDistributorQuote($control, $distribution, $previewData);
@@ -481,5 +481,33 @@ class WorldwideQuoteExporter
                 $element->_hidden = false === ($element->visibility xor $data->quote_summary->is_contract_duration_checked);
             }
         }
+    }
+
+    private function cloneArray(array $arr): array 
+    {
+        $clone = [];
+
+        foreach($arr as $k => $v) {
+            if(is_array($v)) {
+                $clone[$k] = $this->cloneArray($v);
+            }
+            else if(is_object($v)) {
+                $clone[$k] = clone $v;
+                foreach($v as $k1 => $v1) {
+                    if(is_array($v1)) {
+                        $v->$k1 = $this->cloneArray($v1);
+                    }
+                    else if(is_object($v1)) {
+                        $v->$k1 = clone $v1;
+                    } else {
+                        $v->$k1 = $v1;
+                    }
+                }
+            } else {
+                $clone[$k] = $v;
+            }
+        }
+        
+        return $clone;
     }
 }
